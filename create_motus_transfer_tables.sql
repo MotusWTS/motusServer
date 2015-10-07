@@ -51,7 +51,7 @@ CREATE TABLE batches (
                                         -- unix-style: seconds since 1 Jan 1970 GMT
     tsEnd FLOAT(53) NOT NULL,           -- timestamp for start of period covered by batch;
                                         -- unix-style: seconds since 1 Jan 1970 GMT
-    numRec INT                          -- count of records in this batch
+    numRec INT,                         -- count of records in this batch
     ts FLOAT(53) NOT NULL,              -- timestamp when this batch record was added; unix-style:
                                         -- seconds since 1 Jan 1970 GMT
     tsMotus FLOAT(53)                   -- timestamp when this record transferred to motus;
