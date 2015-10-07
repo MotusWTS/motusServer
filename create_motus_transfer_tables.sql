@@ -9,14 +9,16 @@ CREATE TABLE hits (
     batchID INT NOT NULL REFERENCES batches, -- ID of batch this hit belongs to
     ID INT NOT NULL,                         -- unique ID for this hit within this batch
     motusTagID INT NOT NULL,                 -- ID for the tag detected; foreign key to Motus DB table
-    ant TINYINT NOT NULL,                    -- antenna number (USB Hub port # for SG; antenna port # for Lotek)
+    ant TINYINT NOT NULL,                    -- antenna number (USB Hub port # for SG; antenna port
+                                             -- # for Lotek)
     ts FLOAT(53) NOT NULL,                   -- timestamp (centre of first pulse in detection);
                                              -- unix-style: seconds since 1 Jan 1970 GMT
-    sig FLOAT(24) NOT NULL,                  -- signal strength, in dB (relative to max)
-    sigSD FLOAT(24),                         -- standard deviation of signal strength, in dB (NULL
-                                             -- okay; e.g. Lotek)
-    noise FLOAT(24),                         -- noise level, in dB (relative to max) (NULL okay;
-                                             -- e.g. Lotek)
+    sig FLOAT(24) NOT NULL,                  -- signal strength, in units appropriate to device;
+                                             -- e.g.; for SG/funcube; dB (max); for Lotek: raw
+                                             -- integer in range 0..255
+    sigSD FLOAT(24),                         -- standard deviation of signal strength, in device units
+                                             -- (NULL okay; e.g. Lotek)
+    noise FLOAT(24),                         -- noise level, in device units (NULL okay; e.g. Lotek)
     freq FLOAT(24),                          -- frequency offset, in kHz (NULL okay; e.g. Lotek)
     freqSD FLOAT(24),                        -- standard deviation of freq, in kHz (NULL okay;
                                              -- e.g. Lotek)
