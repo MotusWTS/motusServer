@@ -1,9 +1,9 @@
---- TABLE hits 
----
---- each record is a detection of a tag embedded in a run of such detections; runs track detections
---- of a tag by a single antenna on a single receiver.  Note: time-varying metadata about the
---- receiver (e.g. location) or radios (e.g. listening frequency, gain) are transferred separately
---- in the tables "gps" and "params"
+--  TABLE hits 
+-- 
+--  each record is a detection of a tag embedded in a run of such detections; runs track detections
+--  of a tag by a single antenna on a single receiver.  Note: time-varying metadata about the
+--  receiver (e.g. location) or radios (e.g. listening frequency, gain) are transferred separately
+--  in the tables "gps" and "params"
 
 CREATE TABLE hits (
     batchID INT NOT NULL REFERENCES batches, -- ID of batch this hit belongs to
@@ -32,15 +32,15 @@ CREATE TABLE hits (
                                              -- NULL means not transferred
 );
 
---- TABLE batches
----
---- each record describes a batch of hits; each batch comes from
---- running the sensorgnome tag finder code on data from a single
---- receiver, from a single boot period; it is not necessary that the
---- batch contain all detections from a single boot period, because we
---- want to be able to generate batches incrementally from a single
---- boot period, when data arrive in chunks throughout the season,
---- possibly without intervening reboots of the receiver.
+--  TABLE batches
+-- 
+--  each record describes a batch of hits; each batch comes from
+--  running the sensorgnome tag finder code on data from a single
+--  receiver, from a single boot period; it is not necessary that the
+--  batch contain all detections from a single boot period, because we
+--  want to be able to generate batches incrementally from a single
+--  boot period, when data arrive in chunks throughout the season,
+--  possibly without intervening reboots of the receiver.
 
 CREATE TABLE batches (
     ID INT PRIMARY KEY UNIQUE NOT NULL, -- unique identifier for this batch
@@ -59,11 +59,11 @@ CREATE TABLE batches (
                                         -- transferred
 );
 
---- TABLE batchReplace
----
---- keep track of which batches replace earlier ones.  A new batch in
---- the transfer DB might replace one or more previous batches.  If
---- so, there is a record in this table for each batch being replaced.
+--  TABLE batchReplace
+-- 
+--  keep track of which batches replace earlier ones.  A new batch in
+--  the transfer DB might replace one or more previous batches.  If
+--  so, there is a record in this table for each batch being replaced.
 
 CREATE TABLE batchReplace (
     oldBatchID INT NOT NULL, -- references batches, supposing we keep all those around
@@ -74,9 +74,9 @@ CREATE TABLE batchReplace (
                              -- transferred; unix-style: seconds since 1 Jan 1970 GMT
 );
 
---- TABLE gps
----
---- record GPS fixes from a receiver
+--  TABLE gps
+-- 
+--  record GPS fixes from a receiver
 
 CREATE TABLE gps (
     batchID INT NOT NULL REFERENCES batches, -- ID of batch this gps fix belongs to
@@ -93,9 +93,9 @@ CREATE TABLE gps (
                                              -- Jan 1970 GMT
 );
 
---- TABLE params
----
---- record receiver parameter settings, such as listening frequency and gain
+--  TABLE params
+-- 
+--  record receiver parameter settings, such as listening frequency and gain
 
 CREATE TABLE params (
     batchID INT NOT NULL REFERENCES batches, -- ID of batch this gps fix belongs to
@@ -111,10 +111,10 @@ CREATE TABLE params (
                                              -- Jan 1970 GMT
 );
 
---- TABLE paramInfo
----
---- maintains information about the different parameter settings possible on different receiver
---- types This is really just a set of constants, although the set might grow over time.
+--  TABLE paramInfo
+-- 
+--  maintains information about the different parameter settings possible on different receiver
+--  types This is really just a set of constants, although the set might grow over time.
 
 CREATE TABLE paramInfo (
     ID INT UNIQUE NOT NULL PRIMARY KEY,               -- ID of this parameter
