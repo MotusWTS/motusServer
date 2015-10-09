@@ -8,7 +8,6 @@
 CREATE TABLE hits (
     batchID INT NOT NULL REFERENCES batches, -- ID of batch this hit belongs to
     ID INT NOT NULL,                         -- unique ID for this hit within this batch
-    motusTagID INT NOT NULL,                 -- ID for the tag detected; foreign key to Motus DB table
     ant TINYINT NOT NULL,                    -- antenna number (USB Hub port # for SG; antenna port
                                              -- # for Lotek)
     ts FLOAT(53) NOT NULL,                   -- timestamp (centre of first pulse in detection);
@@ -27,12 +26,14 @@ CREATE TABLE hits (
     burstSlop FLOAT (24),                    -- discrepancy of burst timing, in msec (NULL okay;
                                              -- e.g. Lotek)
     runID INT NOT NULL,                      -- ID of run of detections of this tag within this
-                                             -- batch
+                                             -- batch; this together with batchID references an entry
+                                             -- in batchRunInfo
     posInRun INT NOT NULL,                   -- position of this detection in run of detections for
                                              -- this tag, numbered from 1; FIXME: could be removed.
     tsMotus FLOAT(53),                       -- timestamp when this record transferred to motus;
                                              -- NULL means not transferred
-    PRIMARY KEY (batchID, ID)                                                                                                                     
+    PRIMARY KEY (batchID, ID),
+    FOREIGN KEY (batchID, runID) references batchRunInfo(batchID, runID)
 );
 
 --  TABLE batches
@@ -62,14 +63,17 @@ CREATE TABLE batches (
                                         -- transferred
 );
 
---  TABLE batchRunLengths
+--  TABLE batchRunInfo
 --
---  record lengths of tag runs in each batch; this is not a property of an indivdual
---  detection, so we don't store it in the 'hits' table
+--  record info common across all hits in a tag run in each batch;
 
-CREATE TABLE batchRunLengths (
+CREATE TABLE batchRunInfo (
     batchID INT NOT NULL REFERENCES batches, -- unique identifier of batch for this run
-    runID INT NOT NULL,                      -- identifier of run within batch
+    runID INT NOT NULL,                      -- identifier of run within batch; this ID might be shared
+                                             -- between different batches, if a run is split across
+                                             -- multiple batches.  But it is unique for a given 
+                                             -- (motusRecvID, bootNum).
+    motusTagID INT NOT NULL,                 -- ID for the tag detected; foreign key to Motus DB table
     len INT,                                 -- length of run within batch
     tsMotus FLOAT(53),                       -- timestamp when this record transferred to motus;
                                              -- unix-style: seconds since 1 Jan 1970 GMT; NULL means not
