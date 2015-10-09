@@ -78,7 +78,7 @@ CREATE TABLE hits (
     tsMotus FLOAT(53),                       -- timestamp when this record transferred to motus;
                                              -- NULL means not transferred
     PRIMARY KEY (batchID, ID),
-    FOREIGN KEY (batchID, runID) references batchRunInfo(batchID, runID)
+    FOREIGN KEY (batchID, runID) REFERENCES batchRunInfo(batchID, runID)
 );
 
 
