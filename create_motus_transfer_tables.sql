@@ -70,7 +70,7 @@ CREATE TABLE batches (
 CREATE TABLE batchRunLengths (
     batchID INT NOT NULL REFERENCES batches, -- unique identifier of batch for this run
     runID INT NOT NULL,                      -- identifier of run within batch
-    len INT                                  -- length of run within batch
+    len INT,                                 -- length of run within batch
     tsMotus FLOAT(53),                       -- timestamp when this record transferred to motus;
                                              -- unix-style: seconds since 1 Jan 1970 GMT; NULL means not
                                              -- transferred
