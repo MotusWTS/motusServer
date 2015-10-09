@@ -16,8 +16,8 @@ CREATE TABLE hits (
     sig FLOAT(24) NOT NULL,                  -- signal strength, in units appropriate to device;
                                              -- e.g.; for SG/funcube; dB (max); for Lotek: raw
                                              -- integer in range 0..255
-    sigSD FLOAT(24),                         -- standard deviation of signal strength, in device units
-                                             -- (NULL okay; e.g. Lotek)
+    sigSD FLOAT(24),                         -- standard deviation of signal strength, in device
+                                             -- units (NULL okay; e.g. Lotek)
     noise FLOAT(24),                         -- noise level, in device units (NULL okay; e.g. Lotek)
     freq FLOAT(24),                          -- frequency offset, in kHz (NULL okay; e.g. Lotek)
     freqSD FLOAT(24),                        -- standard deviation of freq, in kHz (NULL okay;
@@ -26,12 +26,13 @@ CREATE TABLE hits (
                                              -- e.g. Lotek)
     burstSlop FLOAT (24),                    -- discrepancy of burst timing, in msec (NULL okay;
                                              -- e.g. Lotek)
-    runID INT NOT NULL,                      -- ID of run of bursts on this tag,
-    posInRun INT NOT NULL,                   -- position of this burst in run of bursts for this tag
-    runLen INT NOT NULL,                     -- length of run of this burst; 0 means run had not
-                                             -- ended when this batch generated
-    tsMotus FLOAT(53)                        -- timestamp when this record transferred to motus;
+    runID INT NOT NULL,                      -- ID of run of detections of this tag within this
+                                             -- batch
+    posInRun INT NOT NULL,                   -- position of this detection in run of detections for
+                                             -- this tag, numbered from 1; FIXME: could be removed.
+    tsMotus FLOAT(53),                       -- timestamp when this record transferred to motus;
                                              -- NULL means not transferred
+    PRIMARY KEY (batchID, ID)                                                                                                                     
 );
 
 --  TABLE batches
@@ -61,6 +62,21 @@ CREATE TABLE batches (
                                         -- transferred
 );
 
+--  TABLE batchRunLengths
+--
+--  record lengths of tag runs in each batch; this is not a property of an indivdual
+--  detection, so we don't store it in the 'hits' table
+
+CREATE TABLE batchRunLengths (
+    batchID INT NOT NULL REFERENCES batches, -- unique identifier of batch for this run
+    runID INT NOT NULL,                      -- identifier of run within batch
+    len INT                                  -- length of run within batch
+    tsMotus FLOAT(53),                       -- timestamp when this record transferred to motus;
+                                             -- unix-style: seconds since 1 Jan 1970 GMT; NULL means not
+                                             -- transferred
+    PRIMARY KEY (batchID, runID)             -- only one length per (runID,batchID)
+);
+
 --  TABLE batchReplace
 -- 
 --  keep track of which batches replace earlier ones.  A new batch in
@@ -68,12 +84,14 @@ CREATE TABLE batches (
 --  so, there is a record in this table for each batch being replaced.
 
 CREATE TABLE batchReplace (
-    oldBatchID INT NOT NULL, -- references batches, supposing we keep all those around
-    newBatchID INT NOT NULL, -- references batches, 
-    ts FLOAT(53) NOT NULL,   -- timestamp when this batch record was added; unix-style: seconds
-                             -- since 1 Jan 1970 GMT
-    tsMotus FLOAT(53)        -- timestamp when this record transferred to motus; NULL means not
-                             -- transferred; unix-style: seconds since 1 Jan 1970 GMT
+    oldBatchID INT PRIMARY KEY UNIQUE NOT NULL, -- references batches, supposing we keep all those
+                                                -- around
+    newBatchID INT NOT NULL,                    -- references batches,
+    ts FLOAT(53) NOT NULL,                      -- timestamp when this batch record was added;
+                                                -- unix-style: seconds since 1 Jan 1970 GMT
+    tsMotus FLOAT(53)                           -- timestamp when this record transferred to motus;
+                                                -- NULL means not transferred; unix-style: seconds
+                                                -- since 1 Jan 1970 GMT
 );
 
 --  TABLE gps
@@ -90,9 +108,10 @@ CREATE TABLE gps (
     lat FLOAT(24),                           -- latitude, decimal degrees N
     lon FLOAT(24),                           -- longitude, decimal degrees E
     elev FLOAT(24),                          -- metres above local sea level
-    tsMotus FLOAT(53)                        -- timestamp when this record transferred to motus; 0
+    tsMotus FLOAT(53),                       -- timestamp when this record transferred to motus; 0
                                              -- means not transferred; unix-style: seconds since 1
                                              -- Jan 1970 GMT
+    PRIMARY KEY (batchID, ID)                                                                                                                     
 );
 
 --  TABLE params
@@ -108,24 +127,65 @@ CREATE TABLE params (
                                              -- # for SG; antenna port # for Lotek); 255 means all
     parID INT NOT NULL REFERENCES paramInfo, -- which parameter is being set, from a separate table
     parVal FLOAT(53) NOT NULL,               -- value of this parameter
-    tsMotus FLOAT(53)                        -- timestamp when this record transferred to motus; 0
+    tsMotus FLOAT(53),                       -- timestamp when this record transferred to motus; 0
                                              -- means not transferred; unix-style: seconds since 1
                                              -- Jan 1970 GMT
+    PRIMARY KEY (batchID, ID)                                                                                                                     
 );
 
 --  TABLE paramInfo
 -- 
 --  maintains information about the different parameter settings possible on different receiver
---  types This is really just a set of constants, although the set might grow over time.
+--  types.  This is really just a set of constants, although the set might grow over time.
 
 CREATE TABLE paramInfo (
     ID INT UNIQUE NOT NULL PRIMARY KEY,               -- ID of this parameter
     parName varchar(16) NOT NULL,                     -- name for this parameter
     parUnits varchar(16),                             -- units for this parameter, where relevant
-    recvTypeID INT NOT NULL REFERENCES receiverTypes, -- type of receiver for which this parameter
-                                                      -- is relevant
+    devID INT NOT NULL REFERENCES devInfo,            -- type of device for which this parameter is
+                                                      -- relevant
     tsMotus FLOAT(53)                                 -- timestamp when this record transferred to
                                                       -- motus; 0 means not transferred; unix-style:
                                                       -- seconds since 1 Jan 1970 GMT
 );
 
+-- TABLE deviceInfo
+--
+-- maintains information about the models of devices we use, such
+-- as receivers and radios
+
+CREATE TABLE devInfo (
+    ID INT UNIQUE NOT NULL PRIMARY KEY, -- ID of this device
+    devName VARCHAR(32),                -- human-readable name of device
+    devType VARCHAR(32),                -- type of device: "radio", "receiver", ...
+    mfg VARCHAR(32)                     -- manufacturer
+);
+
+
+-- initial values for receiverTypes and paramInfo
+
+insert into devInfo (ID, devName, devType, mfg) values
+       (0, "any", "receiver", ""),
+       (1, "SensorGnome", "receiver", "sensorgnome.org"), 
+       (2, "Lotek", "receiver", "lotek.com"), 
+       (3, "SRX-600", "receiver", "lotek.com"),
+       (4, "SRX-800", "receiver", "lotek.com"),
+       (5, "SRX-DL", "receiver", "lotek.com"),
+       (6, "FuncubeDonglePro", "radio", "funcubedongle.com"),  -- older model, only used by a few SGs
+       (7, "FuncubeDonglePro+", "radio", "funcubedongle.com")  -- more recent (2013+) model
+;
+
+insert into paramInfo (ID, parName, parUnits, devID) values
+    -- common to any receiver
+       (0, "tunerFreq", "MHz", 0),
+
+    -- Lotek-specific
+       (1, "lotekGain", "nominal", 2),  
+       
+    -- funcubedongle Pro Plus params
+       (2, "LNAGain", "on/off", 7), 
+       (3, "mixerGain", "on/off", 7),
+       (4, "RFFilter", "enum1-12", 7),
+       (5, "IFGain", "dB0-59", 7),
+       (6, "IFFilter", "enum1-8", 7)
+;
