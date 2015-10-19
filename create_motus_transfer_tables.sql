@@ -138,6 +138,43 @@ CREATE TABLE params (
     PRIMARY KEY (batchID, ID)                                                                                                                     
 );
 
+--  TABLE batchSWInfo
+--
+--  maintains information about the versions of software used to generate a batch
+--  of detections.
+--
+
+CREATE TABLE batchSWInfo (
+    batchID INT NOT NULL REFERENCES batches, -- unique identifier of batch for this run
+    progName VARCHAR(16) NOT NULL,           -- identifier of program; e.g. "find_tags", "lotek-plugins.so"
+    progVersion CHAR(40) NOT NULL,           -- GIT commit hash for version of code used
+    progBuildTS FLOAT(53) NOT NULL,          -- timestamp of binary for this program; unix-style:
+                                             -- seconds since 1 Jan 1970 GMT; NULL means not
+                                             -- transferred
+    tsMotus FLOAT(53),                       -- timestamp when this record transferred to motus;
+                                             -- unix-style: seconds since 1 Jan 1970 GMT; NULL means not
+                                             -- transferred
+    PRIMARY KEY (batchID, progName)          -- only one version of a given program per batch
+);
+
+
+--  TABLE batchSWParams
+--
+--  maintains information about the parameter values used by programs
+--  in a batch run.
+--
+
+CREATE TABLE batchSWParams (
+    batchID INT NOT NULL REFERENCES batches, -- unique identifier of batch for this run
+    progName VARCHAR(16) NOT NULL,           -- identifier of program; e.g. "find_tags", "lotek-plugins.so"
+    parName varchar(16) NOT NULL,            -- name of parameter (e.g. "--minFreq")
+    parVal FLOAT(53) NOT NULL,               -- value of parameter
+    tsMotus FLOAT(53),                       -- timestamp when this record transferred to motus;
+                                             -- unix-style: seconds since 1 Jan 1970 GMT; NULL means not
+                                             -- transferred
+    PRIMARY KEY (batchID, progName, parName) -- only one value of a given parameter per program per batch
+);
+
 --  TABLE paramInfo
 -- 
 --  maintains information about the different parameter settings possible on different receiver
