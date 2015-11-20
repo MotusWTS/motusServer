@@ -11,11 +11,12 @@ library(RSQLite)
 library(lubridate)
 
 MOTUS_API_USER = 'john'
-## get the motus API key and password for account john 
-motusSecrets = system("sudo cat ~/.secrets/motusAPISecrets", intern=TRUE) %>% fromJSON()
+## get the motus API key and password for account john
+motusSecrets = system("sudo cat ~/.secrets/motusSecrets", intern=TRUE) %>% fromJSON()
 
 MOTUS_API_ENTRY_POINTS = 'http://motus-wts.org/data/api/entrypoints.jsp'
 MOTUS_API_REGISTER_TAG = 'http://motus-wts.org/data/api/v1.0/registertag.jsp'
+MOTUS_API_REGISTER_PROJECT = 'http://motus-wts.org/data/api/v1.0/registerproject.jsp'
 MOTUS_API_LIST_PROJECTS = 'http://motus-wts.org/data/api/v1.0/listprojects.jsp'
 MOTUS_API_RECEIVER_STATUS = 'http://motus-wts.org/data/api/v1.0/listreceiverstatus.jsp'
 MOTUS_API_LIST_TAGS = 'http://motus-wts.org/data/api/v1.0/listtags.jsp'
@@ -43,7 +44,7 @@ motusQuery = function (API, params = NULL, requestType="post", show=FALSE, json=
     curl = getCurlHandle()
     curlSetOpt(.opts=list(verbose=0, header=0, failonerror=0), curl=curl)
     # params is a named list of parameters which will be passed along in the JSON query
-    
+
     DATE = Sys.time()
     DAY = DATE %>% format("%Y%m%d%H%M%S")
 
@@ -61,12 +62,12 @@ motusQuery = function (API, params = NULL, requestType="post", show=FALSE, json=
             pword = motusSecrets$passwd
             ),
         params)
-    
+
     JSON = QUERY %>% toJSON (auto_unbox=TRUE)
 
     ## add ".0" to the end of any integer-valued floating point fields
     JSON = gsub(MOTUS_FLOAT_REGEXP, "\\1.0\\3", JSON, perl=TRUE)
-    
+
     if(show)
         cat(JSON, "\n")
 
@@ -93,7 +94,7 @@ motusListProjects = function(type="both", ...) {
                ), ...)
 }
 
-motusListSensors = function(projectID = NULL, year = NULL, serialNo=NULL, macAddress=NULL...) {
+motusListSensors = function(projectID = NULL, year = NULL, serialNo=NULL, macAddress=NULL, ...) {
     motusQuery(MOTUS_API_LIST_SENSORS, requestType="get",
                list(
                    projectID  = projectID,
@@ -112,14 +113,18 @@ motusListTags = function(projectID, year = NULL, mfgID = NULL, ...) {
                ), ...)
 }
 
-motusSearchTags = function(projectID = NULL, tsStart = NULL, tsEnd = NULL, regStart = NULL, regEnd = NULL, mfgID = NULL, ...) {
+motusSearchTags = function(projectID = NULL, tsStart = NULL, tsEnd = NULL, searchMode=c("startsBetween", "overlaps"), defaultLifespan=90, lifespanBuffer=1.5, regStart = NULL, regEnd = NULL, mfgID = NULL, ...) {
+    searchMode = match.arg(searchMode)
     motusQuery(MOTUS_API_SEARCH_TAGS, requestType="get",
                list(
                    projectID = projectID,
-                   tsStart   = FLOAT(tsStart),  ## NB: force these to look like reals, not integers
-                   tsEnd     = FLOAT(tsEnd),
-                   regStart  = FLOAT(regStart),
-                   regEnd    = FLOAT(regEnd),
+                   tsStart   = tsStart,  ## NB: force these to look like reals, not integers
+                   tsEnd     = tsEnd,
+                   searchMode = searchMode,
+                   defaultLifespan = defaultLifespan,
+                   lifespanBuffer = lifespanBuffer,
+                   regStart  = regStart,
+                   regEnd    = regEnd,
                    mfgID     = mfgID
                ), ...)
 }
@@ -147,25 +152,34 @@ motusRegisterTag = function(projectID,
                             ) {
     motusQuery(MOTUS_API_REGISTER_TAG, requestType="post",
                list(
-                   projectID    = projectID,                
-                   mfgID        = mfgID,                    
+                   projectID    = projectID,
+                   mfgID        = mfgID,
                    manufacturer = manufacturer,
                    type         = type,
                    codeSet      = codeSet,
-                   offsetFreq   = offsetFreq,               
-                   period       = period,                   
-                   periodSD     = periodSD,                 
-                   pulseLen     = pulseLen,                 
-                   param1       = param1,                   
-                   param2       = param2,                   
-                   param3       = param3,                   
-                   param4       = param4,                   
-                   param5       = param5,                   
+                   offsetFreq   = offsetFreq,
+                   period       = period,
+                   periodSD     = periodSD,
+                   pulseLen     = pulseLen,
+                   param1       = param1,
+                   param2       = param2,
+                   param3       = param3,
+                   param4       = param4,
+                   param5       = param5,
                    param6       = param6,
                    paramType    = paramType,
-                   ts           = ts,                       
-                   nomFreq      = nomFreq,                  
-                   dateBin      = dateBin                   
+                   ts           = ts,
+                   nomFreq      = nomFreq,
+                   dateBin      = dateBin
+               ), ...)
+}
+
+motusRegisterProject = function(projectName,
+                            ...
+                            ) {
+    motusQuery(MOTUS_API_REGISTER_PROJECT, requestType="post",
+               list(
+                   projectName  = projectName
                ), ...)
 }
 
@@ -183,3 +197,17 @@ proccessRawFiles = function(YEAR, PROJ, SITE) {
     # 4. generate batches to put into the motus transfer tables
 
 }
+
+exportAllTagsToMotusBatch = function(YEAR, PROJ, SITE) {
+    ## For a site's alltags.rds file, export all detections in the form
+    ## of batches in the format of the motus mysql database
+    ## This is a stop-gap, to move data along to motus, but
+    ## eventually we will be querying motus for the appropriate set
+    ## of tags to look for.
+
+    ## Each (depID, bootnum) pair for a site will yield a separate batch,
+    ## which mimics how the tagfinder works.
+
+    ## The new batchID to be used will 
+}
+

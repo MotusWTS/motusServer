@@ -9,20 +9,32 @@
 --  possibly without intervening reboots of the receiver.
 
 CREATE TABLE batches (
-    ID INT PRIMARY KEY UNIQUE NOT NULL, -- unique identifier for this batch
-    motusRecvID INT NOT NULL,           -- ID for the receiver; foreign key to Motus DB table
-    batchType VARCHAR(8) NOT NULL,      -- type of batch "hits", "gps", or "params"
-    bootNum INT,                        -- boot number for this receiver;  (NULL okay; e.g. Lotek)
-    tsBegin FLOAT(53) NOT NULL,         -- timestamp for start of period covered by batch;
-                                        -- unix-style: seconds since 1 Jan 1970 GMT
-    tsEnd FLOAT(53) NOT NULL,           -- timestamp for start of period covered by batch;
-                                        -- unix-style: seconds since 1 Jan 1970 GMT
-    numRec INT,                         -- count of records in this batch
-    ts FLOAT(53) NOT NULL,              -- timestamp when this batch record was added; unix-style:
-                                        -- seconds since 1 Jan 1970 GMT
-    tsMotus FLOAT(53)                   -- timestamp when this record transferred to motus;
-                                        -- unix-style: seconds since 1 Jan 1970 GMT; NULL means not
-                                        -- transferred
+    ID INT PRIMARY KEY UNIQUE NOT NULL,                      -- unique identifier for this batch
+    motusRecvID INT NOT NULL,                                -- ID for the receiver; foreign key to
+                                                             -- Motus DB table
+    batchType VARCHAR(8) NOT NULL,                           -- type of batch "hits", "gps", or
+                                                             -- "params"
+    bootNum INT,                                             -- boot number for this receiver; (NULL
+                                                             -- okay; e.g. Lotek)
+    tsBegin FLOAT(53) NOT NULL,                              -- timestamp for start of period
+                                                             -- covered by batch; unix-style:
+                                                             -- seconds since 1 Jan 1970 GMT
+    tsEnd FLOAT(53) NOT NULL,                                -- timestamp for start of period
+                                                             -- covered by batch; unix-style:
+                                                             -- seconds since 1 Jan 1970 GMT
+    numRec INT,                                              -- count of records in this batch
+    ts FLOAT(53) NOT NULL,                                   -- timestamp when this batch record was
+                                                             -- added; unix-style: seconds since 1
+                                                             -- Jan 1970 GMT
+    swInfoSet INT NOT NULL REFERENCES batchSWInfoSet (ID),   -- software versions used to generate
+                                                             -- this batch
+    swParamSet INT NOT NULL REFERENCES batchSWParamSet (ID), -- parameter set for software used to
+                                                             -- generate this batch
+    tsMotus FLOAT(53)                                        -- timestamp when this record
+                                                             -- transferred to motus; unix-style:
+                                                             -- seconds since 1 Jan 1970 GMT; NULL
+                                                             -- means not transferred
+
 );
 
 --  TABLE batchRunInfo
@@ -31,15 +43,16 @@ CREATE TABLE batches (
 
 CREATE TABLE batchRunInfo (
     batchID INT NOT NULL REFERENCES batches, -- unique identifier of batch for this run
-    runID INT NOT NULL,                      -- identifier of run within batch; this ID might be shared
-                                             -- between different batches, if a run is split across
-                                             -- multiple batches.  But it is unique for a given 
-                                             -- (motusRecvID, bootNum).
-    motusTagID INT NOT NULL,                 -- ID for the tag detected; foreign key to Motus DB table
+    runID INT NOT NULL,                      -- identifier of run within batch; this ID might be
+                                             -- shared between different batches, if a run is split
+                                             -- across multiple batches.  But it is unique for a
+                                             -- given (motusRecvID, bootNum).
+    motusTagID INT NOT NULL,                 -- ID for the tag detected; foreign key to Motus DB
+                                             -- table
     len INT,                                 -- length of run within batch
     tsMotus FLOAT(53),                       -- timestamp when this record transferred to motus;
-                                             -- unix-style: seconds since 1 Jan 1970 GMT; NULL means not
-                                             -- transferred
+                                             -- unix-style: seconds since 1 Jan 1970 GMT; NULL means
+                                             -- not transferred
     PRIMARY KEY (batchID, runID)             -- only one length per (runID,batchID)
 );
 
@@ -138,42 +151,49 @@ CREATE TABLE params (
     PRIMARY KEY (batchID, ID)                                                                                                                     
 );
 
---  TABLE batchSWInfo
+--  TABLE batchSWInfoSet
 --
---  maintains information about the versions of software used to generate a batch
---  of detections.
+--  maintains information about the versions of software used to generate a batch.
+--  Typically, large numbers of batches will be run with the same versions of the
+--  software, so we organize software version records into infoSets, and associate
+--  one of those with each batch.
 --
 
-CREATE TABLE batchSWInfo (
-    batchID INT NOT NULL REFERENCES batches, -- unique identifier of batch for this run
-    progName VARCHAR(16) NOT NULL,           -- identifier of program; e.g. "find_tags", "lotek-plugins.so"
-    progVersion CHAR(40) NOT NULL,           -- GIT commit hash for version of code used
+CREATE TABLE batchSWInfoSet (
+    ID INT NOT NULL,                         -- identifier of a set of software versions
+    progName VARCHAR(16) NOT NULL,           -- identifier of program; e.g. "find_tags",
+                                             -- "lotek-plugins.so"
+    progVersion CHAR(40) NOT NULL,           -- git commit hash for version of code used
     progBuildTS FLOAT(53) NOT NULL,          -- timestamp of binary for this program; unix-style:
                                              -- seconds since 1 Jan 1970 GMT; NULL means not
                                              -- transferred
     tsMotus FLOAT(53),                       -- timestamp when this record transferred to motus;
-                                             -- unix-style: seconds since 1 Jan 1970 GMT; NULL means not
-                                             -- transferred
-    PRIMARY KEY (batchID, progName)          -- only one version of a given program per batch
+                                             -- unix-style: seconds since 1 Jan 1970 GMT; NULL means
+                                             -- not transferred
+    PRIMARY KEY (ID, progName)               -- only one version of a given program per infoSet
 );
 
 
---  TABLE batchSWParams
+--  TABLE batchSWParamSet
 --
---  maintains information about the parameter values used by programs
---  in a batch run.
+--  maintains information about the parameter values used by programs in a batch run.  Typically,
+--  large numbers of batches will be run with the same values of the parameters, so we organize
+--  parameter value records into paramSets, and associate one of those with each batch.
 --
 
-CREATE TABLE batchSWParams (
-    batchID INT NOT NULL REFERENCES batches, -- unique identifier of batch for this run
-    progName VARCHAR(16) NOT NULL,           -- identifier of program; e.g. "find_tags", "lotek-plugins.so"
+CREATE TABLE batchSWParamSet (
+    ID INT NOT NULL,                         -- identifier of a set of parameters
+    progName VARCHAR(16) NOT NULL,           -- identifier of program; e.g. "find_tags",
+                                             -- "lotek-plugins.so"
     parName varchar(16) NOT NULL,            -- name of parameter (e.g. "--minFreq")
     parVal FLOAT(53) NOT NULL,               -- value of parameter
     tsMotus FLOAT(53),                       -- timestamp when this record transferred to motus;
-                                             -- unix-style: seconds since 1 Jan 1970 GMT; NULL means not
-                                             -- transferred
-    PRIMARY KEY (batchID, progName, parName) -- only one value of a given parameter per program per batch
+                                             -- unix-style: seconds since 1 Jan 1970 GMT; NULL means
+                                             -- not transferred
+    PRIMARY KEY (ID, progName, parName)      -- only one value of a given parameter per program per
+                                             -- param set
 );
+
 
 --  TABLE paramInfo
 -- 
