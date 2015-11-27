@@ -1,0 +1,12 @@
+export (
+    openMotusDB,
+    motusListProjects,
+    motusListSensors,
+    motusListTags,
+    motusRegisterProject,
+    motusRegisterTag,
+    motusRegisterProject,
+    motusSearchTags,
+    runSGBatch
+    )
+
