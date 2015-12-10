@@ -49,11 +49,14 @@
 #' @param elev [optional] Elevation above sea level (meters) of the
 #'     deployment site. E.g. 23.
 #'
+#' @param comments [optional] can be plain text, or a JSON-formatted string
+#'     giving additional parameters
+#' 
 #' @param ts [optional] Time at which deployment information
 #'     was generated.  Defaults to time at which function is called.
 #'
 #' @note All timestamps must be in the form returned by \code{Sys.time()}
-#' and by the \code{ymd(), ymd_hms(),..} functions from the \code[lubridate}
+#' and by the \code{ymd(), ymd_hms(),..} functions from the \code{lubridate}
 #' package.  i.e. they are numbers representing seconds elapsed since the start of
 #' 1 Jan. 1970, GMT.
 #'
@@ -72,6 +75,7 @@ motusDeployTag =
              lat = NA,
              lon = NA,
              elev = NA,
+             comments = NULL,
              ts = Sys.time()
              ) {
         

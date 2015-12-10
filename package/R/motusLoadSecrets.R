@@ -2,7 +2,7 @@
 #'
 #' @param f filename: path to json-formatted file of secrets,
 #' with these items:
-#' \enum{
+#' \enumerate{
 #'   \item key: API key; a secret
 #'   \item user: username at motus-wts.org
 #'   \item passwd: password at motus-wts.org
@@ -14,7 +14,7 @@
 #' 
 #' @return TRUE if secrets were successfully loaded.
 #' 
-#' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm
+#' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 motusLoadSecrets = function(f, quiet=FALSE) {
     if (missing(f)) {

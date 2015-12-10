@@ -5,7 +5,7 @@
 #' they will be automatically read when the \code{motus} package is
 #' loaded.
 #' 
-#' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm
+#' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 motusSaveSecrets = function() {
     if (is.null(MOTUS_SECRETS))

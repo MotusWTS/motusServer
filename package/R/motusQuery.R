@@ -15,7 +15,7 @@
 #'     \code{TRUE}; otherwise it is an R list with named components,
 #'     extracted from the JSON return value.
 #'
-#' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm
+#' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 motusQuery = function (API, params = NULL, requestType="post", show=FALSE, json=FALSE) {
     curl = getCurlHandle()

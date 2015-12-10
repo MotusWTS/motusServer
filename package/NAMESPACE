@@ -1,12 +1,15 @@
 export (
     openMotusDB,
+    motusDeployTag,
     motusListProjects,
     motusListSensors,
+    motusListSpecies,
     motusListTags,
+    motusLoadSecrets,
     motusRegisterProject,
     motusRegisterTag,
     motusRegisterProject,
+    motusSaveSecrets,
     motusSearchTags,
     runSGBatch
     )
-
