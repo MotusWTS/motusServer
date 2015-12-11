@@ -1,0 +1,187 @@
+---
+title: "Registration of Paul Smith's Shorebird Tag Database with sensorgnome.org and motus-wts.org"
+author: "John Brzustowski"
+output: "pdf_document"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(comment="")
+```
+
+Working backward, here's what we need for a tag registration.
+
+ - projectID - this is the Motus internal project ID.  We look this up from the
+   "name" field in the spreadsheet, using a function from the motus package.
+
+First, read the list of projects from motus:
+
+```{r ref.label="functions"}
+```
+
+```{r}
+library(motus, quietly=TRUE)
+motusLoadSecrets("~/.secrets/motusSecrets.json")
+
+projs = motusListProjects()
+```
+
+Next, read the spreadsheet.  We copied the entire sheet and pasted as
+values into a new sheet, which was saved as a .CSV file.  We had tried
+to read the sheet using the `readxl::read_excel()` function, but this
+did not work well because in some columns (e.g. TrackerID), values
+were present as both numbers and as textual output of formulas.  The
+current version of `read_excel()` function doesn't handle a
+heterogenous column very well.
+
+```{r}
+x = read.csv("paul_smith_shorebird_tag_metadata_noformatting.csv", as.is=TRUE)
+x = as.tbl(x)
+x
+
+
+```
+
+Make some changes we'll need later:
+```{r}
+x = x %>%
+    mutate(
+        ## fix burst intervals
+        Burst = Burst %>%
+            ## drop tildes: e.g.change ~6 to 6
+            sub("^~", "", .) %>%
+            ## change ranges to integer portion of 2nd value
+            ## e.g. 5.9 / 6.1 -> 6
+            sub("([0-9]+\\.[0-9]+) / (([0-9]+)\\.[0-9]+)", "\\3", perl=TRUE, .) %>%
+            as.numeric,
+        iBurst = round(Burst),
+        ## add a rowID
+        rowID = 1:nrow(x)
+    )
+             
+```
+
+Match names in the spreadsheet to motus projects, using a simple gui:
+
+```{r warning=FALSE}
+
+pmapFile = "projectMap.rds"
+if (file.exists(pmapFile)) {
+    pmap = readRDS(pmapFile)
+} else {
+    pmap = gmatch("Match Spreadsheet Names with Motus Projects",
+                  "Spreadsheet Name",
+                  unique(x$name),
+                  "Motus Project",
+                  paste(projs$id, projs$name))
+    if (! is.null(pmap)) {
+        ## extract motusID
+        names(pmap)=c("spreadsheetName", "motusProject")
+        pmap$motusID = as.numeric(sub(" .*", "", pmap$r))
+        saveRDS(pmap, "projecMap.rds")
+    }
+}
+
+```
+
+This leads to the following correspondence
+
+```{r, echo=FALSE}
+pmap = as.tbl(pmap)
+pmap
+## make a lookup table
+motusID = structure(as.list(pmap$motusID), names = pmap$spreadsheetName)
+```
+
+Now get the full tag databases from sensorgnome.org for 2012-2015
+
+```{r, cache=TRUE}
+sg = rbind(
+    cbind( year=2012, read.csv("2012_tags.csv", as.is=TRUE)),
+    cbind( year=2013, read.csv("2013_tags.csv", as.is=TRUE)),
+    ## drop two extra columns from recent tag DBs
+    cbind( year=2014, read.csv("2014_tags.csv", as.is=TRUE)[, 1:15]),
+    cbind( year=2015, read.csv("2015_tags.csv", as.is=TRUE)[, 1:15])
+) %>% as.tbl
+
+sg
+```
+
+and the list of tags registered with motus:
+
+```{r, cache=TRUE}
+motus = as.tbl(motusSearchTags())
+
+## make some changes we'll need later
+
+motus = motus %>%
+    mutate(
+        ## numeric form of ID
+        id = as.numeric(motus$mfgID),
+        ## rounded ID, since we match by burst interval
+        iid = round(id),
+        ## give timestamps a useful class
+        tsSG     = TS(tsSG),
+        tsStart  = TS(tsStart),
+        tsEnd    = TS(tsEnd),
+        ## registration year
+        year     = year(tsSG),
+        ## burst interval rounded to integer
+        iPeriod = round(period)
+    )
+
+motus
+```
+
+### A. Tags Already Registered With Motus
+
+A number of tags have already been registered with motus.  Which ones?
+Assign status to tags in spreadsheet:
+
+ * exists: a tag with the given integer BI and ID # is in the motus DB
+ * unique: only one tag with the given integer BI and ID # is in the motus DB
+ * found: tag has a unique match in the motus registry, under the
+   correct project
+ * multi: tag has multiple matches in the motus registry, under the
+   correct project
+ * wrong: 
+ * lost:  tags in the spreadsheet with no matches in the motus registry
+   at all
+ 
+Work project by project.
+
+```{r}
+found = multi = lost = NULL
+
+for (p in pmap$spreadsheetName) {
+    ##p = pmap$spreadsheetName[1]
+    mid = motusID[[p]]
+    tMotus = motus %>% filter(projectID==mid)
+    tX = x %>% filter(name == p)
+    
+    ## join spreadsheet and motus values by ID, burst interval, and year
+    ## Note: we're matching on integer tag IDs (`iid`, not `id`) because
+    ## the burst interval is being matched separately.
+
+    hit = tX %>% inner_join(tMotus, by=c(TrackerID="iid", Yr="year", iBurst="iPeriod"))
+    
+    ## find spreadsheet rows matching multiple registered tags
+    dup = hit$rowID %in% hit$rowID[duplicated(hit$rowID)]
+    
+    found = found %>% rbind( hit %>% filter(! dup))
+    multi = multi %>% rbind( hit %>% filter(  dup))
+    lost  = lost  %>% rbind( tX  %>% filter(! rowID %in% hit$rowID))
+}
+
+found
+multi
+lost
+
+
+
+```
+
+\newpage
+
+```{r, child=c("appendix1.Rmd","appendix2.Rmd","appendix3.Rmd", "functions.Rmd")}
+```
+

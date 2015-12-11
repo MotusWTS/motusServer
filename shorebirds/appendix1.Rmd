@@ -1,0 +1,81 @@
+### Appendix 1:  Tag Registration Fields
+
+The fields required for a motus tag registration record are:
+
+projectID
+:   integer scalar; motus internal project ID
+
+mfgID
+:   character scalar; typically a small integer; return only records for
+    tags with this manufacturer ID (usually printed on the tag)
+
+type
+:   character scalar; tag type; "ID" or "beeper"
+
+codeSet
+:   character scalar; manufacturer's codeset label, when `type` is
+    "ID"
+
+offsetFreq
+:   numeric scalar; offset of tag frequency from
+    nominal, in kHz
+
+period
+:   numeric scalar; repeat interval of tag transmission,
+    in seconds.
+
+periodSD
+:   numeric scalar; standard deviation of period
+
+pulseLen
+:   numeric scalar; length of pulses emitted by tag,
+    in milliseconds
+
+param1
+:   numeric scalar; first measured tag parameter; for
+    Lotek coded ID, this is the first interpulse gap
+
+param2
+:   numeric scalar; second measured tag parameter; for
+    Lotek coded ID, this is the second interpulse gap
+
+param3
+:   numeric scalar; third measured tag parameter; for
+    Lotek coded ID, this is the third interpulse gap
+
+param4
+:   numeric scalar; fourth measured tag parameter; for
+    Lotek coded ID, this is the standard deviation of the first
+    interpulse gap
+
+param5
+:   numeric scalar; fifth measured tag parameter; for
+    Lotek coded ID, this is the standard deviation of the second
+    interpulse gap
+
+param6
+:   numeric scalar; sixth measured tag parameter; for
+    Lotek coded ID, this is the standard deviation of the third
+    interpulse gap
+
+paramType
+:   integer scalar; indicates the type of parameters
+    supplied for this tag; should be a foreign key to a table with
+    parameter type info.
+
+ts
+:   numeric scalar; registration timestamp; typically
+    Sys.time(), but for the time at which the registration was
+    actually made, not just when the API was called.
+
+nomFreq
+:   numeric scalar; nominal tag carrier frequency, in MHz
+
+dateBin
+:   character scalar; quick and dirty approach to
+    keeping track of tags likely to be active at a given time; this
+    records "YYYY-Q" where Q is 1, 2, 3, or 4.  Represents the
+    approximate quarter during which the tag is expected to be
+    active.  Used in lieu of deployment information when that is
+    not (yet) available.
+
