@@ -6,12 +6,6 @@
 #'
 #' @param mfgID: character scalar; typically a small integer.
 #'
-#' @param macAddress: character; 12 hex digits in lower case; MAC
-#'     address of 1st ethernet adapter on sensor; used to distinguish
-#'     between sensors with the same serialNo value (e.g. beaglebone
-#'     blacks made by CircuitCo and Element14 can have the same serial
-#'     number, but their MAC addresses are unique)
-#'
 #' @param ...: additional parameters to motusQuery()
 #'
 #' @return the list of motus tags registered in the given year to the
