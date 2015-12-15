@@ -7,12 +7,14 @@ output: "pdf_document"
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(comment="")
 ```
+### Summary
+Paul Smith has assembled a spreadsheet giving metadata for deployments of coded ID tags
+on North American shorebirds from 2012 to 2015.  This document records how this spreadsheet
+was reconciled with existing tag registrations at sensorgnome.org and motus-wts.org
+As much as possible, the steps here were coded as functions in the _motus_ R package,
+so that other projects could more easily get their tag metadata into motus-wts.org
 
-Working backward, here's what we need for a tag registration.
-
- - projectID - this is the Motus internal project ID.  We look this up from the
-   "name" field in the spreadsheet, using a function from the motus package.
-
+### Preliminaries
 First, read the list of projects from motus:
 
 ```{r ref.label="functions"}
@@ -42,7 +44,7 @@ x
 ```
 
 Make some changes we'll need later:
-```{r}
+```{r warning=FALSE}
 x = x %>%
     mutate(
         ## fix burst intervals
@@ -52,10 +54,7 @@ x = x %>%
             ## change ranges to integer portion of 2nd value
             ## e.g. 5.9 / 6.1 -> 6
             sub("([0-9]+\\.[0-9]+) / (([0-9]+)\\.[0-9]+)", "\\3", perl=TRUE, .) %>%
-            as.numeric,
-        iBurst = round(Burst),
-        ## add a rowID
-        rowID = 1:nrow(x)
+            as.numeric
     )
              
 ```
@@ -74,13 +73,15 @@ if (file.exists(pmapFile)) {
                   "Motus Project",
                   paste(projs$id, projs$name))
     if (! is.null(pmap)) {
-        ## extract motusID
+        ## extract projID
         names(pmap)=c("spreadsheetName", "motusProject")
         pmap$motusID = as.numeric(sub(" .*", "", pmap$r))
         saveRDS(pmap, "projecMap.rds")
     }
 }
-
+## inverse project map, from motusID to spreadsheetname
+pmapi = character()
+pmapi[pmap$motusID] = pmap$spreadsheetName
 ```
 
 This leads to the following correspondence
@@ -89,7 +90,7 @@ This leads to the following correspondence
 pmap = as.tbl(pmap)
 pmap
 ## make a lookup table
-motusID = structure(as.list(pmap$motusID), names = pmap$spreadsheetName)
+projID = structure(as.list(pmap$motusID), names = pmap$spreadsheetName)
 ```
 
 Now get the full tag databases from sensorgnome.org for 2012-2015
@@ -106,80 +107,221 @@ sg = rbind(
 sg
 ```
 
-and the list of tags registered with motus:
-
-```{r, cache=TRUE}
-motus = as.tbl(motusSearchTags())
-
-## make some changes we'll need later
-
-motus = motus %>%
-    mutate(
-        ## numeric form of ID
-        id = as.numeric(motus$mfgID),
-        ## rounded ID, since we match by burst interval
-        iid = round(id),
-        ## give timestamps a useful class
-        tsSG     = TS(tsSG),
-        tsStart  = TS(tsStart),
-        tsEnd    = TS(tsEnd),
-        ## registration year
-        year     = year(tsSG),
-        ## burst interval rounded to integer
-        iPeriod = round(period)
-    )
-
-motus
-```
-
-### A. Tags Already Registered With Motus
+## A. Tags Already Registered With Motus
 
 A number of tags have already been registered with motus.  Which ones?
-Assign status to tags in spreadsheet:
-
- * exists: a tag with the given integer BI and ID # is in the motus DB
- * unique: only one tag with the given integer BI and ID # is in the motus DB
- * found: tag has a unique match in the motus registry, under the
-   correct project
- * multi: tag has multiple matches in the motus registry, under the
-   correct project
- * wrong: 
- * lost:  tags in the spreadsheet with no matches in the motus registry
-   at all
  
 Work project by project.
 
-```{r}
-found = multi = lost = NULL
+```{r, cached=TRUE, warning=FALSE}
+found = multi = collide = lost = NULL
+
+## sets of motus-registered tags
+motus = NULL
 
 for (p in pmap$spreadsheetName) {
-    ##p = pmap$spreadsheetName[1]
-    mid = motusID[[p]]
-    tMotus = motus %>% filter(projectID==mid)
-    tX = x %>% filter(name == p)
+    ## lookup the motus projectID
+    pid = projID[[p]]
     
-    ## join spreadsheet and motus values by ID, burst interval, and year
-    ## Note: we're matching on integer tag IDs (`iid`, not `id`) because
-    ## the burst interval is being matched separately.
+    ## get tags registered for this project with motus
+    motusp = getProjectTags(pid)
 
-    hit = tX %>% inner_join(tMotus, by=c(TrackerID="iid", Yr="year", iBurst="iPeriod"))
+    ## look just at spreadsheet tags for this project
+    xp = x %>% filter(name == p)
+
+    ## match spreadsheet tags to motus tags
+    m = matchTags(xp, motusp, "TrackerID", "Burst", "Yr")
+
+    found = found %>% rbind( m$unique )
+    multi = multi %>% rbind( m$multi )
+    collide = collide %>% rbind (m$collide)
+    lost  = lost  %>% rbind( m$none )
     
-    ## find spreadsheet rows matching multiple registered tags
-    dup = hit$rowID %in% hit$rowID[duplicated(hit$rowID)]
-    
-    found = found %>% rbind( hit %>% filter(! dup))
-    multi = multi %>% rbind( hit %>% filter(  dup))
-    lost  = lost  %>% rbind( tX  %>% filter(! rowID %in% hit$rowID))
+    ## add motus tags from this project to full set
+    motus = motus %>% rbind (motusp)
 }
 
-found
-multi
-lost
+```
+### Results of Initial Matching
 
+Out of `r nrow(x)` tags,
 
+ * `r nrow(found) %or% 'none'` had unique matches in the motus registry
+ * `r (nrow(multi) - sum(duplicated(multi[, 1:ncol(x)])))  %or% 'none'` had multiple matches; i.e. matched to more than one tag in the motus database.
+ * `r nrow(collide) %or% 'none'` collided; i.e. matched to the same
+ motus tag as at least one other user tag.  These will be saved in
+ `2015_paul_smith_shorebird_tag_collisions.rds`. We need to determine
+ which of these are typos, and which are true re-deployments of
+ tags. **[Sjoerd]**
+ * `r nrow(lost) %or% 'none'` had no matches; for these, the distribution across name and year is:
+
+```{r}
+table(lost$name, lost$Yr)
+saveRDS(collide, "2015_paul_smith_shorebird_tag_collisions.rds")
+
+```
+### Look for registrations to 'wrong' project
+
+First, remove the unique matches and collision from the motus set
+```{r}
+used = c(found$tagID, collide$tagID)
+motus = motus %>% subset(! tagID %in% used)
+```
+Next, look for 'lost' tags across all projects in the corresponding year.
+
+```{r}
+m2 = matchTags(lost, motus, "TrackerID", "Burst", "Yr")
+remap = m2$unique %>% mutate(newProjectID = unlist(projID[name]))
+lost = m2$none
+```
+This leads to a total of `r nrow(m2$unique)` tags which need to be reassigned
+between projects, by year:
+```{r}
+table(remap$name,pmapi[remap$projectID], remap$Yr, dnn=c("New Name", "Original Name", "Year"))
+## save the remap set, if not already generated on a previous run
+reassignFile = "2015_paul_smith_shorebird_tag_reassign_projects.rds"
+if (! file.exists(reassignFile))
+    saveRDS(remap, reassignFile)
+```
+There are still `r nrow(lost)` tags not matched:
+```{r}
+table(lost$name, lost$Yr)
+```
+
+### Friis tags 2015
+
+These tags are not found:
+
+```{r}
+pid = projID[["Christian Friis"]]
+
+cf = lost %>% filter( name=="Christian Friis") %>% arrange(Yr, TrackerID)
+cf %>% select(Yr, TrackerID, Burst)
 
 ```
 
+#### Friis: Tag 172
+```{r, cached=TRUE}
+## only run once
+
+if (172 %in% as.numeric(cf$mfgID)) {
+    ## Tag 172 from 2015 was a twin of that from project Selva, so dropped.
+    ## Read its parameters from the database of James Bay project tags
+    tmp = read.csv("/disco/SG/contrib/2015/JamesBay/2015_JamesBay_tag_database.csv", as.is=TRUE) %>%
+        subset(id == 172)
+
+    regts = ymd("2015-05-30")
+
+    with(tmp, 
+         motusRegisterTag(
+             projectID = pid,
+             mfgID = "172",
+             manufacturer = "Lotek",
+             type = "ID",
+             codeSet = "Lotek-4",
+             offsetFreq = dfreq + (fcdFreq - tagFreq) * 1000,
+             period = bi,
+             periodSD = bi.sd,
+             pulseLen = 2.5,
+             param1 = g1,
+             param2 = g2,
+             param3 = g3,
+             param4 = g1.sd,
+             param5 = g2.sd,
+             param6 = g3.sd,
+             paramType = 1,
+             ts = as.numeric(regts),
+             nomFreq = tagFreq,
+             dateBin = sprintf("%4d-%1d", year(regts), ceiling(month(regts)/3)),
+             show = TRUE
+         ))
+}
+
+```
+
+#### Friis:  Tags 376-379
+These were registered, but the burst interval is ~9.7 s, not ~5.9s
+as reported in the spreadsheet.
+
+```{r, cached=TRUE}
+bindUserMotus = function(u, m) {
+    ## bind rows of user tags to motus tags, respectively
+    if (nrow(u) != nrow(m))
+        stop("need same number of rows in both parameters")
+    ## lookup specified user rows in table of missing rows
+    src = which(duplicated(rbind(u, lost))) - nrow(u)
+    if (length(src) != nrow(u) | any(src < 1 | src > nrow(lost)))
+        stop("specified user rows do not come from table 'lost'")
+    r = cbind(u, m)
+    names(r)[names(r)=="comment"] = c("comment.x", "comment.y")
+    found <<- found %>% bind_rows(r)
+    lost <<- lost[- src,]
+}
+
+biFixId = 376:379
+
+
+bindUserMotus(
+    cf %>% filter(as.integer(TrackerID) %in% biFixId) %>% arrange(TrackerID),
+    subset(motus,
+           projectID==projID["Christian Friis"] &
+           as.integer(mfgID) %in% (376:379)
+           ) %>% arrange(mfgID)
+)
+
+```
+
+The remaining 3 Friis tags, #226, 301, and 338 from 2014 with BI ~6s
+have not been registered with sg or motus.
+
+```{r}
+needReg = subset(cf, as.integer(TrackerID) %in% c(226, 301, 338))
+```
+                 
+### Larry Niles, 2015
+
+These tags are not found:
+
+```{r}
+pid = projID[["Larry Niles"]]
+
+cf = lost %>% filter( name=="Larry Niles") %>% arrange(Yr, TrackerID)
+cf %>% select(Yr, TrackerID, Burst)
+
+```
+But tags 244...261 and 511 are registered to Niles 2015 with BI ~6.1, and these
+are otherwise unmatched, so the BI in the spreadsheet must be incorrect.
+
+**[Sjoerd]**
+
+
+
+```{r}
+
+## for (p in unique(lost$name)) {
+##     ## lookup the motus projectID
+##     pid = projID[[p]]
+    
+##     ## look just at spreadsheet tags for this project
+##     lostp = lost %>% filter(name == p)
+
+##     ## bump the year back
+##     lostp = lostp %>% mutate (Yr = Yr - 1)
+    
+##     ## match spreadsheet tags to motus tags
+##     m = matchTags(lostp, motus[[p]], "TrackerID", "Burst", "Yr")
+
+##     found = found %>% rbind( m$unique )
+##     multi = multi %>% rbind( m$multi )
+
+##     ## reduce the size of the lost set, if possible
+##     ## i.e. remove those from this project, then add in
+##     ## any still not matched
+##     lost  = lost %>% filter(! name == p)  %>% rbind( m$none )
+## }
+
+
+```
 \newpage
 
 ```{r, child=c("appendix1.Rmd","appendix2.Rmd","appendix3.Rmd", "functions.Rmd")}

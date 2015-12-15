@@ -1,6 +1,6 @@
 export (
     getProjectTags,
-    openMotusDB,
+    matchTags,
     motusDeployTag,
     motusListProjects,
     motusListSensors,
@@ -12,5 +12,7 @@ export (
     motusRegisterProject,
     motusSaveSecrets,
     motusSearchTags,
-    runSGBatch
+    openMotusDB,
+    runSGBatch,
+    "%or%"
     )

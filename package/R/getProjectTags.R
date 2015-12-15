@@ -1,4 +1,4 @@
-#' return all registered tags for a project
+#' return the tags registered for a project with motus
 #'
 #' The tags are returned as a tbl_df, with some columns given
 #' class attributes, and others added for convenience.
@@ -24,20 +24,16 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 getProjectTags = function(projectID) {
-    motusSearchTags(projectID = projectID) %>%
-        as.tbl %>%
-        mutate(
-            ## numeric form of ID
-            id = as.numeric(motus$mfgID),
-            ## rounded ID, since we will often match by burst interval
-            iid = round(id),
-            ## give timestamps a useful class
-            tsSG     = TS(tsSG),
-            tsStart  = TS(tsStart),
-            tsEnd    = TS(tsEnd),
-            ## registration year
-            year     = year(tsSG),
-            ## burst interval rounded to integer
-            iPeriod = round(period)
-        )
+    rv = motusSearchTags(projectID = projectID)
+    if (! is.null(rv)) {
+        rv = rv %>% as.tbl %>%
+            mutate(
+                ## give timestamps a useful class
+                tsSG     = TS(tsSG),
+                tsStart  = TS(tsStart),
+                tsEnd    = TS(tsEnd)
+            )
+    }
+    return(rv)
 }
+
