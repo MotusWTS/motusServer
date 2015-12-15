@@ -1,6 +1,7 @@
 ---
-title: "Registration of Paul Smith's Shorebird Tag Database with sensorgnome.org and motus-wts.org"
+title: "Work Log: Registration of Paul Smith's Shorebird Tag Database with sensorgnome.org and motus-wts.org"
 author: "John Brzustowski"
+date: "December, 2015"
 output:
    pdf_document :
        toc: true
@@ -10,14 +11,18 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(comment="")
 ```
-### Summary
-Paul Smith has assembled a spreadsheet giving metadata for deployments of coded ID tags
-on North American shorebirds from 2012 to 2015.  This document records how this spreadsheet
-was reconciled with existing tag registrations at sensorgnome.org and motus-wts.org
-As much as possible, the steps here were coded as functions in the _motus_ R package,
-so that other projects could more easily get their tag metadata into motus-wts.org
+# Summary
 
-### Preliminaries
+Paul Smith has assembled a spreadsheet giving metadata for deployments
+of coded ID tags on North American shorebirds from 2012 to 2015.  This
+document records how this spreadsheet was reconciled with existing tag
+registrations at sensorgnome.org and motus-wts.org.  As much as
+possible, the steps here were coded as functions in the _motus_ R
+package, so that other projects could more easily get their tag
+metadata into motus-wts.org
+
+# Preliminaries
+
 First, read the list of projects from motus:
 
 ```{r ref.label="functions"}
@@ -79,7 +84,7 @@ if (file.exists(pmapFile)) {
         ## extract projID
         names(pmap)=c("spreadsheetName", "motusProject")
         pmap$motusID = as.numeric(sub(" .*", "", pmap$r))
-        saveRDS(pmap, "projecMap.rds")
+        saveRDS(pmap, "projectMap.rds")
     }
 }
 ## inverse project map, from motusID to spreadsheetname
@@ -94,6 +99,10 @@ pmap = as.tbl(pmap)
 pmap
 ## make a lookup table
 projID = structure(as.list(pmap$motusID), names = pmap$spreadsheetName)
+## add some entries explicitly
+projID[["Kate Obrien"]] = 25
+projID[["EBM Coats"]] = 66
+
 ```
 
 Now get the full tag databases from sensorgnome.org for 2012-2015
@@ -110,7 +119,7 @@ sg = rbind(
 sg
 ```
 
-## Tags Already Registered With Motus
+# Tags Already Registered With Motus
 
 A number of tags have already been registered with motus.  Which ones?
  
@@ -145,7 +154,7 @@ for (p in pmap$spreadsheetName) {
 }
 
 ```
-### Results of Initial Matching
+## Results of Initial Matching
 
 Out of `r nrow(x)` tags,
 
@@ -163,7 +172,7 @@ table(lost$name, lost$Yr)
 saveRDS(collide, "2015_paul_smith_shorebird_tag_collisions.rds")
 
 ```
-### Registrations to 'wrong' project
+## Registrations to 'wrong' project
 
 We look for registrations of tags to the wrong project.
 First, remove the unique matches and collision from the motus set
@@ -171,10 +180,12 @@ First, remove the unique matches and collision from the motus set
 used = c(found$tagID, collide$tagID)
 motus = motus %>% subset(! tagID %in% used)
 ```
-Now, get additional registration from project "Coates":
+Now, get additional registration from projects "EBM Coats" and "Obrien":
 
 ```{r}
-motus = motus %>% bind_rows(getProjectTags(66))
+motus = motus %>%
+    bind_rows(getProjectTags(projID[["EBM Coats"]])) %>%
+    bind_rows(getProjectTags(projID[["Kate Obrien"]]))
 ```
 
 Next, look for 'lost' tags across all projects in the corresponding year.
@@ -203,7 +214,7 @@ There are still `r nrow(lost)` tags not matched:
 table(lost$name, lost$Yr)
 ```
 
-### Christian Friis Tags 2015
+## Christian Friis Tags 2014-2015
 
 These tags are not found:
 
@@ -217,6 +228,9 @@ cf %>% select(Yr, TrackerID, Burst)
 ```
 
 #### Tag 172
+This tag was missing on the first run, but has since been registered.
+Here is the code used:
+
 ```{r, cached=TRUE}
 ## only run once
 
@@ -255,7 +269,7 @@ if (172 %in% as.numeric(cf$mfgID)) {
 
 ```
 
-#### Tags 376-379
+### Tags 376-379
 These were registered, but the burst interval is ~9.7 s, not ~5.9s
 as reported in the spreadsheet. **[Sjoerd]**
 
@@ -289,13 +303,52 @@ bindUserMotus(
 ```
 
 The remaining 3 Friis tags, #226, 301, and 338 from 2014 with BI ~6s
-have not been registered with sg or motus.
+have not been registered with sg or motus:
 
 ```{r}
 needReg = subset(cf, as.integer(TrackerID) %in% c(226, 301, 338))
+needReg %>% select(name, Yr, Month, Day, LocationID, TrackerID, Burst)
 ```
-                 
-### Larry Niles Tags 2015
+
+The deployment location matches the Piskwamish site.  226 shows up
+with a BI of 5.8983s there, but neither 301 nor 338 is present.
+Perhaps these two had mis-recorded ID numbers?  We register tag 226:
+
+```{r, cached=TRUE}
+    ## ## Read its parameters from the database of James Bay project tags
+    ## tmp = read.csv("/disco/SG/contrib/2015/JamesBay/2015_JamesBay_tag_database.csv", as.is=TRUE) %>%
+    ##     subset(id == 172)
+
+    ## regts = ymd("2015-05-30")
+
+    ## with(tmp, 
+    ##      motusRegisterTag(
+    ##          projectID = pid,
+    ##          mfgID = "172",
+    ##          manufacturer = "Lotek",
+    ##          type = "ID",
+    ##          codeSet = "Lotek-4",
+    ##          offsetFreq = dfreq + (fcdFreq - tagFreq) * 1000,
+    ##          period = bi,
+    ##          periodSD = bi.sd,
+    ##          pulseLen = 2.5,
+    ##          param1 = g1,
+    ##          param2 = g2,
+    ##          param3 = g3,
+    ##          param4 = g1.sd,
+    ##          param5 = g2.sd,
+    ##          param6 = g3.sd,
+    ##          paramType = 1,
+    ##          ts = as.numeric(regts),
+    ##          nomFreq = tagFreq,
+    ##          dateBin = sprintf("%4d-%1d", year(regts), ceiling(month(regts)/3)),
+    ##          show = TRUE
+    ##      ))
+##}
+
+```
+
+## Larry Niles Tags 2014 - 2015
 
 These tags are not found:
 
@@ -322,6 +375,12 @@ bindUserMotus(
     )
 
 ```
+These are still these unmatched:
+
+```{r}
+t = lost %>% filter( name==P) %>% arrange(Yr, TrackerID)
+t %>% select(Yr, TrackerID, Burst) %>% as.data.frame
+```
 
 There are still 2 unmatched Niles tags; these have unknown IDs:
 ```{r}
@@ -331,24 +390,20 @@ These might be among the `r sum(sg$proj=="Niles") - sum(found$name=="Larry Niles
 tags registered with sensorgnome to the Larry Niles project but for which
 no metadata were provided in Paul's spreadsheet.
 
-This leaves `r nrow(lost)` tags still not matched:
-
-```{r}
-table(lost$name, lost$Yr)
-```
-
-### Paul Smith 2015 Tags
+## Paul Smith 2015 Tags
 
 There is a single tag left with __invalid__ ID 545:
 
-`r lost %>% filter(name="Paul Smith") %>% as.data.frame`
+```{r}
+lost %>% filter(name=="Paul Smith") %>% as.data.frame
+```
 
 Perhaps it is either 454 or 445, both registered to motus project
-66 (EBM Coats), and not matched to any other tags in the spreadsheet.
+_EBM Coats_, and not matched to any other tags in the spreadsheet.
 **[Sjoerd]**
 
 
-### Rebecca Holberton / Lindsay Tudor 2015, 2014 Tags
+## Rebecca Holberton / Kate Obrien / Lindsay Tudor 2015, 2014 Tags
 
 These tags are still unmatched:
 
@@ -358,6 +413,41 @@ pid = projID[[P]]
 t = lost %>% filter(name==P & Yr %in% c("2014", "2015")) %>%
     arrange(Yr, TrackerID)
 t %>% select(Yr, TrackerID, Burst)
+```
+Tags 274, 275, and 276 apparently have the wrong Burst interval in the
+spreadsheet, which lists 10.2 instead of the 8.9 common to the rest of
+the tags in that set in the spreadsheet, and in Kate Obrien's registrations.
+
+We match these:
+```{r}
+
+fixBI = 274:276
+
+bindUserMotus(
+    t %>% filter(as.integer(TrackerID) %in% fixBI),
+    subset(motus, projectID == projID["Kate Obrien"] &
+                  as.integer(mfgID) %in% fixBI
+           ) %>% arrange(mfgID)
+    )
+
+```
+This leaves only a single tag for _Lindsay Tudor_ in 2014 or 2015, namely
+this one with no ID:
+
+```{r}
+lost %>% filter(name=="Lindsay Tudor" & Yr %in% c(2014,2015)) %>%
+    select(name, Yr, LocationID, TrackerID, Burst)
+```
+It should be possible to find this one with a full search of POPH site
+data.
+
+## Leftover Tags
+
+This leaves `r nrow(lost)` tags still not matched:
+
+```{r}
+table(lost$name, lost$Yr)
+```
 
 ```
 \newpage
