@@ -139,4 +139,14 @@ gmatch = function(title, lName, lItems, rName, rItems, initMatch=match(lItems,rI
 ##        "Numerals",
 ##        as.character(10:1), "Words", c("one", "two", "three", "four", "five", "10", "1"))
 
+getLotekTagSig = function(id, codeset="4") {
+    ## get the gap triplet for a given tag ID and codeset
+    ## only works from John B's computer
+    "ssh john@discovery /SG/code/getLotekTagSig.R %d %s" %>%
+        sprintf (id, codeset) %>%
+        system(intern=TRUE, ignore.stderr=TRUE) %>%
+        textConnection %>%
+        scan(sep=",", quiet=TRUE)
+}
+
 ```

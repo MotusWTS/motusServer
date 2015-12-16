@@ -8,8 +8,12 @@ output:
        toc_depth: 4
 ---
 
+```{r, child="functions.Rmd"}
+```
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(comment="")
+options(warn=0)
 ```
 # Summary
 
@@ -241,29 +245,31 @@ if (172 %in% as.numeric(cf$mfgID)) {
 
     regts = ymd("2015-05-30")
 
-    with(tmp, 
-         motusRegisterTag(
-             projectID = pid,
-             mfgID = "172",
-             manufacturer = "Lotek",
-             type = "ID",
-             codeSet = "Lotek-4",
-             offsetFreq = dfreq + (fcdFreq - tagFreq) * 1000,
-             period = bi,
-             periodSD = bi.sd,
-             pulseLen = 2.5,
-             param1 = g1,
-             param2 = g2,
-             param3 = g3,
-             param4 = g1.sd,
-             param5 = g2.sd,
-             param6 = g3.sd,
-             paramType = 1,
-             ts = as.numeric(regts),
-             nomFreq = tagFreq,
-             dateBin = sprintf("%4d-%1d", year(regts), ceiling(month(regts)/3)),
-             show = TRUE
-         ))
+    try({
+        with(tmp, 
+             motusRegisterTag(
+                 projectID = pid,
+                 mfgID = "172",
+                 manufacturer = "Lotek",
+                 type = "ID",
+                 codeSet = "Lotek-4",
+                 offsetFreq = dfreq + (fcdFreq - tagFreq) * 1000,
+                 period = bi,
+                 periodSD = bi.sd,
+                 pulseLen = 2.5,
+                 param1 = g1,
+                 param2 = g2,
+                 param3 = g3,
+                 param4 = g1.sd,
+                 param5 = g2.sd,
+                 param6 = g3.sd,
+                 paramType = 1,
+                 ts = as.numeric(regts),
+                 nomFreq = tagFreq,
+                 dateBin = sprintf("%4d-%1d", year(regts), ceiling(month(regts)/3)),
+                 show = TRUE
+             ))
+    })
 }
 
 ```
@@ -290,7 +296,6 @@ bindUserMotus = function(u, m) {
 
 biFixId = 376:379
 
-
 bindUserMotus(
     cf %>% filter(as.integer(TrackerID) %in% biFixId) %>% arrange(TrackerID),
     subset(motus,
@@ -314,37 +319,34 @@ with a BI of 5.8983s there, but neither 301 nor 338 is present.
 Perhaps these two had mis-recorded ID numbers?  We register tag 226:
 
 ```{r, cached=TRUE}
-    ## ## Read its parameters from the database of James Bay project tags
-    ## tmp = read.csv("/disco/SG/contrib/2015/JamesBay/2015_JamesBay_tag_database.csv", as.is=TRUE) %>%
-    ##     subset(id == 172)
+## Read its parameters from the Lotek master database on the server
+g = getLotekTagSig(226)
 
-    ## regts = ymd("2015-05-30")
+regts = ymd("2014-05-01")
 
-    ## with(tmp, 
-    ##      motusRegisterTag(
-    ##          projectID = pid,
-    ##          mfgID = "172",
-    ##          manufacturer = "Lotek",
-    ##          type = "ID",
-    ##          codeSet = "Lotek-4",
-    ##          offsetFreq = dfreq + (fcdFreq - tagFreq) * 1000,
-    ##          period = bi,
-    ##          periodSD = bi.sd,
-    ##          pulseLen = 2.5,
-    ##          param1 = g1,
-    ##          param2 = g2,
-    ##          param3 = g3,
-    ##          param4 = g1.sd,
-    ##          param5 = g2.sd,
-    ##          param6 = g3.sd,
-    ##          paramType = 1,
-    ##          ts = as.numeric(regts),
-    ##          nomFreq = tagFreq,
-    ##          dateBin = sprintf("%4d-%1d", year(regts), ceiling(month(regts)/3)),
-    ##          show = TRUE
-    ##      ))
-##}
-
+try({
+    motusRegisterTag(
+        projectID = projID[["Christian Friis"]],
+        mfgID = "226",
+        manufacturer = "Lotek",
+        type = "ID",
+        codeSet = "Lotek-4",
+        offsetFreq = 0,
+        period = 5.8983,
+        periodSD = 0,
+        pulseLen = 2.5,
+        param1 = g[1],
+        param2 = g[2],
+        param3 = g[3],
+        param4 = 0,
+        param5 = 0,
+        param6 = 0,
+        paramType = 1,
+        ts = as.numeric(regts),
+        nomFreq = 166.380,
+        dateBin = sprintf("%4d-%1d", year(regts), ceiling(month(regts)/3))
+    )
+})
 ```
 
 ## Larry Niles Tags 2014 - 2015
@@ -374,17 +376,47 @@ bindUserMotus(
     )
 
 ```
-These are still these unmatched:
+For 2014, these are still unmatched, due to lacking a Burst interval
+in the spreadsheet:
 
 ```{r}
-t = lost %>% filter( name==P) %>% arrange(Yr, TrackerID)
-t %>% select(Yr, TrackerID, Burst) %>% as.data.frame
+t = lost %>% filter( name==P & Yr==2014 ) %>% arrange(Yr, TrackerID)
+t %>% select(TrackerID, Month, Day) %>% as.data.frame
+
+```
+Among the unmatched motus-registered tags for that year and project, these
+have the same IDs:
+
+```{r}
+subset(motus, projectID==47 & grepl("2014", dateBin) & as.integer(mfgID) %in% as.integer(t$TrackerID))%>% select(mfgID,period) %>% as.data.frame
 ```
 
-There are still 2 unmatched Niles tags; these have unknown IDs:
+This shows all spreadsheet tags with unknown Burst can be matched to a unique
+motus-registered tag, except for IDs 146 and 147, for which there are two
+tags each, differing in BI.  We examined the detection database for 2014 and
+found that it was the tags with Burst = ~5.3s which were deployed in September;
+the other two were deployed in May.  So we match these tags:
+
 ```{r}
-subset(t, ! as.integer(TrackerID) %in% fixBI)
+
+bindUserMotus(
+    t,
+    subset(motus,
+           projectID==47 &
+           grepl("2014", dateBin) &
+           as.integer(mfgID) %in% as.integer(t$TrackerID) &
+           ! mfgID %in% c("146.0", "147.0"))
+    )
+
 ```
+
+For 2015, there are still 2 unmatched Niles tags; these have unknown IDs:
+
+```{r}
+t = lost %>% filter( name==P & Yr==2015 ) %>% arrange(Yr, TrackerID)
+t %>% subset(! as.integer(TrackerID) %in% fixBI)
+```
+
 These might be among the `r sum(sg$proj=="Niles") - sum(found$name=="Larry Niles")`
 tags registered with sensorgnome to the Larry Niles project but for which
 no metadata were provided in Paul's spreadsheet.
@@ -401,6 +433,71 @@ Perhaps it is either 454 or 445, both registered to motus project
 _EBM Coats_, and not matched to any other tags in the spreadsheet.
 **[Sjoerd]**
 
+## Erica Nol 2014, 2015 Tags
+
+These tags are still unmatched:
+
+```{r}
+P = "Erica Nol"
+pid = projID[[P]]
+t = lost %>% filter(name==P & Yr %in% c("2014", "2015")) %>%
+    arrange(Yr, TrackerID)
+t %>% select(Yr, TrackerID, Burst, Month, Day)
+
+```
+These were not registered, so we estimate their burst intervals
+empirically from site data.
+All of these tags except 306 were detected when the Churchill BirdCove
+site from 2014 was re-run against the Lotek master database:
+
+```{r}
+bi = 
+'ID, Burst
+297,10.094879
+298,10.095308
+299,10.095086
+300,10.095187
+302,10.095269
+303,10.095200
+305,10.095217
+307,10.295400
+' %>% textConnection %>% read.csv
+```
+
+Unfortunately, tag 306 was not detected at any of the northern sites in 2014.
+(Churchill Bird Cove and Fen, Nanuk, Longridge, Coats Island, Netitishi, Washkagou)
+We register the rest:
+
+```{r}
+regts = ymd("2014-05-01")
+
+for (i in 1:nrow(bi)) {
+    g = getLotekTagSig(bi$ID[i])
+    try({
+        motusRegisterTag(
+            projectID = projID[["Erica Nol"]],
+        mfgID = as.character(bi$ID[i]),
+        manufacturer = "Lotek",
+        type = "ID",
+        codeSet = "Lotek-4",
+        offsetFreq = 0,
+        period = bi$Burst[i],
+        periodSD = 0,
+        pulseLen = 2.5,
+        param1 = g[1],
+        param2 = g[2],
+        param3 = g[3],
+        param4 = 0,
+        param5 = 0,
+        param6 = 0,
+        paramType = 1,
+        ts = as.numeric(regts),
+        nomFreq = 166.380,
+        dateBin = sprintf("%4d-%1d", year(regts), ceiling(month(regts)/3))
+        )
+    })
+}
+```
 
 ## Rebecca Holberton / Kate Obrien / Lindsay Tudor 2015, 2014 Tags
 
@@ -456,8 +553,7 @@ due to typos:  **[Sjoerd]**
 
 ```{r}
 collide = collide %>% arrange (name, Yr, TrackerID)
-collide %>% select(name, Yr, Month, Day, TrackerID, Burst)
-     %>% as.data.frame
+collide %>% select(name, Yr, Month, Day, TrackerID, Burst) %>% as.data.frame
 
 saveRDS(collide, "2015_paul_smith_shorebird_tag_collisions.rds")
 ```
@@ -490,6 +586,6 @@ For the two Friis tags #183
 ```
 \newpage
 
-```{r, child=c("appendix1.Rmd","appendix2.Rmd","appendix3.Rmd", "functions.Rmd")}
+```{r, child=c("appendix1.Rmd","appendix2.Rmd","appendix3.Rmd")}
 ```
 
