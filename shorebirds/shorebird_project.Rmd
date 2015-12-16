@@ -1,3 +1,6 @@
+
+TODO: user bindUserMotus() to add Diana's tags to 'found', since BI is blank in spreadsheet.
+
 ---
 title: "Work Log: Registration of Paul Smith's Shorebird Tag Database with sensorgnome.org and motus-wts.org"
 author: "John Brzustowski"
@@ -106,6 +109,7 @@ projID = structure(as.list(pmap$motusID), names = pmap$spreadsheetName)
 ## add some entries explicitly
 projID[["Kate Obrien"]] = 25
 projID[["EBM Coats"]] = 66
+projID[["Holbt"]] = 8
 
 ```
 
@@ -196,6 +200,7 @@ Next, look for 'lost' tags across all projects in the corresponding year.
 ```{r}
 m2 = matchTags(lost, motus, "TrackerID", "Burst", "Yr")
 remap = m2$unique %>% mutate(newProjectID = unlist(projID[name]))
+found = found %>% bind_rows(m2$unique)
 lost = m2$none
 ```
 This leads to a total of `r nrow(m2$unique)` tags which need to be reassigned
@@ -234,7 +239,7 @@ cf %>% select(Yr, TrackerID, Burst)
 This tag was missing on the first run, but has since been registered.
 Here is the code used:
 
-```{r, cached=TRUE}
+```{r, cached=TRUE, eval=FALSE}
 ## only run once
 
 if (172 %in% as.numeric(cf$mfgID)) {
@@ -318,7 +323,7 @@ The deployment location matches the Piskwamish site.  226 shows up
 with a BI of 5.8983s there, but neither 301 nor 338 is present.
 Perhaps these two had mis-recorded ID numbers?  We register tag 226:
 
-```{r, cached=TRUE}
+```{r, cached=TRUE, eval=FALSE}
 ## Read its parameters from the Lotek master database on the server
 g = getLotekTagSig(226)
 
@@ -468,7 +473,7 @@ Unfortunately, tag 306 was not detected at any of the northern sites in 2014.
 (Churchill Bird Cove and Fen, Nanuk, Longridge, Coats Island, Netitishi, Washkagou)
 We register the rest:
 
-```{r}
+```{r, eval=FALSE, cached=TRUE}
 regts = ymd("2014-05-01")
 
 for (i in 1:nrow(bi)) {
@@ -499,9 +504,9 @@ for (i in 1:nrow(bi)) {
 }
 ```
 
-## Rebecca Holberton / Kate Obrien / Lindsay Tudor 2015, 2014 Tags
+## Rebecca Holberton / Kate Obrien / Lindsay Tudor 2013-2015 Tags
 
-These tags are still unmatched:
+These tags are still unmatched for 2014, 2015:
 
 ```{r}
 P = "Lindsay Tudor"
@@ -537,7 +542,159 @@ lost %>% filter(name=="Lindsay Tudor" & Yr %in% c(2014,2015)) %>%
 It should be possible to find this one with a full search of POPH site
 data.
 
-## Leftover Tags
+### 2013 Holberton Tags
+
+These still hadn't been registered with motus.  We do this now.
+
+```{r}
+t = lost %>% filter(name=="Lindsay Tudor" & Yr==2013) %>%
+    mutate(iid = as.integer(TrackerID))
+
+# skip the tags @ 166.38 MHz which were on RUTU
+sgt = sg %>% filter(proj=="Holbt" & year==2013 & tagFreq==166.3) %>%
+    mutate(iid = as.integer(id))
+
+comb = t %>% left_join(sgt, by = "iid")
+regts = ymd("2013-05-01")
+```
+
+```{r, eval=FALSE, cached=TRUE}
+
+for (i in 1:nrow(comb)) {
+    ## Note: these tags are in codeset 3, hence the "3" below:
+    g = getLotekTagSig(comb$iid[i], "3")
+    try({
+        motusRegisterTag(
+            projectID = projID[["Lindsay Tudor"]],
+            mfgID = as.character(comb$iid[i]),
+            manufacturer = "Lotek",
+            type = "ID",
+            codeSet = "Lotek-3",
+            offsetFreq = 0,
+            period = comb$bi[i],
+            periodSD = 0,
+            pulseLen = 2.5,
+            param1 = g[1],
+            param2 = g[2],
+            param3 = g[3],
+            param4 = 0,
+            param5 = 0,
+            param6 = 0,
+            paramType = 1,
+            ts = as.numeric(regts),
+            nomFreq = 166.3,
+            dateBin = sprintf("%4d-%1d", year(regts), ceiling(month(regts)/3))
+        )
+    })
+}
+
+```
+
+With the 2013 Holberton tags registered, we bind them to spreadsheet
+records:
+
+```{r}
+
+bindUserMotus(
+    t %>% select( -iid ) %>% arrange(TrackerID), ## remove added column
+    subset(motus,
+           projectID==projID[["Holbt"]] & grepl("2013", dateBin)
+           ) %>% arrange(mfgID)
+)
+
+```
+
+## Diana Hamilton Tags 2012-2015
+
+We had already registered the 2014-2015 tags with motus.  We now do the
+same for 2012 and 2013.  These are all in codeset 3, and at 166.3 MHz.
+First, 2013:
+
+```{r}
+t = lost %>% filter(name=="Diana Hamilton" & Yr==2013) %>%
+    mutate(iid = as.integer(TrackerID))
+
+sgt = sg %>% filter(proj=="Hamil" & year==2013) %>%
+    mutate(iid = as.integer(id))
+
+comb = t %>% left_join(sgt, by = "iid")
+regts = ymd("2013-05-01")
+```
+
+```{r, eval=FALSE, cached=TRUE}
+
+for (i in 1:nrow(comb)) {
+    ## Note: these tags are in codeset 3, hence the "3" below:
+    g = getLotekTagSig(comb$iid[i], "3")
+    try({
+        motusRegisterTag(
+            projectID = projID[["Diana Hamilton"]],
+            mfgID = as.character(comb$iid[i]),
+            manufacturer = "Lotek",
+            type = "ID",
+            codeSet = "Lotek-3",
+            offsetFreq = 0,
+            period = comb$bi[i],
+            periodSD = 0,
+            pulseLen = 2.5,
+            param1 = g[1],
+            param2 = g[2],
+            param3 = g[3],
+            param4 = 0,
+            param5 = 0,
+            param6 = 0,
+            paramType = 1,
+            ts = as.numeric(regts),
+            nomFreq = 166.3,
+            dateBin = sprintf("%4d-%1d", year(regts), ceiling(month(regts)/3))
+        )
+    })
+}
+```
+
+Now 2012:
+
+```{r}
+t = lost %>% filter(name=="Diana Hamilton" & Yr==2012) %>%
+    mutate(iid = as.integer(TrackerID))
+
+sgt = sg %>% filter(proj=="SESA" & year==2012) %>%
+    mutate(iid = as.integer(id))
+
+comb = t %>% left_join(sgt, by = "iid")
+regts = ymd("2012-05-01")
+```
+
+```{r, eval=FALSE, cached=TRUE}
+
+for (i in 1:nrow(comb)) {
+    ## Note: these tags are in codeset 3, hence the "3" below:
+    g = getLotekTagSig(comb$iid[i], "3")
+    try({
+        motusRegisterTag(
+            projectID = projID[["Diana Hamilton"]],
+            mfgID = as.character(comb$iid[i]),
+            manufacturer = "Lotek",
+            type = "ID",
+            codeSet = "Lotek-3",
+            offsetFreq = 0,
+            period = comb$bi[i],
+            periodSD = 0,
+            pulseLen = 2.5,
+            param1 = g[1],
+            param2 = g[2],
+            param3 = g[3],
+            param4 = 0,
+            param5 = 0,
+            param6 = 0,
+            paramType = 1,
+            ts = as.numeric(regts),
+            nomFreq = 166.3,
+            dateBin = sprintf("%4d-%1d", year(regts), ceiling(month(regts)/3))
+        )
+    })
+}
+```
 
 This leaves `r nrow(lost)` tags still not matched:
 

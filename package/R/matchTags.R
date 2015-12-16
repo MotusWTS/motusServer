@@ -135,9 +135,14 @@ matchTags = function(u, m, id, bi, yr, bi.digits=0, id.digits=0) {
         rv$unique = rv$unique %>% filter (! motusDup)
     }
     ## remove temporary columns
-    for (item in names(rv))
-        if (! is.null(rv[[item]]))
-            rv[[item]] = rv[[item]] %>% select (-.rowID, -.rowID2, -.iid, -.ibi, -.yr)
+    for (item in names(rv)) {
+        if (! is.null(rv[[item]])) {
+            rv[[item]] = rv[[item]] %>% select (-.rowID, -.iid, -.ibi, -.yr)
+            if (item != "none") {
+                rv[[item]] = rv[[item]] %>% select (-.rowID2)
+            }
+        }
+    }
     return(rv)
 }
 
