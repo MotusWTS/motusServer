@@ -169,7 +169,6 @@ Out of `r nrow(x)` tags,
 
 ```{r}
 table(lost$name, lost$Yr)
-saveRDS(collide, "2015_paul_smith_shorebird_tag_collisions.rds")
 
 ```
 ## Registrations to 'wrong' project
@@ -448,6 +447,45 @@ This leaves `r nrow(lost)` tags still not matched:
 ```{r}
 table(lost$name, lost$Yr)
 ```
+
+## Tag Collisions
+
+Some tags in the spreadsheet appear indistinguishable, and it will take some
+digging to determine whether this is really the case, or whether it is
+due to typos:  **[Sjoerd]**
+
+```{r}
+collide = collide %>% arrange (name, Yr, TrackerID)
+collide %>% select(name, Yr, Month, Day, TrackerID, Burst)
+     %>% as.data.frame
+
+saveRDS(collide, "2015_paul_smith_shorebird_tag_collisions.rds")
+```
+
+### Yves Aubry Tag Collisions
+For the two Aubry tags, it appears one of them should
+be listed as #203, as this ID was registered by him for 2015, but
+does not appear in the spreadsheet.
+
+### Larry Niles Tag Collisions
+
+#### ID = 314
+For tags 314 and 314.1, the burst intervals should be different.
+There are two tags with ID 314 registered with sensorgnome by Larry Niles
+in 2015; one had BI 6.1s, and we refered to it as 314.1; the other had BI 5.3s
+and we refered to it as 314.0.  It appears the spreadsheet has the incorrect
+BI for 314 (i.e. for 314.0), as the deployment date and location match detections
+for the tag 314 with BI=5.3s
+
+#### ID = 345
+
+There is a tag with BI=5.3 sec and ID=345 registered to Larry Niles
+in 2015, and detected at a number of his sites.  I'm not sure what
+the second tag 345 really is.
+
+### Christian Friis Tag Collisions
+
+For the two Friis tags #183
 
 ```
 \newpage
