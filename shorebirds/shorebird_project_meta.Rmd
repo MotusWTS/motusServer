@@ -1,0 +1,55 @@
+---
+title: "Work Log(2): Upload of Metadata from Paul Smith's Shorebird Tag Database to motus-wts.org"
+author: "John Brzustowski"
+date: "December, 2015"
+output:
+   pdf_document :
+       toc: true
+       toc_depth: 4
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(comment="")
+options(warn=0)
+```
+
+```{r child="functions.Rmd", echo=FALSE, include=FALSE, cache=TRUE}
+```
+
+# Summary
+
+Now that we've reconciled registrations of (almost) all tags from the
+spreadsheet Paul Smith has assembled, we need to push the tag metadata
+to motus-wts.org
+
+# Preliminaries
+
+Read the frame of matched tags.
+
+```{r, results="hide"}
+library(motus, quietly=TRUE)
+motusLoadSecrets("~/.secrets/motusSecrets.json")
+x = readRDS("2015_paul_smith_shorebirds_reconciled.rds")
+```
+
+Try match the fields in the spreadsheet with those required / available
+for a motus tag deployment.  Any additional fields in the spreadsheet
+will be encoded as JSON strings in the comments field.  (The spreadsheet comments
+field itself will become an item in that JSON string).
+
+```{r, cached=TRUE}
+## parameters for tag registration, directly from the function
+## in the R motus package.
+mf = motusDeployTag %>% formals %>% names
+
+sf = colnames(x)
+
+ff = gmatch("Match motus deployment fields", "Motus", mf, "Spreadsheet", sf)
+
+## get motus IDs for each species code
+speciesID = list()
+for(m in unique(unlist(x[,12])))
+    speciesID[[m]] = motusListSpecies(m, qlang="CD")$id[1]
+
+```
+
