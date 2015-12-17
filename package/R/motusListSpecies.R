@@ -17,6 +17,8 @@
 #'     species. One of the following possible values: EN (English), FR
 #'     (French), SC (Scientific), CD (Species code).
 #'
+#' @param ... [optional] extra parameters for \code{motusQuery()}
+#' 
 #' @return if any matches were found, they are returned as a dataframe
 #' with these columns:
 #' \enumerate{
@@ -28,17 +30,22 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 motusListSpecies = function(qstr = NULL,
-                            nrec = 100,
+                            nrec = NULL,
                             group = "BIRDS",
-                            qlang = c("all", "EN", "FR", "SC", "CD")) {
+                            qlang = c("all", "EN", "FR", "SC", "CD"),
+                            ...) {
     qlang = match.arg(qlang)
     if (qlang == "all")
         qlang = NULL
     motusQuery(MOTUS_API_LIST_SPECIES, requestType="get",
-               list(
-                   qstr = qstr,
-                   nrec = nrec,
-                   group = group,
-                   qlang = qlang
-               ))
+               c(
+                   list(
+                       qstr = qstr,
+                       nrec = nrec,
+                       group = group,
+                       qlang = qlang
+                   ),
+                   list( ...)
+               )
+               )
 }

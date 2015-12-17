@@ -40,7 +40,7 @@ askUserForXLSheet = function() {
     return(list(file=f, sheet=s))
 }
 
-gmatch = function(title, lName, lItems, rName, rItems, initMatch=match(lItems,rItems), message = NULL ) {
+gmatch = function(title, lName, lItems, rName, rItems, initMatch=pmatch(lItems,rItems), message = NULL ) {
     # open a dialogue that lets the user
     # match items in two lists
     # returns a matrix whose rows are matches between the first
@@ -100,7 +100,7 @@ gmatch = function(title, lName, lItems, rName, rItems, initMatch=match(lItems,rI
         i = ltab$get_selection()
         j = rtab$get_selection()
         if (length(i) > 0 & length(j) > 0) {
-            mList <<- rbind(mList, data.frame(l = I(lList[[1]][i]), r = I(rList[[1]][j])))
+            mList <<- rbind(mList, structure(data.frame(l = I(lList[[1]][i]), r = I(rList[[1]][j])), names=c(lName,rName)))
             lList[[1]] <<- lList[[1]][-i]
             rList[[1]] <<- rList[[1]][-j]
 
@@ -133,6 +133,8 @@ gmatch = function(title, lName, lItems, rName, rItems, initMatch=match(lItems,rI
     out <- visible(ww)
     return(if(okay) mList else NULL)
 }
+
+
 
 ## example:
 ## gmatch("Match project names",

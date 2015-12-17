@@ -40,7 +40,7 @@ motusQuery = function (API, params = NULL, requestType="post", show=FALSE, json=
             ),
         params)
 
-    JSON = QUERY %>% toJSON (auto_unbox=TRUE)
+    JSON = QUERY %>% toJSON (auto_unbox=TRUE, null="null")
 
     ## add ".0" to the end of any integer-valued floating point fields
     JSON = gsub(MOTUS_FLOAT_REGEXP, "\\1.0\\3", JSON, perl=TRUE)

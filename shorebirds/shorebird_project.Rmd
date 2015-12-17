@@ -26,9 +26,10 @@ possible, the steps here were coded as functions in the _motus_ R
 package, so that other projects could more easily get their tag
 metadata into motus-wts.org
 
-Most of the tags listed in the spreadsheet could be linked to tags registered
-with motus-wts.org, or at least with sensorgnome.org.  The remaining tags are discussed along the way, and labelled __[Sjoerd]__ to indicate he may be able to
-resolve the problems.
+Most of the tags listed in the spreadsheet could be linked to tags
+registered with motus-wts.org, or at least with sensorgnome.org.  The
+remaining tags are discussed along the way, and labelled __[Sjoerd]__
+to indicate he may be able to resolve the problems.
 
 # Preliminaries
 
