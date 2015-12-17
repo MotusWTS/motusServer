@@ -8,13 +8,14 @@ output:
        toc_depth: 4
 ---
 
-```{r, child="functions.Rmd"}
-```
-
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(comment="")
 options(warn=0)
 ```
+
+```{r child="functions.Rmd", echo=FALSE, include=FALSE, cache=TRUE}
+```
+
 # Summary
 
 Paul Smith has assembled a spreadsheet giving metadata for deployments
@@ -25,17 +26,17 @@ possible, the steps here were coded as functions in the _motus_ R
 package, so that other projects could more easily get their tag
 metadata into motus-wts.org
 
+Most of the tags listed in the spreadsheet could be linked to tags registered
+with motus-wts.org, or at least with sensorgnome.org.  The remaining tags are discussed along the way, and labelled __[Sjoerd]__ to indicate he may be able to
+resolve the problems.
+
 # Preliminaries
 
 First, read the list of projects from motus:
 
-```{r ref.label="functions"}
-```
-
-```{r}
+```{r, results="hide"}
 library(motus, quietly=TRUE)
 motusLoadSecrets("~/.secrets/motusSecrets.json")
-
 projs = motusListProjects()
 ```
 
@@ -51,8 +52,6 @@ heterogenous column very well.
 x = read.csv("paul_smith_shorebird_tag_metadata_noformatting.csv", as.is=TRUE)
 x = as.tbl(x)
 x
-
-
 ```
 
 Make some changes we'll need later:
@@ -68,30 +67,16 @@ x = x %>%
             sub("([0-9]+\\.[0-9]+) / (([0-9]+)\\.[0-9]+)", "\\3", perl=TRUE, .) %>%
             as.numeric
     )
-             
+            
 ```
 
-Match names in the spreadsheet to motus projects, using a simple gui:
+We matched names in the spreadsheet to motus projects, using a simple gui
+as shown in Appendix 4.
 
-```{r warning=FALSE}
-
+```{r warning=FALSE, include=FALSE}
 pmapFile = "projectMap.rds"
-if (file.exists(pmapFile)) {
-    pmap = readRDS(pmapFile)
-} else {
-    pmap = gmatch("Match Spreadsheet Names with Motus Projects",
-                  "Spreadsheet Name",
-                  unique(x$name),
-                  "Motus Project",
-                  paste(projs$id, projs$name))
-    if (! is.null(pmap)) {
-        ## extract projID
-        names(pmap)=c("spreadsheetName", "motusProject")
-        pmap$motusID = as.numeric(sub(" .*", "", pmap$r))
-        saveRDS(pmap, "projectMap.rds")
-    }
-}
 ## inverse project map, from motusID to spreadsheetname
+pmap = readRDS(pmapFile)
 pmapi = character()
 pmapi[pmap$motusID] = pmap$spreadsheetName
 ```
@@ -107,7 +92,6 @@ projID = structure(as.list(pmap$motusID), names = pmap$spreadsheetName)
 projID[["Kate Obrien"]] = 25
 projID[["EBM Coats"]] = 66
 projID[["Holbt"]] = 8
-
 ```
 
 Now get the full tag databases from sensorgnome.org for 2012-2015
@@ -120,15 +104,15 @@ sg = rbind(
     cbind( year=2014, read.csv("2014_tags.csv", as.is=TRUE)[, 1:15]),
     cbind( year=2015, read.csv("2015_tags.csv", as.is=TRUE)[, 1:15])
 ) %>% as.tbl
-
 sg
 ```
 
 # Tags Already Registered With Motus
 
-A number of tags have already been registered with motus.  Which ones?
- 
-Work project by project.
+First we find determine which of the tags have already been registered
+with motus.  The code loops through each spreadsheet project, trying
+to match those tags against the ones registered with motus under the
+corresponding project.
 
 ```{r, cached=TRUE, warning=FALSE}
 found = multi = collide = lost = NULL
@@ -157,8 +141,8 @@ for (p in pmap$spreadsheetName) {
     ## add motus tags from this project to full set
     motus = motus %>% rbind (motusp)
 }
-
 ```
+
 ## Results of Initial Matching
 
 Out of `r nrow(x)` tags,
@@ -174,7 +158,6 @@ Out of `r nrow(x)` tags,
 
 ```{r}
 table(lost$name, lost$Yr)
-
 ```
 ## Registrations to 'wrong' project
 
@@ -200,8 +183,10 @@ remap = m2$unique %>% mutate(newProjectID = unlist(projID[name]))
 found = found %>% bind_rows(m2$unique)
 lost = m2$none
 ```
+
 This leads to a total of `r nrow(m2$unique)` tags which need to be reassigned
 between projects, by year:
+
 ```{r}
 table(remap$name,pmapi[remap$projectID], remap$Yr, dnn=c("New Name", "Original Name", "Year"))
 ## save the remap set, if not already generated on a previous run
@@ -218,6 +203,10 @@ There are still `r nrow(lost)` tags not matched:
 ```{r}
 table(lost$name, lost$Yr)
 ```
+
+# Tags Not Yet Registered With Motus
+
+We work by project on the unmatched tags.
 
 ## Christian Friis Tags 2014-2015
 
@@ -273,7 +262,6 @@ if (172 %in% as.numeric(cf$mfgID)) {
              ))
     })
 }
-
 ```
 
 ### Tags 376-379
@@ -281,18 +269,21 @@ These were registered, but the burst interval is ~9.7 s, not ~5.9s
 as reported in the spreadsheet. **[Sjoerd]**
 
 ```{r, cached=TRUE}
-bindUserMotus = function(u, m) {
+bindUserMotus = function(u, m, fromLost=TRUE) {
     ## bind rows of user tags to motus tags, respectively
     if (nrow(u) != nrow(m))
         stop("need same number of rows in both parameters")
     ## lookup specified user rows in table of missing rows
-    src = which(duplicated(rbind(u, lost))) - nrow(u)
-    if (length(src) != nrow(u) | any(src < 1 | src > nrow(lost)))
-        stop("specified user rows do not come from table 'lost'")
+    if (fromLost) {
+        src = which(duplicated(rbind(u, lost))) - nrow(u)
+        if (length(src) != nrow(u) | any(src < 1 | src > nrow(lost)))
+            stop("specified user rows do not come from table 'lost'")
+    }
     r = cbind(u, m)
     names(r)[names(r)=="comment"] = c("comment.x", "comment.y")
     found <<- found %>% bind_rows(r)
-    lost <<- lost[- src,]
+    if (fromLost)
+        lost <<- lost[- src,]
     motus <<- motus %>% subset( ! tagID %in% m$tagID)
 }
 
@@ -305,7 +296,6 @@ bindUserMotus(
            as.integer(mfgID) %in% (376:379)
            ) %>% arrange(mfgID)
 )
-
 ```
 
 The remaining 3 Friis tags, #226, 301, and 338 from 2014 with BI ~6s
@@ -360,8 +350,8 @@ P = "Larry Niles"
 pid = projID[[P]]
 t = lost %>% filter( name==P) %>% arrange(Yr, TrackerID)
 t %>% select(Yr, TrackerID, Burst)
-
 ```
+
 But tags 244...261 and 511 are registered to Niles 2015 with BI ~6.1, and these
 are otherwise unmatched, so the BI in the spreadsheet must be incorrect.
 **[Sjoerd]**
@@ -376,7 +366,6 @@ bindUserMotus(
                   as.integer(mfgID) %in% fixBI
            ) %>% arrange(mfgID)
     )
-
 ```
 For 2014, these are still unmatched, due to lacking a Burst interval
 in the spreadsheet:
@@ -384,7 +373,6 @@ in the spreadsheet:
 ```{r}
 t = lost %>% filter( name==P & Yr==2014 ) %>% arrange(Yr, TrackerID)
 t %>% select(TrackerID, Month, Day) %>% as.data.frame
-
 ```
 Among the unmatched motus-registered tags for that year and project, these
 have the same IDs:
@@ -400,7 +388,6 @@ found that it was the tags with Burst = ~5.3s which were deployed in September;
 the other two were deployed in May.  So we match these tags:
 
 ```{r}
-
 bindUserMotus(
     t,
     subset(motus,
@@ -409,7 +396,6 @@ bindUserMotus(
            as.integer(mfgID) %in% as.integer(t$TrackerID) &
            ! mfgID %in% c("146.0", "147.0"))
     )
-
 ```
 
 For 2015, there are still 2 unmatched Niles tags; these have unknown IDs:
@@ -445,7 +431,6 @@ pid = projID[[P]]
 t = lost %>% filter(name==P & Yr %in% c("2014", "2015")) %>%
     arrange(Yr, TrackerID)
 t %>% select(Yr, TrackerID, Burst, Month, Day)
-
 ```
 These were not registered, so we estimate their burst intervals
 empirically from site data.
@@ -527,7 +512,6 @@ bindUserMotus(
                   as.integer(mfgID) %in% fixBI
            ) %>% arrange(mfgID)
     )
-
 ```
 This leaves only a single tag for _Lindsay Tudor_ in 2014 or 2015, namely
 this one with no ID:
@@ -556,7 +540,6 @@ regts = ymd("2013-05-01")
 ```
 
 ```{r, eval=FALSE, cached=TRUE}
-
 for (i in 1:nrow(comb)) {
     ## Note: these tags are in codeset 3, hence the "3" below:
     g = getLotekTagSig(comb$iid[i], "3")
@@ -584,21 +567,18 @@ for (i in 1:nrow(comb)) {
         )
     })
 }
-
 ```
 
 With the 2013 Holberton tags registered, we bind them to spreadsheet
 records:
 
 ```{r}
-
 bindUserMotus(
     t %>% select( -iid ) %>% arrange(TrackerID), ## remove added column
     subset(motus,
            projectID==projID[["Holbt"]] & grepl("2013", dateBin)
            ) %>% arrange(mfgID)
 )
-
 ```
 
 ## Diana Hamilton Tags 2012-2015
@@ -617,13 +597,11 @@ sgt = sg %>% filter(proj=="Hamil" & year==2013) %>%
 
 comb = t %>% left_join(sgt, by = "iid")
 regts = ymd("2013-05-01")
-
 ```
 
 Here's the code to do the registration.
 
 ```{r, eval=FALSE}
-
 for (i in 1:nrow(comb)) {
     ## Note: these tags are in codeset 3, hence the "3" below:
     g = getLotekTagSig(comb$iid[i], "3")
@@ -684,7 +662,6 @@ regts = ymd("2012-05-01")
 and again, the code for registration
 
 ```{r, eval=FALSE}
-
 for (i in 1:nrow(comb)) {
     ## Note: these tags are in codeset 3, hence the "3" below:
     g = getLotekTagSig(comb$iid[i], "3")
@@ -726,53 +703,153 @@ bindUserMotus(
 )
 ```
 
-This leaves `r nrow(lost)` tags still not matched:
+This leaves `r nrow(lost)` tags still not matched, all of them
+discussed above.
 
 ```{r}
-table(lost$name, lost$Yr)
+lost %>% select (name, Yr, Month, Day, TrackerID, Burst, LocationID, Latitude, Longitude)
 ```
 
-## Tag Collisions
+# Tag Collisions
 
-Some tags in the spreadsheet appear indistinguishable, and it will take some
-digging to determine whether this is really the case, or whether it is
-due to typos:  **[Sjoerd]**
+Some pairs of tags in the spreadsheet appear indistinguishable. If
+true, detections of these tags have to be disambiguated by reference
+to spatiotemporal context.  It's also possible collisions are due to
+typos in the spreadsheet.  We examine each collision, but resolving
+them may take some extra work. __[Sjoerd]__
 
-```{r}
+Save the collisions in a file.
+
+```{r} 
 collide = collide %>% arrange (name, Yr, TrackerID)
-collide %>% select(name, Yr, Month, Day, TrackerID, Burst) %>% as.data.frame
-
 saveRDS(collide, "2015_paul_smith_shorebird_tag_collisions.rds")
 ```
 
-### Yves Aubry Tag Collisions
-For the two Aubry tags, it appears one of them should
-be listed as #203, as this ID was registered by him for 2015, but
-does not appear in the spreadsheet.
+We examine each pair.
 
-### Larry Niles Tag Collisions
+## Christian Friis Tag Collisions
 
-#### ID = 314
-For tags 314 and 314.1, the burst intervals should be different.
-There are two tags with ID 314 registered with sensorgnome by Larry Niles
-in 2015; one had BI 6.1s, and we refered to it as 314.1; the other had BI 5.3s
-and we refered to it as 314.0.  It appears the spreadsheet has the incorrect
-BI for 314 (i.e. for 314.0), as the deployment date and location match detections
-for the tag 314 with BI=5.3s
+There are two tags with ID #183 listed for Christian Friis:
 
-#### ID = 345
-
-There is a tag with BI=5.3 sec and ID=345 registered to Larry Niles
-in 2015, and detected at a number of his sites.  I'm not sure what
-the second tag 345 really is.
-
-### Christian Friis Tag Collisions
-
-For the two Friis tags #183
-
+```{r}
+cc = collide %>% filter(name=='Christian Friis')
+cc %>% select(Yr, Month, Day, TrackerID, Burst, LocationID, Latitude, Longitude)
 ```
+
+only one tag with ID 183 was registered with motus for this project.
+However, there is a tag #103 registered with motus and detected at the
+North Point deployment site but not in the spreadsheet.  The two tags
+have these two first dates of detection:
+
+```{r, cached=TRUE, eval = FALSE}
+"2015_JamesBay_NorthPoint_alltags.rds" %>%
+    readRDS %>%
+    as.tbl %>%
+    filter(tagProj=='JamesBay' & id %in% c(103,183)) %>%
+    group_by(fullID) %>%
+    summarize(from=min(ts), to=max(ts))
+```
+
+So it seems clear the tag deployed later, on Aug. 25, was __103__,
+rather than 183.  We make that change and bind the spreadsheet records
+to those from motus:
+
+```{r}
+## both the spreadsheet and motus columns for tag 183 are already
+## present in the collision tbl:
+names(cc)[grepl("comments.*", names(cc))] = "comments"
+bindUserMotus( cc[1, 1:31], cc[1, 32:67], fromLost=FALSE)
+## for tag 103, we obtain the pieces from separate sources
+bindUserMotus( cc[2, 1:31],
+              motus %>% filter(
+                            projectID==projID[['Christian Friis']] &
+                            grepl("2015", dateBin) &
+                            as.integer(mfgID) == 103
+                        ),
+              fromLost = FALSE
+              )
+```
+
+## Larry Niles Tag Collisions
+There are two pairs of colliding tags:
+
+### ID = 314
+
+```{r}
+cc = collide %>% filter(name=='Larry Niles' & as.integer(TrackerID) == 314)
+cc %>% select(Yr, Month, Day, TrackerID, Burst, LocationID, Latitude, Longitude)
+```
+
+For tags 314 and 314.1, the burst intervals should be different.
+There are two tags with ID 314 registered with sensorgnome by Larry
+Niles in 2015; one had BI 6.1s, and we referred to it as 314.1; the
+other had BI 5.3s and we referred to it as 314.0.  It appears the
+spreadsheet has the incorrect BI for the tag deployed May 18
+(i.e. for 314.0), as the deployment date and location match detections
+for the tag 314 with BI=5.3 seconds.  We fix this:
+
+```{r}
+names(cc)[grepl("comments.*", names(cc))] = "comments"
+## tag 314.1 is indeed the one with a burst interval of 6.1s
+bindUserMotus( cc[2, 1:31], cc[2, 32:67], fromLost=FALSE)
+
+## for tag 314.0, we obtain the pieces from separate sources
+bindUserMotus( cc[1, 1:31],
+              motus %>% filter(
+                            projectID==projID[['Larry Niles']] &
+                            grepl("2015", dateBin) &
+                            as.double(mfgID) == 314
+                        ),
+              fromLost = FALSE
+              )
+```
+
+### ID = 345
+
+```{r}
+cc = collide %>% filter(name=='Larry Niles' & as.integer(TrackerID) == 345)
+cc %>% select(Yr, Month, Day, TrackerID, Burst, LocationID, Latitude, Longitude)
+```
+
+There is a tag with BI=5.3 sec and ID=345 registered to Larry Niles in
+2015, and detected at Fortescue starting May 14.  There does seem to
+be some clustering on plots such as `freq` vs `burstSlop` of
+detections of tag 345 when divided into sets before and after May 23,
+so it's possible there _were_ two tag #345 with the same burst interval.
+Context will be required for separating them.  Or was this a simple
+redeployment of the same tag?
+
+## Yves Aubry Tag Collisions
+There are two tags with ID #204 listed for Yves Aubry
+
+```{r}
+cc = collide %>% filter(name=='Yves Aubry')
+cc %>% select(Yr, Month, Day, TrackerID, Burst, LocationID, Latitude, Longitude)
+```
+
+It appears one of these should be listed as #203, as this ID was
+registered by Yves for 2015, but does not appear in the spreadsheet.
+There are no detections of tag 204 at Grande-Île or any of the nearby
+sites, but tag 203 was detected there within this range of dates:
+
+```{r}
+"2015_Quebec_GrandeIle_alltags.rds" %>%
+    readRDS %>%
+    as.tbl %>%
+    filter(tagProj=='Aubry' & id %in% c(203:204)) %>%
+    group_by(fullID) %>%
+    summarize(from=min(ts), to=max(ts))
+```
+
+Unfortunately, this is after the deployment date given for both of the
+tag 204s in the spreadsheet, so we can't tell which metadata belong
+to 203. It seems more likely that this is the tag deployed on Aug 11,
+otherwise the tag would have gone undetected for 10 days, rather than
+for 2 days.  Tag 204 has not been detected anywhere in the
+network so far, but 203 was detected at several sites. For now, we do not process these two tags. __[Sjoerd]__
+
 \newpage
 
-```{r, child=c("appendix1.Rmd","appendix2.Rmd","appendix3.Rmd")}
+```{r, child=c("appendix1.Rmd","appendix2.Rmd","appendix3.Rmd", "appendix4.Rmd")}
 ```
 

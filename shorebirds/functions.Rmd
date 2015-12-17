@@ -1,4 +1,4 @@
-```{r functions,include=FALSE}
+```{r functions, cache=TRUE, include=FALSE, echo=FALSE}
 ## work in progress: GUI aids to making a spreadsheet of tag metadata
 ## concord with the structure of the motus DB so we can push data
 ## rather than force users to enter it all via the web.

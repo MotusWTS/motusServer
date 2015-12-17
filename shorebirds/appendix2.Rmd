@@ -1,4 +1,4 @@
-### Appendix 2:  Tag Deployment fields
+# Appendix 2:  Tag Deployment fields
 
 The fields required for a motus tag deployment record are:
 

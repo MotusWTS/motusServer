@@ -1,4 +1,4 @@
-### Appendix 1:  Tag Registration Fields
+# Appendix 1:  Tag Registration Fields
 
 The fields required for a motus tag registration record are:
 

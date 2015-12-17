@@ -1,0 +1,22 @@
+# Appendix 4:  Matching Project Names
+
+We invoke a simple GUi to allow the user to match spreadsheet project
+names with those from motus.
+
+```{r appendix4, cache=TRUE, warning=FALSE}
+pmapFile = "projectMap.rds"
+if (file.exists(pmapFile)) {
+    pmap = readRDS(pmapFile)
+} else {
+    pmap = gmatch("Match Spreadsheet Names with Motus Projects",
+                  "Spreadsheet Name",
+                  unique(x$name),
+                  "Motus Project",
+                  paste(projs$id, projs$name))
+    if (! is.null(pmap)) {
+        ## extract projID
+        names(pmap)=c("spreadsheetName", "motusProject")
+        pmap$motusID = as.numeric(sub(" .*", "", pmap$r))
+        saveRDS(pmap, "projectMap.rds")
+    }
+}

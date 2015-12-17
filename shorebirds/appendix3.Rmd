@@ -1,4 +1,4 @@
-### Appendix 3:  Spreadsheet Input Fields
+# Appendix 3:  Spreadsheet Input Fields
 
 Here are the columns from the spreadsheet, along with a sample value
 for one record:
