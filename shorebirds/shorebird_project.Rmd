@@ -1,6 +1,3 @@
-
-TODO: user bindUserMotus() to add Diana's tags to 'found', since BI is blank in spreadsheet.
-
 ---
 title: "Work Log: Registration of Paul Smith's Shorebird Tag Database with sensorgnome.org and motus-wts.org"
 author: "John Brzustowski"
@@ -608,7 +605,8 @@ bindUserMotus(
 
 We had already registered the 2014-2015 tags with motus.  We now do the
 same for 2012 and 2013.  These are all in codeset 3, and at 166.3 MHz.
-First, 2013:
+
+### Register 2013 tags with motus
 
 ```{r}
 t = lost %>% filter(name=="Diana Hamilton" & Yr==2013) %>%
@@ -619,9 +617,12 @@ sgt = sg %>% filter(proj=="Hamil" & year==2013) %>%
 
 comb = t %>% left_join(sgt, by = "iid")
 regts = ymd("2013-05-01")
+
 ```
 
-```{r, eval=FALSE, cached=TRUE}
+Here's the code to do the registration.
+
+```{r, eval=FALSE}
 
 for (i in 1:nrow(comb)) {
     ## Note: these tags are in codeset 3, hence the "3" below:
@@ -650,7 +651,22 @@ for (i in 1:nrow(comb)) {
         )
     })
 }
+
 ```
+
+And now add these tags to the _found_ set:
+
+```{r}
+bindUserMotus(
+    t %>% select ( -iid) %>% arrange (TrackerID),
+    subset(motus,
+           projectID==projID["Diana Hamilton"] &
+           grepl("2013", dateBin)
+           ) %>% arrange(mfgID)
+)
+```
+
+### Register 2012 tags with motus
 
 Now 2012:
 
@@ -665,7 +681,9 @@ comb = t %>% left_join(sgt, by = "iid")
 regts = ymd("2012-05-01")
 ```
 
-```{r, eval=FALSE, cached=TRUE}
+and again, the code for registration
+
+```{r, eval=FALSE}
 
 for (i in 1:nrow(comb)) {
     ## Note: these tags are in codeset 3, hence the "3" below:
@@ -694,6 +712,18 @@ for (i in 1:nrow(comb)) {
         )
     })
 }
+```
+
+And now add these tags to the _found_ set:
+
+```{r}
+bindUserMotus(
+    t %>% select ( -iid) %>% arrange (TrackerID),
+    subset(motus,
+           projectID==projID["Diana Hamilton"] &
+           grepl("2012", dateBin)
+           ) %>% arrange(mfgID)
+)
 ```
 
 This leaves `r nrow(lost)` tags still not matched:
