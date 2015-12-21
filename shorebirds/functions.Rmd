@@ -151,4 +151,31 @@ getLotekTagSig = function(id, codeset="4") {
         scan(sep=",", quiet=TRUE)
 }
 
+
+getGMTFromLocal = function (lat, lon, year, month, day, hour, min, sec=0) {
+    ## given locations and local times, return the GMT timestamp
+    ## for each.
+    ## uses nodejs and the library at https://github.com/mattbornski/tzwhere
+    if (is.numeric(year) && missing(month)) {
+        ts = year
+    } else {
+        ts = as.numeric(ymd_hms(paste(year, month, day, hour, min, sec)))
+    }
+    hdr = 'var tzwhere = require("tzwhere"); tzwhere.init();'
+    ## format command to get timezone offset
+    ## NB: convert to and from milliseconds, javascript's
+    ## usual time unit
+    body = sprintf(
+        "console.log(tzwhere.dateAt(%f,%f,%f)/1000)",
+        lat,
+        lon,
+        ts * 1000)
+
+    f = tempfile()
+    cat(hdr, paste(body, collapse="\n"), file=f)
+    ts = system(paste("nodejs", f), intern=TRUE)
+    return(as.numeric(ts[-(1:2)]))
+}
+                                                                           
+    
 ```

@@ -22,7 +22,130 @@ Now that we've reconciled registrations of (almost) all tags from the
 spreadsheet Paul Smith has assembled, we need to push the tag metadata
 to motus-wts.org
 
-# Preliminaries
+# Deployment Fields
+
+The fields required for a motus tag deployment record are
+(see \ref{appendix2} for details).
+
+--------------------------------------------------------------------------
+deployment   description                 how to obtain it from existing
+  field                                  columns in reconciled spreadsheet
+------------ --------------------------- -------------------------------------
+  tagID      unique Motus tag ID         `tagID`
+                                         
+  status     pending, deploy, or         `"pending"`
+             terminate
+                                         
+ tsStart     timestamp for start of      see below
+             deployment                   ymd_hm  ## Except, this is local time.`
+                                         
+speciesID    numeric motus ID for this   `speciesID[x$SpeciesID]`
+             species
+                                         
+markerType   type of marker              `"metal band"`
+                                         
+markerNumber number on marker            `MetalOut`
+                                         
+ lat         latitude                    `Latitude`
+                                         
+ lon         longitude                   `Longitude`
+                                         
+ comments    comments; we use JSON to     see below
+             represent the remaining
+             fields from the spreadsheet
+
+ ts          timestamp deployment was     `unclass(Sys.time())`
+             registered
+
+---------------------------------------------------------------------------------
+
+## Missing Lat/Lon
+
+Two sites are missing Lat / Lon:
+
+US New Jersey Villas, Eldredge.  I'm guessing this is the shore
+at the end of Eldredge Ave, in Villas near Cape May:
+
+Lat=39.0445286 Lon=-74.9312826 as seen [here](https://www.google.ca/maps/place/39%C2%B002'40.3%22N+74%C2%B055'52.6%22W/@39.0445286,-74.9334713,17z/data=!3m1!4b1!4m2!3m1!1s0x0:0x0)
+
+The other is Moores, which I'm assuming is Moores Beach in the same
+general area:
+
+Lat=39.1887706, Lon=-74.951186 as seen [here](https://www.google.ca/maps/place/39%C2%B011'19.6%22N+74%C2%B057'04.3%22W/@39.1887706,-74.9533747,17z/data=!3m1!4b1!4m2!3m1!1s0x0:0x0)
+
+Sjoerd also provided (Dc. 21) a correction to the location for Avalon.
+
+We fill these in now:
+
+```{r}
+x[x$LocationID=="Villas, Eldredge", "Latitude"] = 39.0445286
+x[x$LocationID=="Villas, Eldredge", "Longitude"] = -74.9312826
+
+x[x$LocationID=="Moores", "Latitude"] = 39.1887706
+x[x$LocationID=="Moores", "Longitude"] = -74.951186 
+
+x[x$LocationID=="Avalon", "Latitude"] =  39.11402
+x[x$LocationID=="Avalon", "Longitude"] = -74.71421
+
+```
+
+## Conversion of date/times to GMT
+
+Users provided tag deployment dates and times in local time.  We need to convert
+these to GMT.  This is not trivial, as GMT offsets vary with location and time
+of year.  There doesn't appear to be an R package to handle this, but there's
+a nodejs library to do so [here](https://github.com/mattbornski/tzwhere). 
+We implement the lookup as a function that builds a simple javascript
+file and runs it through nodejs:
+
+```{r}
+x$tsGMT = x %>% with(getGMTFromLocal(Latitude, Longitude, Yr, Month, Day, sub(":.*", "", Release.Time), sub(".*:", "", Release.Time)))
+bad = which(x$tsGMT == 0)
+badSite = unique(x$LocationID[bad])
+```
+
+This leaves `r sum(bad)` dates uncorrected.  These correspond to these
+`r length(badSite)` sites:
+
+```{r}
+badSite
+```
+
+Sjoerd provided (Dec. 21) timezones for these sites:
+```{r}
+sts = as.tbl(readRDS("TZ.rds"))
+sts = sts %>% mutate(TZ=gsub(" ", "", as.character(TZ)))
+
+x$tsGMT[bad] = x[bad,] %>%
+    with( ymd_hms(paste(Yr, Month, Day,
+                        sub(":.*", "", Release.Time),
+                        sub(".*:", "", Release.Time),
+                        0
+                        ),
+                  tz = (x[bad,] %>% left_join (sts, on="LocationID")) $TZ)
+         )
+
+## Representing Additional fields in the comments
+
+We include the following items in a JSON-encoded list which goes
+into the `comment` field in the motus tag deployment registration:
+
+ - AgeID
+ - bill
+ - blood
+ - comments
+ - Country
+ - Culmen
+ - FatScore
+ - Include_in_analysis
+ - LocationID
+ - Province
+ - SexID
+ - tarsus
+ - Tot_Head
+ - Weight
+ - Wing
+
 
 Read the frame of matched tags.
 
@@ -32,23 +155,11 @@ motusLoadSecrets("~/.secrets/motusSecrets.json")
 x = readRDS("2015_paul_smith_shorebirds_reconciled.rds")
 ```
 
-Try match the fields in the spreadsheet with those required / available
-for a motus tag deployment.  Any additional fields in the spreadsheet
-will be encoded as JSON strings in the comments field.  (The spreadsheet comments
-field itself will become an item in that JSON string).
+Motus requires numeric species IDs, so we lookup the  motus IDs for each species code:
 
 ```{r, cached=TRUE}
-## parameters for tag registration, directly from the function
-## in the R motus package.
-mf = motusDeployTag %>% formals %>% names
-
-sf = colnames(x)
-
-ff = gmatch("Match motus deployment fields", "Motus", mf, "Spreadsheet", sf)
-
-## get motus IDs for each species code
 speciesID = list()
-for(m in unique(unlist(x[,12])))
+for(m in unique(x$SpeciesID))
     speciesID[[m]] = motusListSpecies(m, qlang="CD")$id[1]
 
 ```
