@@ -21,7 +21,7 @@ MOTUS_API_DEBUG = 'http://motus-wts.org/data/api/v1.0/debug.jsp'
 
 MOTUS_FLOAT_FIELDS = c("tsStart", "tsEnd", "regStart", "regEnd",
 "offsetFreq", "period", "periodSD", "pulseLen", "param1", "param2",
-"param3", "param4", "param5", "param6", "ts", "nomFreq")
+"param3", "param4", "param5", "param6", "ts", "nomFreq", "deferTime", "lat", "lon", "elev")
 
 ## a regular expression for replacing values that need to be floats
 ## Note: only works for named scalar parameters; i.e. "XXXXX":00000

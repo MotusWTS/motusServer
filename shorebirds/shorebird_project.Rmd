@@ -97,7 +97,7 @@ projID[["Holbt"]] = 8
 
 Now get the full tag databases from sensorgnome.org for 2012-2015
 
-```{r, cache=TRUE}
+```{r}
 sg = rbind(
     cbind( year=2012, read.csv("2012_tags.csv", as.is=TRUE)),
     cbind( year=2013, read.csv("2013_tags.csv", as.is=TRUE)),
@@ -115,7 +115,7 @@ with motus.  The code loops through each spreadsheet project, trying
 to match those tags against the ones registered with motus under the
 corresponding project.
 
-```{r, cached=TRUE, warning=FALSE}
+```{r, warning=FALSE}
 found = multi = collide = lost = NULL
 
 ## sets of motus-registered tags
@@ -229,40 +229,39 @@ Here is the code used:
 ```{r, cached=TRUE, eval=FALSE}
 ## only run once
 
-if (172 %in% as.numeric(cf$mfgID)) {
-    ## Tag 172 from 2015 was a twin of that from project Selva, so dropped.
-    ## Read its parameters from the database of James Bay project tags
-    tmp = read.csv("/disco/SG/contrib/2015/JamesBay/2015_JamesBay_tag_database.csv", as.is=TRUE) %>%
-        subset(id == 172)
+## Tag 172 from 2015 was a twin of that from project Selva, so dropped.
+## Read its parameters from the database of James Bay project tags
+tmp = read.csv("/disco/SG/contrib/2015/JamesBay/2015_JamesBay_tag_database.csv", as.is=TRUE) %>%
+    subset(id == 172)
 
-    regts = ymd("2015-05-30")
+regts = ymd("2015-05-30")
 
-    try({
-        with(tmp, 
-             motusRegisterTag(
-                 projectID = pid,
-                 mfgID = "172",
-                 manufacturer = "Lotek",
-                 type = "ID",
-                 codeSet = "Lotek-4",
-                 offsetFreq = dfreq + (fcdFreq - tagFreq) * 1000,
-                 period = bi,
-                 periodSD = bi.sd,
-                 pulseLen = 2.5,
-                 param1 = g1,
-                 param2 = g2,
-                 param3 = g3,
-                 param4 = g1.sd,
-                 param5 = g2.sd,
-                 param6 = g3.sd,
-                 paramType = 1,
-                 ts = as.numeric(regts),
-                 nomFreq = tagFreq,
-                 dateBin = sprintf("%4d-%1d", year(regts), ceiling(month(regts)/3)),
-                 show = TRUE
-             ))
-    })
-}
+try({
+    with(tmp, 
+         motusRegisterTag(
+             projectID = pid,
+             mfgID = "172",
+             manufacturer = "Lotek",
+             type = "ID",
+             codeSet = "Lotek-4",
+             offsetFreq = dfreq + (fcdFreq - tagFreq) * 1000,
+             period = bi,
+             periodSD = bi.sd,
+             pulseLen = 2.5,
+             param1 = g1,
+             param2 = g2,
+             param3 = g3,
+             param4 = g1.sd,
+             param5 = g2.sd,
+             param6 = g3.sd,
+             paramType = 1,
+             ts = as.numeric(regts),
+             nomFreq = tagFreq,
+             dateBin = sprintf("%4d-%1d", year(regts), ceiling(month(regts)/3)),
+             show = TRUE
+         ))
+})
+
 ```
 
 ### Tags 376-379
@@ -274,6 +273,8 @@ bindUserMotus = function(u, m, fromLost=TRUE) {
     ## bind rows of user tags to motus tags, respectively
     if (nrow(u) != nrow(m))
         stop("need same number of rows in both parameters")
+    if (nrow(u) == 0)
+        return()
     ## lookup specified user rows in table of missing rows
     if (fromLost) {
         src = which(duplicated(rbind(u, lost))) - nrow(u)
@@ -313,6 +314,7 @@ Perhaps these two had mis-recorded ID numbers?  We register tag 226:
 
 ```{r, cached=TRUE, eval=FALSE}
 ## Read its parameters from the Lotek master database on the server
+
 g = getLotekTagSig(226)
 
 regts = ymd("2014-05-01")
@@ -340,6 +342,7 @@ try({
         dateBin = sprintf("%4d-%1d", year(regts), ceiling(month(regts)/3))
     )
 })
+
 ```
 
 ## Larry Niles Tags 2014 - 2015
@@ -357,9 +360,9 @@ But tags 244...261 and 511 are registered to Niles 2015 with BI ~6.1, and these
 are otherwise unmatched, so the BI in the spreadsheet must be incorrect.
 **[Sjoerd]**
 
-```{r}
+```{r, eval=FALSE}
 
-fixBI = c(244, 246:261, 511)
+fixBI = c(244:261, 511)
 
 bindUserMotus(
     t %>% filter(as.integer(TrackerID) %in% fixBI),
@@ -403,7 +406,7 @@ For 2015, there are still 2 unmatched Niles tags; these have unknown IDs:
 
 ```{r}
 t = lost %>% filter( name==P & Yr==2015 ) %>% arrange(Yr, TrackerID)
-t %>% subset(! as.integer(TrackerID) %in% fixBI)
+t
 ```
 
 These might be among the `r sum(sg$proj=="Niles") - sum(found$name=="Larry Niles")`
@@ -503,7 +506,7 @@ spreadsheet, which lists 10.2 instead of the 8.9 common to the rest of
 the tags in that set in the spreadsheet, and in Kate Obrien's registrations.
 
 We match these:
-```{r}
+```{r, eval=FALSE}
 
 fixBI = 274:276
 
@@ -573,7 +576,7 @@ for (i in 1:nrow(comb)) {
 With the 2013 Holberton tags registered, we bind them to spreadsheet
 records:
 
-```{r}
+```{r, eval=FALSE}
 bindUserMotus(
     t %>% select( -iid ) %>% arrange(TrackerID), ## remove added column
     subset(motus,
@@ -589,7 +592,7 @@ same for 2012 and 2013.  These are all in codeset 3, and at 166.3 MHz.
 
 ### Register 2013 tags with motus
 
-```{r}
+```{r, eval=FALSE}
 t = lost %>% filter(name=="Diana Hamilton" & Yr==2013) %>%
     mutate(iid = as.integer(TrackerID))
 
@@ -635,7 +638,7 @@ for (i in 1:nrow(comb)) {
 
 And now add these tags to the _found_ set:
 
-```{r}
+```{r, eval=FALSE}
 bindUserMotus(
     t %>% select ( -iid) %>% arrange (TrackerID),
     subset(motus,
@@ -649,7 +652,7 @@ bindUserMotus(
 
 Now 2012:
 
-```{r}
+```{r, eval=FALSE}
 t = lost %>% filter(name=="Diana Hamilton" & Yr==2012) %>%
     mutate(iid = as.integer(TrackerID))
 
@@ -694,7 +697,7 @@ for (i in 1:nrow(comb)) {
 
 And now add these tags to the _found_ set:
 
-```{r}
+```{r, eval=FALSE}
 bindUserMotus(
     t %>% select ( -iid) %>% arrange (TrackerID),
     subset(motus,
@@ -755,7 +758,7 @@ So it seems clear the tag deployed later, on Aug. 25, was __103__,
 rather than 183.  We make that change and bind the spreadsheet records
 to those from motus:
 
-```{r}
+```{r, eval=FALSE}
 ## both the spreadsheet and motus columns for tag 183 are already
 ## present in the collision tbl:
 names(cc)[grepl("comments.*", names(cc))] = "comments"
@@ -789,7 +792,7 @@ spreadsheet has the incorrect BI for the tag deployed May 18
 (i.e. for 314.0), as the deployment date and location match detections
 for the tag 314 with BI=5.3 seconds.  We fix this:
 
-```{r}
+```{r, eval=FALSE}
 names(cc)[grepl("comments.*", names(cc))] = "comments"
 ## tag 314.1 is indeed the one with a burst interval of 6.1s
 bindUserMotus( cc[2, 1:31], cc[2, 32:67], fromLost=FALSE)
@@ -848,6 +851,13 @@ to 203. It seems more likely that this is the tag deployed on Aug 11,
 otherwise the tag would have gone undetected for 10 days, rather than
 for 2 days.  Tag 204 has not been detected anywhere in the
 network so far, but 203 was detected at several sites. For now, we do not process these two tags. __[Sjoerd]__
+
+# Save Results
+
+```{r}
+RESULTS_FILE = "shorebird_results_1.rds"
+saveRDS(list(found=found, lost=lost, multi=multi, collide=collide), RESULTS_FILE)
+```
 
 \newpage
 

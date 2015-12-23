@@ -8,9 +8,21 @@ output:
        toc_depth: 4
 ---
 
-```{r setup, include=FALSE}
+
+```{r setup, include=FALSE, results="hide"}
 knitr::opts_chunk$set(comment="")
-options(warn=0)
+options(warn=0, digits=14) ## for full printing of timestamps
+library(dplyr)
+library(lubridate)
+library(motus, quietly=TRUE)
+```
+
+Read the frame of matched tags.
+
+```{r}
+motusLoadSecrets("~/.secrets/motusSecrets.json")
+RESULTS_FILE = "shorebird_results_1.rds"
+x = readRDS(RESULTS_FILE)$found
 ```
 
 ```{r child="functions.Rmd", echo=FALSE, include=FALSE, cache=TRUE}
@@ -36,19 +48,19 @@ deployment   description                 how to obtain it from existing
   status     pending, deploy, or         `"pending"`
              terminate
                                          
- tsStart     timestamp for start of      see below
-             deployment                   ymd_hm  ## Except, this is local time.`
+ lat         latitude                    `Latitude`
                                          
-speciesID    numeric motus ID for this   `speciesID[x$SpeciesID]`
+ lon         longitude                   `Longitude`
+                                         
+ tsStart     timestamp for start of      see below
+             deployment
+                                         
+speciesID    numeric motus ID for this   `spCodeID[x$SpeciesID]` (and see below)
              species
                                          
 markerType   type of marker              `"metal band"`
                                          
 markerNumber number on marker            `MetalOut`
-                                         
- lat         latitude                    `Latitude`
-                                         
- lon         longitude                   `Longitude`
                                          
  comments    comments; we use JSON to     see below
              represent the remaining
@@ -73,11 +85,12 @@ general area:
 
 Lat=39.1887706, Lon=-74.951186 as seen [here](https://www.google.ca/maps/place/39%C2%B011'19.6%22N+74%C2%B057'04.3%22W/@39.1887706,-74.9533747,17z/data=!3m1!4b1!4m2!3m1!1s0x0:0x0)
 
-Sjoerd also provided (Dc. 21) a correction to the location for Avalon.
+Sjoerd also provided (Dec. 21) a correction to the location for Avalon.
 
 We fill these in now:
 
 ```{r}
+
 x[x$LocationID=="Villas, Eldredge", "Latitude"] = 39.0445286
 x[x$LocationID=="Villas, Eldredge", "Longitude"] = -74.9312826
 
@@ -99,8 +112,16 @@ We implement the lookup as a function that builds a simple javascript
 file and runs it through nodejs:
 
 ```{r}
-x$tsGMT = x %>% with(getGMTFromLocal(Latitude, Longitude, Yr, Month, Day, sub(":.*", "", Release.Time), sub(".*:", "", Release.Time)))
+x = x %>%
+    mutate (
+        Hour = sub(":.*", "", Release.Time),
+        Min = sub(".*:", "", Release.Time),
+        tsGMT = getGMTFromLocal(Latitude, Longitude, Yr, Month, Day, Hour, Min )
+    )
+## indexes of bad timestamps (couldn't find timezone for point)
 bad = which(x$tsGMT == 0)
+
+## list of unique locations with no timezone
 badSite = unique(x$LocationID[bad])
 ```
 
@@ -111,33 +132,43 @@ This leaves `r sum(bad)` dates uncorrected.  These correspond to these
 badSite
 ```
 
-Sjoerd provided (Dec. 21) timezones for these sites:
+Sjoerd provided (Dec. 21) timezones for these sites, so we use those to
+convert release times to GMT.
 ```{r}
-sts = as.tbl(readRDS("TZ.rds"))
-sts = sts %>% mutate(TZ=gsub(" ", "", as.character(TZ)))
+## read timezones, removing blank spaces so ymd_hms() will recognize them
+sts = readRDS("TZ.rds") %>% as.tbl %>% mutate(TZ=gsub(" ", "", as.character(TZ)))
 
-x$tsGMT[bad] = x[bad,] %>%
-    with( ymd_hms(paste(Yr, Month, Day,
-                        sub(":.*", "", Release.Time),
-                        sub(".*:", "", Release.Time),
-                        0
-                        ),
-                  tz = (x[bad,] %>% left_join (sts, on="LocationID")) $TZ)
-         )
+## lookup corrected timezone by LocationID
+fixTZ = (x[bad,] %>% left_join (sts, by="LocationID")) $TZ
 
-## Representing Additional fields in the comments
+## we have to run this in a loop because the ymd_hms function doesn't
+## recycle the timezone argument
+
+for (i in seq(along=bad)) {
+    b = bad[i]  ## index of i'th bad (i.e. unknown timezone) timestamp
+    x$tsGMT[b] = with(x,
+                      ymd_hms(paste(Yr[b], Month[b], Day[b],
+                                    sub(":.*", "", Release.Time[b]), ## HH
+                                    sub(".*:", "", Release.Time[b]), ## MM
+                                    0                                ## SS
+                                    ),
+                              tz = fixTZ[i]
+                              )
+                      )
+}
+ 
+```
+## Representing Additional Fields in the Properties Item
 
 We include the following items in a JSON-encoded list which goes
-into the `comment` field in the motus tag deployment registration:
+into the `properties` field in the motus tag deployment registration:
 
  - AgeID
  - bill
  - blood
- - comments
  - Country
  - Culmen
  - FatScore
- - Include_in_analysis
  - LocationID
  - Province
  - SexID
@@ -146,21 +177,67 @@ into the `comment` field in the motus tag deployment registration:
  - Weight
  - Wing
 
+## Species Code
 
-Read the frame of matched tags.
-
-```{r, results="hide"}
-library(motus, quietly=TRUE)
-motusLoadSecrets("~/.secrets/motusSecrets.json")
-x = readRDS("2015_paul_smith_shorebirds_reconciled.rds")
-```
-
-Motus requires numeric species IDs, so we lookup the  motus IDs for each species code:
+Motus requires numeric species IDs, so we lookup the motus IDs for
+each 4-letter species code:
 
 ```{r, cached=TRUE}
-speciesID = list()
+spCodeID = list()
 for(m in unique(x$SpeciesID))
-    speciesID[[m]] = motusListSpecies(m, qlang="CD")$id[1]
+    spCodeID[[m]] = motusListSpecies(m, qlang="CD")$id[1]
 
 ```
 
+## Upload Deployment Records
+
+We now have everything we need.
+
+```{r}
+
+RESULTS2_FILE = "shorebird_results_2.rds"
+saveRDS(x, RESULTS2_FILE)
+
+## we'll want to remove any property values which are NA
+trimList = function(...) {
+    l = list(...)
+    l[! sapply(l, function(x) is.null(x) || is.na(x))]
+}
+
+#for (i in 1:nrow(x)) {
+for (i in 1:1) {
+    with(x[i, ],
+         motusDeployTag(
+             tagID        = tagID,
+             status       = "pending",
+             lat          = Latitude,
+             lon          = Longitude,
+             tsStart      = tsGMT,
+             speciesID    = spCodeID[[SpeciesID]],
+             markerType   = "metal band",
+             markerNumber = MetalOut,
+             comments     = comments,
+             properties   = trimList (
+                 ageID      = AgeID,
+                 bill       = bill,
+                 blood      = blood,
+                 country    = Country,
+                 culmen     = Culmen,
+                 fatScore   = FatScore,
+                 locationID = LocationID,
+                 province   = Province,
+                 sexID      = SexID,
+                 tarsus     = tarsus,
+                 totHead    = Tot_Head,
+                 weight     = Weight,
+                 wing       = Wing
+             )
+         ))
+}
+
+```
+
+\newpage
+
+```{r, child=c("appendix2.Rmd")}
+```

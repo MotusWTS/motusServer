@@ -49,8 +49,12 @@
 #' @param elev [optional] Elevation above sea level (meters) of the
 #'     deployment site. E.g. 23.
 #'
-#' @param comments [optional] can be plain text, or a JSON-formatted string
-#'     giving additional parameters
+#' @param comments [optional] deployment-related comment
+#'
+#' @param properties [optional] list or vector; additional properties
+#'     of the deployment or the organism on which the tag is deployed.
+#'     This will be formatted as a JSON string then inserted into the
+#'     \code{properties} field of the database.
 #' 
 #' @param ts [optional] Time at which deployment information
 #'     was generated.  Defaults to time at which function is called.
@@ -65,40 +69,42 @@
 motusDeployTag = 
     function(
              tagID,
-             status = c("pending", "deploy", "terminate"),
+             status       = c("pending", "deploy", "terminate"),
              tsStart,
-             tsEnd = NULL,
-             deferTime = 0,
-             speciesID = NA,
-             markerType = NA,
-             markerNumber = NA,
-             lat = NA,
-             lon = NA,
-             elev = NA,
-             comments = NULL,
-             ts = Sys.time()
+             tsEnd        = NULL,
+             deferTime    = 0,
+             speciesID    = NULL,
+             markerType   = NULL,
+             markerNumber = NULL,
+             lat          = NULL,
+             lon          = NULL,
+             elev         = NULL,
+             comments     = NULL,
+             properties   = NULL,
+             ts           = as.numeric(Sys.time())
              ) {
+
+        status = match.arg(status)
+        if (! is.null(properties))
+            properties = toJSON(properties)
         
-    motusQuery(MOTUS_API_DEPLOY_TAG, requestType="post",
-               list(
-                   projectID    = projectID,
-                   mfgID        = mfgID,
-                   manufacturer = manufacturer,
-                   type         = type,
-                   codeSet      = codeSet,
-                   offsetFreq   = offsetFreq,
-                   period       = period,
-                   periodSD     = periodSD,
-                   pulseLen     = pulseLen,
-                   param1       = param1,
-                   param2       = param2,
-                   param3       = param3,
-                   param4       = param4,
-                   param5       = param5,
-                   param6       = param6,
-                   paramType    = paramType,
-                   ts           = ts,
-                   nomFreq      = nomFreq,
-                   dateBin      = dateBin
-               ), ...)
-}
+        motusQuery(
+            MOTUS_API_DEPLOY_TAG,
+            requestType="post",
+            list(
+                tagID        = tagID,
+                status       = status,
+                tsStart      = tsStart,
+                tsEnd        = tsEnd,
+                deferTime    = deferTime,
+                speciesID    = speciesID,
+                markerType   = markerType,
+                markerNumber = markerNumber,
+                lat          = lat,
+                lon          = lon,
+                elev         = elev,
+                comments     = comments,
+                properties   = properties,
+                ts           = ts
+            ))
+    }
