@@ -17,13 +17,6 @@ library(lubridate)
 library(motus, quietly=TRUE)
 ```
 
-Read the frame of matched tags.
-
-```{r}
-motusLoadSecrets("~/.secrets/motusSecrets.json")
-RESULTS_FILE = "shorebird_results_1.rds"
-x = readRDS(RESULTS_FILE)$found
-```
 
 ```{r child="functions.Rmd", echo=FALSE, include=FALSE, cache=TRUE}
 ```
@@ -33,6 +26,16 @@ x = readRDS(RESULTS_FILE)$found
 Now that we've reconciled registrations of (almost) all tags from the
 spreadsheet Paul Smith has assembled, we need to push the tag metadata
 to motus-wts.org
+
+# Read Data from Part 1.
+
+Read the frame of matched tags.
+
+```{r}
+motusLoadSecrets("~/.secrets/motusSecrets.json")
+RESULTS_FILE = "shorebird_results_1.rds"
+x = readRDS(RESULTS_FILE)$found
+```
 
 # Deployment Fields
 
@@ -204,8 +207,7 @@ trimList = function(...) {
     l[! sapply(l, function(x) is.null(x) || is.na(x))]
 }
 
-#for (i in 1:nrow(x)) {
-for (i in 1:1) {
+for (i in 1:nrow(x)) {
     with(x[i, ],
          motusDeployTag(
              tagID        = tagID,

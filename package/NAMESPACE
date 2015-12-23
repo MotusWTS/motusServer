@@ -1,6 +1,7 @@
 export (
     getProjectTags,
     matchTags,
+    motusDeleteTagDeployment,
     motusDeployTag,
     motusListProjects,
     motusListSensors,

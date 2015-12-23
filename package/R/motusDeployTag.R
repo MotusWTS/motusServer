@@ -54,7 +54,8 @@
 #' @param properties [optional] list or vector; additional properties
 #'     of the deployment or the organism on which the tag is deployed.
 #'     This will be formatted as a JSON string then inserted into the
-#'     \code{properties} field of the database.
+#'     \code{properties} field of the database.  FIXME: for now,
+#'     it goes into the comments field
 #' 
 #' @param ts [optional] Time at which deployment information
 #'     was generated.  Defaults to time at which function is called.
@@ -86,7 +87,7 @@ motusDeployTag =
 
         status = match.arg(status)
         if (! is.null(properties))
-            properties = toJSON(properties)
+            properties = toJSON(c(properties, comments=comments), auto_unbox=TRUE)
         
         motusQuery(
             MOTUS_API_DEPLOY_TAG,
@@ -103,8 +104,10 @@ motusDeployTag =
                 lat          = lat,
                 lon          = lon,
                 elev         = elev,
-                comments     = comments,
-                properties   = properties,
+                comments     = properties,
+                ## FIXME; when API works, use the following instead
+                ## comments     = comments,
+                ## properties   = properties,
                 ts           = ts
             ))
     }

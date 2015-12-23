@@ -13,6 +13,7 @@ MOTUS_API_LIST_SENSORS = 'http://motus-wts.org/data/api/v1.0/listsensors.jsp'
 MOTUS_API_LIST_SPECIES = 'http://motus-wts.org/data/api/v1.0/listspecies.jsp'
 MOTUS_API_SEARCH_TAGS = 'http://motus-wts.org/data/api/v1.0/searchtags.jsp'
 MOTUS_API_DEBUG = 'http://motus-wts.org/data/api/v1.0/debug.jsp'
+MOTUS_API_DELETE_TAG_DEPLOYMENT = 'http://motus-wts.org/data/api/v1.0/deletetagdeployment.jsp'
 
 # a list of field names which must be formatted as floats so that
 # the motus API recognizes them correctly.  This means that if they
