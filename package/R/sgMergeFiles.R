@@ -182,12 +182,13 @@ sgMergeFiles = function(src, files) {
             ## not yet in database
             dbGetPreparedQuery(
                 con,
-                "insert into files (name, size, bootnum, ts, tscode, tsDB, isDone, contents) values (:name, :size, :bootnum, :ts, :tscode, :tsDB, :isDone, :contents)",
+                "insert into files (name, size, bootnum, monoBN, ts, tscode, tsDB, isDone, contents) values (:name, :size, :bootnum, :monoBN, :ts, :tscode, :tsDB, :isDone, :contents)",
                 
                 data_frame(
                     name     = newf$name[i],
                     size     = attr(fcon, "len"),
                     bootnum  = newf$Fbootnum[i],
+                    monoBN   = bootnum,
                     ts       = newf$Fts[i],
                     tscode   = newf$FtsCode[i],
                     tsDB     = now,
@@ -208,11 +209,10 @@ sgMergeFiles = function(src, files) {
     }
     return (newf %>%
             transmute(
-                use = use & ! corrupt,
                 name = fullname,
+                use = use & ! corrupt,
                 new = new,
                 done = done,
-                use = use,
                 corrupt = corrupt,
                 small = small,
                 partial = partial,
