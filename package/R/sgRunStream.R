@@ -14,6 +14,7 @@
 #' 
 #' @param f function with this signature:
 #' \enumerate{
+#' \item mbn integer monotonic boot number; same value passed to \code{sgRunStream}
 #' \item fts numeric file timestamp; the timestamp encoded in the file name
 #' \item state integer representing sequencing state; one of these values:
 #' \enumerate{
@@ -51,8 +52,8 @@ sgRunStream = function(src, mbn, f, user=NULL) {
     
     if (! is.integer(mbn))
         stop("mbn must be an integer")
-    if (!is.function(f) || length(formals(f)) != 4)
-        stop("f must be a function accepting 4 parameters")
+    if (!is.function(f) || length(formals(f)) != 5)
+        stop("f must be a function accepting 5 parameters")
 
     ## use low-level DBI functions for speed
     con = src$con   
@@ -69,10 +70,11 @@ sgRunStream = function(src, mbn, f, user=NULL) {
         return(NULL)
     }
 
-    f(NULL, 0L, NULL, user) ## allow user function to initialize
+    f(mbn, NULL, 0L, NULL, user) ## allow user function to initialize
     
     while (!dbHasCompleted(res)) {
         f(
+            mbn,
             chunk$ts[[1]],
             1L,
             chunk$contents[[1]] %>% memDecompress("bzip2", asChar=TRUE),
@@ -82,5 +84,5 @@ sgRunStream = function(src, mbn, f, user=NULL) {
      }
     dbClearResult(res)
     
-    return (f(NULL, 0L, NULL, user)) ## allow user function to finalize
+    return (f(mbn, NULL, 0L, NULL, user)) ## allow user function to finalize
 }
