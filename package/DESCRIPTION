@@ -11,6 +11,7 @@ Depends:
     R (>= 3.1.0),
     sensorgnome,
     dplyr,
+    stringi,
     jsonlite,
     digest,
     RCurl,
