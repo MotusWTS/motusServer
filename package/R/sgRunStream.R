@@ -16,11 +16,11 @@
 #' \enumerate{
 #' \item mbn integer monotonic boot number; same value passed to \code{sgRunStream}
 #' \item fts numeric file timestamp; the timestamp encoded in the file name
-#' \item state integer representing sequencing state; one of these values:
+#' \item cno chunk number, as follows:
 #' \enumerate{
-#' \item 0L chunk and timestamp invalid; called with this value only once, before first chunk 
-#' \item 1L chunk is valid;
-#' \item 2L chunk and timestamp invalid; called with this value only once, after last chunk; return value for this call becomes return value of \code{sgRunStream}
+#' \item negative; chunk and timestamp invalid; called with this value only once, before first chunk; value is number of chunks in stream
+#' \item positive; chunk is valid; \code{cno} is index of chunk, starting at 1
+#' \item 0L chunk and timestamp invalid; called with this value only once, after last chunk; return value for this call becomes return value of \code{sgRunStream}
 #' }
 #'
 #' \item dat character scalar; the file contents, with embedded newlines
@@ -39,7 +39,26 @@
 #'     Any side-effects or accumulation of return value must be
 #'     performed by \code{f}.
 #'
-#' @examples give an example
+#' @examples
+#' 
+#' ##  u = new.env(emptyenv())
+#' ##  a = sgRunStream(
+#' ##       s2,
+#' ##       18L,
+#' ##       function(bn, ts, cno, ct, u) {
+#' ##         if (cno < 0){
+#' ##            u$ct=vector("list", -cno)
+#' ##         } else if (cno > 0) {
+#' ##            u$ct[[cno]] = unlist(stri_extract_all_regex(ct, "^G,[-,\\.0-9E]+$", opts_regex=list(multiline=TRUE), omit_no_match=TRUE))
+#' ##         } else {
+#' ##            return(u$ct)
+#' ##         }
+#' ##       },
+#' ##       u
+#' ##     )
+#' ##  g = stri_split_regex(unlist(u$ct), "[,\n]", simplify=TRUE, omit_no_match=TRUE)[,-1]
+#' ##  class(g) = "numeric" ## preserve dimensions
+#' 
 #'
 #' @export
 #' 
@@ -56,7 +75,19 @@ sgRunStream = function(src, mbn, f, user=NULL) {
         stop("f must be a function accepting 5 parameters")
 
     ## use low-level DBI functions for speed
-    con = src$con   
+    con = src$con
+    n = dbGetQuery(
+        con,
+        sprintf(
+            "select count(*) from files where monoBN=%d",
+            mbn)
+    ) [[1, 1]]
+
+    if (n == 0L) {
+        warning("No files for receiver have monoBN ==", mbn)
+        return(NULL)
+    }
+
     res <- dbSendQuery(
         con,
         sprintf(
@@ -64,23 +95,19 @@ sgRunStream = function(src, mbn, f, user=NULL) {
             mbn)
         )
 
-    chunk <- dbFetch(res, 1)
-    if (dbHasCompleted(res)) {
-        warning("No files for receiver have monoBN ==", mbn)
-        return(NULL)
-    }
-
-    f(mbn, NULL, 0L, NULL, user) ## allow user function to initialize
+    f(mbn, NULL, -n, NULL, user) ## allow user function to initialize
     
-    while (!dbHasCompleted(res)) {
+    i = 1L
+    while (i <= n) {
+        chunk = dbFetch(res, 1)
         f(
             mbn,
             chunk$ts[[1]],
-            1L,
+            i,
             chunk$contents[[1]] %>% memDecompress("bzip2", asChar=TRUE),
             user
         )
-        chunk <- dbFetch(res, 1)
+        i = i + 1L
      }
     dbClearResult(res)
     
