@@ -9,7 +9,7 @@
 --  possibly without intervening reboots of the receiver.
 
 CREATE TABLE batches (
-    ID INT PRIMARY KEY UNIQUE NOT NULL,                      -- unique identifier for this batch
+    ID BIGINT PRIMARY KEY UNIQUE NOT NULL,                   -- unique identifier for this batch
     motusRecvID INT NOT NULL,                                -- ID for the receiver; foreign key to
                                                              -- Motus DB table
     batchType VARCHAR(8) NOT NULL,                           -- type of batch "hits", "gps", or
@@ -19,7 +19,7 @@ CREATE TABLE batches (
     tsBegin FLOAT(53) NOT NULL,                              -- timestamp for start of period
                                                              -- covered by batch; unix-style:
                                                              -- seconds since 1 Jan 1970 GMT
-    tsEnd FLOAT(53) NOT NULL,                                -- timestamp for start of period
+    tsEnd FLOAT(53) NOT NULL,                                -- timestamp for end of period
                                                              -- covered by batch; unix-style:
                                                              -- seconds since 1 Jan 1970 GMT
     numRec INT,                                              -- count of records in this batch
@@ -34,6 +34,9 @@ CREATE TABLE batches (
                                                              -- transferred to motus; unix-style:
                                                              -- seconds since 1 Jan 1970 GMT; NULL
                                                              -- means not transferred
+                                                             -- If set, this means all records from batchRunInfo,
+                                                             -- hits, gps, and params which form part of this batch have
+                                                             -- already been transferred.
 
 );
 
@@ -42,18 +45,15 @@ CREATE TABLE batches (
 --  record info common across all hits in a tag run in each batch;
 
 CREATE TABLE batchRunInfo (
-    batchID INT NOT NULL REFERENCES batches, -- unique identifier of batch for this run
-    runID INT NOT NULL,                      -- identifier of run within batch; this ID might be
-                                             -- shared between different batches, if a run is split
-                                             -- across multiple batches.  But it is unique for a
-                                             -- given (motusRecvID, bootNum).
+    runID BIGINT NOT NULL PRIMARY KEY,       -- identifier of run; globally uique ID
+    batchID BIGINT NOT NULL REFERENCES batches, -- unique identifier of batch for this run
     motusTagID INT NOT NULL,                 -- ID for the tag detected; foreign key to Motus DB
                                              -- table
     len INT,                                 -- length of run within batch
     tsMotus FLOAT(53),                       -- timestamp when this record transferred to motus;
                                              -- unix-style: seconds since 1 Jan 1970 GMT; NULL means
-                                             -- not transferred
-    PRIMARY KEY (batchID, runID)             -- only one length per (runID,batchID)
+                                             -- not transferred; if this timestamp is set, it means
+                                             -- all the hits for the run have also been transferred
 );
 
 --  TABLE hits 
@@ -64,34 +64,25 @@ CREATE TABLE batchRunInfo (
 --  in the tables "gps" and "params"
 
 CREATE TABLE hits (
-    batchID INT NOT NULL REFERENCES batches, -- ID of batch this hit belongs to
-    ID INT NOT NULL,                         -- unique ID for this hit within this batch
-    ant TINYINT NOT NULL,                    -- antenna number (USB Hub port # for SG; antenna port
-                                             -- # for Lotek)
-    ts FLOAT(53) NOT NULL,                   -- timestamp (centre of first pulse in detection);
-                                             -- unix-style: seconds since 1 Jan 1970 GMT
-    sig FLOAT(24) NOT NULL,                  -- signal strength, in units appropriate to device;
-                                             -- e.g.; for SG/funcube; dB (max); for Lotek: raw
-                                             -- integer in range 0..255
-    sigSD FLOAT(24),                         -- standard deviation of signal strength, in device
-                                             -- units (NULL okay; e.g. Lotek)
-    noise FLOAT(24),                         -- noise level, in device units (NULL okay; e.g. Lotek)
-    freq FLOAT(24),                          -- frequency offset, in kHz (NULL okay; e.g. Lotek)
-    freqSD FLOAT(24),                        -- standard deviation of freq, in kHz (NULL okay;
-                                             -- e.g. Lotek)
-    slop FLOAT(24),                          -- discrepancy of pulse timing, in msec (NULL okay;
-                                             -- e.g. Lotek)
-    burstSlop FLOAT (24),                    -- discrepancy of burst timing, in msec (NULL okay;
-                                             -- e.g. Lotek)
-    runID INT NOT NULL,                      -- ID of run of detections of this tag within this
-                                             -- batch; this together with batchID references an entry
-                                             -- in batchRunInfo
-    posInRun INT NOT NULL,                   -- position of this detection in run of detections for
-                                             -- this tag, numbered from 1; FIXME: could be removed.
-    tsMotus FLOAT(53),                       -- timestamp when this record transferred to motus;
-                                             -- NULL means not transferred
-    PRIMARY KEY (batchID, ID),
-    FOREIGN KEY (batchID, runID) REFERENCES batchRunInfo(batchID, runID)
+    hitID BIGINT NOT NULL PRIMARY KEY              -- unique ID of this hit
+    runID BIGINT NOT NULL REFERENCES batchRunInfo, -- ID of batch this hit belongs to
+    ant TINYINT NOT NULL,                          -- antenna number (USB Hub port # for SG; antenna port
+                                                   -- # for Lotek)
+    ts FLOAT(53) NOT NULL,                         -- timestamp (centre of first pulse in detection);
+                                                   -- unix-style: seconds since 1 Jan 1970 GMT
+    sig FLOAT(24) NOT NULL,                        -- signal strength, in units appropriate to device;
+                                                   -- e.g.; for SG/funcube; dB (max); for Lotek: raw
+                                                   -- integer in range 0..255
+    sigSD FLOAT(24),                               -- standard deviation of signal strength, in device
+                                                   -- units (NULL okay; e.g. Lotek)
+    noise FLOAT(24),                               -- noise level, in device units (NULL okay; e.g. Lotek)
+    freq FLOAT(24),                                -- frequency offset, in kHz (NULL okay; e.g. Lotek)
+    freqSD FLOAT(24),                              -- standard deviation of freq, in kHz (NULL okay;
+                                                   -- e.g. Lotek)
+    slop FLOAT(24),                                -- discrepancy of pulse timing, in msec (NULL okay;
+                                                   -- e.g. Lotek)
+    burstSlop FLOAT (24)                           -- discrepancy of burst timing, in msec (NULL okay;
+                                                   -- e.g. Lotek)
 );
 
 
@@ -117,19 +108,15 @@ CREATE TABLE batchReplace (
 --  record GPS fixes from a receiver
 
 CREATE TABLE gps (
-    batchID INT NOT NULL REFERENCES batches, -- ID of batch this gps fix belongs to
-    ID INT NOT NULL,                         -- unique ID for this hit within this batch
-    ts FLOAT(53) NOT NULL,                   -- timestamp for this fix, according to receiver;
-                                             -- unix-style: seconds since 1 Jan 1970 GMT
-    tsGPS FLOAT(53),                         -- timestamp for this fix, according to GPS;
-                                             -- unix-style: seconds since 1 Jan 1970 GMT
-    lat FLOAT(24),                           -- latitude, decimal degrees N
-    lon FLOAT(24),                           -- longitude, decimal degrees E
-    elev FLOAT(24),                          -- metres above local sea level
-    tsMotus FLOAT(53),                       -- timestamp when this record transferred to motus; 0
-                                             -- means not transferred; unix-style: seconds since 1
-                                             -- Jan 1970 GMT
-    PRIMARY KEY (batchID, ID)                                                                                                                     
+    GPSID BIGINT NOT NULL PRIMARY KEY,          -- unique key of this GPS record
+    batchID BIGINT NOT NULL REFERENCES batches, -- ID of batch this gps fix belongs to
+    ts FLOAT(53) NOT NULL,                      -- timestamp for this fix, according to receiver;
+                                                -- unix-style: seconds since 1 Jan 1970 GMT
+    tsGPS FLOAT(53),                            -- timestamp for this fix, according to GPS;
+                                                -- unix-style: seconds since 1 Jan 1970 GMT
+    lat FLOAT(24),                              -- latitude, decimal degrees N
+    lon FLOAT(24),                              -- longitude, decimal degrees E
+    elev FLOAT(24)                              -- metres above local sea level
 );
 
 --  TABLE params
@@ -137,18 +124,14 @@ CREATE TABLE gps (
 --  record receiver parameter settings, such as listening frequency and gain
 
 CREATE TABLE params (
-    batchID INT NOT NULL REFERENCES batches, -- ID of batch this gps fix belongs to
-    ID INT NOT NULL,                         -- unique ID for this hit within this batch
+    paramID BIGINT NOT NULL PRIMARY KEY,     -- unique ID for this param record
+    batchID BIGINT NOT NULL REFERENCES batches, -- ID of batch this gps fix belongs to
     ts FLOAT(53) NOT NULL,                   -- timestamp for this setting; unix-style: seconds
                                              -- since 1 Jan 1970 GMT
     ant TINYINT NOT NULL,                    -- antenna number affected by this setting(USB Hub port
                                              -- # for SG; antenna port # for Lotek); 255 means all
     parID INT NOT NULL REFERENCES paramInfo, -- which parameter is being set, from a separate table
-    parVal FLOAT(53) NOT NULL,               -- value of this parameter
-    tsMotus FLOAT(53),                       -- timestamp when this record transferred to motus; 0
-                                             -- means not transferred; unix-style: seconds since 1
-                                             -- Jan 1970 GMT
-    PRIMARY KEY (batchID, ID)                                                                                                                     
+    parVal FLOAT(53) NOT NULL                -- value of this parameter
 );
 
 --  TABLE batchSWInfoSet
