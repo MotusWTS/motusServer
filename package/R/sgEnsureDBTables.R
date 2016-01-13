@@ -47,9 +47,9 @@ contents BLOB                                      -- contents of file; bzip2-co
 ");
 
     sql("create index files_name on files ( name )")
-    sql("create index files_bootnum on files ( bootnum )")
+    sql("create index files_bootnum on files ( monoBN )")
     sql("create index files_ts on files ( ts )")
-    sql("create index files_all on files ( bootnum, ts )")
+    sql("create index files_all on files ( monoBN, ts )")
   }
 
   ## a database of timepins mapping GPS timestamps to system timestamps, for periods when
@@ -86,7 +86,7 @@ tsAfter  double                                    -- system timestamp after a b
   if (! "gps" %in% tables) {
     sql("
 create table gps (
-ts      double,                              -- system timestamp for this record
+ts      double unique primary key,           -- system timestamp for this record
 gpsts   double,                              -- gps timestamp
 lat     double,                              -- latitude, decimal degrees
 lon     double,                              -- longitude, decimal degrees
