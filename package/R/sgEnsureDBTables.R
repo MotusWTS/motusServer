@@ -8,6 +8,11 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
+## list of tables needed in the receiver database
+
+sgTableNames = c("meta", "files", "timepins", "timeJumps", "GPS", "params", "pulseCounts", "batches",
+                 "runs", "hits", "batchProgs", "batchParams")
+
 sgEnsureDBTables = function(src) {
     if (! inherits(src, "src_sqlite"))
         stop("src is not a dplyr::src_sqlite object")
@@ -15,10 +20,13 @@ sgEnsureDBTables = function(src) {
     if (! inherits(con, "SQLiteConnection"))
         stop("src is not open or is corrupt; underlying db connection invalid")
 
+    tables = src_tbls(src)
+
+    if (all(sgTableNames %in% tables))
+        return()
+    
     ## function to send a single statement to the underlying connection
     sql = function(...) dbGetQuery(con, sprintf(...))   
-
-    tables = src_tbls(src)
 
     if (! "meta" %in% tables) {
         sql("
@@ -27,7 +35,6 @@ key  character not null unique primary key, -- name of key for meta data
 val  character                              -- character string giving meta data; might be in JSON format
 )
 ");
-        sql("create index meta_key on meta ( key )")
     }
 
     if (! "files" %in% tables) {
@@ -93,7 +100,6 @@ lon     double,                              -- longitude, decimal degrees
 alt     double                               -- altitude, metres
 )");
     
-    sql("create index gps_ts on gps ( ts )")
   }
 
   if (! "params" %in% tables) {
@@ -125,4 +131,98 @@ bootnum integer                              -- boot count for file generating t
       sql( "create index pulseCounts_pcode on pulseCounts ( pcode )")
       sql( "create index pulseCounts_all on pulseCounts ( hourBin, pcode )")
   }
+
+    if (! "batches" %in% tables) {
+        sql("
+CREATE TABLE batches (
+    ID INTEGER PRIMARY KEY,                   -- unique identifier for this batch
+    monoBN INT,                               -- boot number for this receiver; (NULL
+                                              -- okay; e.g. Lotek)
+    tsBegin FLOAT(53),                        -- timestamp for start of period
+                                              -- covered by batch; unix-style:
+                                              -- seconds since 1 Jan 1970 GMT
+    tsEnd FLOAT(53),                          -- timestamp for end of period
+                                              -- covered by batch; unix-style:
+                                              -- seconds since 1 Jan 1970 GMT
+    numRuns INT,                              -- count of runs in this batch
+    numHits BIGINT,                           -- count of hits in this batch
+    ts FLOAT(53)                              -- timestamp when this batch record was
+                                              -- added; unix-style: seconds since 1
+                                              -- Jan 1970 GMT
+);
+")
+    }
+    if (! "runs" %in% tables) {
+        sql("
+CREATE TABLE runs (
+    runID INTEGER PRIMARY KEY,                   -- identifier of run; unique for this receiver
+    batchID INTEGER NOT NULL REFERENCES batches, -- unique identifier of batch for this run
+    motusTagID INT NOT NULL,                     -- ID for the tag detected; foreign key to Motus DB
+                                                 -- table
+    len INT,                                     -- length of run within batch
+    tsMotus FLOAT(53)                            -- timestamp when this record transferred to motus;
+                                                 -- unix-style: seconds since 1 Jan 1970 GMT; NULL means
+                                                 -- not transferred; if this timestamp is set, it means
+                                                 -- all the hits for the run have also been transferred
+);
+
+")
+    }
+    if (! "hits" %in% tables) {
+        sql("
+CREATE TABLE hits (
+    hitID INTEGER PRIMARY KEY,                    -- unique ID of this hit
+    runID INTEGER NOT NULL REFERENCES runs,       -- ID of batch this hit belongs to
+    ant TINYINT NOT NULL,                          -- antenna number (USB Hub port # for SG; antenna port
+                                                   -- # for Lotek)
+    ts FLOAT(53) NOT NULL,                         -- timestamp (centre of first pulse in detection);
+                                                   -- unix-style: seconds since 1 Jan 1970 GMT
+    sig FLOAT(24) NOT NULL,                        -- signal strength, in units appropriate to device;
+                                                   -- e.g.; for SG/funcube; dB (max); for Lotek: raw
+                                                   -- integer in range 0..255
+    sigSD FLOAT(24),                               -- standard deviation of signal strength, in device
+                                                   -- units (NULL okay; e.g. Lotek)
+    noise FLOAT(24),                               -- noise level, in device units (NULL okay; e.g. Lotek)
+    freq FLOAT(24),                                -- frequency offset, in kHz (NULL okay; e.g. Lotek)
+    freqSD FLOAT(24),                              -- standard deviation of freq, in kHz (NULL okay;
+                                                   -- e.g. Lotek)
+    slop FLOAT(24),                                -- discrepancy of pulse timing, in msec (NULL okay;
+                                                   -- e.g. Lotek)
+    burstSlop FLOAT (24)                           -- discrepancy of burst timing, in msec (NULL okay;
+                                                   -- e.g. Lotek)
+);
+")
+    }
+    if (! "batchProgs" %in% tables) {
+        sql("
+CREATE TABLE batchProgs (
+    batchID INT NOT NULL references batches, -- which batch run this record refers to
+    progName VARCHAR(16) NOT NULL,           -- identifier of program; e.g. 'find_tags',
+                                             -- 'lotek-plugins.so'
+    progVersion CHAR(40) NOT NULL,           -- git commit hash for version of code used
+    progBuildTS FLOAT(53) NOT NULL,          -- timestamp of binary for this program; unix-style:
+                                             -- seconds since 1 Jan 1970 GMT; NULL means not
+                                             -- transferred
+    tsMotus FLOAT(53),                       -- timestamp when this record transferred to motus;
+                                             -- unix-style: seconds since 1 Jan 1970 GMT; NULL means
+                                             -- not transferred
+    PRIMARY KEY (batchID, progName)          -- only one version of a given program per batch
+);
+")
+    }
+    if (! "batchParams" %in% tables) {
+        sql("
+CREATE TABLE batchParams (
+    batchID INT NOT NULL references batches,   -- which batch run this parameter setting is for
+    progName VARCHAR(16) NOT NULL,             -- identifier of program; e.g. 'find_tags',
+                                               -- 'lotek-plugins.so'
+    paramName varchar(16) NOT NULL,            -- name of parameter (e.g. 'minFreq')
+    paramVal FLOAT(53) NOT NULL,               -- value of parameter
+    tsMotus FLOAT(53),                         -- timestamp when this record transferred to motus;
+                                               -- unix-style: seconds since 1 Jan 1970 GMT; NULL means
+                                               -- not transferred
+    PRIMARY KEY (batchID, progName, paramName) -- only one value of a given parameter per program per batch
+);
+")
+    }
 }
