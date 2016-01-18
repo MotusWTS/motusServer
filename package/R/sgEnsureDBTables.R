@@ -195,6 +195,9 @@ CREATE TABLE hits (
     }
     if (! "batchProgs" %in% tables) {
         sql("
+-- This table only records changes to progVersion, or progBuildTS by batchID.
+-- It is assumed batchIDs are chronological, and that any change applies to all
+-- batches after a given record.
 CREATE TABLE batchProgs (
     batchID INT NOT NULL references batches, -- which batch run this record refers to
     progName VARCHAR(16) NOT NULL,           -- identifier of program; e.g. 'find_tags',
@@ -213,6 +216,11 @@ CREATE TABLE batchProgs (
     if (! "batchParams" %in% tables) {
         sql("
 CREATE TABLE batchParams (
+-- This table only records changes to parameters by batchID.
+-- The value of a parameter used to run batch X is the value in this table from
+-- the record with the largest batchID not exceeding X.
+-- i.e. it is assumed batchIDs are chronological, and that any change applies to all
+-- batches after a given record.
     batchID INT NOT NULL references batches,   -- which batch run this parameter setting is for
     progName VARCHAR(16) NOT NULL,             -- identifier of program; e.g. 'find_tags',
                                                -- 'lotek-plugins.so'
