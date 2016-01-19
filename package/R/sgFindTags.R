@@ -40,7 +40,9 @@ sgFindTags = function(src, tagDB, par = NULL, mbn = NULL) {
     cmd = paste(cmd, pars, tagDB, src$path, " > /tmp/errors.txt 2>&1")
     u$p = pipe(cmd, "wb", encoding="")
 
-    Sys.sleep(15)
+    ## cat("Doing ", cmd, "\n")
+    
+    ## Sys.sleep(15)
     
     saveTZ = Sys.getenv("TZ")
     Sys.setenv(TZ="GMT")
@@ -74,18 +76,5 @@ sgFindTags = function(src, tagDB, par = NULL, mbn = NULL) {
     ## get ID and stats for new batch of tag detections
     rv = dbGetQuery(src$con, "select ID, numRuns, numHits from batches order by ID desc limit 1")
 
-    ## ## update monoBN, ts in batch record 
-    ## dbGetQuery(src$con, sprintf("update batches set monoBN=%d, ts=%.4f where ID=%f",
-    ##                             {
-    ##                                 if(is.null(mbn))
-    ##                                     -1
-    ##                                 else
-    ##                                     mbn[1]
-    ##                             },
-    ##                             tStart,
-    ##                             rv[[1, 1]]
-    ##                             ))
-                                
-                                
     return (c(rv))
 }
