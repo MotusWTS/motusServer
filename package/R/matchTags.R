@@ -49,6 +49,8 @@
 #' \item none: the rows from \code{u} having no match in \code{m}
 #'
 #' }
+#'
+#' @export
 #' 
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 

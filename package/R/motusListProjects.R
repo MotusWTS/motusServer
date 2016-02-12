@@ -7,6 +7,8 @@
 #'
 #' @return the list of motus projects
 #'
+#' @export
+#' 
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 motusListProjects = function(type=c("both", "tag", "sensor"), ...) {

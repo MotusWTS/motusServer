@@ -11,6 +11,8 @@
 #' @return the list of motus tags registered in the given year to the
 #'     given project.
 #'
+#' @export
+#' 
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 motusListTags = function(projectID, year = NULL, mfgID = NULL, ...) {

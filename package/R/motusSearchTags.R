@@ -35,6 +35,8 @@
 #' @return the list of motus tags and their meta data satisfying the
 #'     search criteria, or NULL if there are none.
 #'
+#' @export
+#' 
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 motusSearchTags = function(projectID = NULL, tsStart = NULL, tsEnd = NULL, searchMode=c("startsBetween", "overlaps"), defaultLifespan=90, lifespanBuffer=1.5, regStart = NULL, regEnd = NULL, mfgID = NULL, ...) {

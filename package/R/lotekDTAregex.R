@@ -1,8 +1,9 @@
-# A PCRE-style regular expression for matching interesting parts of
-# Lotek .DTA files.  Note that we use the 'possessive' version of
-# non-zero repeats.  i.e. '++' instead of '+', as this prevents huge
-# consumption of stack space for possible backtracking, which we never
-# need here.
+#' A PCRE-style regular expression for matching interesting parts of
+#' Lotek .DTA files.  Note that we use the 'possessive' version of
+#' non-zero repeats.  i.e. '++' instead of '+', as this prevents huge
+#' consumption of stack space for possible backtracking, which we never
+#' need here.
+
 
 lotekDTAregex = 
 "(?sx)

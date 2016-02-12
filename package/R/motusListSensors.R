@@ -17,6 +17,8 @@
 #'
 #' @return the list of motus sensors.
 #'
+#' @export
+#'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 motusListSensors = function(projectID = NULL, year = NULL, serialNo=NULL, macAddress=NULL, ...) {

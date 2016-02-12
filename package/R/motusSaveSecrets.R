@@ -4,6 +4,8 @@
 #' in JSON format in the package file motusSecrets.json, from where
 #' they will be automatically read when the \code{motus} package is
 #' loaded.
+#'
+#' @export
 #' 
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 

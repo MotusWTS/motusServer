@@ -13,6 +13,8 @@
 #' @param user user on database; default: "motus"
 #'
 #' @return object of class dplyr::src_mysql
+#'
+#' @export
 #' 
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 

@@ -20,6 +20,8 @@
 #' }
 #' 
 #' If no tags are registered for the project, returns NULL.
+#'
+#' @export
 #' 
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 

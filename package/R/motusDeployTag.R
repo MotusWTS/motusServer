@@ -65,6 +65,8 @@
 #' package.  i.e. they are numbers representing seconds elapsed since the start of
 #' 1 Jan. 1970, GMT.
 #'
+#' @export
+#' 
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 motusDeployTag = 

@@ -14,6 +14,8 @@
 #' 
 #' @return TRUE if secrets were successfully loaded.
 #' 
+#' @export
+#' 
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 motusLoadSecrets = function(f, quiet=FALSE) {

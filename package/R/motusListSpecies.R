@@ -27,6 +27,9 @@
 #' \item french - french-language name of species
 #' \item scientific - scientific name of species
 #' }
+#'
+#' @export
+#' 
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 motusListSpecies = function(qstr = NULL,
