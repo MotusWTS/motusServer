@@ -1,0 +1,398 @@
+---
+title: "Work Log: Running tagfinder on all sites against a tag database including Paul Smith's
+Corrected Shorebird Tag Set"
+author: "John Brzustowski"
+date: "February, 2016"
+output:
+   pdf_document :
+       toc: true
+       toc_depth: 4
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(comment="")
+options(warn=0)
+```
+
+```{r child="functions.Rmd", echo=FALSE, include=FALSE, cache=TRUE}
+```
+
+# Summary
+
+We now have a full (as of 1 Feb. ) list of tags and metadata.  There
+are 79 which need reassignment between existing motus projects, but
+this will have to wait for Denis Lepage to return.  In the meantime,
+I do the reassignment in my local copy of the database.
+
+What needs doing:
+
+* generate a local copy of the tag DB for each year:
+    + get the existing motus DB
+    + perform reassignments of the project ID for the 79 tags
+    + figure out which, if any, remaining tags are duplicates and
+      should be removed
+    + replace registered gap values with the official values from Lotek
+    + replace registered BI values with the most likely value, given the
+     granularity of the BIs
+
+* generate a local copy of the motus metadata DB:
+    + merge data from different deployment records for the same tag;
+      some motus users had entered their own metadata, and these are
+      scattered across multiple deployment records, because the
+      deleteDeployment API doesn't work
+    + add data from 79 new tags
+
+* run every site from 2012..2015 using the find_tags_motus version of
+  the tag finder
+
+* generate .sqlite files for each project with site metadata and tag metadata
+  included in factored form
+
+* add a useful query function to the sensorgnome R package for the factored
+  form of the output.
+
+# Preliminaries
+
+Grab the entire tag list from motus:
+
+```{r, results="hide"}
+library(motus, quietly=TRUE)
+motusLoadSecrets("~/.secrets/motusSecrets.json")
+m = motusSearchTags() 
+for (dt in c("tsSG", "tsStart", "tsEnd"))
+    class(m[[dt]])=c("POSIXt", "POSIXct")
+## remove bogus test entries
+m = m %>% as.tbl %>% filter (! tagID %in% 8437:8439)
+
+## fix up datebins for tags registered with motus in 2016:
+m$dateBin[m$dateBin=="2016-1" & m$projectID %in% c(7, 8, 9, 10, 11, 12, 14, 17, 18)] = "2013-1"
+
+m$dateBin[m$dateBin=="2016-1" & m$projectID ==72] = "2015-2"
+
+## fix up mis-assignments of codeSet (FIXME: needs to be done on motus-wts)
+m$codeSet[m$tagID==16055] = "Lotek-4"
+m$codeSet[m$tagID %in% c(10697, 11500, 11501)] = "Lotek-3"
+
+```
+This DB is a mess - we've let duplicate deployments creep in.
+
+Read results from processing the spreadsheet.
+
+```{r}
+RESULTS_FILE = "shorebird_results_1.rds"
+x = readRDS(RESULTS_FILE)
+
+# reassign tags from project 25 to project 8:
+x$found$projectID[x$found$projectID==25]=8
+
+# and from project 66 to 27
+x$found$projectID[x$found$projectID==66]=27
+```
+
+Next, read the spreadsheet.  We copied the entire sheet and pasted as
+values into a new sheet, which was saved as a .CSV file.  We had tried
+to read the sheet using the `readxl::read_excel()` function, but this
+did not work well because in some columns (e.g. TrackerID), values
+were present as both numbers and as textual output of formulas.  The
+current version of `read_excel()` function doesn't handle a
+heterogenous column very well.
+
+```{r}
+s = read.csv("paul_smith_shorebird_tag_metadata_noformatting.csv", as.is=TRUE)
+s = as.tbl(s)
+s = s %>%
+    mutate(
+        ## fix burst intervals
+        Burst = Burst %>%
+            ## drop tildes: e.g.change ~6 to 6
+            sub("^~", "", .) %>%
+            ## change ranges to integer portion of 2nd value
+            ## e.g. 5.9 / 6.1 -> 6
+            sub("([0-9]+\\.[0-9]+) / (([0-9]+)\\.[0-9]+)", "\\3", perl=TRUE, .) %>%
+            as.numeric
+    )
+```
+
+There are `r nrow(s)` tags in the spreadsheet, consisting of:
+
+
+* `r nrow(x$found)` tags with single deployment entries in motus
+* `r length(unique(xm$tagID))` tags with multiple deployments
+* `r nrow(x$lost)` tags without registration info
+* `r nrow(x$collide)` tags which cannot be linked to metadata because of colliding
+    IDs and BI (or incorrectly recorded ones)
+
+For tags with multiple deployment records, merge these if possible (mostly, they are
+the results of multiple entries of disjoint subsets of the same information).
+We check each batch of records for the same tag, and look for contradictory values.
+When tag deployment status occurs as both "pending" and "terminated",
+and we record it as "terminated".
+
+```{r}
+uu = unique(x$multi$tagID)
+## placeholder for output
+
+mm = x$multi[1:length(uu),]
+i = 1
+for (iu in uu) {
+    ## get tags with this tagID (records differ in, at least, deployID)
+    xx = x$multi %>% filter(tagID==iu) %>% as.data.frame
+    for (j in colnames(xx)) {
+        if (j == "deployID") {
+            mm[i, j] = xx[[j]][1]
+            next
+        }
+        vv = unique(xx[[j]])
+        vv = vv[! is.na(vv)]
+        if (length(vv) > 1) {
+            if (j == "status") {
+                mm[i, j] = "terminated"
+                next
+            }
+            ##
+            if (
+                ## check for substantial numeric variation: > 1 part per thousand; lat/lon were sometimes reformatted to lower precision
+            (is.numeric(vv) && sd(vv) / mean(vv) > 1e-4)
+                ## check for string difference which are not just due to upper/lower case changes
+            || (is.character(vv) && length(unique(tolower(vv))) > 1)
+            ) {
+                warning("For tag ", xx$tagID[1], " = ", xx$TrackerID[1], ":", xx$Burst[1], " in ", xx$Yr[1], " col ", j, " has values: ", paste(vv, collapse=","))
+            }
+            mm[i, j] = vv[1]
+        } else if (length(vv) == 1) {
+            mm[i, j] = vv
+        } else {
+            mm[i, j] = NA
+        }
+    }
+    i = i + 1
+}
+mm$markerType = tolower(mm$markerType)
+```
+This yielded these warnings:
+
+    Warning: For tag 14675 = 387:19.7 in 2015 col markerNumber has values: 6514349,89119658
+    Warning: For tag 16893 = 421:6.1 in 2015 col markerNumber has values: 1103-41892,110341892
+
+The later values are apparently the correct ones, so we fix that:
+
+```{r}
+mm$markerNumber[mm$tagID==14675] = "89119658"
+mm$markerNumber[mm$tagID==16893] = "110341892"
+```
+
+Generate comment missing for three entries, and move misplaced comments for two others.
+(These are JSON-formatted metadata that don't fit in other columns).
+
+```{r}
+genComment = function(row) {
+     with(row, toJSON(trimList (
+                 ageID      = AgeID,
+                 bill       = bill,
+                 blood      = blood,
+                 country    = Country,
+                 culmen     = Culmen,
+                 fatScore   = FatScore,
+                 locationID = LocationID,
+                 province   = Province,
+                 sexID      = SexID,
+                 tarsus     = tarsus,
+                 totHead    = Tot_Head,
+                 weight     = Weight,
+                 wing       = Wing
+             ), auto_unbox=TRUE))
+}
+
+mm$comments.y[54] = genComment(mm[54,])
+for(i in 1:nrow(x$collide))
+    x$collide$comments.y[i] = genComment(x$collide[i,])
+
+for (i in 1307:1308)
+    x$found$comments.y[i] = x$found$comments[i]
+```
+
+Now merge the tags to get a full frame of the shorebird tags.  Rename "comments.y" to "comments",
+dropping the existing column "comments" from x$found.  Drop old lat/lon for new values.
+Rename "SpeciesID" (4-letter code) to "SpeciesCode".
+
+```{r}
+x$found = x$found %>% select(-comments)
+sb = bind_rows(x$found, x$collide, mm)
+sb = sb %>% select (-latitude, -longitude) %>% rename (properties=comments.y, comments=comments.x, SpeciesCode=SpeciesID)
+saveRDS(sb, "paul_smith_shorebird_tags_full_motus_data.rds")
+out = src_sqlite("paul_smith_shorebird_tags_full_motus_data.sqlite", create=TRUE)
+copy_to(out, sb, "tags")
+rm(out)
+```
+
+Except for the 6 "lost" tags (for which insufficient registration data are available to detect
+them), this is the now the full set of shorebird tags as of Feb. 3, 2016.
+
+Remove these from the full list of motus tags:
+
+```{r}
+m2 = subset(m, ! (tagID %in% sb$tagID))
+## look for physical matches between shorebird tags and remaining motus tags;
+## this might indicate multiple registration, or actual clones
+y = matchTags(sb, m2, "mfgID", "period", "Yr", bi.digits=1)
+lapply(y,dim)
+```
+So m2 consists entirely of tags which are physically distinguishable from the shorebird tags.
+We now check m2 for duplicated registrations:
+
+```{r}
+m2$Yr=year(m2$tsSG)
+yy = matchTags(m2, m2, "mfgID", "period", "Yr", bi.digits=1)
+lapply(yy, dim)
+```
+So there are 375 records in multi-matched goups.  We retain only the lower triangle of
+matches based on tagID; i.e. remove self-matches, and then remove duplicates that differ
+only in the order of the records in the pair.  Some of these correspond to tags having
+been transferred between projects, which we determine by identical registration parameters.
+We also remove a pair of test tag registrations which are not actual tags.
+```{r}
+ym = yy$multi %>% filter(tagID.x < tagID.y & tagID.x != 8438 & tagID.x != 8439)
+dim(ym)
+projTX = with(ym, abs(period.x- period.y) < 0.1 & abs(param1.x - param1.y) < 0.9 & abs(param2.x - param2.y) < 0.9)
+yp = subset(ym, projTX)
+yp %>% with(table(projectID.x, projectID.y))
+yc = subset(ym, !projTX)
+```
+From this, it appears all of these tags were transferred from one project to another, sometimes
+re-running the registration algorithm.  We assume the later project ID (corresponding to a larger and
+hence later tagID) is the correct one.  So we remove records for the earlier tagID from the set.
+```{r}
+m2 = m2 %>% filter(! tagID %in% yp$tagID.x)
+```
+
+Now do the same for motus tags: merge deployment records, except if they really look
+like different deployments.
+```{r}
+uu = unique(m2$tagID[duplicated(m2$tagID)])
+
+for (iu in uu) {
+    ## get tags with this tagID (records differ in, at least, deployID)
+    xx = m2 %>% filter(tagID==iu) %>% as.data.frame
+    mm = xx[1, ]
+    ## assume records can be merged into one
+    mergeRec = TRUE
+    for (j in colnames(xx)) {
+        if (j == "deployID") {
+            mm[1, j] = xx[[j]][1]
+            next
+        }
+        vv = unique(xx[[j]])
+        vv = vv[! is.na(vv)]
+        if (length(vv) > 1) {
+            if (j == "status") {
+                mm[1, j] = "terminated"
+                next
+            }
+            ##
+            if (
+                ## check for substantial numeric variation: > 1 part per thousand; lat/lon were sometimes reformatted to lower precision
+            (is.numeric(vv) && sd(vv) / mean(vv) > 1e-4)
+                ## check for string difference which are not just due to upper/lower case changes
+            || (is.character(vv) && length(unique(tolower(vv))) > 1)
+            ) {
+                mergeRec = FALSE
+            }
+            mm[1, j] = vv[1]
+        } else if (length(vv) == 1) {
+            mm[1, j] = vv
+        } else {
+            mm[1, j] = NA
+        }
+    }
+    if (mergeRec)
+        m2 = m2 %>% filter(tagID != iu) %>% bind_rows(mm)
+}
+m2$markerType = tolower(m2$markerType)
+```
+Now unify the database.  This will leave each tag with a single record in the form returned
+by motusSearchTags(), except with a properties field to hold remaining metadata for the shorebirds.
+
+```{r}
+uni = sb[,32:63]
+uni$latitude = sb$Latitude
+uni$longitude = sb$Longitude
+uni$elevation = NA
+uni$comments = sb$comments
+uni$properties = sb$properties
+m2$properties = "{}"
+class(m2$tsStart) = class(sb$tsStart)
+class(m2$tsEnd) = class(sb$tsEnd)
+uni = uni %>% bind_rows(m2) %>% arrange(tagID)
+```
+
+Save the unified database
+```{r}
+saveRDS(uni, "full_motus_database.rds")
+out = src_sqlite("full_motus_database.sqlite", create=TRUE)
+copy_to(out, uni, "tags")
+rm(out)
+```
+Correct burst intervals.  People frequently recorded tags under circumstances where USB packets
+from the funcubedongle were being lost, so BI are often a little bit underestimated, especially
+when people used the newer funcubes.
+
+So, we start by binning all BI to the nearest 50 ms, then taking the mean in each group.  We then
+look at residuals.
+
+```{r}
+trueBI = tapply(uni$period, round(uni$period * 20) / 20, mean)
+uni$delBI = as.numeric(uni$period - trueBI[as.character(round(uni$period * 20) / 20)])
+
+xyplot(delBI/period~log10(periodSD),uni, pch="+", ylim=c(-0.0005, 0.0005), xlim=c(-5,0))
+
+```
+
+There is a tendency for poorly estimated BI (with `sd(BI) > 0.001`)
+to be lower than the "true BI".  This is exactly what we'd expect if
+registration recording randomly drops USB packets: the plot shows that
+larger negative relative errors in BI are associated with larger `sd(BI)`.
+Dropped packets reduce the estimate of BI (some stretch of
+signal is missing), while increasing its variance.
+
+So now we map each BI to its "true" value:
+```{r}
+uni$period[] = as.numeric(trueBI[as.character(round(uni$period * 20) / 20)])
+```
+
+Finally, we lookup design values for all the tag gaps.
+```{r}
+lt4 = system("ssh john@discovery 'sudo sqlite3 -header -separator , /home/sg/ramfs/lotekdb.sqlite \"select * from tags\"'", intern=TRUE) %>%
+    textConnection %>% read.csv(as.is=TRUE) %>% as.tbl
+lt3 = system("ssh john@discovery 'sudo sqlite3 -header -separator , /home/sg/ramfs/lotek3db.sqlite \"select * from tags\"'", intern=TRUE) %>%
+    textConnection %>% read.csv(as.is=TRUE) %>% as.tbl
+uni$intMfgID = as.integer(uni$mfgID)
+u4 = uni$codeSet == "Lotek-4"
+u3 = uni$codeSet == "Lotek-3"
+j4 = uni %>% filter(u4) %>% left_join(lt4, by=c("intMfgID"="id"))
+j3 = uni %>% filter(u3) %>% left_join(lt3, by=c("intMfgID"="id"))
+
+## look for tags assigned the wrong codeset:
+
+## badCS = with(subset(j4, abs(param1-g1) > 15 | abs(param2-g2) > 15 | abs(param3-g3) > 15), tagID)
+## reassign to Lotek-3
+## uni$codeSet[uni$tagID %in% badCS] = "Lotek-3"
+## badCS = with(subset(j3, abs(param1-g1) > 15 | abs(param2-g2) > 15 | abs(param3-g3) > 15), tagID)
+## reassign to Lotek-4
+## uni$codeSet[uni$tagID %in% badCS] = "Lotek-4"
+
+## copy gap values from lotek database
+
+uni$param1[u4] = j4$g1
+uni$param2[u4] = j4$g2
+uni$param3[u4] = j4$g3
+
+uni$param1[u3] = j3$g1
+uni$param2[u3] = j3$g2
+uni$param3[u3] = j3$g3
+
+saveRDS(uni, "normalized_full_motus_database.rds")
+out = src_sqlite("normalized_full_motus_database.sqlite", create=TRUE)
+copy_to(out, uni, "tags")
+rm(out)
+
+```
