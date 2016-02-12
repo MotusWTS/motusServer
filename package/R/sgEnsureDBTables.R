@@ -59,6 +59,49 @@ contents BLOB                                      -- contents of file; bzip2-co
     sql("create index files_all on files ( monoBN, ts )")
   }
 
+    if (! "DTAfiles" %in% tables) {
+    sql("
+create table DTAfiles (  
+fileID   integer not null primary key,             -- file ID - used in most data tables
+name     text,                                     -- name of file (no path, but extension preserved)
+size     integer,                                  -- size of uncompressed file contents
+tsBegin  double,                                   -- earliest timestamp in file
+tsEnd    double,                                   -- latest timestamp in file
+tsDB     double,                                   -- timestamp when file was read into this database
+hash     text unique,                              -- because Lotek filenames are arbitrary and user-created,
+                                                   -- we ensure uniqueness in the DB via SHA-512 hash of uncompressed contents
+contents BLOB                                      -- contents of file; bzip2-compressed text contents of file
+)
+");
+
+    sql("create index DTAfiles_hash on DTAfiles ( hash )")
+    sql("create index DTAfiles_tsBegin on DTAfiles ( tsBegin )")
+  }
+
+    ## parsed contents of DTA files are stored in a separate table
+    
+    if (! "DTAtags" %in% tables) {
+    sql("
+create table DTAtags (
+fileID   integer not null references DTAfiles,     -- ID of DTA file this record came from
+dtaline  integer not null,                         -- index of line in .DTA file this detection is from (starting from 1)
+ts       double,                                   -- timestamp of detection
+id       integer,                                  -- Lotek tag ID (for given codeset)
+ant      text,                                     -- code of antenna on which detected
+sig      integer,                                  -- signal value
+lat      double,                                   -- latitude of detection, in decimal degrees N (so -ve means S)
+lon      double,                                   -- longitude of detection, in decimal degrees E (so -ve means W)
+antFreq  double,                                   -- antenna frequency, in MHz
+gain     int,                                      -- antenna gain in Lotek units
+codeSet  text,                                     -- codeset of tag ('Lotek3' or 'Lotek4')
+primary key(ts, ant, id) not null                  -- no more than one detection of each ID at given time, ant 
+)
+");
+
+    sql("create index DTAtags_ts on DTAtags ( ts )")
+  }
+
+
   ## a database of timepins mapping GPS timestamps to system timestamps, for periods when
   ## chrony has not updated the system clock (or when this fails entirely)
   ## this table should contain only one record per (depID, bootnum) pair
@@ -152,6 +195,20 @@ CREATE TABLE batches (
 );
 ")
     }
+
+    if (! "batchAmbig" %in% tables) {
+        sql("
+CREATE TABLE batchAmbig (
+    ambigID INTEGER NOT NULL,                    -- identifier of group of tags which are ambiguous (identical)
+    batchID INTEGER NOT NULL REFERENCES batches, -- batch for which this ambiguity group is active
+    motusTagID INT NOT NULL                      -- motus ID of tag in group.  
+);
+")
+        sql( "create index batchAmbig_motusTagID on batchAmbig(motusTagID)")
+        sql( "create index batchAmbig_batchID on batchAmbig(batchID)")
+    }
+
+
     if (! "runs" %in% tables) {
         sql("
 CREATE TABLE runs (

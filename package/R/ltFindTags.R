@@ -1,32 +1,27 @@
-#' find tags in an SG stream
+#' find tags in a Lotek receiver dataset
 #'
-#' A stream is the ordered sequence of raw data files from a receiver
-#' corresponding to a single boot session (period between restarts).
-#' This function searches for patterns of pulses corresponding to
-#' coded ID tags and adds them to the hits, runs, batches etc. tables
-#' in the receiver database.
+#' This function searches for sequences of tag detections
+#' corresponding to registered (ID, burst interval) pairs and adds
+#' them to the hits, runs, batches etc. tables in the receiver
+#' database.
 #'
-#' @param src dplyr src_sqlite to receiver database
+#' @param src dplyr src_sqlite to (lotek) receiver database
 #'
 #' @param tagDB path to sqlite tag registration database
 #'
-#' @param par list of parameters to the findtags code.
+#' @param par list of parameters to the filtertags code.
 #' 
-#' @param mbn integer monotonic boot number(s); this is the monoBN field
-#'     from the \code{files} table in the receiver's sqlite database.
-#'     Defaults to NULL, meaning process GPS fixes for all streams.
-#'
 #' @return the number of tag detections in the stream.
 #'
 #' @export
 #' 
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-sgFindTags = function(src, tagDB, par = NULL, mbn = NULL) {
+sgFindTags = function(src, tagDB, par = NULL) {
     ## create user context
     u = new.env(emptyenv())
 
-    cmd = "/home/john/proj/find_tags/find_tags_motus"
+    cmd = "/home/john/proj/filter_tags/filter_tags_motus"
     if (is.list(par))
         pars = paste0("--", names(par), '=', as.character(par), collapse=" ")
     else

@@ -26,9 +26,9 @@ CREATE TABLE batches (
     ts FLOAT(53) NOT NULL,                                   -- timestamp when this batch record was
                                                              -- added; unix-style: seconds since 1
                                                              -- Jan 1970 GMT
-    swInfoSet INT NOT NULL REFERENCES batchSWInfoSet (ID),   -- software versions used to generate
+    swInfoSet INT NOT NULL REFERENCES batchSWinfoSet (ID),   -- software versions used to generate
                                                              -- this batch
-    swParamSet INT NOT NULL REFERENCES batchSWParamSet (ID), -- parameter set for software used to
+    swParamSet INT NOT NULL REFERENCES batchSWparamSet (ID), -- parameter set for software used to
                                                              -- generate this batch
     tsMotus FLOAT(53)                                        -- timestamp when this record
                                                              -- transferred to motus; unix-style:
@@ -45,7 +45,7 @@ CREATE TABLE batches (
 --  record info common across all hits in a tag run in each batch;
 
 CREATE TABLE batchRunInfo (
-    runID BIGINT NOT NULL PRIMARY KEY,       -- identifier of run; globally uique ID
+    runID BIGINT NOT NULL PRIMARY KEY,       -- identifier of run; unique for this receiver
     batchID BIGINT NOT NULL REFERENCES batches, -- unique identifier of batch for this run
     motusTagID INT NOT NULL,                 -- ID for the tag detected; foreign key to Motus DB
                                              -- table
@@ -142,7 +142,7 @@ CREATE TABLE params (
 --  one of those with each batch.
 --
 
-CREATE TABLE batchSWInfoSet (
+CREATE TABLE batchSWinfoSet (
     ID INT NOT NULL,                         -- identifier of a set of software versions
     progName VARCHAR(16) NOT NULL,           -- identifier of program; e.g. "find_tags",
                                              -- "lotek-plugins.so"
@@ -164,7 +164,7 @@ CREATE TABLE batchSWInfoSet (
 --  parameter value records into paramSets, and associate one of those with each batch.
 --
 
-CREATE TABLE batchSWParamSet (
+CREATE TABLE batchSWparamSet (
     ID INT NOT NULL,                         -- identifier of a set of parameters
     progName VARCHAR(16) NOT NULL,           -- identifier of program; e.g. "find_tags",
                                              -- "lotek-plugins.so"

@@ -2,9 +2,9 @@ Package: motus
 Version: 0.1.0
 Title: Operate the sensorgnome.org side of the sensorgnome/motus data link.
 Description: Process raw data from receivers and store results in
-  transfer tables for motus-wts.org Results use native motus-wts
-  database keys, which are obtained by querying motus-wts.org for
-  metadata on tags and receivers.
+    transfer tables for motus-wts.org Results use native motus-wts
+    database keys, which are obtained by querying motus-wts.org for
+    metadata on tags and receivers.
 Author: John Brzustowski <jbrzusto@fastmail.fm>
 Maintainer: John Brzustowski <jbrzusto@fastmail.fm>
 Depends:
@@ -15,6 +15,7 @@ Depends:
     jsonlite,
     digest,
     RCurl,
-    gWidgets2tcltk
+    digest
 License: GPL-2+
 Date: 2015-11-10
+RoxygenNote: 5.0.1

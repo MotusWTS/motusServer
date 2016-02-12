@@ -5,6 +5,11 @@
 #' @param files either a character vector of full paths to files, or the full
 #' path to a directory, which will be searched recursively for raw files.
 #'
+#' @param serno [optional] a receiver serial number.  If not specified, the
+#' serial number is taken from the first raw file.  Specifying the serial
+#' number allows creating a new .motus database from a subset of the files
+#' which are not from the same receiver as the first file.
+#' 
 #' @return a data_frame reporting the fate of each file, with these columns:
 #' \enumerate{
 #' \item fullname - full path to filename
@@ -21,7 +26,7 @@
 #' 
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-sgMergeFiles = function(src, files) {
+sgMergeFiles = function(src, files, serno = NULL) {
     if (! isTRUE(is.character(files) && all(file.exists(files))))
         stop("invalid or non-existent input files specified")
     if (file.info(files[1])$isdir)
@@ -137,13 +142,18 @@ sgMergeFiles = function(src, files) {
         meta = list(serno = newf$Fserno[1])
         updateMeta = TRUE
     }
+
+    ## user might have specified a serial number, in which case we use that.
+    if (!is.null(serno))
+        meta$serno=serno
+    
     ## because macAddr has not been supplied in the past, we try grab it
     ## if *any* file provides it, so long as it's for the correct recv
     
     if (is.null(meta$macAddr)) {
         first = which(! is.na(newf$FmacAddr))
-        if (length(first) > 0 && newf$Fserno[first] == meta$serno) {
-            meta$macAddr = newf$FmacAddr[first]
+        if (length(first) > 0 && newf$Fserno[first[1]] == meta$serno) {
+            meta$macAddr = newf$FmacAddr[first[1]]
             updateMeta = TRUE
         }
     }
