@@ -17,9 +17,7 @@
 #' 
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-sgFindTags = function(src, tagDB, par = NULL) {
-    ## create user context
-    u = new.env(emptyenv())
+ltFindTags = function(src, tagDB, par = NULL) {
 
     cmd = "/home/john/proj/filter_tags/filter_tags_motus"
     if (is.list(par))
@@ -32,38 +30,32 @@ sgFindTags = function(src, tagDB, par = NULL) {
     
     dbGetQuery(src$con, "pragma journal_mode=wal")
 
-    cmd = paste(cmd, pars, tagDB, src$path, " > /tmp/errors.txt 2>&1")
-    u$p = pipe(cmd, "wb", encoding="")
+    ## For Lotek receivers, we need to run the tag finder separately for each codeset
+    ## for which there are tags in the database, and detections in the receiver data.
 
-    cat("Doing ", cmd, "\n")
+    tags = tagDB %>% src_sqlite %>% tbl("tags")
+    css = tags %>% select(codeSet) %>% distinct %>% collect %>% unlist
     
-    ## Sys.sleep(15)
+    x = tbl(src, "DTAtags")
+    for (cs in css) {
+        xx = x %>% filter(codeset==cs) %>% select (ts, id, ant, sig, dtaline, antFreq) %>% arrange(ts) %>% filter (id != 999) %>% collect()
+        if (nrow(xx) > 0) {
+            tmpTagDB = tempfile(fileext=".sqlite") %>% src_sqlite(TRUE)
+            ## write the tag DB for this codeset to a new file
+            copy_to (tmpTagDB, tags %>% filter(codeset==cs) %>% select(tagID, mfgID, nomFreq, period) %>% collect, "tags", temporary=FALSE)
+            cmd = paste(cmd, pars, tmpTagDB$path, src$path, " > /tmp/errors.txt 2>&1")
+            cat("Doing ", cmd, "\n")
+            p = pipe(cmd, "w", encoding="")
+            write.table(xx, p, sep=",", row.names=FALSE, col.names=FALSE)
+            close(p)
+            rm(tmpTagDB)
+        }
+    }
     
     saveTZ = Sys.getenv("TZ")
     Sys.setenv(TZ="GMT")
     tStart = as.numeric(Sys.time())
     Sys.setenv(TZ=saveTZ)
-
-    ## don't write a NEWBN command at the start of the first batch
-    u$notFirst = FALSE
-    
-    ## run the worker on the stream(s)
-    g = sgRunStream(src,
-                    function(bn, ts, cno, ct, u) {
-                        if (cno > 0) {
-                            ## FIXME?: why does calling writeChar( '', ...) fail (i.e. empty string) 
-                            if (any(nchar(ct) > 0)) {
-                                writeChar(ct, u$p, useBytes=TRUE, eos=NULL)
-                            }
-                        } else if (cno < 0) {
-                            if (u$notFirst)
-                                writeChar(paste0("\n!NEWBN,", bn, "\n"), u$p, useBytes=TRUE, eos=NULL)
-                            u$notFirst = TRUE
-                        }
-                    },
-                    mbn,
-                    u)
-    close(u$p)
 
     ## revert to journal mode delete, so we keep everything in a single file
     dbGetQuery(src$con, "pragma journal_mode=delete")
