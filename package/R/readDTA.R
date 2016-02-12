@@ -11,10 +11,10 @@
 #'
 #' @return a named list with these items:
 #'
-#' \enumerate{
+#' \itemize{
 #' \item  recv receiver model + SN
 #' \item  tags a data.frame with these columns:
-#' \enumerate{
+#' \itemize{
 #'
 #' \item    ts       numeric GMT timestamp (seconds since 1 Jan 1970)
 #' \item    id       integer, no 999s
@@ -32,8 +32,9 @@
 #' \item piece.lines.before number of lines before pieces of various types
 #' }
 #'
-#' @note The .DTA file the file in order, so that changes to antenna frequency
-#' settings etc. are taken into account.
+#' @note The .DTA file is processed in lexical order, so that changes
+#'     to antenna frequency settings etc. are taken into account in
+#'     subsequent detection blocks.
 #'
 #' @export
 #' 
@@ -126,12 +127,13 @@ readDTA = function(filename="", lines=NULL) {
              tab[1] = as.numeric(as.POSIXct(strptime(paste(tab[[1]], tab[[2]]), date.format, tz="GMT")))
              tab = tab[-2]
              if (piece.name == "id_only")
-               tab = cbind(tab, 999, 999)  ## lat and lon not available
+               tab = cbind(tab, NA, NA)  ## lat and lon not available
              
              names(tab) = c("ts", "chan", "id", "ant", "sig", "lat", "lon")
              tab$dtaline = piece.lines.before[ip] + 1:nrow(tab)
              tab$ant = as.character(tab$ant)
 
+             tab = subset(tab, id != 999)
              ## fill in the appropriate gain value, or a best guess
              
              ants = unique(tab$ant)
