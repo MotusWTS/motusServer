@@ -94,7 +94,7 @@ lon      double,                                   -- longitude of detection, in
 antFreq  double,                                   -- antenna frequency, in MHz
 gain     int,                                      -- antenna gain in Lotek units
 codeSet  text,                                     -- codeset of tag ('Lotek3' or 'Lotek4')
-primary key(ts, ant, id) not null                  -- no more than one detection of each ID at given time, ant 
+primary key(ts, ant, id)                          -- no more than one detection of each ID at given time, ant 
 )
 ");
 

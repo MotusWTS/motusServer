@@ -166,8 +166,9 @@ readDTA = function(filename="", lines=NULL) {
              ## report the gain setting in use
              tab$gain = gain.tab[tab$ant]
 
-             ## fill in the current codeset
-             tab$codeset = factor(1, labels=codeset)
+             ## fill in the current codeset, if any rows were found
+             if(nrow(tab) > 0)
+                tab$codeset = factor(1, labels=codeset)
 
              ## remove the channel setting, which is redundant
              tab$chan = NULL
