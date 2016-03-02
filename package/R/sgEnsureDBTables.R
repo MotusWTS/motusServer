@@ -187,7 +187,6 @@ CREATE TABLE batches (
     tsEnd FLOAT(53),                          -- timestamp for end of period
                                               -- covered by batch; unix-style:
                                               -- seconds since 1 Jan 1970 GMT
-    numRuns INT,                              -- count of runs in this batch
     numHits BIGINT,                           -- count of hits in this batch
     ts FLOAT(53)                              -- timestamp when this batch record was
                                               -- added; unix-style: seconds since 1
@@ -199,7 +198,7 @@ CREATE TABLE batches (
     if (! "batchAmbig" %in% tables) {
         sql("
 CREATE TABLE batchAmbig (
-    ambigID INTEGER NOT NULL,                    -- identifier of group of tags which are ambiguous (identical)
+    ambigID INTEGER NOT NULL,                    -- identifier of group of tags which are ambiguous (identical); will be negative
     batchID INTEGER NOT NULL REFERENCES batches, -- batch for which this ambiguity group is active
     motusTagID INT NOT NULL                      -- motus ID of tag in group.  
 );
@@ -212,15 +211,16 @@ CREATE TABLE batchAmbig (
     if (! "runs" %in% tables) {
         sql("
 CREATE TABLE runs (
-    runID INTEGER PRIMARY KEY,                   -- identifier of run; unique for this receiver
-    batchID INTEGER NOT NULL REFERENCES batches, -- unique identifier of batch for this run
-    motusTagID INT NOT NULL,                     -- ID for the tag detected; foreign key to Motus DB
-                                                 -- table
-    len INT,                                     -- length of run within batch
-    tsMotus FLOAT(53)                            -- timestamp when this record transferred to motus;
-                                                 -- unix-style: seconds since 1 Jan 1970 GMT; NULL means
-                                                 -- not transferred; if this timestamp is set, it means
-                                                 -- all the hits for the run have also been transferred
+    runID INTEGER PRIMARY KEY,                        -- identifier of run; unique for this receiver
+    batchIDbegin INTEGER NOT NULL REFERENCES batches, -- unique identifier of batch this run began in
+    batchIDend INTEGER NOT NULL REFERENCES batches,   -- unique identifier of batch this run began in
+    motusTagID INT NOT NULL,                          -- ID for the tag detected; foreign key to Motus DB
+                                                      -- table
+    len INT,                                          -- length of run within batch
+    tsMotus FLOAT(53)                                 -- timestamp when this record transferred to motus;
+                                                      -- unix-style: seconds since 1 Jan 1970 GMT; NULL means
+                                                      -- not transferred; if this timestamp is set, it means
+                                                      -- all the hits for the run have also been transferred
 );
 
 ")
@@ -228,8 +228,9 @@ CREATE TABLE runs (
     if (! "hits" %in% tables) {
         sql("
 CREATE TABLE hits (
-    hitID INTEGER PRIMARY KEY,                    -- unique ID of this hit
-    runID INTEGER NOT NULL REFERENCES runs,       -- ID of batch this hit belongs to
+    hitID INTEGER PRIMARY KEY,                     -- unique ID of this hit
+    runID INTEGER NOT NULL REFERENCES runs,        -- ID of run this hit belongs to
+    batchID INTEGER NOT NULL REFERENCES batches,   -- ID of batch this hit belongs to
     ant TINYINT NOT NULL,                          -- antenna number (USB Hub port # for SG; antenna port
                                                    -- # for Lotek)
     ts FLOAT(53) NOT NULL,                         -- timestamp (centre of first pulse in detection);
@@ -290,4 +291,21 @@ CREATE TABLE batchParams (
 );
 ")
     }
+
+    if (! "findtagsState" %in% tables) {
+        sql("
+CREATE TABLE findtagsState (
+-- This table records the state of the findtags program when it last finished running; this
+-- can be used to resume it when new data arrive.
+        batchID INT NOT NULL references batches, -- ID of batch which was being processed when program paused
+        monoBN INT NOT NULL, -- montonic boot count of last batch
+        tsData FLOAT(53), -- timestamp (seconds since unix epoch) of last processed line in previous input
+        tsRun FLOAT(53), -- timestamp (seconds since unix epoch) when program was paused
+        lastFileID INTEGER NOT NULL references files, -- ID of last file processed
+        lastCharIndex INTEGER NOT NULL, -- offset in (uncompressed file) of last char processed
+        state  BLOB -- serialized state of findtags
+);
+")
+    }
+
 }
