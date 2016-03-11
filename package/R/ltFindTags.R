@@ -10,6 +10,10 @@
 #' @param tagDB path to sqlite tag registration database
 #'
 #' @param par list of parameters to the filtertags code.
+#'
+#' @param toFile if not NULL (the default), write lotek output lines
+#' to the this file, rather than passing them to the tag finder.
+#' No tag finding is performed in this case.
 #' 
 #' @return the number of tag detections in the stream.
 #'
@@ -17,7 +21,7 @@
 #' 
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-ltFindTags = function(src, tagDB, par = NULL) {
+ltFindTags = function(src, tagDB, par = NULL, toFile=NULL) {
 
     cmd = "/home/john/proj/filter_tags/filter_tags_motus"
     if (is.list(par))
@@ -34,22 +38,23 @@ ltFindTags = function(src, tagDB, par = NULL) {
     ## for which there are tags in the database, and detections in the receiver data.
 
     tags = tagDB %>% src_sqlite %>% tbl("tags")
-    css = tags %>% select(codeSet) %>% distinct %>% collect %>% unlist
     
     x = tbl(src, "DTAtags")
-    for (cs in css) {
-        xx = x %>% filter(codeset==cs) %>% select (ts, id, ant, sig, dtaline, antFreq) %>% arrange(ts) %>% filter (id != 999) %>% collect()
+        xx = x %>% select (ts, id, ant, sig, antFreq, gain, codeSet) %>% arrange(ts) %>% filter (id != 999) %>% collect()
         if (nrow(xx) > 0) {
-            tmpTagDB = tempfile(fileext=".sqlite") %>% src_sqlite(TRUE)
+##            tmpTagDB = tempfile(fileext=".sqlite") %>% src_sqlite(TRUE)
             ## write the tag DB for this codeset to a new file
-            copy_to (tmpTagDB, tags %>% filter(codeset==cs) %>% select(tagID, mfgID, nomFreq, period) %>% collect, "tags", temporary=FALSE)
-            cmd = paste(cmd, pars, tmpTagDB$path, src$path, " > /tmp/errors.txt 2>&1")
-            cat("Doing ", cmd, "\n")
-            p = pipe(cmd, "w", encoding="")
-            write.table(xx, p, sep=",", row.names=FALSE, col.names=FALSE)
+##            copy_to (tmpTagDB, tags %>% filter(codeset==cs) %>% select(tagID, mfgID, nomFreq, period) %>% collect, "tags", temporary=FALSE)
+            if (! is.null(toFile)) {
+                p = file(toFile, "w")
+            } else {
+                cmd = paste(cmd, pars, tagDB, src$path, " > /tmp/errors.txt 2>&1")
+                cat("Doing ", cmd, "\n")
+                p = pipe(cmd, "w", encoding="")
+            }
+            write.table(xx, p, sep=",", quote=FALSE, row.names=FALSE, col.names=FALSE)
             close(p)
             rm(tmpTagDB)
-        }
     }
     
     saveTZ = Sys.getenv("TZ")

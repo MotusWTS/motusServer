@@ -11,7 +11,8 @@
 ## list of tables needed in the receiver database
 
 sgTableNames = c("meta", "files", "timepins", "timeJumps", "GPS", "params", "pulseCounts", "batches",
-                 "runs", "hits", "batchProgs", "batchParams")
+                 "runs", "hits", "batchProgs", "batchParams", "batchState", "batchAmbig", "DTAfiles",
+                 "DTAtags")
 
 sgEnsureDBTables = function(src) {
     if (! inherits(src, "src_sqlite"))
@@ -292,18 +293,22 @@ CREATE TABLE batchParams (
 ")
     }
 
-    if (! "findtagsState" %in% tables) {
+    if (! "batchState" %in% tables) {
         sql("
-CREATE TABLE findtagsState (
--- This table records the state of the findtags program when it last finished running; this
+CREATE TABLE batchState (
+-- This table records the state of a program used when it last finished running; this
 -- can be used to resume it when new data arrive.
-        batchID INT NOT NULL references batches, -- ID of batch which was being processed when program paused
-        monoBN INT NOT NULL, -- montonic boot count of last batch
-        tsData FLOAT(53), -- timestamp (seconds since unix epoch) of last processed line in previous input
-        tsRun FLOAT(53), -- timestamp (seconds since unix epoch) when program was paused
-        lastFileID INTEGER NOT NULL references files, -- ID of last file processed
-        lastCharIndex INTEGER NOT NULL, -- offset in (uncompressed file) of last char processed
-        state  BLOB -- serialized state of findtags
+    batchID INT NOT NULL references batches,      -- ID of batch which was being processed when program paused
+    progName VARCHAR(16) NOT NULL,                -- identifier of program; e.g. 'find_tags',
+                                                  -- 'lotek-plugins.so'
+    monoBN INT NOT NULL,                          -- montonic boot count of last batch
+    tsData FLOAT(53),                             -- timestamp (seconds since unix epoch) of last processed line in previous input
+    tsRun FLOAT(53),                              -- timestamp (seconds since unix epoch) when program was paused
+    lastFileID INTEGER NOT NULL references files, -- ID of last file processed
+    lastCharIndex INTEGER NOT NULL,               -- offset in (uncompressed file) of last char processed
+    state  BLOB,                                  -- serialized state of program, if needed
+
+    PRIMARY KEY (batchID, progName)               -- only one saved state per program per batch
 );
 ")
     }

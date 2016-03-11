@@ -38,7 +38,7 @@
 #' 
 #' @return a list with one element per stream; the element is the
 #'     valued returned by \code{f} when called with \code{state=2L};
-#'     i.e. after \code{f} has been called with every chunk for the
+ #'     i.e. after \code{f} has been called with every chunk for the
 #'     given stream.  All previous return values of \code{f} are
 #'     discarded.  Any side-effects or accumulation of return value
 #'     must be performed by \code{f}.

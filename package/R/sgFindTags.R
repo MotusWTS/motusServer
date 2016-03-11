@@ -10,19 +10,25 @@
 #'
 #' @param tagDB path to sqlite tag registration database
 #'
+#' @param resume if TRUE, tag detection resumes where it last left
+#'     off.  Typically, a new batch of data files arrives and is added
+#'     to the receiver database using \code{sgMergeFiles()}, and then
+#'     \code{sgFindTags} is called again to continue processing these
+#'     new data.
+#' 
 #' @param par list of parameters to the findtags code.
 #' 
 #' @param mbn integer monotonic boot number(s); this is the monoBN field
 #'     from the \code{files} table in the receiver's sqlite database.
 #'     Defaults to NULL, meaning process GPS fixes for all streams.
 #'
-#' @return the number of tag detections in the stream.
+#' @return the batch number and the number of tag detections in the stream.
 #'
 #' @export
 #' 
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-sgFindTags = function(src, tagDB, par = NULL, mbn = NULL) {
+sgFindTags = function(src, tagDB, resume=TRUE, par = "", mbn = NULL) {
     ## create user context
     u = new.env(emptyenv())
 
@@ -74,7 +80,7 @@ sgFindTags = function(src, tagDB, par = NULL, mbn = NULL) {
     dbGetQuery(src$con, "pragma journal_mode=delete")
 
     ## get ID and stats for new batch of tag detections
-    rv = dbGetQuery(src$con, "select ID, numRuns, numHits from batches order by ID desc limit 1")
+    rv = dbGetQuery(src$con, "select ID, numHits from batches order by ID desc limit 1")
 
     return (c(rv))
 }
