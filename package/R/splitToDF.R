@@ -17,6 +17,11 @@
 #' @param namedOnly: if \code{TRUE} (the default), return columns only
 #'     for named subexpressions of the regex.  Otherwise, a column is
 #'     returned for every subexpression.
+#'
+#' @param validOnly: if \code{TRUE} (the default), return rows only
+#'     for elements of \code{s} matching \code{rx}.  Otherwise, a row
+#'     is returned for each element of \code{s}, and rows for those
+#'     not matching \code{rx} are filled with NA.
 #' 
 #' @param guess: if \code{TRUE} paste the columns together with
 #'     commas, and use read.csv to try return the columns already
@@ -71,13 +76,13 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 #' @export
 
-splitToDF = function(rx, s, namedOnly=TRUE, guess=TRUE, ...) {
+splitToDF = function(rx, s, namedOnly=TRUE, validOnly=TRUE, guess=TRUE, ...) {
 
     v = regexpr(rx, s, perl=TRUE)
     keepRow = which(attr(v, "match.length") > 0)
     
     ## non-trivial result
-    if (length(keepRow) > 0) {
+    if (length(keepRow) > 0 || ! validOnly) {
         ## get the names of captured fields
         nm = attr(v, "capture.names")
 
@@ -91,12 +96,14 @@ splitToDF = function(rx, s, namedOnly=TRUE, guess=TRUE, ...) {
 
         ## get starting positions and lengths for each match in each item
         ## Note that rows correspond to named fields, columns to items of s.
+        if (! validOnly)
+            keepRow = 1:length(s)
         starts = attr(v, "capture.start")[keepRow, keepCol, drop=FALSE]
         lengths = attr(v, "capture.length")[keepRow, keepCol, drop=FALSE]
         
         ## for each field, extract the matched region of each item of s
         for (i in seq(along=nm))
-            rv[[i]] = substring(s[keepRow], starts[, i], starts[, i] + lengths[, i] - 1)
+            rv[[i]] = stri_sub(s[keepRow], from=starts[, i], length=lengths[, i])
 
         if (guess) {
             ## guess column types via read.csv()
@@ -107,6 +114,10 @@ splitToDF = function(rx, s, namedOnly=TRUE, guess=TRUE, ...) {
         }
         ## assign column names
         names(rv) = nm
+
+        ## fill non-matching rows with NA
+        if (!validOnly)
+            rv[lengths < 0] = NA ## NB: lengths is a matrix with same shape as rv
     } else {
         rv = NULL
     }
