@@ -16,13 +16,13 @@
 #'  \item "comp":  integer; file compression type":  NA = uncompressed, 1 = gzip, 2 = lzip
 #'
 #' }
-#' @note Returns NULL if no filenames match regex; otherwise, only files matching regex
-#' are represented in the return value.
+#' @note Returns NULL if no filenames match regex; otherwise, return value has rows
+#' filled with NA for any filenames not matching regex
 #' 
 #' @export
 
 parseFilenames = function(f) {
-    rv = splitToDF(sgFilenameRegex, f, as.is=TRUE)
+    rv = splitToDF(sgFilenameRegex, f, as.is=TRUE, validOnly=FALSE)
     if (is.null(rv))
         return(rv)
     rv$ts = ymd_hms(rv$ts)
