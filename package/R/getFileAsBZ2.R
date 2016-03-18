@@ -5,7 +5,8 @@
 #' must be ".bz2").
 #'
 #' @param ext [optional] file extension.  If not supplied, the
-#' extension is the substring of \code{f} beginning with the last period (\code{'.'}))
+#' extension is the substring of \code{f} beginning with the last period (\code{'.'}),
+#' for example ".gz".
 #'
 #' @param size [optional] size of file on disk. If not supplied, it
 #' is obtained by a call to file.info
@@ -24,10 +25,10 @@ getFileAsBZ2 = function(f, ext=stri_extract_last_regex(f, "\\.[A-Za-z0-9]*$"), s
         return(structure(raw(0), len=0))
     
     val = readBin(f, raw(), size)
-    if (ext == "bz2") {
+    if (ext == ".bz2") {
         attr(val, "len") = length(memDecompress(val, "bzip2")) ## just get length of uncompressed
     } else {
-        if (ext == "gz") {
+        if (ext == ".gz") {
             rc = rawConnection(val)
             gc = gzcon(rc)
             ## we don't know the uncompressed size, so assume a compression ratio of 4
