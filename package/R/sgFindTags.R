@@ -62,10 +62,7 @@ sgFindTags = function(src, tagDB, resume=TRUE, par = "", mbn = NULL) {
     g = sgRunStream(src,
                     function(bn, ts, cno, ct, u) {
                         if (cno > 0) {
-                            ## FIXME?: why does calling writeChar( '', ...) fail (i.e. empty string) 
-                            if (any(nchar(ct) > 0)) {
-                                writeChar(ct, u$p, useBytes=TRUE, eos=NULL)
-                            }
+                            writeBin(ct, u$p, useBytes=TRUE)
                         } else if (cno < 0) {
                             if (u$notFirst)
                                 writeChar(paste0("\n!NEWBN,", bn, "\n"), u$p, useBytes=TRUE, eos=NULL)

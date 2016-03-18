@@ -96,9 +96,9 @@ sgRunStream = function(src, f, mbn=NULL, user=NULL) {
                   chunk$ts[[1]],
                   j,
                   if (length(chunk$contents[[1]]) > 0)
-                      chunk$contents[[1]] %>% memDecompress("bzip2", asChar=TRUE)
+                      chunk$contents[[1]] %>% memDecompress("bzip2", asChar=FALSE)
                   else
-                      ""
+                      raw(0)
                  ,
                   user
                 )
