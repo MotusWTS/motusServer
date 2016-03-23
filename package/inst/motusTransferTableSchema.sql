@@ -7,12 +7,12 @@ CREATE TABLE IF NOT EXISTS batches (
                                                          -- foreign key to Motus DB table.
     monoBN INT,                                          -- boot number for this receiver (NULL
                                                          -- okay, e.g. Lotek)
-    tsBegin FLOAT(53),                                   -- timestamp for start of period
+    tsBegin FLOAT(53) NOT NULL,                          -- timestamp for start of period
                                                          -- covered by batch
-    tsEnd FLOAT(53),                                     -- timestamp for end of period
+    tsEnd FLOAT(53) NOT NULL,                            -- timestamp for end of period
                                                          -- covered by batch
-    numHits BIGINT,                                      -- count of hits in this batch
-    ts FLOAT(53),                                        -- timestamp this batch record added
+    numHits BIGINT NOT NULL,                             -- count of hits in this batch
+    ts FLOAT(53) NOT NULL,                               -- timestamp this batch record added
     tsMotus FLOAT(53)                                    -- timestamp this record received by motus
 
 );----  the four dashes after the semicolon delimits individual SQL statements for R code
@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS batches (
 -- GPS fixes are recorded separately from tag detections.
 
 CREATE TABLE IF NOT EXISTS gps (
-    ts      FLOAT(53),                           -- receiver timestamp for this record
+    ts      FLOAT(53) NOT NULL,                  -- receiver timestamp for this record
     batchID INTEGER NOT NULL REFERENCES batches, -- batch from which this fix came
     gpsts   FLOAT(53),                           -- gps timestamp
     lat     FLOAT(53),                           -- latitude, decimal degrees
@@ -149,55 +149,6 @@ CREATE TABLE IF NOT EXISTS batchParams (
     tsMotus FLOAT(53),                         -- timestamp this record received by motus;
     PRIMARY KEY (batchID, progName, paramName) -- only one value of a given parameter per program per batch
 );----
-
-
--- Tables to map keys between receiver database tables and master database tables.
--- Receiver database tables are created independently of each other, without
--- centralized coordination (except for using motus receiver and tag IDs).  When
--- combining data from different receivers, we must remap to new keys to avoid
--- collisions between receivers.  One approach would be to use compound keys
--- that include the receiver ID, but this is bulky and awkward, forcing a new
--- column into large tables (runs, hits).
--- Instead, we opt to generate new unique keys to represent batches, runs, hits, etc.
--- when data are pushed to the transfer database, and create mapping tables that
--- keep track of the relationship, in case we need to trace back a detection from
--- the master database to a receiver database.
-
--- We keep one table per key type.
-
--- map between master and receiver batch IDs.
-
-CREATE TABLE IF NOT EXISTS batchIDMap (
-    motusRecvID INTEGER NOT NULL,             -- motus ID of receiver; foreign key to Motus DB table.
-    batchID INT NOT NULL REFERENCES batches,  -- value of the master batchID
-    recvBatchID INT NOT NULL,                 -- foreign key to receiver database batches table
-    PRIMARY KEY (motusRecvID, batchID, recvBatchID)
-);----
-
-
-CREATE TABLE IF NOT EXISTS runIDMap (
-    motusRecvID INTEGER NOT NULL,        -- motus ID of receiver; foreign key to Motus DB table.
-    runID INT NOT NULL REFERENCES runs,  -- value of the master runID
-    recvRunID INT NOT NULL,              -- foreign key to receiver database runs table
-    PRIMARY KEY (motusRecvID, runID, recvRunID)
-);----
-
-
-CREATE TABLE IF NOT EXISTS hitIDMap (
-    motusRecvID INTEGER NOT NULL,          -- motus ID of receiver; foreign key to Motus DB table.
-    hitID BIGINT NOT NULL REFERENCES hits, -- value of the master hitID
-    recvHitID BIGINT NOT NULL,             -- foreign key to receiver database hits table
-    PRIMARY KEY (motusRecvID, hitID, recvHitID)
-);----
-
-
-CREATE TABLE IF NOT EXISTS ambigIDMap (
-    motusRecvID INTEGER NOT NULL,               -- motus ID of receiver; foreign key to Motus DB table.
-    ambigID INT NOT NULL REFERENCES batchAmbig, -- value of the master ambigID
-    recvAmbigID INT NOT NULL,                   -- foreign key to receiver database batchAmbig table
-    PRIMARY KEY (motusRecvID, ambigID, recvAmbigID)
-);----
-
 
 -- Sometimes we will want to entirely replace a batch with 
 -- a new one.  That is, any record with a foreign key 'batchID1'
