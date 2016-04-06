@@ -1,4 +1,5 @@
 .onLoad = function(...) {
+    options(digits=14)
     if (motusLoadSecrets(quiet=TRUE))
         return()
     MOTUS_SECRETS <<- new.env(emptyenv())

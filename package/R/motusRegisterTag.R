@@ -59,7 +59,8 @@
 #'     approximate quarter during which the tag is expected to be
 #'     active.  Used in lieu of deployment information when that is
 #'     not (yet) available.
-#' 
+#'
+#' @param model: character scalar; Lotek tag model
 #' @param ...: additional parameters to motusQuery()
 #'
 #' @export
@@ -85,6 +86,7 @@ motusRegisterTag = function(projectID,
                             ts,
                             nomFreq,
                             dateBin,
+                            model,
                             ...
                             ) {
     motusQuery(MOTUS_API_REGISTER_TAG, requestType="post",
@@ -107,6 +109,7 @@ motusRegisterTag = function(projectID,
                    paramType    = paramType,
                    ts           = ts,
                    nomFreq      = nomFreq,
-                   dateBin      = dateBin
+                   dateBin      = dateBin,
+                   model        = model
                ), ...)
 }

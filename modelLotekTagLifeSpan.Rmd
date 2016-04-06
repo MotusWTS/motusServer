@@ -1,0 +1,151 @@
+---
+title: "Lotek Tag Lifespan Model"
+author: "John Brzustowski"
+date: "4 April, 2016"
+output:
+   pdf_document :
+       toc: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(comment="")
+options(warn=0)
+library(dplyr)
+library(lattice)
+```
+
+We need some reasonable upper bound for the lifetimes of tags,
+by model and BI.
+
+Lotek provides a short table here:
+
+   http://www.lotek.com/bird+bat-nano.pdf  (As of 1 April, 2016)
+
+```{r}
+lt = as.tbl(read.csv("~/proj/motus/lotekTagLifespanByModelAndBI.csv"))
+print(lt)
+```
+
+Rearrange so that we have columns _model_, _bi_, _dutyCycle_, _lifespan_.
+
+```{r}
+ls = lt %>% transmute(model = model, bi = 2, dutyCycle = 1, lifespan = lifespan2)
+ls = lt %>%
+    transmute(model = model, bi = 5, dutyCycle = 1, lifespan = lifespan5) %>%
+    bind_rows(ls)
+
+ls = lt %>%
+    transmute(model = model, bi = 10, dutyCycle = 1, lifespan = lifespan10) %>%
+    bind_rows(ls)
+
+ls = lt %>%
+    transmute(model = model, bi = 10, dutyCycle = 0.5, lifespan = lifespan10onOff) %>%
+    bind_rows(ls)
+
+ls = ls %>% mutate(biInv = 1.0 / bi, dcInv = 1.0 / dutyCycle)
+
+print(ls)
+```
+
+A simple model assumes that the battery capacity, $K$, depends on the
+tag model, and that tag power consumption $r$ is a sum of a baseline
+rate $r_0$ plus a pulse-dependent rate $r_1$  All tags transmit 4 pulses per burst,
+so the pulse-dependent rate $r_1$ depends only on duty cycle and burst interval
+like so:  $r_1 = r_p * \frac{dutyCyle}{BI}$
+
+The full non-linear model is :
+
+\[
+lifespan = \frac{K}{r_0 + \frac{r_p * dutyCycle}{BI}}
+\]
+
+This is over-parameterized (we can divide top and bottom by $r_0$ to
+get a model with two parameters), so we simplify by rewriting $K/r_0$
+as $D$, the number of days of battery life at the baseline rate, and
+$r_p / r_0$ be $r_t$, the relative rate of power consumption during
+transmission, versus baseline.  The new model is:
+
+\[
+lifespan = \frac{D}{1 + \frac{r_t * dutyCycle}{BI}}
+\]
+
+We fit the model to each type of tag:
+
+```{r, show=TRUE, results=FALSE, output=FALSE}
+par = res = pred = NULL
+
+mnames = unique(ls$model)
+for (m in mnames) {
+    res[[m]] = nls(lifespan~D / (1 + rt * dutyCycle / bi),
+                   subset(ls, model==m), list(D = 500, rt = 5))
+    par = rbind(par, c(coefficients(res[[m]]), max(residuals(res[[m]]))))
+    pred = rbind(pred,
+                 data.frame(
+                     tagType=m,
+                     bi=1:40,
+                     lifespan=predict(res[[m]], list(bi=1:40, dutyCycle=1))
+                 ))
+}
+rownames(par) = mnames
+colnames(par) = c("D", "rt", "Max Residual (days)")
+```
+
+Stu Mackenzie pointed out there is a light-weight version of the *NTQB-1*
+which he's dubbed *NTQB-1-LW*, with "~2/3 the lifetime of the NTQB-1".
+For now we'll assume that means the $D$ parameter for that model is 2/3
+that for the NTQB-1
+
+```{r}
+par = rbind(c(par[["NTQB-1","D"]] * 2 / 3, par[["NTQB-1", "rt"]], NA), par)
+rownames(par)[1] = "NTQB-1-LW"
+pred = rbind(data.frame(
+    tagType="NTQB-1-LW",
+    bi=1:40,
+    lifespan=par[["NTQB-1-LW", "D"]] / (1 + par[["NTQB-1-LW", "rt"]] / (1:40)))
+  , pred)
+```
+
+There's also apparently a model *NTQBW-3-2* (note the 'w'), which for now we'll
+assume is the same as the *NTQB-3-2*.
+
+```{r}
+par = rbind(par, par["NTQB-3-2", ])
+rownames(par)[8] = "NTQBW-3-2"
+```
+
+
+The results show good agreement with the data table from Lotek:
+
+```{r}
+print(round(par, 1))
+```
+
+
+The parameter $r_t$ can be interpreted as the ratio of energy consumed
+during 1 second with a burst to that consumed during 1 second without
+a burst.  Estimates of this parameter vary only by 5% across tag
+types, and in monotonic fashion, perhaps due to variation in battery
+internal resistance.  The table provided by Lotek only covers $2 <= BI
+<= 20$ (the larger value from BI=10s @ 50% duty cycle); curves are extrapolated
+down to 1s and from 20 to 40s using the fitted model.
+
+```{r}
+xyplot(lifespan~bi, groups=tagType, pred,
+       auto.key=list(corner=c(.05,.95)),
+       main="Reported (X) and Predicted (o) 80% Tag Lifespan",
+       xlab="Burst Interval (seconds)",
+       ylab="Lifespan (days)",
+       type="b",
+       panel = function(x, y, type, groups, ...) {
+           panel.xyplot(x, y, type, groups, ...)
+           meas = which(x %in% c(2, 5, 10, 20) & groups != "NTQB-1-LW")
+           panel.points(x[meas], y[meas], pch="X", cex=1.5)
+           }
+       )
+```
+
+```{r, include=FALSE}
+tagLifespanPars = par[, 1:2]
+save(tagLifespanPars, file="/home/john/proj/motus/package/data/tagLifespanPars.rda")
+
+

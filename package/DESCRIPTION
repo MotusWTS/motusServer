@@ -19,3 +19,5 @@ Depends:
 License: GPL-2+
 Date: 2015-11-10
 RoxygenNote: 5.0.1
+LazyData: true
+

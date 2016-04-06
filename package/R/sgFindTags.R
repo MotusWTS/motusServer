@@ -4,7 +4,8 @@
 #' corresponding to a single boot session (period between restarts).
 #' This function searches for patterns of pulses corresponding to
 #' coded ID tags and adds them to the hits, runs, batches etc. tables
-#' in the receiver database.
+#' in the receiver database.  Each boot session is run as a separate
+#' batch.
 #'
 #' @param src dplyr src_sqlite to receiver database
 #'
@@ -14,7 +15,7 @@
 #'     off.  Typically, a new batch of data files arrives and is added
 #'     to the receiver database using \code{sgMergeFiles()}, and then
 #'     \code{sgFindTags} is called again to continue processing these
-#'     new data.
+#'     new data.  FIXME: resume not yet implemented.
 #' 
 #' @param par list of parameters to the findtags code.
 #' 
@@ -29,8 +30,6 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 sgFindTags = function(src, tagDB, resume=TRUE, par = "", mbn = NULL) {
-    ## create user context
-    u = new.env(emptyenv())
 
     cmd = "/home/john/proj/find_tags/find_tags_motus"
     if (is.list(par))
@@ -38,46 +37,66 @@ sgFindTags = function(src, tagDB, resume=TRUE, par = "", mbn = NULL) {
     else
         pars = paste(par)
 
-    ## enable write-ahead-log mode so we can be reading from files table
-    ## while tag finder writes to other tables
-    
-    dbGetQuery(src$con, "pragma journal_mode=wal")
 
-    cmd = paste(cmd, pars, tagDB, src$path, " > /tmp/errors.txt 2>&1")
-    u$p = pipe(cmd, "wb", encoding="")
+    ## create a FIFO
+    fifoName = tempfile("fifo")
 
-    cat("Doing ", cmd, "\n")
-    
-    ## Sys.sleep(15)
-    
     saveTZ = Sys.getenv("TZ")
     Sys.setenv(TZ="GMT")
     tStart = as.numeric(Sys.time())
     Sys.setenv(TZ=saveTZ)
 
-    ## don't write a NEWBN command at the start of the first batch
-    u$notFirst = FALSE
+    if (is.null(mbn))
+        mbn = dbGetQuery(src$con, "select distinct monoBN from files order by monoBN") [[1]]
+
+    ## create the fifo
+    system(paste("mkfifo", fifoName))
+
+    ## enable write-ahead-log mode so we can be reading from files table
+    ## while tag finder writes to other tables
     
-    ## run the worker on the stream(s)
-    g = sgRunStream(src,
-                    function(bn, ts, cno, ct, u) {
-                        if (cno > 0) {
-                            writeBin(ct, u$p, useBytes=TRUE)
-                        } else if (cno < 0) {
-                            if (u$notFirst)
-                                writeChar(paste0("\n!NEWBN,", bn, "\n"), u$p, useBytes=TRUE, eos=NULL)
-                            u$notFirst = TRUE
-                        }
-                    },
-                    mbn,
-                    u)
-    close(u$p)
+    dbGetQuery(src$con, "pragma journal_mode=wal")
+
+    for (bn in sort(mbn)) {
+
+        ## if not resuming, discard resume information.
+        if (! resume)
+            dbGetQuery(src$con, "delete from batchState")
+
+        ## start the child
+        bcmd = paste(cmd, pars, "--resume", paste0("--bootnum=", bn), tagDB, src$path, fifoName, " > /tmp/errors.txt 2>&1")
+
+        ## start the tag finder
+        p = pipe(bcmd, "rb") ## system(cmd, wait=FALSE)
+
+        ## open a writer connection to the fifo, so
+        ## repeated open/close by the sqlite query
+        ## doesn't cause EOF on the reader side
+        fout = file(fifoName, "wb")
+
+        ## send each file in this boot session to the child
+        sgStreamToFile(src, fifoName, bn)
+
+        ## done, so close remaining writer so child can
+        ## see EOF
+        close(fout)
+
+        ## wait for child to exit; its last act is to write "Done." to std::cout
+        x = readLines(p, 1)
+        close(p)
+
+        ## do any needed timestamp fixups
+        sgFixupTimestamps(src)
+    }
+
+    file.remove(fifoName)
 
     ## revert to journal mode delete, so we keep everything in a single file
+
     dbGetQuery(src$con, "pragma journal_mode=delete")
 
     ## get ID and stats for new batch of tag detections
-    rv = dbGetQuery(src$con, "select ID, numHits from batches order by ID desc limit 1")
+    rv = dbGetQuery(src$con, "select batchID, numHits from batches order by batchID desc limit 1")
 
     return (c(rv))
 }

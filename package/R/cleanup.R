@@ -9,17 +9,22 @@
 #' than just emptying them.  This makes sense if their schema
 #' has changed, but is usually not required, so the default is FALSE.
 #'
+#' @param vacuum boolean; if TRUE (the default), free unused storage
+#' from the database.  This can be slow, as the entire database is
+#' rewritten.
+#' 
 #' @export
 #' 
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-cleanup = function(src, dropTables = FALSE) {
+cleanup = function(src, dropTables = FALSE, vacuum=FALSE) {
     sql = function(...) dbGetQuery(src$con, sprintf(...))
-    for (t in c("batches", "runs", "hits", "batchParams", "batchProgs", "batchState", "gps"))
+    for (t in c("batches", "runs", "hits", "batchParams", "batchProgs", "batchState", "gps", "motusTX", "timeJumps", "timeFixes", "pulseCounts"))
         sql("%s %s", if (dropTables) "drop table if exists" else "delete from", t)
     if (dropTables)
         sgEnsureDBTables(src)
-    sql("vacuum")
+    if (vacuum)
+        sql("vacuum")
 }
 
     

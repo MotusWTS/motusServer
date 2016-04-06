@@ -25,7 +25,7 @@
 #' \item    dtaline  line in the original .DTA file for this detection, beginning at 1
 #' \item    antfreq  antenna listening frequency, in MHz
 #' \item    gain     gain setting in place during this detection (0..99)
-#' \item    codeset  factor - Lotek codset name "Lotek3" or "Lotek4" so far
+#' \item    codeset  factor - Lotek codeset name "Lotek3" or "Lotek4" so far
 #'
 #' }
 #' \item pieces chunks of text of various types
@@ -66,14 +66,14 @@ readDTA = function(filename="", lines=NULL) {
   tags = NULL
     
   ## match against a regular expression to find tables - this splits the file
-  ## up into recognizable blocks, in the order in which they appear there
+  ## up into recognizable blocks, in the order in which they appear there.
   ## We read and interpret those blocks later.
   
-  res = gregexpr(lotekDTAregex, lines, perl=TRUE)[[1]]
+  res = gregexpr(ltDTAregex, lines, perl=TRUE)[[1]]
   clen = t(attr(res, "capture.length"))
   cstart = t(attr(res, "capture.start"))
   parts = clen != 0
-  pieces = substring(lines, cstart[parts], cstart[parts] + clen[parts] - 1)
+  pieces = stri_sub(lines, cstart[parts], length = clen[parts])
   names(pieces) = rownames(clen)[1 + ((which(parts)-1) %% nrow(clen))]
   newlines = gregexpr("\n", lines)[[1]]
   piece.lines.before = sapply(cstart[parts], function(x) sum(newlines < x))

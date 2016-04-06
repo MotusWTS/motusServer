@@ -54,5 +54,5 @@ motusSearchTags = function(projectID = NULL, tsStart = NULL, tsEnd = NULL, searc
                    mfgID     = mfgID
                ), ...)
 
-    return(rv)
+    return(subset(rv, ! grepl("^TEST", mfgID, perl=TRUE)))
 }

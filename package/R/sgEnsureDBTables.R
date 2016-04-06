@@ -1,6 +1,12 @@
-#' make sure a receiver database has the required tables
+#' make sure a receiver database has the required tables; also, load
+#' custom SQLite extensions on this DB connection.
 #'
 #' @param src dplyr sqlite src, as returned by \code{dplyr::src_sqlite()}
+#'
+#' @param recreate vector of table names which should be dropped then re-created,
+#' losing any existing data.  Defaults to empty vector, meaning no tables
+#' are recreate.  As a special case, TRUE causes all tables to be dropped
+#' then recreated.
 #' 
 #' @return returns NULL (silently); fails on any error
 #'
@@ -8,27 +14,30 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-## list of tables needed in the receiver database
-
-sgTableNames = c("meta", "files", "timepins", "timeJumps", "GPS", "params", "pulseCounts", "batches",
-                 "runs", "hits", "batchProgs", "batchParams", "batchState", "batchAmbig", "DTAfiles",
-                 "DTAtags")
-
-sgEnsureDBTables = function(src) {
+sgEnsureDBTables = function(src, recreate=c()) {
     if (! inherits(src, "src_sqlite"))
         stop("src is not a dplyr::src_sqlite object")
     con = src$con
     if (! inherits(con, "SQLiteConnection"))
         stop("src is not open or is corrupt; underlying db connection invalid")
 
+    ## function to send a single statement to the underlying connection
+    sql = function(...) dbGetQuery(con, sprintf(...))   
+
+    if (isTRUE(recreate))
+        recreate = sgTableNames
+    
+    ## load custom extensions
+    sql("select load_extension('%s')",  system.file(paste0("libs/Sqlite_Compression_Extension", .Platform$dynlib.ext),package="motus"))
+    
+    for (t in recreate)
+        sql("drop table %s", t)
+    
     tables = src_tbls(src)
 
     if (all(sgTableNames %in% tables))
         return()
     
-    ## function to send a single statement to the underlying connection
-    sql = function(...) dbGetQuery(con, sprintf(...))   
-
     if (! "meta" %in% tables) {
         sql("
 create table meta (  
@@ -39,7 +48,7 @@ val  character                              -- character string giving meta data
     }
 
     if (! "files" %in% tables) {
-    sql("
+        sql("
 create table files (  
 fileID   integer not null primary key,             -- file ID - used in most data tables
 name     text unique,                              -- name of file (basename only; no path, no compression extension)
@@ -54,14 +63,14 @@ contents BLOB                                      -- contents of file; bzip2-co
 )
 ");
 
-    sql("create index files_name on files ( name )")
-    sql("create index files_bootnum on files ( monoBN )")
-    sql("create index files_ts on files ( ts )")
-    sql("create index files_all on files ( monoBN, ts )")
-  }
+        sql("create index files_name on files ( name )")
+        sql("create index files_bootnum on files ( monoBN )")
+        sql("create index files_ts on files ( ts )")
+        sql("create index files_all on files ( monoBN, ts )")
+    }
 
     if (! "DTAfiles" %in% tables) {
-    sql("
+        sql("
 create table DTAfiles (  
 fileID   integer not null primary key,             -- file ID - used in most data tables
 name     text,                                     -- name of file (no path, but extension preserved)
@@ -74,15 +83,15 @@ hash     text unique,                              -- because Lotek filenames ar
 contents BLOB                                      -- contents of file; bzip2-compressed text contents of file
 )
 ");
-
-    sql("create index DTAfiles_hash on DTAfiles ( hash )")
-    sql("create index DTAfiles_tsBegin on DTAfiles ( tsBegin )")
-  }
-
+        
+        sql("create index DTAfiles_hash on DTAfiles ( hash )")
+        sql("create index DTAfiles_tsBegin on DTAfiles ( tsBegin )")
+    }
+    
     ## parsed contents of DTA files are stored in a separate table
     
     if (! "DTAtags" %in% tables) {
-    sql("
+        sql("
 create table DTAtags (
 fileID   integer not null references DTAfiles,     -- ID of DTA file this record came from
 dtaline  integer not null,                         -- index of line in .DTA file this detection is from (starting from 1)
@@ -98,56 +107,79 @@ codeSet  text,                                     -- codeset of tag ('Lotek3' o
 primary key(ts, ant, id)                          -- no more than one detection of each ID at given time, ant 
 )
 ");
+        
+        sql("create index DTAtags_ts on DTAtags ( ts )")
+    }
 
-    sql("create index DTAtags_ts on DTAtags ( ts )")
-  }
 
-
-  ## a database of timepins mapping GPS timestamps to system timestamps, for periods when
-  ## chrony has not updated the system clock (or when this fails entirely)
-  ## this table should contain only one record per (depID, bootnum) pair
- 
-  if (! "timepins" %in% tables) {
-    sql("
-create table timepins (  
-bootnum  integer,                                  -- boot number: number of times SG was booted before this file was recorded
-systs    double,                                   -- system timestamp for GPS fix
-gpsts    double                                    -- GPS timestamp from GPS fix
+    ## A table of corrections applied to timestamps, e.g. for periods
+    ## when chrony has not updated the SG system clock from the GPS (or
+    ## for when this fails entirely).  Each record indicates a block
+    ## of corrected times during a particular boot session, the amount
+    ## by which they were corrected, and a code for the reason.
+    ## When the tag finder is run, these corrections are applied to the
+    ## ts field in the hits table, as well as to the tsBegin and tsEnd
+    ## fields of the batches table.
+    
+    if (! "timeFixes" %in% tables) {
+        sql("
+create table timeFixes (  
+batchID  integer,      -- batch ID during which fixes were made
+tsFixedLow double,     -- low endpoint of timestamps after correction
+tsFixedHigh double,    -- high endpoint of timestamps after correction
+tsFixedBy double,      -- amount which was added to uncorrected timestamps to obtain corrected ones, in seconds.
+comment text           -- method and reason for fixing; e.g. 'GPS pin'
 )");
-  }
+    }
 
-  ##  If this turns out to be an issue for more receivers than just the one on the Ryan Leet, implement this
-  
-  ## A table of points when the time unexplainedly jumps forward to a ridiculous value (years in the future)
-  ## This has been on the unit deployed on the ship Ryan Leet, for example.
-  ## It seems rare, but we don't assume it only happens once per boot, so we try to detect
-  ## any time the system clock jumps forward more than 1 day within a single file
+    
+    ## This table provides the information used to generate records in
+    ## the timeFixes table, at least for the case where the timeFix is
+    ## due to a delayed settting of the SG system clock from the GPS.
+    ## This table is populated by the tag finder, which looks for
+    ## instances of raw data timestamps jumping from invalid (before
+    ## 2010) to valid (after 2010).  The difference will be used to
+    ## back-correct the invalid timestamps on any detections before
+    ## the setting.  The tag finder might also search for jumps
+    ## due to wonky GPS data; e.g. significant time reversals, or
+    ## jumps by a year etc.
 
+    ## drop the old, unused version of timeJumps, if it exists
+    if ("timeJumps" %in% tables &&
+        identical(tbl_vars(tbl(src, "timeJumps")), c("bootnum", "tsBefore", "tsAfter")
+                  )) {
+        sql("drop table timeJumps")
+        tables = tables[ - match("timeJumps", tables)]
+    }
+    
     if (! "timeJumps" %in% tables) {
         sql("
-create   table timeJumps (  
-bootnum  integer,                                  -- boot number: number of times SG was booted before this file was recorded
-tsBefore double,                                   -- system timestamp before a big jump
-tsAfter  double                                    -- system timestamp after a big jump
+create table timeJumps (  
+batchID  integer not null references batches,      -- batch ID from which this time setting record comes
+tsBefore double not null,                          -- latest available timestamp before GPS set the system clock
+tsAfter double not null,                           -- earliest available timestamp after GPS set the system clock
+jumpType char(1)                                   -- a code providing the type of jump recorded here; 'S' means
+                                                   -- 'setting', which is a jump from invalid to valid timestamps.
 )");
+    }
 
-    sql("create unique index timeJumps_all on timeJumps ( bootnum, tsBefore )")
-  }
-
-  if (! "gps" %in% tables) {
-    sql("
+    if (! "gps" %in% tables) {
+        sql("
 create table gps (
 ts      double unique primary key,           -- system timestamp for this record
+batchID INTEGER NOT NULL REFERENCES batches, -- batch from which this fix came
 gpsts   double,                              -- gps timestamp
 lat     double,                              -- latitude, decimal degrees
 lon     double,                              -- longitude, decimal degrees
 alt     double                               -- altitude, metres
 )");
-    
-  }
 
-  if (! "params" %in% tables) {
-    sql( "
+        sql("create index gps_batchID on gps ( batchID )")
+
+    }
+
+    if (! "params" %in% tables) {
+        sql( "
 create table params (
 ts      double,                              -- timestamp for this record
 tscode  character(1),                        -- timestamp code: 'P'=prior to GPS fix; 'Z' = after GPS fix
@@ -158,28 +190,25 @@ error   integer,                             -- 0 if parameter setting succeeded
 errinfo character                            -- non-empty if error code non-zero
 )");
 
-    sql("create index params_ts on params ( ts )")
-    sql("create unique index params_all on params ( ts, port)")
-  }
+        sql("create index params_ts on params ( ts )")
+        sql("create unique index params_all on params ( ts, port)")
+    }
 
-  if (! "pulseCounts" %in% tables) {
-      sql("
+    if (! "pulseCounts" %in% tables) {
+        sql("
 create table pulseCounts (
-pcode   character(2),                        -- code for pulse; typically p1, p2, p3, etc.
-hourBin integer,                             -- hour bin for this count; this is round(ts/3600) for pulses from this file
+batchID integer NOT NULL REFERENCES batches, -- batchID that generated this record
+ant TINYINT NOT NULL,                        -- antenna
+hourBin integer,                             -- hour bin for this count; this is round(ts/3600)
 count   integer,                             -- number of pulses for given pcode in this file
-bootnum integer                              -- boot count for file generating this record
+PRIMARY KEY (batchID, ant, hourBin)          -- a single count for each batchID, antenna, and hourBin
 )");
-      
-      sql( "create index pulseCounts_hourBin on pulseCounts ( hourBin )")
-      sql( "create index pulseCounts_pcode on pulseCounts ( pcode )")
-      sql( "create index pulseCounts_all on pulseCounts ( hourBin, pcode )")
-  }
+    }
 
     if (! "batches" %in% tables) {
         sql("
 CREATE TABLE batches (
-    ID INTEGER PRIMARY KEY,                   -- unique identifier for this batch
+    batchID INTEGER PRIMARY KEY,              -- unique identifier for this batch
     monoBN INT,                               -- boot number for this receiver; (NULL
                                               -- okay; e.g. Lotek)
     tsBegin FLOAT(53),                        -- timestamp for start of period
@@ -214,14 +243,12 @@ CREATE TABLE batchAmbig (
 CREATE TABLE runs (
     runID INTEGER PRIMARY KEY,                        -- identifier of run; unique for this receiver
     batchIDbegin INTEGER NOT NULL REFERENCES batches, -- unique identifier of batch this run began in
-    batchIDend INTEGER NOT NULL REFERENCES batches,   -- unique identifier of batch this run began in
+    batchIDend INTEGER  REFERENCES batches,           -- unique identifier of batch this run ends in (if run is complete)
     motusTagID INT NOT NULL,                          -- ID for the tag detected; foreign key to Motus DB
                                                       -- table
-    len INT,                                          -- length of run within batch
-    tsMotus FLOAT(53)                                 -- timestamp when this record transferred to motus;
-                                                      -- unix-style: seconds since 1 Jan 1970 GMT; NULL means
-                                                      -- not transferred; if this timestamp is set, it means
-                                                      -- all the hits for the run have also been transferred
+    ant TINYINT NOT NULL,                             -- antenna number (USB Hub port # for SG; antenna port
+                                                      -- # for Lotek)
+    len INT                                           -- length of run within batch
 );
 
 ")
@@ -232,8 +259,6 @@ CREATE TABLE hits (
     hitID INTEGER PRIMARY KEY,                     -- unique ID of this hit
     runID INTEGER NOT NULL REFERENCES runs,        -- ID of run this hit belongs to
     batchID INTEGER NOT NULL REFERENCES batches,   -- ID of batch this hit belongs to
-    ant TINYINT NOT NULL,                          -- antenna number (USB Hub port # for SG; antenna port
-                                                   -- # for Lotek)
     ts FLOAT(53) NOT NULL,                         -- timestamp (centre of first pulse in detection);
                                                    -- unix-style: seconds since 1 Jan 1970 GMT
     sig FLOAT(24) NOT NULL,                        -- signal strength, in units appropriate to device;
@@ -251,6 +276,8 @@ CREATE TABLE hits (
                                                    -- e.g. Lotek)
 );
 ")
+        sql("CREATE INDEX IF NOT EXISTS hits_batchID_ts on hits(batchID, ts)")
+        
     }
     if (! "batchProgs" %in% tables) {
         sql("
@@ -265,9 +292,6 @@ CREATE TABLE batchProgs (
     progBuildTS FLOAT(53) NOT NULL,          -- timestamp of binary for this program; unix-style:
                                              -- seconds since 1 Jan 1970 GMT; NULL means not
                                              -- transferred
-    tsMotus FLOAT(53),                       -- timestamp when this record transferred to motus;
-                                             -- unix-style: seconds since 1 Jan 1970 GMT; NULL means
-                                             -- not transferred
     PRIMARY KEY (batchID, progName)          -- only one version of a given program per batch
 );
 ")
@@ -285,9 +309,6 @@ CREATE TABLE batchParams (
                                                -- 'lotek-plugins.so'
     paramName varchar(16) NOT NULL,            -- name of parameter (e.g. 'minFreq')
     paramVal FLOAT(53) NOT NULL,               -- value of parameter
-    tsMotus FLOAT(53),                         -- timestamp when this record transferred to motus;
-                                               -- unix-style: seconds since 1 Jan 1970 GMT; NULL means
-                                               -- not transferred
     PRIMARY KEY (batchID, progName, paramName) -- only one value of a given parameter per program per batch
 );
 ")
@@ -313,4 +334,48 @@ CREATE TABLE batchState (
 ")
     }
 
+    if (! "motusTX" %in% tables) {
+        sql("
+CREATE TABLE motusTX (
+-- This table records the state of data transfers to motus, possibly via
+-- transfer tables on discovery.acadiau.ca
+-- Transfers occur in batch;
+-- for one batchID, the records from these tables are transferred:
+--  - batches
+--  - runs (matching batchIDbegin)
+--  - hits
+--  - gps
+--  - batchAmbig
+--  - batchProg
+--  - batchParam
+--  - batchState
+--
+-- Any entries in runs which have batchIDbegin < batchIDend and for which
+-- batchIDend is the current batchID also generate entries in runUpdates,
+-- to close runs which have ended.
+--
+-- Many key fields must be mapped to new ones in pushing data to motus,
+-- since data from different receivers will collide.  So when pushing data,
+-- we request blocks of consecutive new keys in each destination table,
+-- so that the map between receiver keys and motus keys is a simple offset.
+-- (motusKey = receiverKey + OFFSET), where OFFSET will be a different value
+-- for each table.  These OFFSETS are stored to permit mapping back from
+-- motus key values to receiver tables.
+
+-- can be used to resume it when new data arrive.
+    batchID INT NOT NULL PRIMARY KEY references batches, -- ID of batch which was transferred
+    tsMotus FLOAT(53),                                   -- timestamp when batch transferred
+    offsetBatchID BIGINT,                                -- value added to receiver batchID field to get motus batchID field
+    offsetRunID BIGINT,                                  -- value added to receiver runID field to get motus runID field for runs starting in this batch
+    offsetHitID BIGINT                                   -- value added to receiver hitID field to get motus hitID field for hits in this batch
+);
+")
+    }
+
 }
+
+## list of tables needed in the receiver database
+
+sgTableNames = c("meta", "files", "timeFixes", "timeJumps", "GPS", "params", "pulseCounts", "batches",
+                 "runs", "hits", "batchProgs", "batchParams", "batchState", "batchAmbig", "DTAfiles",
+                 "DTAtags", "motusTX")

@@ -10,6 +10,13 @@
 #'
 #' @param json; if TRUE, return results as JSON-format string; otherwise, as R list
 #'
+#' @param serno; serial number of receiver from which request is being
+#'     sent; if NULL, the default, uses MOTUS_SECRETS$serno.
+#' 
+#' @param masterKey; if NULL (the default), use key from the
+#'     MOTUS_SECRETS object.  Otherwise, \code{masterKey} is the name
+#'     of a file to read the secret key from.
+#' 
 #' @return the result of sending the request to the motus API.  The
 #'     result is a JSON-format character scalar if \code{json} is
 #'     \code{TRUE}; otherwise it is an R list with named components,
@@ -17,7 +24,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-motusQuery = function (API, params = NULL, requestType="post", show=FALSE, json=FALSE) {
+motusQuery = function (API, params = NULL, requestType="post", show=FALSE, json=FALSE, serno=NULL, masterKey=NULL) {
     curl = getCurlHandle()
     curlSetOpt(.opts=list(verbose=0, header=0, failonerror=0), curl=curl)
     # params is a named list of parameters which will be passed along in the JSON query
@@ -25,13 +32,22 @@ motusQuery = function (API, params = NULL, requestType="post", show=FALSE, json=
     DATE = Sys.time()
     DAY = DATE %>% format("%Y%m%d%H%M%S")
 
-    HASH = "%s_%s_%s" %>% sprintf(MOTUS_SECRETS$serno, DAY, MOTUS_SECRETS$key) %>% digest("sha1", serialize=FALSE) %>% toupper
+    ## for a few
+    if (is.null(masterKey))
+        KEY = MOTUS_SECRETS$key
+    else
+        KEY = readLines(masterKey)
+
+    if (is.null(serno))
+        serno = MOTUS_SECRETS$serno
+
+    HASH = "%s_%s_%s" %>% sprintf(serno, DAY, KEY) %>% digest("sha1", serialize=FALSE) %>% toupper
 
     ## query object for getting project list
 
     QUERY = c(
         list(
-            serno = MOTUS_SECRETS$serno,
+            serno = serno,
             hash = HASH,
             date = DAY,
             format = "jsonp",

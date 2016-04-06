@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS batches (
                                                          -- covered by batch
     numHits BIGINT NOT NULL,                             -- count of hits in this batch
     ts FLOAT(53) NOT NULL,                               -- timestamp this batch record added
-    tsMotus FLOAT(53)                                    -- timestamp this record received by motus
+    tsMotus FLOAT(53) NOT NULL DEFAULT -1                -- timestamp this record received by motus
 
 );----  the four dashes after the semicolon delimits individual SQL statements for R code
 
@@ -26,7 +26,6 @@ CREATE TABLE IF NOT EXISTS gps (
     lat     FLOAT(53),                           -- latitude, decimal degrees
     lon     FLOAT(53),                           -- longitude, decimal degrees
     alt     FLOAT(24),                           -- altitude, metres
-    tsMotus FLOAT(53),                           -- timestamp this record received by motus
     PRIMARY KEY (batchID, ts)
 );----
 
@@ -48,9 +47,8 @@ CREATE TABLE IF NOT EXISTS runs (
                                                       -- table; a negative value correspond to an entry in the batchAmbig table.
     ant TINYINT NOT NULL,                             -- antenna number (USB Hub port # for SG; antenna port
                                                       -- # for Lotek)
-    len BIGINT NOT NULL,                              -- number of detections in run ( so far ); this number
+    len BIGINT NOT NULL                               -- number of detections in run ( so far ); this number
                                                       -- can increase 
-    tsMotus FLOAT(53)                                 -- timestamp this record received by motus;
 );----
 
 
@@ -68,7 +66,7 @@ CREATE TABLE IF NOT EXISTS runUpdates (
     runID BIGINT NOT NULL REFERENCES runs,    -- identifier of run for which this record is an update
     batchID INT NOT NULL REFERENCES batches,  -- batch from which this run update record came
     len BIGINT NOT NULL,                      -- replacement length for this run
-    tsMotus FLOAT(53),                        -- timestamp this record received by motus
+    batchIDend INT REFERENCES batches,        -- replacement batchIDend for this run (if not null)
     PRIMARY KEY (runID, batchID)              -- only one update per run per batch
 );----
 
@@ -95,25 +93,29 @@ CREATE TABLE IF NOT EXISTS hits (
                                                       -- e.g. Lotek)
     slop FLOAT(24),                                   -- discrepancy of pulse timing, in msec (NULL okay;
                                                       -- e.g. Lotek)
-    burstSlop FLOAT (24),                             -- discrepancy of burst timing, in msec (NULL okay;
+    burstSlop FLOAT (24)                              -- discrepancy of burst timing, in msec (NULL okay;
                                                       -- e.g. Lotek)
-    tsMotus FLOAT(53)                                 -- timestamp this record received by motus;
 );----
 
 
 -- Table batchAmbig records sets of physically identical tags which
 -- have overlapping deployment periods.  When the motusTagID field in
--- a row of the 'runs' table is negative, its absolute value refers to
--- the ambigID field in this table.  The set of possible tags
--- corresponding to that detection is given by the motusTagID fields
--- of rows in this table which have the same ambigID.  Any of these
--- tags could, given the deployment dates, be the detected tag.
--- Users can try to resolve ambiguities using other context.
+-- a row of the 'runs' table is negative, it refers to the ambigID
+-- field in this table.  The set of possible tags corresponding to
+-- that detection is given by the motusTagID fields of rows in this
+-- table joined like so:
+--
+--   batchAmbig.ambigID = runs.motusTagID and batchAmbig.batchID = runs.batchIDbegin
+--
+-- Any of these tags could, given the deployment dates, be the
+-- detected tag.  Users can try to resolve ambiguities using other
+-- context.
 
 CREATE TABLE IF NOT EXISTS batchAmbig (
-    ambigID INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT, -- identifier of group of tags which are ambiguous (identical)
-    batchID INTEGER NOT NULL REFERENCES batches,         -- batch for which this ambiguity group is active
-    motusTagID INT NOT NULL                              -- motus ID of tag in group.  
+    ambigID INTEGER NOT NULL,                     -- identifier of group of tags which are ambiguous; always negative
+    batchID INTEGER NOT NULL REFERENCES batches,  -- batch for which this ambiguity group is active
+    motusTagID INT NOT NULL,                      -- motus ID of tag in group.  
+    PRIMARY KEY (batchID, ambigID)
 );----
 
 
@@ -130,7 +132,6 @@ CREATE TABLE IF NOT EXISTS batchProgs (
     progBuildTS FLOAT(53) NOT NULL,          -- timestamp of binary for this program; unix-style:
                                              -- seconds since 1 Jan 1970 GMT; NULL means not
                                              -- transferred
-    tsMotus FLOAT(53),                       -- timestamp this record received by motus;
     PRIMARY KEY (batchID, progName)          -- only one version of a given program per batch
 );----
 
@@ -146,18 +147,21 @@ CREATE TABLE IF NOT EXISTS batchParams (
                                                -- 'lotek-plugins.so'
     paramName VARCHAR(16) NOT NULL,            -- name of parameter (e.g. 'minFreq')
     paramVal FLOAT(53) NOT NULL,               -- value of parameter
-    tsMotus FLOAT(53),                         -- timestamp this record received by motus;
     PRIMARY KEY (batchID, progName, paramName) -- only one value of a given parameter per program per batch
 );----
 
--- Sometimes we will want to entirely replace a batch with 
--- a new one.  That is, any record with a foreign key 'batchID1'
--- will be deleted, then a bunch of new records will be inserted.
--- This table tracks such replacements
+-- Sometimes we will want to entirely replace a bunch of batches with 
+-- new ones.  Really, we just delete the old batches, and insert
+-- new ones (or not).  This table records deletions.  We will guarantee
+-- that no runs cross in or out of the range of batches specified by a single
+-- record of this table.  i.e. for any run, all of its hits are from batches
+-- in the range batchIDbegin...batchIDend, or all of its hits are from batches
+-- before batchIDbegin, or all of its hits are from batches after batchIDend.
 
-CREATE TABLE IF NOT EXISTS batchReplace (
-    oldBatchID INT PRIMARY KEY UNIQUE NOT NULL REFERENCES batches, -- original batch ID
-    newBatchID INT NOT NULL REFERENCES batches,                    -- new batch ID
-    ts FLOAT(53) NOT NULL,                                         -- timestamp when this batch record was added;
-    tsMotus FLOAT(53)                                              -- timestamp when this record transferred to motus;
+CREATE TABLE IF NOT EXISTS batchDelete (
+    batchIDbegin INT PRIMARY KEY UNIQUE NOT NULL REFERENCES batches,-- first batch to be deleted
+    batchIDend INT NOT NULL REFERENCES batches,                     -- last batch to be deleted
+    ts FLOAT(53) NOT NULL,                                          -- timestamp when this batch deletion record was added;
+    reason TEXT,                                                    -- human-readable explanation for why a batch was deleted;
+    tsMotus FLOAT(53) NOT NULL DEFAULT -1                           -- timestamp when this record transferred to motus;
 );----

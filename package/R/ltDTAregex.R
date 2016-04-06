@@ -5,7 +5,7 @@
 #' need here.
 
 
-lotekDTAregex = 
+ltDTAregex = 
 "(?sx)
 
 # We're looking for an active scan table:

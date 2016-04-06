@@ -88,14 +88,7 @@ motusQuickRegTag = function(projectID,
 
     pulseLen = 2.5
 
-    db = system(
-        sprintf("sudo su -c 'sqlite3 -header -separator , /home/sg/ramfs/lotek%sdb.sqlite \"select * from tags where id =%d order by id\"' sg",
-                if (codeSet == "Lotek3") "3" else "",
-                as.integer(mfgID)
-                ),
-        intern=TRUE)
-
-    db = read.csv(textConnection(db), as.is=TRUE)
+    db = subset(lotekGetCodeset(codeSet), id==mfgID)
 
     param1 = db$g1
     param2 = db$g2
