@@ -64,14 +64,15 @@
 #'
 #' \strong{tags:}
 #' \itemize{
-#' \item tagID     motus tag ID
-#' \item nomFreq   nominal frequency, in MHz e.g. 166.38
-#' \item param1    first interpulse gap
-#' \item param2    second interpulse gap
-#' \item param3    third interpulse gap
-#' \item period    burst interval
-#' \item mfgID     lotek ID code
-#' \item codeSet   
+#' \item tagID      motus tag ID
+#' \item nomFreq    nominal frequency, in MHz e.g. 166.38
+#' \item offsetFreq offset from nominal, in kHz
+#' \item param1     first interpulse gap
+#' \item param2     second interpulse gap
+#' \item param3     third interpulse gap
+#' \item period     burst interval
+#' \item mfgID      lotek ID code
+#' \item codeSet    Lotek codeset name
 #' }
 #'
 #' \strong{events:}
@@ -234,31 +235,11 @@ getMotusTagDB = function() {
         clean[match(fixtsEnd$deployID, clean$deployID), "tsEnd"] = fixtsEnd$tsEnd
     }
     
-    ## generate the tables needed by the tag finder (tags, events)
-    
-    tagsOnly = clean %>%
-        transmute(
-            tagID = tagID,
-            nomFreq = nomFreq,
-            param1 = param1,
-            param2 = param2,
-            param3 = param3,
-            param4 = param4,
-            param5 = param5,
-            param6 = param6,
-            period = period,
-            mfgID = mfgID,
-            codeSet = codeSet
-            
-        ) %>% as.data.frame
-
     ## remove duplicates, which are due to multiple deployments
-    nodups = subset(tagsOnly, ! duplicated(tagID))
+    nodups = subset(clean, ! duplicated(tagID))
 
     con = dbConnect(SQLite(), cleanedDB)
-    dbWriteTable(con, "tags", nodups, overwrite=TRUE)
-
-    dbWriteTable(con, "fulltags", clean %>% as.data.frame, overwrite=TRUE)
+    dbWriteTable(con, "tags", nodups %>% as.data.frame, overwrite=TRUE)
 
     ## now create events table
     ## This has the columns: ts, tagID, event (0 or 1)
