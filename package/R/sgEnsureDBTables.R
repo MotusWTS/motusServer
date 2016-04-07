@@ -24,6 +24,8 @@ sgEnsureDBTables = function(src, recreate=c()) {
     ## function to send a single statement to the underlying connection
     sql = function(...) dbGetQuery(con, sprintf(...))   
 
+    sql("pragma page_size=4096") ## reasonably large page size; post 2011 hard drives have 4K sectors anyway
+    
     if (isTRUE(recreate))
         recreate = sgTableNames
     
