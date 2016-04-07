@@ -4,6 +4,9 @@
 speciesTagModel = read.csv(
     textConnection("\
 id,     group,   english,                                           tagModel
+5170,	BIRDS,	 Herring Gull,                                      NTQB-6-2
+5280,	BIRDS,	 Great Black-backed Gull,                           NTQB-6-2
+2160,	BIRDS,	 Leach's Storm-Petrel,                              NTQB-1
 2720,   BIRDS,   Black-crowned Night-Heron,                         NTQB-6-2
 4070,   BIRDS,   Black-bellied Plover,                              NTQB-3-2
 4100,   BIRDS,   American Golden-Plover,                            NTQB-3-2
