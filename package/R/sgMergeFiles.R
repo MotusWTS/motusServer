@@ -190,33 +190,49 @@ sgMergeFiles = function(dbdir, files) {
                     ## not yet in database
                     dbGetPreparedQuery(
                         con,
-                        "insert into files (name, size, bootnum, monoBN, ts, tscode, tsDB, isDone, contents) values (:name, :size, :bootnum, :monoBN, :ts, :tscode, :tsDB, :isDone, :contents)",
+                        "insert into files (name, size, bootnum, monoBN, ts, tscode, tsDB, isDone) values (:name, :size, :bootnum, :monoBN, :ts, :tscode, :tsDB, :isDone)",
                         
-                        data_frame(
+                        data.frame(
                             name     = newf$name[i],
                             size     = attr(fcon, "len"),
                             bootnum  = newf$Fbootnum[i],
-                            monoBN   = bootnum,
+                            monoBN   = newf$Fbootnum[i],
                             ts       = newf$Fts[i],
                             tscode   = newf$FtsCode[i],
                             tsDB     = now,
                             isDone   = newf$Fextension[i] != "",
-                            contents = list(fcon)
-                        ) %>% as.data.frame
+                            stringsAsFactors = FALSE
+                        )
+                    )
+                    dbGetPreparedQuery(
+                        con,
+                        "insert into fileContents (fileID, contents) values (last_insert_rowid(), :contents)",
+                        data.frame(contents=I(list(fcon)))
                     )
                 } else {
                     dbGetPreparedQuery(
                         con,
-                        "update files set size=:size, contents=:contents where fileID=:fileID ",
-                        data_frame(
+                        "update files set size=:size fileID=:fileID ",
+                        data.frame(
                             size     = attr(fcon, "len"),
-                            contents = fcon,
                             fileID   = newf$fileID[i]
-                        ) %>% as.data.frame ## because dbGetPreparedQuery doesn't test for data.frame inheritance
+                        )
+                    )
+                    dbGetPreparedQuery(
+                        con,
+                        "update fileContents set contents=:contents where fileID=:fileID ",
+                        data.frame(
+                            contents = list(fcon),
+                            fileID   = newf$fileID[i]
+                        )
                     )
                 }
             }
         }
+        ## shut down this sqlite connection
+
+        ## record results
+        
         allf    [ri, c("use", "new", "done", "corrupt", "small", "partial")] <-
             newf[  , c("use", "new", "done", "corrupt", "small", "partial")]
     }

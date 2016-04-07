@@ -7,7 +7,7 @@
 #' losing any existing data.  Defaults to empty vector, meaning no tables
 #' are recreate.  As a special case, TRUE causes all tables to be dropped
 #' then recreated.
-#' 
+#'
 #' @return returns NULL (silently); fails on any error
 #'
 #' @export
@@ -22,27 +22,27 @@ sgEnsureDBTables = function(src, recreate=c()) {
         stop("src is not open or is corrupt; underlying db connection invalid")
 
     ## function to send a single statement to the underlying connection
-    sql = function(...) dbGetQuery(con, sprintf(...))   
+    sql = function(...) dbGetQuery(con, sprintf(...))
 
     sql("pragma page_size=4096") ## reasonably large page size; post 2011 hard drives have 4K sectors anyway
-    
+
     if (isTRUE(recreate))
         recreate = sgTableNames
-    
+
     ## load custom extensions
     sql("select load_extension('%s')",  system.file(paste0("libs/Sqlite_Compression_Extension", .Platform$dynlib.ext),package="motus"))
-    
+
     for (t in recreate)
         sql("drop table %s", t)
-    
+
     tables = src_tbls(src)
 
     if (all(sgTableNames %in% tables))
         return()
-    
+
     if (! "meta" %in% tables) {
         sql("
-create table meta (  
+create table meta (
 key  character not null unique primary key, -- name of key for meta data
 val  character                              -- character string giving meta data; might be in JSON format
 )
@@ -51,17 +51,16 @@ val  character                              -- character string giving meta data
 
     if (! "files" %in% tables) {
         sql("
-create table files (  
-fileID   integer not null primary key,             -- file ID - used in most data tables
-name     text unique,                              -- name of file (basename only; no path, no compression extension)
-size     integer,                                  -- size of uncompressed file contents
-bootnum  integer,                                  -- boot number: number of times SG was booted before this file was recorded
-monoBN   integer,                                  -- monotonic boot number: corrects issues with bn for BB white receivers, e.g.
-ts       double,                                   -- timestamp from filename (time at which file was created)
-tscode   character(1),                             -- timestamp code: 'P'=prior to GPS fix; 'Z' = after GPS fix
-tsDB     double,                                   -- timestamp when file was read into this database
-isDone   integer,                                   -- if non-zero, this was a complete, valid compressed file, so will never be updated.
-contents BLOB                                      -- contents of file; bzip2-compressed text contents of file
+create table files (
+fileID   integer not null primary key, -- file ID - used in most data tables
+name     text unique,                  -- name of file (basename only; no path, no compression extension)
+size     integer,                      -- size of uncompressed file contents
+bootnum  integer,                      -- boot number: number of times SG was booted before this file was recorded
+monoBN   integer,                      -- monotonic boot number: corrects issues with bn for BB white receivers, e.g.
+ts       double,                       -- timestamp from filename (time at which file was created)
+tscode   character(1),                 -- timestamp code: 'P'=prior to GPS fix; 'Z' = after GPS fix
+tsDB     double,                       -- timestamp when file was read into this database
+isDone   integer                       -- if non-zero, this was a complete, valid compressed file, so will never be updated.
 )
 ");
 
@@ -71,9 +70,18 @@ contents BLOB                                      -- contents of file; bzip2-co
         sql("create index files_all on files ( monoBN, ts )")
     }
 
+    if (! "fileContents" %in% tables) {
+        sql("
+create table fileContents (
+fileID   integer not null primary key references files, -- file ID - used in most data tables
+contents BLOB                                           -- contents of file; bzip2-compressed text contents of file
+)
+");
+    }
+
     if (! "DTAfiles" %in% tables) {
         sql("
-create table DTAfiles (  
+create table DTAfiles (
 fileID   integer not null primary key,             -- file ID - used in most data tables
 name     text,                                     -- name of file (no path, but extension preserved)
 size     integer,                                  -- size of uncompressed file contents
@@ -85,13 +93,13 @@ hash     text unique,                              -- because Lotek filenames ar
 contents BLOB                                      -- contents of file; bzip2-compressed text contents of file
 )
 ");
-        
+
         sql("create index DTAfiles_hash on DTAfiles ( hash )")
         sql("create index DTAfiles_tsBegin on DTAfiles ( tsBegin )")
     }
-    
+
     ## parsed contents of DTA files are stored in a separate table
-    
+
     if (! "DTAtags" %in% tables) {
         sql("
 create table DTAtags (
@@ -106,10 +114,10 @@ lon      double,                                   -- longitude of detection, in
 antFreq  double,                                   -- antenna frequency, in MHz
 gain     int,                                      -- antenna gain in Lotek units
 codeSet  text,                                     -- codeset of tag ('Lotek3' or 'Lotek4')
-primary key(ts, ant, id)                          -- no more than one detection of each ID at given time, ant 
+primary key(ts, ant, id)                          -- no more than one detection of each ID at given time, ant
 )
 ");
-        
+
         sql("create index DTAtags_ts on DTAtags ( ts )")
     }
 
@@ -122,10 +130,10 @@ primary key(ts, ant, id)                          -- no more than one detection 
     ## When the tag finder is run, these corrections are applied to the
     ## ts field in the hits table, as well as to the tsBegin and tsEnd
     ## fields of the batches table.
-    
+
     if (! "timeFixes" %in% tables) {
         sql("
-create table timeFixes (  
+create table timeFixes (
 batchID  integer,      -- batch ID during which fixes were made
 tsFixedLow double,     -- low endpoint of timestamps after correction
 tsFixedHigh double,    -- high endpoint of timestamps after correction
@@ -134,7 +142,7 @@ comment text           -- method and reason for fixing; e.g. 'GPS pin'
 )");
     }
 
-    
+
     ## This table provides the information used to generate records in
     ## the timeFixes table, at least for the case where the timeFix is
     ## due to a delayed settting of the SG system clock from the GPS.
@@ -153,10 +161,10 @@ comment text           -- method and reason for fixing; e.g. 'GPS pin'
         sql("drop table timeJumps")
         tables = tables[ - match("timeJumps", tables)]
     }
-    
+
     if (! "timeJumps" %in% tables) {
         sql("
-create table timeJumps (  
+create table timeJumps (
 batchID  integer not null references batches,      -- batch ID from which this time setting record comes
 tsBefore double not null,                          -- latest available timestamp before GPS set the system clock
 tsAfter double not null,                           -- earliest available timestamp after GPS set the system clock
@@ -232,7 +240,7 @@ CREATE TABLE batches (
 CREATE TABLE batchAmbig (
     ambigID INTEGER NOT NULL,                    -- identifier of group of tags which are ambiguous (identical); will be negative
     batchID INTEGER NOT NULL REFERENCES batches, -- batch for which this ambiguity group is active
-    motusTagID INT NOT NULL                      -- motus ID of tag in group.  
+    motusTagID INT NOT NULL                      -- motus ID of tag in group.
 );
 ")
         sql( "create index batchAmbig_motusTagID on batchAmbig(motusTagID)")
@@ -279,7 +287,7 @@ CREATE TABLE hits (
 );
 ")
         sql("CREATE INDEX IF NOT EXISTS hits_batchID_ts on hits(batchID, ts)")
-        
+
     }
     if (! "batchProgs" %in% tables) {
         sql("
@@ -378,6 +386,6 @@ CREATE TABLE motusTX (
 
 ## list of tables needed in the receiver database
 
-sgTableNames = c("meta", "files", "timeFixes", "timeJumps", "GPS", "params", "pulseCounts", "batches",
+sgTableNames = c("meta", "files", "fileContents", "timeFixes", "timeJumps", "GPS", "params", "pulseCounts", "batches",
                  "runs", "hits", "batchProgs", "batchParams", "batchState", "batchAmbig", "DTAfiles",
                  "DTAtags", "motusTX")

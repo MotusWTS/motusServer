@@ -84,7 +84,7 @@ sgRunStream = function(src, f, mbn=NULL, user=NULL) {
             
             res = dbSendQuery(
                 con,
-                sprintf("select ts, contents from files where monoBN==%d order by ts", mbn)
+                sprintf("select t1.ts as ts, t2.contents as contents from files as t1 join fileContents as t2 on t1.fileID=t2.fileID where t1.monoBN==%d order by t1.ts", mbn)
             )
 
             f(mbn, NULL, -count, NULL, user) ## initialize new stream

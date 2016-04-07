@@ -33,11 +33,11 @@ sgStreamToFile = function(src, f, mbn=NULL) {
     ## by default, no filtering by mbn
     where = ""
     if (! is.null(mbn))
-        where = sprintf("where monoBN in (%s)", paste(mbn, collapse=","))
+        where = sprintf("where t1.monoBN in (%s)", paste(mbn, collapse=","))
     
     dbGetQuery(
         src$con,
-        sprintf("select writefile('%s', bz2uncompress(contents, size)) from files %s order by monoBN, ts", f, where)
+        sprintf("select writefile('%s', bz2uncompress(t2.contents, t1.size)) from files as t1 join fileContents as t2 on t1.fileID=t2.fileID %s order by t1.monoBN, t1.ts", f, where)
     )
     return(invisible(NULL))
 }
