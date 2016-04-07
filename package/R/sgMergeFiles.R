@@ -111,6 +111,7 @@ sgMergeFiles = function(dbdir, files) {
         ## sqlite connection
         
         con = src$con
+        dbGetQuery(con, "pragma journal_mode=wal")
 
         ## existing files in database
 
@@ -230,6 +231,8 @@ sgMergeFiles = function(dbdir, files) {
             }
         }
         ## shut down this sqlite connection
+        dbGetQuery(con, "pragma journal_mode=delete")
+        rm(src)
 
         ## record results
         
