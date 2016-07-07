@@ -35,24 +35,38 @@ sgFixupTimestamps = function(src, batchID = NULL) {
     
     offset = jumps$tsAfter - jumps$tsBefore
 
+    
+    BBbootTime = as.numeric(ymd("2000-01-01"))
+
+    ## the range of times to be corrected depends on the correction type
+
+    correctRange = switch(jumps$jumpType,
+                          S = c(BBbootTime, jumps$tsBefore), ## correct times before the GPS time set
+                          M = c(         0, BBbootTime)      ## correct monotonic times
+                          )
+
+    ## lower limit of times corrected also depends on it.
+    
     ## correct hits
     sql("update hits set ts=ts + %.4f where ts <= %.4f and batchID = %d",
-        offset, jumps$tsBefore, batchID)
+        offset, correctRange[2], batchID)
 
     ## correct batch start timestamps
     sql("update batches set tsBegin=tsBegin + %.4f where tsBegin <= %.4f and batchID = %d",
-        offset, jumps$tsBefore, batchID)
+        offset, correctRange[2], batchID)
 
     ## correct batch end timestamps (this could happen if the time
     ## jump occurred after the last tag detection)
     
     sql("update batches set tsEnd=tsEnd + %.4f where tsEnd <= %.4f and batchID = %d",
-        offset, jumps$tsBefore, batchID)
+        offset, correctRange[2], batchID)
 
-    BBbootTime = as.numeric(ymd("2000-01-01"))
-
-    sql("insert into timeFixes (batchID, tsFixedLow, tsFixedHigh,    tsFixedBy, comment)\
-                     values    (%d     , %.4f      , %.4f          , %.4f    , 'GPS pin')",
-                                batchID, BBbootTime, jumps$tsBefore, offset)
+    comment = switch(jumps$jumpType,
+                    S = 'GPS set',
+                    M = 'GPS pin: monotonic clock',
+                    jumps$jumpType)
+        
+    sql("insert into timeFixes (batchID, tsFixedLow, tsFixedHigh, tsFixedBy, comment) values (%d, %.4f, %.4f, %.4f, '%s')",
+                                batchID, correctRange[1], correctRange[2], offset, comment)
     return(TRUE)
 }
