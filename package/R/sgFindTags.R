@@ -15,7 +15,14 @@
 #'     off.  Typically, a new batch of data files arrives and is added
 #'     to the receiver database using \code{sgMergeFiles()}, and then
 #'     \code{sgFindTags} is called again to continue processing these
-#'     new data.  FIXME: resume not yet implemented.
+#'     new data.  When running archived data retroactively, it is
+#'     better to set \code{resume=FALSE}, otherwise if bootnums
+#'     are not monotonic, then tag event histories will be scrambled
+#'     leading to searching for the wrong tags at the wrong times.
+#'     This has often been the case for Beaglebone White receivers,
+#'     since they had no internal memory for storing the bootcount,
+#'     and relied on writing it to the SD card; updating to a new
+#'     SD card would typically reset the boot count.
 #' 
 #' @param par list of parameters to the findtags code.
 #' 
@@ -37,10 +44,6 @@ sgFindTags = function(src, tagDB, resume=TRUE, par = "", mbn = NULL) {
     else
         pars = paste(par)
 
-
-    ## create a FIFO
-    fifoName = tempfile("fifo")
-
     saveTZ = Sys.getenv("TZ")
     Sys.setenv(TZ="GMT")
     tStart = as.numeric(Sys.time())
@@ -49,13 +52,10 @@ sgFindTags = function(src, tagDB, resume=TRUE, par = "", mbn = NULL) {
     if (is.null(mbn))
         mbn = dbGetQuery(src$con, "select distinct monoBN from files order by monoBN") [[1]]
 
-    ## create the fifo
-    system(paste("mkfifo", fifoName))
-
     ## enable write-ahead-log mode so we can be reading from files table
     ## while tag finder writes to other tables
     
-    dbGetQuery(src$con, "pragma journal_mode=wal")
+##    dbGetQuery(src$con, "pragma journal_mode=wal")
 
     for (bn in sort(mbn)) {
 
@@ -63,37 +63,15 @@ sgFindTags = function(src, tagDB, resume=TRUE, par = "", mbn = NULL) {
         if (! resume)
             dbGetQuery(src$con, "delete from batchState")
 
-        ## start the child
-        bcmd = paste(cmd, pars, "--resume", paste0("--bootnum=", bn), tagDB, src$path, fifoName, " > /tmp/errors.txt 2>&1")
+        ## start the child;
+        bcmd = paste(cmd, pars, if (resume) "--resume", paste0("--bootnum=", bn), "--src_sqlite", tagDB, src$path) 
 
-        ## start the tag finder
-        p = pipe(bcmd, "rb") ## system(cmd, wait=FALSE)
-
-        ## open a writer connection to the fifo, so
-        ## repeated open/close by the sqlite query
-        ## doesn't cause EOF on the reader side
-        fout = file(fifoName, "wb")
-
-        ## send each file in this boot session to the child
-        sgStreamToFile(src, fifoName, bn)
-
-        ## done, so close remaining writer so child can
-        ## see EOF
-        close(fout)
-
-        ## wait for child to exit; its last act is to write "Done." to std::cout
-        x = readLines(p, 1)
-        close(p)
-
-        ## do any needed timestamp fixups
-        sgFixupTimestamps(src)
+        ## run the tag finder
+        system(bcmd)
     }
-
-    file.remove(fifoName)
-
     ## revert to journal mode delete, so we keep everything in a single file
 
-    dbGetQuery(src$con, "pragma journal_mode=delete")
+##    dbGetQuery(src$con, "pragma journal_mode=delete")
 
     ## get ID and stats for new batch of tag detections
     rv = dbGetQuery(src$con, "select batchID, numHits from batches order by batchID desc limit 1")
