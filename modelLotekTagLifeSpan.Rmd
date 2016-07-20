@@ -22,7 +22,7 @@ Lotek provides a short table here:
    http://www.lotek.com/bird+bat-nano.pdf  (As of 1 April, 2016)
 
 ```{r}
-lt = as.tbl(read.csv("~/proj/motus/lotekTagLifespanByModelAndBI.csv"))
+lt = as.tbl(read.csv("./lotekTagLifespanByModelAndBI.csv"))
 print(lt)
 ```
 
@@ -106,11 +106,18 @@ pred = rbind(data.frame(
 ```
 
 There's also apparently a model *NTQBW-3-2* (note the 'w'), which for now we'll
-assume is the same as the *NTQB-3-2*.
+assume is the same as the *NTQB-3-2*.  And a *NTQBW-2*.  Does the 'w' just
+mean wide?  And NTQBW-4-2, and NTQBW-6-2
 
 ```{r}
 par = rbind(par, par["NTQB-3-2", ])
-rownames(par)[8] = "NTQBW-3-2"
+rownames(par)[nrow(par)] = "NTQBW-3-2"
+par = rbind(par, par["NTQB-2", ])
+rownames(par)[nrow(par)] = "NTQBW-2"
+par = rbind(par, par["NTQB-4-2", ])
+rownames(par)[nrow(par)] = "NTQBW-4-2"
+par = rbind(par, par["NTQB-6-2", ])
+rownames(par)[nrow(par)] = "NTQBW-6-2"
 ```
 
 
@@ -146,6 +153,6 @@ xyplot(lifespan~bi, groups=tagType, pred,
 
 ```{r, include=FALSE}
 tagLifespanPars = par[, 1:2]
-save(tagLifespanPars, file="/home/john/proj/motus/package/data/tagLifespanPars.rda")
+save(tagLifespanPars, file="./package/data/tagLifespanPars.rda")
 
 
