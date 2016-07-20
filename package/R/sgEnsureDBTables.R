@@ -335,7 +335,6 @@ CREATE TABLE motusTX (
 --  - runs (matching batchIDbegin)
 --  - hits
 --  - gps
---  - batchAmbig
 --  - batchProg
 --  - batchParam
 --  - batchState
@@ -366,6 +365,6 @@ CREATE TABLE motusTX (
 
 ## list of tables needed in the receiver database
 
-sgTableNames = c("meta", "files", "fileContents", "timeFixes", "timeJumps", "GPS", "params", "pulseCounts", "batches",
-                 "runs", "hits", "batchProgs", "batchParams", "batchState", "batchAmbig", "DTAfiles",
+sgTableNames = c("meta", "files", "fileContents", "timeFixes", "GPS", "params", "pulseCounts", "batches",
+                 "runs", "hits", "batchProgs", "batchParams", "batchState", "tagAmbig", "DTAfiles",
                  "DTAtags", "motusTX")
