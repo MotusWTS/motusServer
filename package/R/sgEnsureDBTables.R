@@ -135,41 +135,11 @@ primary key(ts, ant, id)                          -- no more than one detection 
         sql("
 create table timeFixes (
 batchID  integer,      -- batch ID during which fixes were made
-tsFixedLow double,     -- low endpoint of timestamps after correction
-tsFixedHigh double,    -- high endpoint of timestamps after correction
-tsFixedBy double,      -- amount which was added to uncorrected timestamps to obtain corrected ones, in seconds.
-comment text           -- method and reason for fixing; e.g. 'GPS pin'
-)");
-    }
-
-
-    ## This table provides the information used to generate records in
-    ## the timeFixes table, at least for the case where the timeFix is
-    ## due to a delayed settting of the SG system clock from the GPS.
-    ## This table is populated by the tag finder, which looks for
-    ## instances of raw data timestamps jumping from invalid (before
-    ## 2010) to valid (after 2010).  The difference will be used to
-    ## back-correct the invalid timestamps on any detections before
-    ## the setting.  The tag finder might also search for jumps
-    ## due to wonky GPS data; e.g. significant time reversals, or
-    ## jumps by a year etc.
-
-    ## drop the old, unused version of timeJumps, if it exists
-    if ("timeJumps" %in% tables &&
-        identical(tbl_vars(tbl(src, "timeJumps")), c("bootnum", "tsBefore", "tsAfter")
-                  )) {
-        sql("drop table timeJumps")
-        tables = tables[ - match("timeJumps", tables)]
-    }
-
-    if (! "timeJumps" %in% tables) {
-        sql("
-create table timeJumps (
-batchID  integer not null references batches,      -- batch ID from which this time setting record comes
-tsBefore double not null,                          -- latest available timestamp before GPS set the system clock
-tsAfter double not null,                           -- earliest available timestamp after GPS set the system clock
-jumpType char(1)                                   -- a code providing the type of jump recorded here; 'S' means
-                                                   -- 'setting', which is a jump from invalid to valid timestamps.
+tsLow double,          -- low endpoint of timestamps before correction
+tsHigh double,         -- high endpoint of timestamps before correction
+fixedBy double,        -- amount which was added to uncorrected timestamps to obtain corrected ones, in seconds.
+error double,          -- upper bound on magnitude of error of timestamps, after correction
+comment text           -- method and reason for fixing; e.g. 'M' for monotonic clock fix; 'S' for setting clock from GPS
 )");
     }
 
@@ -235,16 +205,26 @@ CREATE TABLE batches (
 ")
     }
 
-    if (! "batchAmbig" %in% tables) {
+    if ("batchAmbig" %in% tables) {
+        ## remove obsolete batchAmbig table
+        sql("DROP TABLE batchAmbig");
+    }
+
+
+    if (! "tagAmbig" %in% tables) {
         sql("
-CREATE TABLE batchAmbig (
-    ambigID INTEGER NOT NULL,                    -- identifier of group of tags which are ambiguous (identical); will be negative
-    batchID INTEGER NOT NULL REFERENCES batches, -- batch for which this ambiguity group is active
-    motusTagID INT NOT NULL                      -- motus ID of tag in group.
+CREATE TABLE tagAmbig (
+    ambigID INTEGER PRIMARY KEY NOT NULL,  -- identifier of group of tags which are ambiguous (identical); will be negative
+    masterAmbigID INTEGER,                 -- master ID of this ambiguity group, once different receivers have been combined
+    motusTagID1 INT NOT NULL,              -- motus ID of tag in group (not null because there have to be at least 2)
+    motusTagID2 INT NOT NULL,              -- motus ID of tag in group.(not null because there have to be at least 2)
+    motusTagID3 INT,                       -- motus ID of tag in group.
+    motusTagID4 INT,                       -- motus ID of tag in group.
+    motusTagID5 INT,                       -- motus ID of tag in group.
+    motusTagID6 INT                        -- motus ID of tag in group.
 );
 ")
-        sql( "create index batchAmbig_motusTagID on batchAmbig(motusTagID)")
-        sql( "create index batchAmbig_batchID on batchAmbig(batchID)")
+        sql( "create unique index tagAmbig_motusTagID on tagAmbig(motusTagID1, motusTagID2, motusTagID3, motusTagID4, motusTagID5, motusTagID6)")
     }
 
 
