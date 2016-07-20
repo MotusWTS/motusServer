@@ -20,13 +20,19 @@
 motusRegisterReceiver = function(serno, macAddr = NULL, secretKey = NULL) {
 
     if (is.null(secretKey)) {
-        ## generate a public/private key pair for this receiver
-        ## NOTE: if the receiver ever connects via ssh to our server,
-        ## it will still have a new keypair generated.
-        
-        privKeyFile = paste0("/home/sg_remote/.ssh/generated_by_server/id_dsa_sg_", substring(m$recvSerno, 4))
-        system(sprintf("sudo su -c 'ssh-keygen -t dsa -f %s -N \"\"' sg_remote", privKeyFile))
-
+        ## see whether the receiver already has a private key
+        privKeyFile = paste0("/home/sg_remote/.ssh/id_dsa_sg_", substring(serno, 4))
+        privKey = readChar(pipe(paste("sudo cat", privKeyFile), "rb"), 1e5, useBytes=TRUE)
+        if (length(privKey) == 0) {
+            ## generate a public/private key pair for this receiver
+            ## NOTE: if the receiver ever connects via ssh to our server,
+            ## it will still have a new keypair generated.
+            
+            privKeyFile = paste0("/home/sg_remote/.ssh/generated_by_server/id_dsa_sg_", substring(serno, 4))
+            system(sprintf("sudo rm -f %s %s.pub", privKeyFile, privKeyFile))
+            system(sprintf("sudo su -c 'ssh-keygen -q -t dsa -f %s -N \"\"' sg_remote", privKeyFile))
+            privKey = readChar(pipe(paste("sudo cat", privKeyFile), "rb"), 1e5, useBytes=TRUE)
+        }
         ## now calculate the SHA1 sum of the private key file, which is what
         ## we use as the receiver's secret key for the motus API
         ## the 'sudo cat' is to switch to root user to read the secret private key file
@@ -35,13 +41,13 @@ motusRegisterReceiver = function(serno, macAddr = NULL, secretKey = NULL) {
         secretKey = digest(readChar(pipe(paste("sudo cat", privKeyFile), "rb"), 1e5, useBytes=TRUE), "sha1", serialize=FALSE)
     }
 
-    masterKey = readLines("~/.secrets/motus_secret_key")
+    masterKey = "~/.secrets/motus_secret_key.txt"
                
     
     motusQuery(MOTUS_API_REGISTER_RECEIVER, requestType="get",
-               list(
-                   secretKey = secretKey,
+               params=list(
+                   secretKey = toupper(secretKey),
                    macAddr = macAddr
                ),
-               masterKey = masterKey)
+               masterKey = masterKey, serno=serno)
 }
