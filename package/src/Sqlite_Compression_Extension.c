@@ -79,9 +79,11 @@ static void writefileFunc(
   sqlite3_int64 rc;
   const char *zFile;
 
+  int append = argc > 2 && sqlite3_value_int(argv[2]) > 0;
+
   zFile = (const char*)sqlite3_value_text(argv[0]);
   if( zFile==0 ) return;
-  out = fopen(zFile, "wb");
+  out = fopen(zFile, append ? "ab" : "wb");
   if( out==0 ) return;
   z = (const char*)sqlite3_value_blob(argv[1]);
   if( z==0 ){
@@ -156,6 +158,6 @@ int sqlite3_extension_init(
   sqlite3_create_function(db, "bz2compress", 1, SQLITE_UTF8, 0, &compressFunc, 0, 0);
   sqlite3_create_function(db, "bz2uncompress", 2, SQLITE_UTF8, 0, &uncompressFunc, 0, 0);
   sqlite3_create_function(db, "readfile", 1, SQLITE_UTF8, 0, readfileFunc, 0, 0);
-  sqlite3_create_function(db, "writefile", 2, SQLITE_UTF8, 0, writefileFunc, 0, 0);
+  sqlite3_create_function(db, "writefile", 3, SQLITE_UTF8, 0, writefileFunc, 0, 0);
   return 0;
 }
