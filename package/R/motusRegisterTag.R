@@ -63,6 +63,7 @@
 #' @param model: character scalar; Lotek tag model
 #' @param ...: additional parameters to motusQuery()
 #'
+#' @return query results.
 #' @export
 #' 
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
