@@ -2,7 +2,15 @@
 #'
 #' For now, this pushes into the transfer tables in the MySQL "motus"
 #' database on discovery.acadiau.ca, from where the Motus server pulls
-#' data periodically.
+#' data periodically.  If this batch is a re-run, an entry is added
+#' to the batchDelete table to indicate we're replacing the previous version.
+#'
+#' Any batch whose ID is not in the receiver's motusTX table is sent
+#' to the transfer tables.  For these batches, if the monoBN is the
+#' same as that for an existing batch, a record to delete the existing
+#' batch is added to the batchDelete motus transfer table, and the batchID
+#' in the receiver's motusTX table is negated, so that subsequent re-runs
+#' don't try to delete it from motus again.
 #' 
 #' @param src dplyr src_sqlite to receiver database
 #'
@@ -17,17 +25,24 @@ pushToMotus = function(src) {
     sql = function(...) dbGetQuery(con, sprintf(...))
 
     ## get batches without a record in motusTX
-    
-    batches = tbl(src, "batches") %>%
-        anti_join (tbl(src, "motusTX"), by="batchID") %>%
+    motusTX = tbl(src, "motusTX")
+    batches = tbl(src, "batches")    
+    newBatches = batches %>%
+        anti_join (motusTX, by="batchID") %>%
         arrange(batchID) %>%
         collect
 
-    if (nrow(batches) == 0)
+    if (nrow(newBatches) == 0)
         return()
 
-    recvID = getMotusSensorID(src)
-    batches$motusRecvID = recvID
+    ## find which existing batches are being superseded by new ones,
+    ## based on them having the same monoBN field
+    
+    toDelete = motusTX %>% left_join (batches, by="batchID") %>%
+        left_join (newBatches, by="monoBN") %>% collect
+    
+    deviceID = getMotusDeviceID(src)
+    batches$motusDeviceID = deviceID
 
     ## open the motus transfer table
     
@@ -42,9 +57,13 @@ pushToMotus = function(src) {
     ## So we need to reserve a block of nrow(b) IDs in motus.batches
 
 
-    firstMotusBatchID = motusReserveKeys(mt, "batches", "batchID", nrow(batches), "motusRecvID", -recvID)
-    offsetBatchID = firstMotusBatchID - batches$batchID[1]   
+    firstMotusBatchID = motusReserveKeys(mt, "batches", "batchID", nrow(newBatches), "motusDeviceID", -deviceID)
+    offsetBatchID = firstMotusBatchID - newBatches$batchID[1]   
 
+    ## Reserve a block of ambigIDs in motus.batchAmbig
+
+    ## newAmbig
+    ## firstMotusAmbigID = motusReserveKeys(mt, "batchAmbig", "ambigID", 
     ## ----------  copy batches ----------
     
     ## update the batchID fields for the batches, then insert them into motus.batches
@@ -52,7 +71,7 @@ pushToMotus = function(src) {
     ## incomplete batches, not to be transferred to motus until the tsMotus field
     ## is set to zero at the end of this function.
 
-    txBatches = batches
+    txBatches = newBatches
     txBatches$batchID = txBatches$batchID + offsetBatchID
 
     txBatches$tsMotus = -1
@@ -69,9 +88,9 @@ pushToMotus = function(src) {
 
     ## for each batch, transfer associated records
 
-    for (i in 1:nrow(batches)) {
+    for (i in 1:nrow(newBatches)) {
 
-        b = batches[i,]
+        b = newBatches[i,]
 
         ## ----------  copy runs  ----------
         
@@ -81,7 +100,7 @@ pushToMotus = function(src) {
         if (runInfo[1,1] > 0) {
 
             ## reserve the required number of runIDs
-            firstMotusRunID = motusReserveKeys(mt, "runs", "runID", runInfo[1,1], "batchIDbegin", -recvID)
+            firstMotusRunID = motusReserveKeys(mt, "runs", "runID", runInfo[1,1], "batchIDbegin", -deviceID)
             offsetRunID = firstMotusRunID - runInfo[1,2]
 
             res = dbSendQuery(con, sprintf("select * from runs where batchIDBegin = %d order by runID", b$batchID))
@@ -102,7 +121,7 @@ pushToMotus = function(src) {
             hitInfo = sql("select count(*), min(hitID) from hits where batchID = %d", b$batchID)
 
             ## reserve the required number of hitIDs
-            firstMotusHitID = motusReserveKeys(mt, "hits", "hitID", hitInfo[1,1], "batchID", -recvID)
+            firstMotusHitID = motusReserveKeys(mt, "hits", "hitID", hitInfo[1,1], "batchID", -deviceID)
             offsetHitID = firstMotusHitID - hitInfo[1,2]
 
             res = dbSendQuery(con, sprintf("select * from hits where batchID = %d order by hitID", b$batchID))
@@ -190,8 +209,19 @@ pushToMotus = function(src) {
     ## tsMotus on these batches.
 
     mtsql("update batches set tsMotus = 0 where tsMotus = -1 and batchID >= %d and batchID <= %d",
-          offsetBatchID + batches$batchID[1],
-          offsetBatchID + tail(batches$batchID, 1))
-    dbDisconnect(mtcon)
+          offsetBatchID + newBatches$batchID[1],
+          offsetBatchID + tail(newBatches$batchID, 1))
 
+    ## For any batches being supersedes, add a record to batchDelete in the motus tables,
+    ## and negate the batchID in the receiver motusTX table
+
+    for (i in seq(along = toDelete$batchID)) {
+        ## get ID of batch in master table 
+        bid = toDelete$batchID[i] + toDelete$offsetBatchID[i]
+        
+        mtsql("insert into batchDelete (batchIDbegin, batchIDend, ts, reason, tsMotus) values (%d, %d, %f, 're-ran site', 0))",
+              bid, bid, as.numeric(Sys.time()))
+        sql("update motusTX set batchID=-batchID where batchID=%d", toDelete$batchID[i])
+    }
+    dbDisconnect(mtcon)
 }
