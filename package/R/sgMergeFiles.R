@@ -2,8 +2,9 @@
 #'
 #' @param dbdir path to folder with existing receiver databases
 #' 
-#' @param files either a character vector of full paths to files, or the full
-#' path to a directory, which will be searched recursively for .DTA files.
+#' @param files either a character vector of full paths to files, or
+#'     the full path to a directory, which will be searched
+#'     recursively for raw sensorgnome data files.
 #'
 #' @return a data_frame reporting the fate of each file, with these columns:
 #' \itemize{
@@ -16,6 +17,8 @@
 #' \item partial - TRUE iff this is a partial compressed file for which an uncompressed version is in the same batch
 #' \item serno - serial number of the receiver which was parsed from this filename
 #' }
+#'
+#' Returns NULL if no valid sensorgnome data files were found.
 #'
 #' @export
 #' 
@@ -33,6 +36,8 @@ sgMergeFiles = function(dbdir, files) {
     ## clean up the basename, in case there are wonky characters; we
     ## don't do this to "fullname", to maintain our ability to refer
     ## to the files from the filesystem.
+    if (length(ff) == 0)
+        return(NULL)
     allf = data_frame(
         ID       = 1:length(ff),
         fullname = ff,
