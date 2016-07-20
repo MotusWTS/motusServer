@@ -1,6 +1,6 @@
 .onLoad = function(...) {
     options(digits=14)
-    if (motusLoadSecrets(quiet=TRUE))
+    if (motusLoadSecrets(quiet=TRUE, "~/.secrets/motusSecrets"))
         return()
     MOTUS_SECRETS <<- new.env(emptyenv())
     makeActiveBinding(
