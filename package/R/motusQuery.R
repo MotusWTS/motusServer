@@ -22,6 +22,9 @@
 #'     \code{TRUE}; otherwise it is an R list with named components,
 #'     extracted from the JSON return value.
 #'
+#' @note all queries and return values are logged in the file "motus_query_log.txt"
+#' in the user's home directory.
+#' 
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 motusQuery = function (API, params = NULL, requestType="post", show=FALSE, json=FALSE, serno=NULL, masterKey=NULL) {
@@ -64,6 +67,8 @@ motusQuery = function (API, params = NULL, requestType="post", show=FALSE, json=
     if(show)
         cat(JSON, "\n")
 
+    log = file("~/motus_query_log.txt", "a")
+    cat(format(Sys.time()), ",", requestType, ",", API, ",", JSON, "\n", file=log)
     tryCatch({
         if (requestType == "post")
             RESP = postForm(API, json=JSON, style="post", curl=curl)
@@ -71,8 +76,13 @@ motusQuery = function (API, params = NULL, requestType="post", show=FALSE, json=
             RESP = getForm(API, json=JSON, curl=curl)
         if (json)
             return (RESP)
-        return(fromJSON(RESP) $ data)
+        rv = fromJSON(RESP)
+        cat(capture.output(RESP), "\n", file=log)
+        if (! is.null(rv$data))
+            return(rv$data)
+        return(rv)
     }, error=function(e) {
-        stop (capture.output(e))
+        cat("ERROR: ", as.character(e), "\n", file=log)
+        stop ("MotusQuery failed with error; ", as.character(e))
     })
 }
