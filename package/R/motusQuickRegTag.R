@@ -14,9 +14,9 @@
 #' a chance to cancel the process if they look wrong.
 #'
 #' @param projectID: integer scalar; motus internal project ID;
-#' Alternatively, a character scalar which is matched against
-#' project names, and if a match is found, that is used, with
-#' prompting.
+#'     Alternatively, a character scalar which is matched against
+#'     project names, and if a match is found, that is used, with
+#'     prompting.
 #'
 #' @param mfgID: character scalar; typically a small integer; return
 #'     only records for tags with this manufacturer ID (usually
@@ -35,21 +35,41 @@
 #'     active.  Used in lieu of deployment information when that is
 #'     not (yet) available.
 #'
-#' @param codeSet: 3 or 4, or their character equivalents.  Default is 4.
+#' @param codeSet: 3 or 4, or their character equivalents.  Default is
+#'     4.
+#'
+#' @param model: one of the Lotek model codes.  Default is NULL,
+#'     meaning unknown.
+#'
+#' @param tsStart: start of deployment, if known.
+#'
+#' @param species: 4-letter code of species, if known
 #' 
 #' @param ...: additional parameters to motusQuery()
 #'
+#' @return a 3-element numeric vector; the first element is the motus
+#'     tag ID, and the second element, if not NA, is the motus
+#'     deployment ID.  The third element is the estimated true burst
+#'     interval, in seconds.
+#'
+#' @note: if both \code{tsStart} and \code{species} are NULL, then a
+#'     tag deployment record is \emph{not} generated for the
+#'     newly-registered tag.
+#'
 #' @export
-#' 
+#'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 motusQuickRegTag = function(projectID,
-                              mfgID,
-                              period,
-                              dateBin,
-                              codeSet=4,
-                              ...
-                              ) {
+                            mfgID,
+                            period,
+                            dateBin,
+                            codeSet=4,
+                            model=NULL,
+                            tsStart=NULL,
+                            species=NULL,
+                            ...
+                            ) {
     if (is.character(projectID)) {
         projs = motusListProjects()
         i = grep(projectID, projs$name, ignore.case=TRUE)
@@ -75,20 +95,20 @@ motusQuickRegTag = function(projectID,
     offsetFreq = 4
 
     if (! exists("allMotusTags")) {
-        allMotusTags <<- motusSearchTags()
+        allMotusTags <<- tbl(src_sqlite(getMotusTagDB()), "tags") %>% collect %>% as.data.frame
         allMotusTags <<- subset(allMotusTags, ! is.na(period))
     }
     
     pip = allMotusTags$period[abs(allMotusTags$period - period) <= 0.05]
     periodSD = sd(pip)
-    if (periodSD > 0.001)
+    if (periodSD > 0.003)
         stop("Estimate for period from database has sd > 1 ms")
 
     period = mean(pip)
 
     pulseLen = 2.5
 
-    db = subset(lotekGetCodeset(codeSet), id==mfgID)
+    db = subset(ltGetCodeset(codeSet), id==mfgID)
 
     param1 = db$g1
     param2 = db$g2
@@ -103,6 +123,7 @@ motusQuickRegTag = function(projectID,
         projectID    = projectID,
         mfgID        = mfgID,
         manufacturer = manufacturer,
+        model        = model,
         type         = type,
         codeSet      = codeSet,
         offsetFreq   = offsetFreq,
@@ -120,14 +141,37 @@ motusQuickRegTag = function(projectID,
         nomFreq      = nomFreq,
         dateBin      = dateBin
     )
-    cat ("About to register tag using:\n", capture.output(pars), "\n")
-
-    cat ("Hit Ctrl-C to cancel, or enter to continue...")
-
-    readLines(n=1)
-    
-    motusQuery(MOTUS_API_REGISTER_TAG, requestType="post",
+    res = motusQuery(MOTUS_API_REGISTER_TAG, requestType="post",
                pars
              , ...)
+
+    if (is.null(res$tagID))
+        stop("tag registration failed ", capture.output(res))
+
+    ## convert NA or "" to null for the API
+    for (n in c("tsStart", "species")) {
+        v = get(n)
+        if (isTRUE(! is.null(v) && (is.na(v) || (is.character(v) && nchar(v) == 0))))
+            assign(n, NULL)
+    }
+    
+    ## convert non-NULL to numeric
+    for (n in c("tsStart")) {
+        v = get(n)
+        if (isTRUE(! is.null(v)))
+            assign(n, as.numeric(v))
+    }
+    
+    if (is.null(tsStart))
+        return (c(res$tagID, NA, period))
+
+    sp = motusListSpecies(species, qlang="CD")
+    if (length(sp) == 0) {
+        warning("Unknown species code: ", species, ". Tag registered, but no deployment record will be generated")
+        return (c(res$tagID, NA, period))
+    }
+
+    resD = motusDeployTag(res$tagID, "pending", tsStart=tsStart, speciesID=sp$id)
+    return (c(res$tagID, resD$deployID, period))
 }
 
