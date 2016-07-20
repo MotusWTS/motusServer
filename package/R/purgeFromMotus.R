@@ -15,7 +15,7 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 purgeFromMotus = function(src) {
-    recvID = getMotusSensorID(src)
+    deviceID = getMotusDeviceID(src)
 
     ## open the motus transfer table
     
@@ -23,7 +23,7 @@ purgeFromMotus = function(src) {
     mtcon = mt$con
     mtsql = function(...) dbGetQuery(mtcon, sprintf(...))
 
-    bdrop = mtsql("select batchID from batches where motusRecvID=%d", recvID)
+    bdrop = mtsql("select batchID from batches where motusRecvID=%d", deviceID)
     if (nrow(bdrop) > 0) {
 
         bdrop = paste(bdrop[[1]], collapse=",")
