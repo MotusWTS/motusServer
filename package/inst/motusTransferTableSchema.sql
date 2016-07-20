@@ -3,7 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS batches (
     batchID INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT, -- unique identifier for this batch
-    motusRecvID INTEGER NOT NULL,                        -- motus ID of receiver this batch of data came from
+    motusDeviceID INTEGER NOT NULL,                      -- motus ID of device this batch of data came from
                                                          -- foreign key to Motus DB table.
     monoBN INT,                                          -- boot number for this receiver (NULL
                                                          -- okay, e.g. Lotek)
@@ -16,6 +16,8 @@ CREATE TABLE IF NOT EXISTS batches (
     tsMotus FLOAT(53) NOT NULL DEFAULT -1                -- timestamp this record received by motus
 
 );----  the four dashes after the semicolon delimits individual SQL statements for R code
+
+create index hits_batchID on hits(batchID);----
 
 -- GPS fixes are recorded separately from tag detections.
 
@@ -44,7 +46,7 @@ CREATE TABLE IF NOT EXISTS runs (
                                                       -- run has ended.  Otherwise, this field is null, and
                                                       -- the value of len, below, is the number of hits *so far*
     motusTagID INT NOT NULL,                          -- ID for the tag detected; foreign key to Motus DB
-                                                      -- table; a negative value correspond to an entry in the batchAmbig table.
+                                                      -- table; a negative value correspond to an entry in the tagAmbig table.
     ant TINYINT NOT NULL,                             -- antenna number (USB Hub port # for SG; antenna port
                                                       -- # for Lotek)
     len BIGINT NOT NULL                               -- number of detections in run ( so far ); this number
@@ -98,26 +100,29 @@ CREATE TABLE IF NOT EXISTS hits (
 );----
 
 
--- Table batchAmbig records sets of physically identical tags which
--- have overlapping deployment periods.  When the motusTagID field in
--- a row of the 'runs' table is negative, it refers to the ambigID
--- field in this table.  The set of possible tags corresponding to
--- that detection is given by the motusTagID fields of rows in this
--- table joined like so:
---
---   batchAmbig.ambigID = runs.motusTagID and batchAmbig.batchID = runs.batchIDbegin
+-- Table tagAmbig records sets of physically identical tags which have
+-- overlapping deployment periods.  When the motusTagID field in a row
+-- of the 'runs' table is negative, it refers to the ambigID field in
+-- this table.  The set of possible tags corresponding to that
+-- detection is given by the motusTagIDX fields of the corresponding
+-- row in this table joined like so:
 --
 -- Any of these tags could, given the deployment dates, be the
 -- detected tag.  Users can try to resolve ambiguities using other
 -- context.
 
-CREATE TABLE IF NOT EXISTS batchAmbig (
-    ambigID INTEGER NOT NULL,                     -- identifier of group of tags which are ambiguous; always negative
-    batchID INTEGER NOT NULL REFERENCES batches,  -- batch for which this ambiguity group is active
-    motusTagID INT NOT NULL,                      -- motus ID of tag in group.  
-    PRIMARY KEY (batchID, ambigID)
+CREATE TABLE IF NOT EXISTS tagAmbig (
+    ambigID INTEGER PRIMARY KEY NOT NULL,  -- identifier of group of tags which are ambiguous (identical); will be negative
+    motusTagID1 INT NOT NULL,              -- motus ID of tag in group (not null because there have to be at least 2)
+    motusTagID2 INT NOT NULL,              -- motus ID of tag in group.(not null because there have to be at least 2)
+    motusTagID3 INT,                       -- motus ID of tag in group.
+    motusTagID4 INT,                       -- motus ID of tag in group.
+    motusTagID5 INT,                       -- motus ID of tag in group.
+    motusTagID6 INT,                       -- motus ID of tag in group.
+    tsMotus FLOAT(53) NOT NULL DEFAULT -1  -- timestamp this record received by motus
 );----
 
+CREATE UNIQUE INDEX tagAmbig_motusTagID ON tagAmbig(motusTagID1, motusTagID2, motusTagID3, motusTagID4, motusTagID5, motusTagID6);
 
 -- Table batchProgs records values of progVersion and progBuildTS by batchID.
 -- Note that receiver version of this table store these values incrementally (noting
