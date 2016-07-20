@@ -39,7 +39,7 @@ pushToMotus = function(src) {
     ## based on them having the same monoBN field
     
     toDelete = motusTX %>% left_join (batches, by="batchID") %>%
-        left_join (newBatches, by="monoBN") %>% collect
+        left_join (newBatches, by="monoBN", copy=TRUE) %>% collect
     
     deviceID = getMotusDeviceID(src)
     batches$motusDeviceID = deviceID
@@ -60,10 +60,53 @@ pushToMotus = function(src) {
     firstMotusBatchID = motusReserveKeys(mt, "batches", "batchID", nrow(newBatches), "motusDeviceID", -deviceID)
     offsetBatchID = firstMotusBatchID - newBatches$batchID[1]   
 
-    ## Reserve a block of ambigIDs in motus.batchAmbig
+    ## Transfer tag ambiguities.  This is a two-way process, in that we want to have
+    ## a unique master ambigID across receivers for each ambiguity of a particular
+    ## set of (motus) tagIDs.
 
-    ## newAmbig
-    ## firstMotusAmbigID = motusReserveKeys(mt, "batchAmbig", "ambigID", 
+    ## 1. get tag ambiguities from this receiver which don't already have a master
+    ## ambigID:
+    
+    ambig = tbl(src, "tagAmbig") %>% filter (is.null(masterAmbigID)) %>% collect
+
+    if (nrow(ambig) > 0) {
+        
+        ## 2. join to the master ambiguity table by tagIDs
+        masterAmbig = tbl(mt, "tagAmbig") %>% collect
+        
+        joinAmbig = ambig %>% left_join (masterAmbig, by=c("motusTagID1", "motusTagID2", "motusTagID3", "motusTagID4", "motusTagID5", "motusTagID6")) %>% collect
+
+        ## 3. create entries in the master tagAmbig table for any not
+        ## already there
+
+        newA = which(is.na(joinAmbig$ambigID.y))
+        n = length(newA)
+        if (n > 0) {
+            ## note use of negative n to reserve negative, descending keys
+            firstMasterAmbigID = motusReserveKeys(mt, "tagAmbig", "ambigID", -n, "motusTagID1", -deviceID)
+
+            ## fill in new masterAmbigIDs
+            joinAmbig$ambigID.y[newA] = seq(from = firstMasterAmbigID, by = -1, length = n)
+
+            ## create table with new tag ambiguities to be added to master tagAmbig table
+            newAmbig = joinAmbig[newA, ] %>% transmute_(
+                                         ambigID="ambigID.y",
+                                         motusTagID1 = "motusTagID1",
+                                         motusTagID2 = "motusTagID2",
+                                         motusTagID3 = "motusTagID3",
+                                         motusTagID4 = "motusTagID4",
+                                         motusTagID5 = "motusTagID5",
+                                         motusTagID6 = "motusTagID6",
+                                         tsMotus     = 0) %>% as.data.frame
+            ## write new tag ambiguities
+            dbWriteTable(mtcon, "tagAmbig", newAmbig, append=TRUE)
+        }
+
+        ## 4. record the masterAmbigID for each tag ambiguity in the receiver DB
+        copy_to(src, joinAmbig, "joinAmbig")  ## add as a temporary table
+        sql("replace into tagAmbig (select ambigID.x as ambigID, ambigID.y as masterAmbigID, motusTagID1, motusTagID2, motusTagID3, motusTagID4, motusTagID5, motusTagID6 from joinAmbig)")
+    }
+
     ## ----------  copy batches ----------
     
     ## update the batchID fields for the batches, then insert them into motus.batches
