@@ -2,12 +2,15 @@
 #'
 #' @param tagID Unique numeric ID assigned to the tag, provided at the
 #'     time of tag registration.
+#'
+#' @param projectID numeric ID of motus project for which this tag is
+#'     being deployed.
 #' 
 #' @param status Status from one of the possible following values:
-#'     pending, deploy, terminate. "pending” indicates that the
+#'     pending, deploy, terminate. "pending" indicates that the
 #'     deployment record isn’t ready to be finalized for deployment
-#'     yet. "deploy” indicates that the deployment can be
-#'     activated. "terminate” will attempt to finalize a deployment by
+#'     yet. "deploy" indicates that the deployment can be
+#'     activated. "terminate" will attempt to finalize a deployment by
 #'     providing an end date. Note that deployments can only be
 #'     activated or terminated if all required information has been
 #'     provided. Attempts to deploy or terminate an incomplete
@@ -17,9 +20,9 @@
 #'     status (permitted sequence is pending -> deploy -> terminate,
 #'     but levels can be omitted).
 #'
-#' @param tsStart Timestamp for start of deployment. If the tag has a
+#' @param tsStart [optional] Timestamp for start of deployment. If the tag has a
 #'     deferred time lag (deferTime), this is the time at which the
-#'     tag is activated, in such a way that the time when the tag is
+#'     tag is activated, so that the time when the tag is
 #'     expected to be active is given by tsStart + deferTime.
 #' 
 #' @param tsEnd [optional] Timestamp for end of deployment. Required
@@ -33,6 +36,8 @@
 #' @param speciesID [optional] Numeric ID (integer) of the species on
 #'     which the tag is being deployed. You can obtain this value by
 #'     using \code{motusListSpecies()} to search by name or code.
+#'     Alternatively, this can be a character scalar giving the species
+#'     4-lettercode; e.g. "SESA"
 #'
 #' @param markerType [optional] Type of marker
 #'     (e.g. "metal band”, "color band”)
@@ -55,7 +60,7 @@
 #'     of the deployment or the organism on which the tag is deployed.
 #'     This will be formatted as a JSON string then inserted into the
 #'     \code{properties} field of the database.  FIXME: for now,
-#'     it goes into the comments field
+#'     it goes into the comments field.
 #' 
 #' @param ts [optional] Time at which deployment information
 #'     was generated.  Defaults to time at which function is called.
@@ -72,8 +77,9 @@
 motusDeployTag = 
     function(
              tagID,
+             projectID,
              status       = c("pending", "deploy", "terminate"),
-             tsStart,
+             tsStart      = NULL,
              tsEnd        = NULL,
              deferTime    = 0,
              speciesID    = NULL,
@@ -87,15 +93,39 @@ motusDeployTag =
              ts           = as.numeric(Sys.time())
              ) {
 
+        ## convert NA or "" to null for the API
+        for (n in c("lat", "lon", "elev", "tsStart", "tsEnd")) {
+            v = get(n)
+            if (isTRUE(! is.null(v) && (is.na(v) || (is.character(v) && "" == v))))
+                assign(n, NULL)
+        }
+
+        ## convert non-NULL to numeric
+        for (n in c("tsStart", "tsEnd")) {
+            v = get(n)
+            if (isTRUE(! is.null(v)))
+                assign(n, as.numeric(v))
+        }
+
         status = match.arg(status)
         if (! is.null(properties))
-            properties = toJSON(c(properties, comments=comments), auto_unbox=TRUE)
+            properties = c(list(), properties, comments=comments)
+
+        if (is.character(speciesID)) {
+            newSpeciesID = motusListSpecies(speciesID, qlang="CD")$id
+            if (is.null(speciesID))
+                stop("Unknown species:", speciesID)
+            if (length(newSpeciesID) > 1)
+                stop("Multiple species matching:", speciesID)
+            speciesID = newSpeciesID
+        }
         
         motusQuery(
             MOTUS_API_DEPLOY_TAG,
             requestType="post",
             list(
                 tagID        = tagID,
+                projectID    = projectID,
                 status       = status,
                 tsStart      = tsStart,
                 tsEnd        = tsEnd,
@@ -106,10 +136,10 @@ motusDeployTag =
                 lat          = lat,
                 lon          = lon,
                 elev         = elev,
-                comments     = properties,
                 ## FIXME; when API works, use the following instead
                 ## comments     = comments,
                 ## properties   = properties,
+                comments     = if(length(properties) == 0) NULL else as.character(toJSON(properties, auto_unbox=TRUE)),
                 ts           = ts
             ))
     }
