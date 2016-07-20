@@ -14,6 +14,9 @@
 #'     monoBN field from the \code{files} table in the receiver's
 #'     sqlite database.  Defaults to NULL, which means run all streams
 #'     in order.
+#'
+#' @param append logical scalar; if TRUE, append data to existing file
+#'     contents.  Defaults to FALSE.
 #' 
 #' @return invisible NULL
 #'
@@ -23,13 +26,17 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-sgStreamToFile = function(src, f, mbn=NULL) {
+sgStreamToFile = function(src, f, mbn=NULL, append=FALSE) {
     if (! (is.null(mbn) || is.integer(mbn)))
         stop("mbn must be NULL or an integer vector")
     
     if (!is.character(f) || length(f) != 1)
         stop("f must be a character scalar")
 
+    ## if not appending, zero file, since the sqlite code below *does* append.
+    if (!append)
+        close(file(f, "wb"))
+    
     ## by default, no filtering by mbn
     where = ""
     if (! is.null(mbn))
@@ -37,7 +44,7 @@ sgStreamToFile = function(src, f, mbn=NULL) {
     
     dbGetQuery(
         src$con,
-        sprintf("select writefile('%s', bz2uncompress(t2.contents, t1.size)) from files as t1 join fileContents as t2 on t1.fileID=t2.fileID %s order by t1.monoBN, t1.ts", f, where)
+        sprintf("select writefile('%s', bz2uncompress(t2.contents, t1.size), 1) from files as t1 join fileContents as t2 on t1.fileID=t2.fileID %s order by t1.monoBN, t1.ts", f, where)
     )
     return(invisible(NULL))
 }
