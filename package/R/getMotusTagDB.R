@@ -31,12 +31,15 @@
 #'
 #' \enumerate{
 #' 
-#' \item tsStart - the starting date for a tag deployment record
+#' \item tsStart - the starting date for a tag deployment record;
+#' tsStartCode = 1L
 #' 
 #' \item dateBin - the start of the quarter year in which the tag was
-#' expected to be deployed
+#' expected to be deployed;
+#' tsStartCode = 2L
 #' 
-#' \item ts - the date the tag was registered
+#' \item ts - the date the tag was registered;
+#' tsStartCode = 3L
 #'
 #' }
 #'
@@ -46,19 +49,22 @@
 #' \enumerate{
 #'
 #' \item tsEnd - the ending date for a tag deployment; e.g. if a tag
-#' was found, or manually deactivated;
+#' was found, or manually deactivated; tsEndCode = 1L
 #'
-#' \item tsStart for a different deployment of the same tag
+#' \item tsStart for a different deployment of the same tag; tsEndCode = 2L
 #' 
 #' \item tsStart + predictTagLifespan(model, BI) * marginOfError 
-#' if the tag model is known
+#' if the tag model is known; tsEndCode = 3L
 #' 
 #' \item tsStart + predictTagLifespan(guessTagModel(speciesID), BI) * marginOfError
-#' if the species is known
+#' if the species is known; tsEndCode = 4L
 #'
-#' \item 90 days if no other information is available.
+#' \item 90 days if no other information is available; tsEndCode = 5L
 #'
 #' }
+#'
+#' @note: as of 6 April 2016, we're using a lifetime of 700 days for tags in the
+#' Taylr 2013 project (gulls)
 #'
 #' @return path to an sqlite database usable by the tag finder; it will have these tables:
 #'
@@ -94,19 +100,26 @@ getMotusTagDB = function() {
     ## location we store the cleaned version of the motus tag DB
     cleanedDB = "/sgm/cleaned_motus_tag_db.sqlite"
 
+    ## location we store the as-is version of the motus tag DB
+    uncleanedDB = "/sgm/uncleaned_motus_tag_db.sqlite"
+    
+    have = file.exists(c(cachedDB, cleanedDB))
     info = file.info(c(cachedDB, cleanedDB))
+
+    ## if either the cached copy doesn't exist, or it is more than 1 day old,
+    ## grab it again
     
-    if (file.exists(cleanedDB) && diff(info$mtime > 0)) {
-        ## cleaned DB is more recent than cached copy of motus version,
-        ## so we're done.
-        return(cleanedDB)
-    }
-    
-    if (diff(as.numeric(c(info$mtime[1], Sys.time()))) > 24 * 3600) {
+    if (! have[1] || diff(as.numeric(c(info$mtime[1], Sys.time()))) > 24 * 3600) {
         m = motusSearchTags()
         saveRDS(m, cachedDB)
     } else {
         m = readRDS(cachedDB)
+    }
+
+    if (all(have) && diff(info$mtime) > 0) {
+        ## cleaned DB is more recent than cached copy of motus version,
+        ## so we're done.
+        return(cleanedDB)
     }
 
     ## drop project 0, which are not real tags
@@ -153,24 +166,46 @@ getMotusTagDB = function() {
 
     clean = clean %>% left_join(bi, by="bi")
 
-    if (clean %>% filter(abs(avgPer-period) > 0.001) %>% nrow > 0)
+    badBI = clean %>% filter(abs(avgPer-period) > 0.08) %>% collect
+    if ( badBI %>% nrow > 0) {
+        cat("Problem; these tags have bad looking BI:\n")
+        print(badBI)
+        badBI <<- badBI
         stop("go back and revisit tag burst interval cleanup")
-
-    ## copy over better gaps and BI, then drop the joined table
-
+    }
+    ## copy over better gaps, but not BI for the "uncleaned" database
+    unclean = clean %>%
+        mutate(param1 = g1, param2 = g2, param3 = g3) %>%
+        select(-id, -bi, -g1, -g2, -g3, -avgPer) %>%
+        bind_rows(other)
+    
     clean = clean %>%
         mutate(param1 = g1, param2 = g2, param3 = g3, period = avgPer) %>%
         select(-id, -bi, -g1, -g2, -g3, -avgPer) %>%
         bind_rows(other)
 
-    ##-------------------- tsStart --------------------
-    noTsStart = is.na(clean$tsStart)
+    ## sanity check on deployment times.  If tsStart and tsEnd are both
+    ## specified in the database, make sure tsStart <= tsEnd
 
+    insane = which((! is.na(clean$tsStart)) &
+            (! is.na(clean$tsEnd)) &
+            clean$tsStart > clean$tsEnd)
+    
+    if (length(insane) > 0) {
+        stop("One or more tag deployments have tsEnd < tsStart; these tags are involved:\n ", paste(clean$tagID[insane], collapse=", "))
+    }
+    
+    ##-------------------- tsStart --------------------
+    clean$tsStartCode = 1L
+    noTsStart = is.na(clean$tsStart)
+    
     ## at worst, we use the registration date
     clean$tsStart[noTsStart] = clean$tsSG[noTsStart]
+    clean$tsStartCode[noTsStart] = 3L
 
     ## if a dateBin was specified, use that
     haveDateBin = noTsStart & ! is.na(clean$dateBin)
+    clean$tsStartCode[haveDateBin] = 2L
 
     clean$tsStart[haveDateBin] = subset(clean, haveDateBin) %>%
         with( paste(substr(dateBin, 1, 4), (as.numeric(substring(dateBin,6)) - 1) * 3 + 1, 1, sep="-")) %>%
@@ -183,6 +218,7 @@ getMotusTagDB = function() {
     ## If no tag model is specified, use the species to lookup a tag model.
     ## Otherwise, use 90 days.
 
+    clean$tsEndCode = 1L
     dayToSec = 24 * 3600
     
     noTsEnd = is.na(clean$tsEnd)
@@ -190,12 +226,17 @@ getMotusTagDB = function() {
     ## at worst, use tsStart + 90 days
     clean$tsEnd[noTsEnd] = clean$tsStart[noTsEnd] + 90 * dayToSec
 
+    ## set code for worst case
+    clean$tsEndCode[noTsEnd] = 5L
+    
     ## see whether a tag model was specified
     haveModel = noTsEnd & ! is.na(clean$model)
-    
+    clean$tsEndCode[haveModel] = 3L
+        
     ## when the model is missing, see whether a species was specified
     haveSpecies = noTsEnd & ! haveModel & ! is.na(clean$speciesID)
-
+    clean$tsEndCode[haveSpecies] = 4L
+    
     if (sum(haveSpecies) > 0) {
         clean$model[haveSpecies] = guessTagModel(clean$speciesID[haveSpecies])
         haveModel = noTsEnd & ! is.na(clean$model)
@@ -233,7 +274,8 @@ getMotusTagDB = function() {
             transmute (deployID = deployID.x, tsEnd = tsEnd.x)
 
         clean[match(fixtsEnd$deployID, clean$deployID), "tsEnd"] = fixtsEnd$tsEnd
-    }
+        clean[match(fixtsEnd$deployID, clean$deployID), "tsEndCode"] = 2L
+     }
     
     ## remove duplicates, which are due to multiple deployments
     nodups = subset(clean, ! duplicated(tagID))
