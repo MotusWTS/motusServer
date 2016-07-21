@@ -170,3 +170,17 @@ CREATE TABLE IF NOT EXISTS batchDelete (
     reason TEXT,                                                    -- human-readable explanation for why a batch was deleted;
     tsMotus FLOAT(53) NOT NULL DEFAULT -1                           -- timestamp when this record transferred to motus;
 );----
+
+-- grant privileges to remote user 'denis' to pull data and update the sg_import_log table
+-- pulled data are indicated by setting the tsMotus field in appropriate tables.
+
+GRANT SELECT, UPDATE(tsMotus) ON `motus`.batchDelete TO 'denis'@'%';
+GRANT SELECT ON motus.batchParams TO 'denis'@'%';
+GRANT SELECT ON motus.batchProgs TO 'denis'@'%';
+GRANT SELECT, UPDATE (tsMotus) ON motus.batches TO 'denis'@'%';
+GRANT SELECT ON motus.gps TO 'denis'@'%';
+GRANT SELECT ON motus.hits TO 'denis'@'%';
+GRANT SELECT ON motus.runUpdates TO 'denis'@'%';
+GRANT SELECT ON motus.runs TO 'denis'@'%';
+GRANT SELECT, UPDATE ON motus.sg_import_log TO 'denis'@'%';
+GRANT SELECT, UPDATE (tsMotus) ON motus.tagAmbig TO 'denis'@'%';
