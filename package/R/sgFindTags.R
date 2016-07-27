@@ -23,9 +23,9 @@
 #'     since they had no internal memory for storing the bootcount,
 #'     and relied on writing it to the SD card; updating to a new
 #'     SD card would typically reset the boot count.
-#' 
+#'
 #' @param par list of parameters to the findtags code.
-#' 
+#'
 #' @param mbn integer monotonic boot number(s); this is the monoBN field
 #'     from the \code{files} table in the receiver's sqlite database.
 #'     Defaults to NULL, meaning process GPS fixes for all streams.
@@ -33,7 +33,7 @@
 #' @return the batch number and the number of tag detections in the stream.
 #'
 #' @export
-#' 
+#'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 sgFindTags = function(src, tagDB, resume=TRUE, par = "", mbn = NULL) {
@@ -54,7 +54,7 @@ sgFindTags = function(src, tagDB, resume=TRUE, par = "", mbn = NULL) {
 
     ## enable write-ahead-log mode so we can be reading from files table
     ## while tag finder writes to other tables
-    
+
 ##    dbGetQuery(src$con, "pragma journal_mode=wal")
 
     for (bn in sort(mbn)) {
@@ -64,7 +64,9 @@ sgFindTags = function(src, tagDB, resume=TRUE, par = "", mbn = NULL) {
             dbGetQuery(src$con, "delete from batchState")
 
         ## start the child;
-        bcmd = paste(cmd, pars, if (resume) "--resume", paste0("--bootnum=", bn), "--src_sqlite", tagDB, src$path) 
+        bcmd = paste(cmd, pars, if (resume) "--resume", paste0("--bootnum=", bn), "--src_sqlite", tagDB, src$path)
+
+        cat("  => ", bcmd, "\n")
 
         ## run the tag finder
         system(bcmd)
