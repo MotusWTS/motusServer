@@ -1,6 +1,9 @@
 -- A batch is the result of processing one set of raw data files from
 -- a single receiver.
 
+CREATE DATABASE motus;
+USE motus;
+
 CREATE TABLE IF NOT EXISTS batches (
     batchID INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT, -- unique identifier for this batch
     motusDeviceID INTEGER NOT NULL,                      -- motus ID of device this batch of data came from
@@ -16,8 +19,6 @@ CREATE TABLE IF NOT EXISTS batches (
     tsMotus FLOAT(53) NOT NULL DEFAULT -1                -- timestamp this record received by motus
 
 );----  the four dashes after the semicolon delimits individual SQL statements for R code
-
-create index hits_batchID on hits(batchID);----
 
 -- GPS fixes are recorded separately from tag detections.
 
@@ -99,6 +100,7 @@ CREATE TABLE IF NOT EXISTS hits (
                                                       -- e.g. Lotek)
 );----
 
+CREATE INDEX hits_batchID ON hits(batchID);----
 
 -- Table tagAmbig records sets of physically identical tags which have
 -- overlapping deployment periods.  When the motusTagID field in a row
@@ -171,16 +173,23 @@ CREATE TABLE IF NOT EXISTS batchDelete (
     tsMotus FLOAT(53) NOT NULL DEFAULT -1                           -- timestamp when this record transferred to motus;
 );----
 
+CREATE TABLE IF NOT EXISTS sg_import_log (
+    batchID INT PRIMARY KEY UNIQUE NOT NULL REFERENCES batches, 
+    transfer_dt FLOAT(53) NOT NULL,
+    success INT,
+    msg TEXT
+);----
+
 -- grant privileges to remote user 'denis' to pull data and update the sg_import_log table
 -- pulled data are indicated by setting the tsMotus field in appropriate tables.
 
-GRANT SELECT, UPDATE(tsMotus) ON `motus`.batchDelete TO 'denis'@'%';
-GRANT SELECT ON motus.batchParams TO 'denis'@'%';
-GRANT SELECT ON motus.batchProgs TO 'denis'@'%';
-GRANT SELECT, UPDATE (tsMotus) ON motus.batches TO 'denis'@'%';
-GRANT SELECT ON motus.gps TO 'denis'@'%';
-GRANT SELECT ON motus.hits TO 'denis'@'%';
-GRANT SELECT ON motus.runUpdates TO 'denis'@'%';
-GRANT SELECT ON motus.runs TO 'denis'@'%';
-GRANT SELECT, UPDATE ON motus.sg_import_log TO 'denis'@'%';
-GRANT SELECT, UPDATE (tsMotus) ON motus.tagAmbig TO 'denis'@'%';
+GRANT SELECT, UPDATE(tsMotus)   ON motus.batchDelete    TO 'denis'@'%';
+GRANT SELECT                    ON motus.batchParams    TO 'denis'@'%';
+GRANT SELECT                    ON motus.batchProgs     TO 'denis'@'%';
+GRANT SELECT, UPDATE (tsMotus)  ON motus.batches        TO 'denis'@'%';
+GRANT SELECT                    ON motus.gps            TO 'denis'@'%';
+GRANT SELECT                    ON motus.hits           TO 'denis'@'%';
+GRANT SELECT                    ON motus.runUpdates     TO 'denis'@'%';
+GRANT SELECT                    ON motus.runs           TO 'denis'@'%';
+GRANT SELECT, UPDATE            ON motus.sg_import_log  TO 'denis'@'%';
+GRANT SELECT, UPDATE (tsMotus)  ON motus.tagAmbig       TO 'denis'@'%';
