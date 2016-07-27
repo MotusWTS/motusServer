@@ -189,6 +189,11 @@ PRIMARY KEY (batchID, ant, hourBin)          -- a single count for each batchID,
         sql("
 CREATE TABLE batches (
     batchID INTEGER PRIMARY KEY,              -- unique identifier for this batch
+    motusDeviceID INTEGER,                    -- motus ID of this receiver (NULL means not yet
+                                              -- registered or not yet looked-up)  In a receiver
+                                              -- database, this will be a constant column, but
+                                              -- that way it has the same schema as in the master
+                                              -- database.
     monoBN INT,                               -- boot number for this receiver; (NULL
                                               -- okay; e.g. Lotek)
     tsBegin FLOAT(53),                        -- timestamp for start of period
