@@ -11,13 +11,13 @@
 #' batch is added to the batchDelete motus transfer table, and the batchID
 #' in the receiver's motusTX table is negated, so that subsequent re-runs
 #' don't try to delete it from motus again.
-#' 
+#'
 #' @param src dplyr src_sqlite to receiver database
 #'
 #' @return the batch number and the number of tag detections in the stream.
 #'
 #' @export
-#' 
+#'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 pushToMotus = function(src) {
@@ -26,7 +26,7 @@ pushToMotus = function(src) {
 
     ## get batches without a record in motusTX
     motusTX = tbl(src, "motusTX")
-    batches = tbl(src, "batches")    
+    batches = tbl(src, "batches")
     newBatches = batches %>%
         anti_join (motusTX, by="batchID") %>%
         arrange(batchID) %>%
@@ -37,15 +37,22 @@ pushToMotus = function(src) {
 
     ## find which existing batches are being superseded by new ones,
     ## based on them having the same monoBN field
-    
+
     toDelete = motusTX %>% left_join (batches, by="batchID") %>%
         left_join (newBatches, by="monoBN", copy=TRUE) %>% collect
-    
+
     deviceID = getMotusDeviceID(src)
+
+    ## ensure the device ID has been set on all batches
+    ## it is a constant, and the only reason we do this
+    ## is to have the same schema for receiver and master
+    ## databases.
+    sql("update batches set motusDeviceID=%d", deviceID)
+
     batches$motusDeviceID = deviceID
 
     ## open the motus transfer table
-    
+
     mt = openMotusDB()
     mtcon = mt$con
     mtsql = function(...) dbGetQuery(mtcon, sprintf(...))
@@ -53,12 +60,12 @@ pushToMotus = function(src) {
     ## Writing a record to the motus batches table indicates that
     ## batch is ready for transfer, so must be the last thing we do
     ## for a batch, after writing all hits, runs, etc.
-    
+
     ## So we need to reserve a block of nrow(b) IDs in motus.batches
 
 
     firstMotusBatchID = motusReserveKeys(mt, "batches", "batchID", nrow(newBatches), "motusDeviceID", -deviceID)
-    offsetBatchID = firstMotusBatchID - newBatches$batchID[1]   
+    offsetBatchID = firstMotusBatchID - newBatches$batchID[1]
 
     ## Transfer tag ambiguities.  This is a two-way process, in that we want to have
     ## a unique master ambigID across receivers for each ambiguity of a particular
@@ -66,14 +73,14 @@ pushToMotus = function(src) {
 
     ## 1. get tag ambiguities from this receiver which don't already have a master
     ## ambigID:
-    
+
     ambig = tbl(src, "tagAmbig") %>% filter (is.null(masterAmbigID)) %>% collect
 
     if (nrow(ambig) > 0) {
-        
+
         ## 2. join to the master ambiguity table by tagIDs
         masterAmbig = tbl(mt, "tagAmbig") %>% collect
-        
+
         joinAmbig = ambig %>% left_join (masterAmbig, by=c("motusTagID1", "motusTagID2", "motusTagID3", "motusTagID4", "motusTagID5", "motusTagID6")) %>% collect
 
         ## 3. create entries in the master tagAmbig table for any not
@@ -99,16 +106,19 @@ pushToMotus = function(src) {
                                          motusTagID6 = "motusTagID6",
                                          tsMotus     = 0) %>% as.data.frame
             ## write new tag ambiguities
-            dbWriteTable(mtcon, "tagAmbig", newAmbig, append=TRUE)
+            ## but work around bug in RMySQL
+            dbWriteTable(mtcon, "temptagAmbig", newAmbig, overwrite=TRUE, row.names=FALSE)
+            dbGetQuery(mtcon, "replace into tagAmbig select * from temptagAmbig")
+            dbGetQuery(mtcon, "drop table temptagAmbig")
         }
 
         ## 4. record the masterAmbigID for each tag ambiguity in the receiver DB
         copy_to(src, joinAmbig, "joinAmbig")  ## add as a temporary table
-        sql("replace into tagAmbig (select ambigID.x as ambigID, ambigID.y as masterAmbigID, motusTagID1, motusTagID2, motusTagID3, motusTagID4, motusTagID5, motusTagID6 from joinAmbig)")
+        sql("replace into tagAmbig select `ambigID.x` as ambigID, `ambigID.y` as masterAmbigID, motusTagID1, motusTagID2, motusTagID3, motusTagID4, motusTagID5, motusTagID6 from joinAmbig")
     }
 
     ## ----------  copy batches ----------
-    
+
     ## update the batchID fields for the batches, then insert them into motus.batches
     ## The default value of -1 for the tsMotus field means these records represent
     ## incomplete batches, not to be transferred to motus until the tsMotus field
@@ -122,7 +132,7 @@ pushToMotus = function(src) {
 
     ## set bogus offsets, in case no record of these types; permits update to
     ## motusTX table in sqlite database to work.
-    
+
     offsetRunID = 0
     offsetHitID = 0
 
@@ -136,7 +146,7 @@ pushToMotus = function(src) {
         b = newBatches[i,]
 
         ## ----------  copy runs  ----------
-        
+
         ## get count of runs and 1st run ID for this batch
         runInfo = sql("select count(*), min(runID) from runs where batchIDbegin = %d", b$batchID)
 
@@ -157,9 +167,9 @@ pushToMotus = function(src) {
                 dbInsertOrReplace(mtcon, "runs", runs)
             }
             dbClearResult(res)
-            
+
             ## ----------  copy hits  ----------
-            
+
             ## get count of hits and 1st hit ID for this batch
             hitInfo = sql("select count(*), min(hitID) from hits where batchID = %d", b$batchID)
 
@@ -181,26 +191,11 @@ pushToMotus = function(src) {
             dbClearResult(res)
         }
         ## ----------  copy gps  ----------
-        
+
         gps = sql("select * from gps where batchID = %d order by ts", b$batchID)
         gps$batchID = gps$batchID + offsetBatchID
         dbInsertOrReplace(mtcon, "gps", gps)
 
-        ## ----------  copy batchAmbig  ----------
-
-        ## get count of runs and 1st run ID for this batch
-        ambigInfo = sql("select count(*), min(ambigID) from batchAmbig where batchID = %d", b$batchID)
-        if (ambigInfo[1,1] > 0) {
-            
-            ## map key values; we only do this for batchID, as this table's primary key
-            ## is compound: (batchID, ambigID)
-            
-            ambig = sql("select * from batchAmbig where batchID = %d order by ambigID", b$batchID)
-            ambig$batchID = ambig$batchID + offsetBatchID
-
-            dbInsertOrReplace(mtcon, "batchAmbig", ambig)
-        }
-            
         ## ----------  copy batchProgs  ----------
         bpr = sql("select * from batchProgs where batchID = %d", b$batchID)
         bpr$batchID = bpr$batchID + offsetBatchID
@@ -208,7 +203,7 @@ pushToMotus = function(src) {
         if (nrow(bpr) > 0)
             dbWriteTable(mtcon, "batchProgs", bpr, append=TRUE, row.names=FALSE)
 
-        
+
         ## ----------  copy batchParams  ----------
         bpa = sql("select * from batchParams where batchID = %d", b$batchID)
         bpa$batchID = bpa$batchID + offsetBatchID
@@ -221,23 +216,23 @@ pushToMotus = function(src) {
         ## For runs which began before this batch and which either
         ## haven't ended or ended in this batch, update their length
         ## and batchIDend fields.
-        
+
         res = dbSendQuery(con, sprintf("select * from runs as t1 left join motusTX as t2 on t1.batchIDbegin=t2.batchID where t1.batchIDBegin < %d and (t1.batchIDend is null or t1.batchIDend = %d) order by runID",
                                        b$batchID, b$batchID))
         repeat {
             runUpd = dbFetch(res, CHUNK_ROWS)
             if (nrow(runUpd) == 0)
                 break
-            
+
             runUpd$runID        = runUpd$runID        + runUpd$offsetRunID  ## offsetRunID depends on batchID via the join above
             runUpd$batchID      = b$batchID + offsetBatchID  ## this is just the current batchID, so we want the current offset
             runUpd$batchIDend   = runUpd$batchIDend + runUpd$offsetBatchID  ## offsetBatchID depends on batchID via the join above
             dbInsertOrReplace(mtcon, "runUpdates", runUpd[,c("batchID", "runID", "len", "batchIDend")])
         }
         dbClearResult(res)
-        
+
         ## Mark what has been transferred
-        
+
         sql("insert into motusTX (batchID, tsMotus, offsetBatchID, offsetRunID, offsetHitID) \
                          values  (  %d   , %.4f     , %d          , %g         , %g         )",
             b$batchID,
@@ -258,13 +253,13 @@ pushToMotus = function(src) {
     ## For any batches being supersedes, add a record to batchDelete in the motus tables,
     ## and negate the batchID in the receiver motusTX table
 
-    for (i in seq(along = toDelete$batchID)) {
-        ## get ID of batch in master table 
-        bid = toDelete$batchID[i] + toDelete$offsetBatchID[i]
-        
+    for (i in seq(along = toDelete$batchID.x)) {
+        ## get ID of batch in master table
+        bid = toDelete$batchID.x[i] + toDelete$offsetBatchID[i]
+
         mtsql("insert into batchDelete (batchIDbegin, batchIDend, ts, reason, tsMotus) values (%d, %d, %f, 're-ran site', 0))",
               bid, bid, as.numeric(Sys.time()))
-        sql("update motusTX set batchID=-batchID where batchID=%d", toDelete$batchID[i])
+        sql("update motusTX set batchID=-batchID where batchID=%d", toDelete$batchID.x[i])
     }
     dbDisconnect(mtcon)
 }
