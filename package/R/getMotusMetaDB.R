@@ -1,7 +1,7 @@
 #' Get the motus database of metadata for tags, receivers, projects,
 #' and species.
 #'
-#' @return a dplyr::src_sqlite database usable by the \code{tagview} function
+#' @return a path to an sqlite database usable by the \code{tagview} function
 #' It will have these tables:
 #'
 #' \strong{tags:}
@@ -112,16 +112,24 @@
 getMotusMetaDB = function() {
     ## location we store a cached copy of the motus tag DB
     cachedDB = "/sgm/cached_motus_meta_db.sqlite"
+    oldCachedDB = "/sgm/cached_motus_meta_db_old.sqlite"
 
     ## if either the cached copy doesn't exist, or it is more than 1 day old,
     ## grab it again
 
     if (file.exists(cachedDB) && diff(as.numeric(c(file.info(cachedDB)$mtime, Sys.time()))) <= 24 * 3600) {
-        return (src_sqlite(cachedDB))
+        return (cachedDB)
     }
 
     ## open / create the cached DB
     s = src_sqlite(cachedDB, TRUE)
+
+    ## if all tables are already present; save this as the older version
+    if (all(c("tags", "tagDeps", "events", "species", "projs", "recvDeps", "antDeps") %in% src_tbls(s))) {
+        dbDisconnect(s$con)
+        file.rename(cachedDB, oldCachedDB) ## overwrites any existing old copy
+        s = src_sqlite(cachedDB, TRUE)
+    }
 
     ## grab tags
     t = motusSearchTags()
@@ -167,5 +175,6 @@ getMotusMetaDB = function() {
     dbWriteTable(s$con, "recvDeps", recv %>% as.data.frame, overwrite=TRUE)
     dbWriteTable(s$con, "antDeps", ant %>% as.data.frame, overwrite=TRUE)
 
-    return (s)
+    dbDisconnect(s$con)
+    return (cachedDB)
 }
