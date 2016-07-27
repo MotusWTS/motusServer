@@ -77,6 +77,6 @@ motusReserveKeys = function(src, table, key, n, IDcol, ID) {
                     key, table, IDcol, ID, key) [[1]] - n + 1)
     } else {
         return (sql("select %s from %s where %s=%s order by %s limit 1",
-                    key, table, IDcol, ID, key) [[1]] + n - 1)
+                    key, table, IDcol, ID, key) [[1]] - n - 1)
     }
 }
