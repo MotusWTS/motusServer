@@ -68,7 +68,56 @@ tagview = function(db, dbMeta=db, minRunLen=3, keep=TRUE) {
         copy_to(db, tbl(dbMeta,t) %>% collect, t, temporary= ! keep)
     }
 
-    ## for now, ignore tag ambiguities
+    ## For each tag ambiguity, we want a tag deployment record that
+    ## provides an appropriate start date and label for the
+    ## ambiguity. If a tag in an ambiguity has multiple deployment
+    ## records, we need a tag ambiguity deployment record for each.
+    ## So for all combinations of deployment records for tags in an
+    ## ambiguity group, we need a separate tag deployment record.
+    ##
+    ## e.g. suppose tags 10000 and 10001 form amibiguity # -10
+    ##
+    ## Suppose we have these deployment records:
+    ##   tagID   project   start
+    ##  10000     Mary     2015-01-01
+    ##  10000     Bill     2015-03-01
+    ##  10001     Frank    2015-02-01
+    ##  10001     Jill     2015-02-15
+    ##
+    ## Timeline:
+    ##
+    ##      10000_Mary------------------------------------10000_Bill-------->
+    ##                       10001_Frank--10001_Jill------------------------>
+    ## -----+----------------+------------+---------------+----------------->
+    ##      01-01            02-01        02-15           03-01
+    ##
+    ## We want these tagDeps records:
+    ##
+    ##  tagID    label (project only)  start
+    ##   -10     Mary or Frank        2015-02-01
+    ##   -10     Mary or Jill         2015-02-15
+    ##   -10     Bill or Jill         2015-03-01
+
+    ## get a set of all tag deployments for the tags in all tag ambiguities
+
+    ambDeps = dbGetQuery(db$con, "select t1.ambigID, t2.tagID, t2.tsStart, t2.fullID from tagAmbig as t1 join tagDeps as t2 on t2.tagID in (t1.motusTagID1, t1.motusTagID2, t1.motusTagID3, t1.motusTagID4, t1.motusTagID5, t1.motusTagID6) order by t1.ambigID, t2.tsStart")
+
+    ## generate appropriate tagDeps records
+    ambID = 0
+    fullIDs = character(0)
+    for (i in 1:nrow(ambDeps)) {
+        if (ambDeps$ambigID[i] != ambID) {
+            ambID = ambDeps$ambigID[i]
+            ## drop any existing deployment records for this ambiguity
+            dbGetQuery(db$con, sprintf("delete from tagDeps where tagID=%d", ambID))
+            fullIDs = ambDeps$fullID[i]
+        } else {
+            ## record another fullID for this ambiguity group
+            fullIDs = unique(c(fullIDs, ambDeps$fullID[i]))
+        }
+        if (length(fullIDs) > 1)
+            dbGetQuery(db$con, sprintf("insert into tagDeps (tagID, tsStart, fullID) values (%d, %f, '%s')", ambID, ambDeps$tsStart[i], paste0("(", paste(sub("#.*", "", fullIDs), collapse=" or "), ")", sub(".*#", "#", fullIDs[1]))))
+    }
 
     query = "
 CREATE VIEW allt AS SELECT
@@ -101,54 +150,4 @@ LEFT JOIN projs    AS t10 ON t10.ID        = t6.projectID
     dbGetQuery(db$con, "DROP VIEW IF EXISTS allt")
     dbGetQuery(db$con, query)
     return(tbl(db, "allt"))
-
-
-    ## ## get list of distinct tagIDs, including negative ones representing tag ambiguities
-
-    ## tagIDs = tbl(db, "runs") %>% select(motusTagID) %>% distinct_ %>% collect
-
-    ## ## real tag IDs are positive; negative IDs are tag ambiguities which we must lookup
-
-    ## realTagIDs = tagIDs %>% subset(motusTagID > 0)
-
-    ## ambigIDs = tagIDs %>% subset(motusTagID < 0)
-
-    ## if (isTRUE(nrow(ambigIDs) > 0)) {
-    ##     ambig = tbl(db, "tagAmbig")
-    ##     ambigTagIDs = ambigIDs %>% left_join (ambig, by=c("motusTagID" = "ambigID")) %>%
-    ##         select(motusTagID1, motusTagID2, motusTagID3, motusTagID4, motusTagID5, motusTagID6) %>%
-    ##         collect %>% unlist %>% c %>% unique
-    ##     realTagIDs = c(realTagIDs, ambigTagIDs)
-    ## }
-
-    ## ## realTagIDs now contains a full set of positive motusIDs for all tags (possibly)
-    ## ## detected.
-
-    ## ## get the deployments for these tags
-
-    ## ## get list of tag ambiguities
-    ## ambig = tagIDs %>% filter( motusTagID < 0)
-    ## haveAmbig = nrow(ambig) > 0
-
-
-    ## if (! haveAmbig) {
-    ##     ## create temporary copies of any subset tables we need
-    ##     if (dbT != db) {
-
-    ##     t = tbl(db, "hits") %>%   ## detections
-    ##         left_join (tbl(db, "runs"), by=c(runID="runID")) %>%    ## linked to their runs of detections
-    ##         filter_ (~len >= minRunLen) %>%
-
-    ##         left_join (tbl(dbT,"tags") %>% select_("tagID", "mfgID", "speciesID","projectID", "nomFreq", "period"), by=c(motusTagID="tagID"), copy=TRUE) %>% ## linked to their tag metadata
-    ##         left_join (tbl(dbS, "species"), by=c(speciesID="id"), copy=TRUE) %>%  ## linked to the species code
-    ##         left_join (tbl(dbP, "projects"), by=c(projectID="id"), copy=TRUE) %>% ## linked to the project code
-    ##     mutate_ (fullID = ~printf("%s#%s@%g:%.1f", projCode, mfgID, nomFreq, period)) ## can't seem to do this in dplyr-style; note that printf is in SQLITE
-    ##     return(t)
-    ##     }
-    ## } else {
-    ##     ## each combination of (ambigID, batchID) represents a single group of ambiguous tags
-    ##     ## We generate a new
-    ##     ## get list of those motus Tag IDs involved in ambiguities (might overlap with previous list)
-    ##     ambigTagIDs = tagIDs %>% bind_rows(tbl(db, "batchAmbig") %>% select (motusTagID) %>% collect)
-    ## }
 }
