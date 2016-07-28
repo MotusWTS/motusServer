@@ -51,7 +51,7 @@
 #' This will yield NA for the 'info' field when there is no tag deployment covering the range.
 #' Running EXPLAIN on this query in sqlite suggests it optimizes well.
 
-tagview = function(db, dbMeta=db, minRunLen=3, keep=FALSE) {
+tagview = function(db, dbMeta=db, minRunLen=3, keep=TRUE) {
 
     ## convert any paths to src_sqlite
 
@@ -65,7 +65,7 @@ tagview = function(db, dbMeta=db, minRunLen=3, keep=FALSE) {
     for (t in c("tags", "tagDeps", "recvDeps", "antDeps", "species", "projs")) {
         if (t %in% n)
             dbGetQuery(db$con, paste("drop table", t))
-        copy_to(db, tbl(dbMeta,t) %>% collect, t, temporary=FALSE)
+        copy_to(db, tbl(dbMeta,t) %>% collect, t, temporary= ! keep)
     }
 
     ## for now, ignore tag ambiguities
@@ -74,13 +74,25 @@ tagview = function(db, dbMeta=db, minRunLen=3, keep=FALSE) {
 CREATE VIEW allt AS SELECT
 t1.*, t2.*, t3.*, t4.*, t5.*, t6.*, t7.*, t8.*, t9.*, t10.* FROM
 hits AS t1
+
 LEFT JOIN runs     AS t2  ON t1.runID      = t2.runID
+
 LEFT JOIN batches  AS t3  ON t3.batchID    = t1.batchID
+
 LEFT JOIN tags     AS t4  ON t4.tagID      = t2.motusTagID
+
 LEFT JOIN tagDeps  AS t5  ON t5.tagID      = t2.motusTagID  AND
- t5.tsStart = (SELECT max(t5b.tsStart) FROM tagDeps  AS t5b WHERE t5b.tagID = t2.motusTagID AND t5b.tsStart <= t1.ts AND (t5b.tsEnd IS NULL OR t5b.tsEnd >= t1.ts))
-LEFT JOIN recvDeps AS t6  ON t6.deviceID   = t3.motusDeviceID      AND
- t6.tsStart = (SELECT max(t6b.tsStart) FROM recvDeps AS t6b WHERE t6b.deviceID=t3.motusDeviceID      AND t6b.tsStart <= t1.ts AND (t6b.tsEnd IS NULL OR t6b.tsEnd >= t1.ts))
+                             t5.tsStart    = (SELECT max(t5b.tsStart) FROM tagDeps AS t5b
+                                              WHERE t5b.tagID = t2.motusTagID
+                                              AND t5b.tsStart <= t1.ts
+                                              AND (t5b.tsEnd IS NULL OR t5b.tsEnd >= t1.ts))
+
+LEFT JOIN recvDeps AS t6  ON t6.deviceID   = t3.motusDeviceID AND
+                             t6.tsStart    = (SELECT max(t6b.tsStart) FROM recvDeps AS t6b
+                                              WHERE t6b.deviceID=t3.motusDeviceID
+                                              AND t6b.tsStart <= t1.ts
+                                              AND (t6b.tsEnd IS NULL OR t6b.tsEnd >= t1.ts))
+
 LEFT JOIN antDeps  AS t7  ON t7.deployID   = t6.deployID    AND t7.port = t2.ant
 LEFT JOIN species  AS t8  ON t8.id         = t5.speciesID
 LEFT JOIN projs    AS t9  ON t9.ID         = t5.projectID
@@ -89,9 +101,6 @@ LEFT JOIN projs    AS t10 ON t10.ID        = t6.projectID
     dbGetQuery(db$con, "DROP VIEW IF EXISTS allt")
     dbGetQuery(db$con, query)
     return(tbl(db, "allt"))
-
-
-
 
 
     ## ## get list of distinct tagIDs, including negative ones representing tag ambiguities
