@@ -1,3 +1,5 @@
+## FIXME: dbGetQuery(t$src$con, 'select distinct printf("%s#%g:%.1f@%.3f", `label`, mfgID, period, nomFreq) from allt') will generate a standard fullID
+
 #' Get the motus database of metadata for tags, receivers, projects,
 #' and species.
 #'
@@ -47,6 +49,7 @@
 #' \item longitude
 #' \item elevation
 #' \item comments      a JSON-formatted character string of additional properties
+#' \item fullID  tag formatted as
 #' }
 #'
 #' \strong{events:}
@@ -100,6 +103,7 @@
 #' \itemize{
 #' \item id motus project ID
 #' \item name motus project name
+#' \item label short project label for graphs
 #' \item tagsPermissions
 #' \item sensorsPermissions
 #' }
@@ -139,12 +143,22 @@ getMotusMetaDB = function() {
 
     cleanTagRegistrations(t, s)
 
-    ## write just the deployment portion of the records to tagDeps
-    dbWriteTable(s$con, "tagDeps", t[, c(1:2, match("deployID", names(t)): ncol(t))], overwrite=TRUE)
-
     ## grab projects
     p =  motusListProjects()
+    ## add a label from our in-house database
+    ## FIXME: remove this once motus returns label in listProjects field.
+
+    labs = dbGetQuery(dbConnect(SQLite(), "/SG/motus_sg.sqlite"), "select motusID, projCode from projectMap as t1 where year = (select max(year) from projectMap as t2 where t2.projCode=t1.projCode) order by t1.motusID")
+
+    p$label = labs[match(p$id, labs$motusID), "projCode"]
+
     dbWriteTable(s$con, "projs", p, overwrite=TRUE)
+
+    ## add a fullID label for each tagDep
+    t$fullID = sprintf("%s#%s:%.1f@%.3f", p$label[match(t$projectID, p$id)], t$mfgID, t$period, t$nomFreq)
+
+    ## write just the deployment portion of the records to tagDeps
+    dbWriteTable(s$con, "tagDeps", t[, c(1:2, match("deployID", names(t)): ncol(t))], overwrite=TRUE)
 
     ## grab species
     dbWriteTable(s$con, "species", motusListSpecies(), overwrite=TRUE)
@@ -178,3 +192,4 @@ getMotusMetaDB = function() {
     dbDisconnect(s$con)
     return (cachedDB)
 }
+
