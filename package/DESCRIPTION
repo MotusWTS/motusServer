@@ -1,5 +1,5 @@
 Package: motus
-Version: 0.1.0
+Version: 0.1.1
 Title: Operate the sensorgnome.org side of the sensorgnome/motus data link.
 Description: Process raw data from receivers and store results in
     transfer tables for motus-wts.org Results use native motus-wts
@@ -18,7 +18,7 @@ Depends:
     digest,
     lattice 
 License: GPL-2+
-Date: 2015-11-10
+Date: 2016-07-28
 RoxygenNote: 5.0.1
 LazyData: true
 
