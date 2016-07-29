@@ -1,0 +1,156 @@
+#' compare new-style tag-finder results with the traditional approach
+#'
+#' Plot a Year/Project/Site tag detection plot (condensed to first detection
+#' of each tag per hour), overplotting detections by old and new methods.
+#'
+#' @param year - integer year
+#'
+#' @param proj - sensorgnome project code
+#'
+#' @param site - sensorgnome site code
+#'
+#' @param oldSym - plot symbol for old detections; default:  25 (downward triangle)
+#'
+#' @param newSym - plot symbol for new detections; default: 24 (upward triangle)
+#'
+#' @return a data_frame of tag detections, condensed hourly, with a
+#' new logical column, \code{new}, indicating whether
+#' the detection is from the new dataset.   If two records are
+#' identical except for the values of \code{new}, that means the
+#' detection was in both datasets.  Otherwise, the detection was from
+#' the old (if \code{new == FALSE}) or new (if \code{new == TRUE})
+#' dataset only.
+#'
+#' @export
+#'
+#' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
+
+compareOldNew = function(year, proj, site, oldSym = 25, newSym = 24) {
+    f = sprintf("/SG/contrib/%d/%s/%s/%d_%s_%s_alltags.sqlite", year, proj, site, year, proj, site)
+
+    ylo = as.numeric(ymd(paste(year, 1, 1, sep="-")))
+    yhi = as.numeric(ymd(paste(year + 1, 1, 1, sep="-")))
+
+    ## get old dataset from either .rds or .sqlite files:
+
+    if (! file.exists(f)) {
+        f = sub(".sqlite$", ".rds", f)
+        if (! file.exists(f))
+            stop("Non-existent combination: ", year, proj, site)
+        old = readRDS(f)
+        if (length(old) == 0 || nrow(old) == 0)
+            stop("No tags in: ", year, proj, site)
+        old$ts = as.numeric(old$ts)
+        old$fullID = as.character(old$fullID)
+        old$ant = as.integer(as.character(old$ant))
+        old = old %>% as.tbl
+        told = old %>% mutate(hourBin=round(ts/3600-0.5, 0)) %>% group_by(recv, ant, fullID, hourBin) %>%
+        filter_ (~runLen >= 3 & freqsd < 0.1 & ts >= ylo & ts <= yhi) %>%
+        summarize(n=length(ts), ts=min(ts), freq=mean(freq), sig=max(sig)) %>%
+        collect %>% as.data.frame
+    } else {
+        src = src_sqlite(f)
+        if (! "tags" %in% src_tbls(src))
+            stop("Database has no tags table for: ", year, proj, site)
+        old = tbl(src, "tags")
+        if (old %>% head(1) %>% collect %>% nrow != 1)
+            stop("No tag detections for: ", year, proj, site)
+        told = old %>% mutate(hourBin=round(ts/3600-0.5, 0)) %>% group_by(recv, ant, fullID, hourBin) %>%
+        filter_ (~runLen >= 3 & freqsd < 0.1 & ts >= ylo & ts <= yhi) %>%
+        summarize(n=length(ts), ts=min(ts), freq=avg(freq), sig=max(sig)) %>%
+        collect %>% as.data.frame
+    }
+
+    n2014map = list(
+        "ASmith"  = "AdamSmith",
+        "Dosmn"   = "Dossman",
+        "Hamil"   = "Hamilton",
+        "Holbt"   = "HolbSESA",
+        "Lorng"   = "Loring",
+        "Protandry"  = "Morbey",
+        "Peter"   = "Peterson",
+        "Salda"   = "Saldanha",
+        "Taylr"   = "Taylor"
+    )
+
+    for (old in names(n2014map))
+        told$fullID = sub(old, n2014map[[old]], told$fullID, fixed=TRUE)
+
+    told$new = FALSE
+
+    ## re-arrange components of fullID to: ID:BI#PROJ@FREQ
+
+    told$fullID = stri_replace_all_regex(told$fullID, "(.*)#(.*)@(.*):(.*)", "$2:$4#$1@$3")
+
+    ## for each receiver in the old dataset, grab data for this year from the new dataset
+
+    allnew = NULL
+    for (r in unique(told$recv)) {
+        newf = paste0("/sgm/recv/", r, ".motus")
+        ## get the numeric range of timestamps for this year
+        ## and truncate to year boundaries
+        trange = range(as.numeric(told$ts[told$recv==r]))
+        trange[1] = max(ylo, trange[1])
+        trange[2] = min(yhi, trange[2])
+
+        if (! file.exists(newf)) {
+            warning("No new-style database for receiver ", r)
+            next
+        }
+        src = src_sqlite(newf)
+        mot = getMotusMetaDB()
+
+        tnew = tagview(src, mot)
+
+        ## look at only the first detection of each tag per hour
+        tnew = tnew %>% filter_(~freqsd < 0.1) %>% mutate(hourBin = round(ts/3600-0.5, 0)) %>% group_by(ant, fullID, hourBin) %>%
+            filter_ (~ts >= trange[1] & ts <= trange[2]) %>%
+            summarize(ts=min(ts), n=length(ts), freq=avg(freq), sig=max(sig)) %>%
+            collect %>% as.data.frame
+
+        ## add recv column
+        if (tnew %>% head(1) %>% collect %>% nrow > 0) {
+            tnew$recv = r
+            tnew$new = TRUE
+        }
+
+        allnew = rbind(allnew, tnew)
+    }
+    fixup = which(grepl(".0@", allnew$fullID, fixed=TRUE))
+    allnew$fullID[fixup] = sub(".0@", "@", allnew$fullID[fixup], fixed=TRUE)
+    ## re-arrange components of fullID to: ID:BI#PROJ@FREQ
+
+    allnew$fullID = stri_replace_all_regex(allnew$fullID, "(.*)#(.*):(.*)@(.*)", "$2:$3#$1@$4")
+
+    all = rbind(told, allnew)
+    class(all$ts) = c("POSIXt", "POSIXct")
+
+
+    numTags = length(unique(all$fullID))
+
+    dayseq = seq(from=round(min(all$ts), "days"), to=round(max(all$ts),"days"), by=24*3600)
+
+    png(sprintf("/sgm/plots/%d_%s_%s_hourly_old_new.png", year, proj, site), width=1024, height=300 + 20 * numTags, type="cairo-png")
+    dateLabel = sprintf("Date (%s, GMT)", dateStem(all$ts[c(1, nrow(all))]))
+
+    print(xyplot(as.factor(fullID)~ts,
+                 groups = new, data = all,
+                 panel = function(x, y, groups) {
+                     panel.abline(h=unique(y), lty=2, col="gray")
+                     panel.abline(v=dayseq, lty=3, col="gray")
+                     panel.xyplot(x, y, pch = ifelse(groups, newSym, oldSym), col = ifelse(groups, 2, 1))
+                 },
+                 auto.key = list(
+                     title="Data Source",
+                     col=c(2, 1), points=FALSE, text=c("new: ^", "old: v")
+                 ),
+                 main = sprintf("%d %s %s Hourly Tags; Old vs. New data processing", year, proj, site),
+                 sub = sprintf("Receiver(s): %s", paste(unique(told$recv), collapse=",")),
+                 ylab = "FullID\n(project names might differ between old and new)",
+                 xlab = dateLabel
+                 )
+          )
+    dev.off()
+    saveRDS(all, sprintf("/sgm/plots/%d_%s_%s_hourly_old_new.rds", year, proj, site))
+    return(invisible(all))
+}
