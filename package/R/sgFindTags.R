@@ -64,12 +64,12 @@ sgFindTags = function(src, tagDB, resume=TRUE, par = "", mbn = NULL) {
             dbGetQuery(src$con, "delete from batchState")
 
         ## start the child;
-        bcmd = paste(cmd, pars, if (resume) "--resume", paste0("--bootnum=", bn), "--src_sqlite", tagDB, src$path)
+        bcmd = paste(cmd, pars, if (resume) "--resume", paste0("--bootnum=", bn), "--src_sqlite", tagDB, src$path, " 2>&1 ")
 
         cat("  => ", bcmd, "\n")
 
         ## run the tag finder
-        system(bcmd)
+        cat(system(bcmd, intern=TRUE))
     }
     ## revert to journal mode delete, so we keep everything in a single file
 

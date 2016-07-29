@@ -13,19 +13,15 @@
 #'
 #' @param newSym - plot symbol for new detections; default: 24 (upward triangle)
 #'
-#' @return a data_frame of tag detections, condensed hourly, with a
-#' new logical column, \code{new}, indicating whether
-#' the detection is from the new dataset.   If two records are
-#' identical except for the values of \code{new}, that means the
-#' detection was in both datasets.  Otherwise, the detection was from
-#' the old (if \code{new == FALSE}) or new (if \code{new == TRUE})
-#' dataset only.
+#' @return a character vector of full paths to any files created (plots, datasets)
 #'
 #' @export
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 compareOldNew = function(year, proj, site, oldSym = 25, newSym = 24) {
+    rv = character(0)
+    
     f = sprintf("/SG/contrib/%d/%s/%s/%d_%s_%s_alltags.sqlite", year, proj, site, year, proj, site)
 
     ylo = as.numeric(ymd(paste(year, 1, 1, sep="-")))
@@ -130,7 +126,9 @@ compareOldNew = function(year, proj, site, oldSym = 25, newSym = 24) {
 
     dayseq = seq(from=round(min(all$ts), "days"), to=round(max(all$ts),"days"), by=24*3600)
 
-    png(sprintf("/sgm/plots/%d_%s_%s_hourly_old_new.png", year, proj, site), width=1024, height=300 + 20 * numTags, type="cairo-png")
+    plotfilename = sprintf("/sgm/plots/%d_%s_%s_hourly_old_new.png", year, proj, site)
+    png(plotfilename, width=1024, height=300 + 20 * numTags, type="cairo-png")
+    rv = c(rv, plotfilename)
     dateLabel = sprintf("Date (%s, GMT)", dateStem(all$ts[c(1, nrow(all))]))
 
     print(xyplot(as.factor(fullID)~ts,
@@ -151,6 +149,8 @@ compareOldNew = function(year, proj, site, oldSym = 25, newSym = 24) {
                  )
           )
     dev.off()
-    saveRDS(all, sprintf("/sgm/plots/%d_%s_%s_hourly_old_new.rds", year, proj, site))
-    return(invisible(all))
+    datafilename = sprintf("/sgm/plots/%d_%s_%s_hourly_old_new.rds", year, proj, site)
+    saveRDS(all, datafilename)
+    rv = c(rv, datafilename)
+    return(rv)
 }

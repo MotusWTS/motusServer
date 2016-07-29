@@ -13,9 +13,11 @@
 #'
 #' @return an object of class "motusMap".
 #'
+#' @export
+#' 
 #' @examples
 #'
-#' x = motusMap(src_sqlite("SG-1234BBBK5678.motus"), "meta")
+#' x = getMap(src_sqlite("SG-1234BBBK5678.motus"), "meta")
 #' x$recvSerno
 #' x$MACAddr <- "01235a3be098"
 #' x$recvSerno <- NULL
