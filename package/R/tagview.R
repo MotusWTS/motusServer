@@ -100,25 +100,26 @@ tagview = function(db, dbMeta=db, minRunLen=3, keep=TRUE) {
 
     ## get a set of all tag deployments for the tags in all tag ambiguities
 
-    ambDeps = dbGetQuery(db$con, "select t1.ambigID, t2.tagID, t2.tsStart, t2.fullID from tagAmbig as t1 join tagDeps as t2 on t2.tagID in (t1.motusTagID1, t1.motusTagID2, t1.motusTagID3, t1.motusTagID4, t1.motusTagID5, t1.motusTagID6) order by t1.ambigID, t2.tsStart")
+    if (dbExistsTable(db$con, "tagAmbig")) {
+        ambDeps = dbGetQuery(db$con, "select t1.ambigID, t2.tagID, t2.tsStart, t2.fullID from tagAmbig as t1 join tagDeps as t2 on t2.tagID in (t1.motusTagID1, t1.motusTagID2, t1.motusTagID3, t1.motusTagID4, t1.motusTagID5, t1.motusTagID6) order by t1.ambigID, t2.tsStart")
 
-    ## generate appropriate tagDeps records
-    ambID = 0
-    fullIDs = character(0)
-    for (i in 1:nrow(ambDeps)) {
-        if (ambDeps$ambigID[i] != ambID) {
-            ambID = ambDeps$ambigID[i]
-            ## drop any existing deployment records for this ambiguity
-            dbGetQuery(db$con, sprintf("delete from tagDeps where tagID=%d", ambID))
-            fullIDs = ambDeps$fullID[i]
-        } else {
-            ## record another fullID for this ambiguity group
-            fullIDs = unique(c(fullIDs, ambDeps$fullID[i]))
+        ## generate appropriate tagDeps records
+        ambID = 0
+        fullIDs = character(0)
+        for (i in seq(length=nrow(ambDeps))) {
+            if (ambDeps$ambigID[i] != ambID) {
+                ambID = ambDeps$ambigID[i]
+                ## drop any existing deployment records for this ambiguity
+                dbGetQuery(db$con, sprintf("delete from tagDeps where tagID=%d", ambID))
+                fullIDs = ambDeps$fullID[i]
+            } else {
+                ## record another fullID for this ambiguity group
+                fullIDs = unique(c(fullIDs, ambDeps$fullID[i]))
+            }
+            if (length(fullIDs) > 1)
+                dbGetQuery(db$con, sprintf("insert into tagDeps (tagID, tsStart, fullID) values (%d, %f, '%s')", ambID, ambDeps$tsStart[i], paste0("(", paste(sub("#.*", "", fullIDs), collapse=" or "), ")", sub(".*#", "#", fullIDs[1]))))
         }
-        if (length(fullIDs) > 1)
-            dbGetQuery(db$con, sprintf("insert into tagDeps (tagID, tsStart, fullID) values (%d, %f, '%s')", ambID, ambDeps$tsStart[i], paste0("(", paste(sub("#.*", "", fullIDs), collapse=" or "), ")", sub(".*#", "#", fullIDs[1]))))
     }
-
     query = "
 CREATE VIEW allt AS SELECT
 t1.*, t2.*, t3.*, t4.*, t5.*, t6.*, t7.*, t8.*, t9.*, t10.* FROM
