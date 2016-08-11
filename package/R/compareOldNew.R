@@ -41,7 +41,7 @@ compareOldNew = function(year, proj, site, oldSym = 25, newSym = 24) {
         old$ant = as.integer(as.character(old$ant))
         old = old %>% as.tbl
         told = old %>% mutate(hourBin=round(ts/3600-0.5, 0)) %>% group_by(recv, ant, fullID, hourBin) %>%
-        filter_ (~runLen >= 3 & freqsd < 0.1 & ts >= ylo & ts <= yhi) %>%
+        filter_ (~runLen >= 3 & (is.na(freqsd) | freqsd < 0.1) & ts >= ylo & ts <= yhi) %>%
         summarize(n=length(ts), ts=min(ts), freq=mean(freq), sig=max(sig)) %>%
         collect %>% as.data.frame
     } else {
@@ -52,9 +52,11 @@ compareOldNew = function(year, proj, site, oldSym = 25, newSym = 24) {
         if (old %>% head(1) %>% collect %>% nrow != 1)
             stop("No tag detections for: ", year, proj, site)
         told = old %>% mutate(hourBin=round(ts/3600-0.5, 0)) %>% group_by(recv, ant, fullID, hourBin) %>%
-        filter_ (~runLen >= 3 & freqsd < 0.1 & ts >= ylo & ts <= yhi) %>%
+        filter_ (~runLen >= 3 & (is.na(freqsd) | freqsd < 0.1) & ts >= ylo & ts <= yhi) %>%
         summarize(n=length(ts), ts=min(ts), freq=avg(freq), sig=max(sig)) %>%
         collect %>% as.data.frame
+        if (told %>% head(1) %>% collect %>% nrow != 1)
+            stop("No filtered tag detections for: ", year, proj, site, "\nPerhaps receiver clock was not correctly set?")
     }
 
     n2014map = list(
