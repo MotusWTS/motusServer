@@ -42,7 +42,7 @@ sgFindTags = function(src, tagDB, resume=TRUE, par = "", mbn = NULL) {
     if (is.list(par))
         pars = paste0("--", names(par), '=', as.character(par), collapse=" ")
     else
-        pars = paste(par)
+        pars = paste(par, collapse=" ")
 
     saveTZ = Sys.getenv("TZ")
     Sys.setenv(TZ="GMT")
