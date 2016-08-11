@@ -26,7 +26,7 @@ getMotusDeviceID = function(src, useFirst=TRUE) {
 
     ## temporary workaround of API weirdness: default null macAddr is
     ## an integer 0, not "0"
-    if (macAddr == "0")
+    if (! isTRUE(macAddr > 0))
         macAddr = 0L
 
     ## see whether motus knows this receiver
