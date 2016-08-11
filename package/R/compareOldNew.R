@@ -74,6 +74,10 @@ compareOldNew = function(year, proj, site, oldSym = 25, newSym = 24) {
 
     told$new = FALSE
 
+    ## generate physID of form ID:BI@FREQ
+
+    told$physID = stri_replace_all_regex(told$fullID, "(.*)#(.*)@(.*):(.*)", "$2:$4@$3")
+
     ## re-arrange components of fullID to: ID:BI#PROJ@FREQ
 
     told$fullID = stri_replace_all_regex(told$fullID, "(.*)#(.*)@(.*):(.*)", "$2:$4#$1@$3")
@@ -114,43 +118,56 @@ compareOldNew = function(year, proj, site, oldSym = 25, newSym = 24) {
     }
     fixup = which(grepl(".0@", allnew$fullID, fixed=TRUE))
     allnew$fullID[fixup] = sub(".0@", "@", allnew$fullID[fixup], fixed=TRUE)
-    ## re-arrange components of fullID to: ID:BI#PROJ@FREQ
 
+    ## re-arrange components of fullID to: ID:BI#PROJ@FREQ
+    allnew$physID = stri_replace_all_regex(allnew$fullID, "(.*)#(.*):(.*)@(.*)", "$2:$3@$4")
+
+    ## re-arrange components of fullID to: ID:BI#PROJ@FREQ
     allnew$fullID = stri_replace_all_regex(allnew$fullID, "(.*)#(.*):(.*)@(.*)", "$2:$3#$1@$4")
 
     all = rbind(told, allnew)
     class(all$ts) = c("POSIXt", "POSIXct")
 
 
-    numTags = length(unique(all$fullID))
-
     dayseq = seq(from=round(min(all$ts), "days"), to=round(max(all$ts),"days"), by=24*3600)
 
-    plotfilename = sprintf("/sgm/plots/%d_%s_%s_hourly_old_new.png", year, proj, site)
-    png(plotfilename, width=1024, height=300 + 20 * numTags, type="cairo-png")
-    rv = c(rv, plotfilename)
-    dateLabel = sprintf("Date (%s, GMT)", dateStem(all$ts[c(1, nrow(all))]))
-
-    print(xyplot(as.factor(fullID)~ts,
-                 groups = new, data = all,
-                 panel = function(x, y, groups) {
-                     panel.abline(h=unique(y), lty=2, col="gray")
-                     panel.abline(v=dayseq, lty=3, col="gray")
-                     panel.xyplot(x, y, pch = ifelse(groups, newSym, oldSym), col = ifelse(groups, 2, 1))
-                 },
-                 auto.key = list(
-                     title="Data Source",
-                     col=c(2, 1), points=FALSE, text=c("new: ^", "old: v")
-                 ),
-                 main = sprintf("%d %s %s Hourly Tags; Old vs. New data processing", year, proj, site),
-                 sub = sprintf("Receiver(s): %s", paste(unique(told$recv), collapse=",")),
-                 ylab = "FullID\n(project names might differ between old and new)",
-                 xlab = dateLabel
-                 )
-          )
-    dev.off()
     datafilename = sprintf("/sgm/plots/%d_%s_%s_hourly_old_new.rds", year, proj, site)
     saveRDS(all, datafilename)
+
+    ## plot twice, once using fullID, once using physID
+    phys = "" ## extra component for plot file name
+    ylab = "FullID\n(project names might differ between old and new)"
+    repeat {
+        numTags = length(unique(all$fullID))  ## compute separately for each plot
+        plotfilename = sprintf("/sgm/plots/%d_%s_%s_%shourly_old_new.png", year, proj, site, phys)
+        png(plotfilename, width=1024, height=300 + 20 * numTags, type="cairo-png")
+        rv = c(rv, plotfilename)
+        dateLabel = sprintf("Date (%s, GMT)", dateStem(all$ts[c(1, nrow(all))]))
+
+        print(xyplot(as.factor(fullID)~ts,
+                     groups = new, data = all,
+                     panel = function(x, y, groups) {
+                         panel.abline(h=unique(y), lty=2, col="gray")
+                         panel.abline(v=dayseq, lty=3, col="gray")
+                         panel.xyplot(x, y, pch = ifelse(groups, newSym, oldSym), col = ifelse(groups, 2, 1), cex=2)
+                     },
+                     auto.key = list(
+                         title="Data Source",
+                         col=c(2, 1), points=FALSE, text=c("new: ^", "old: v")
+                     ),
+                     main = sprintf("%d %s %s Hourly Tags; Old vs. New data processing", year, proj, site),
+                     sub = sprintf("Receiver(s): %s", paste(unique(told$recv), collapse=",")),
+                     ylab = ylab,
+                     xlab = dateLabel
+                     )
+              )
+        dev.off()
+        if (phys != "")
+            break
+        phys="physID_"
+        ylab = "physical ID (no project code)"
+        all$fullID = all$physID
+    }
     rv = c(rv, datafilename)
     return(rv)
 }
