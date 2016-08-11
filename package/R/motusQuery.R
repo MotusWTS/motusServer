@@ -76,6 +76,8 @@ motusQuery = function (API, params = NULL, requestType="post", show=FALSE, json=
             RESP = getForm(API, json=JSON, curl=curl)
         if (json)
             return (RESP)
+        if (grepl("^[ \r\n]*$", RESP))
+            return(list())
         rv = fromJSON(RESP)
         cat(capture.output(RESP), "\n", file=log)
         if (! is.null(rv$data))
