@@ -57,13 +57,13 @@ ltMergeFiles = function(dbdir, files) {
         files = tbl(src, "DTAfiles")
 
         bname = basename(f)
-        if (nrow(files %>% filter(name==bname)) > 0) {
+        if (files %>% filter(name==bname) %>% count %>% as.data.frame > 0) {
             rv$nameNew[i] = FALSE
         }
         
         this = files %>% filter(hash==fhash)
         
-        if (nrow(this) > 0) {
+        if (this %>% count %>% as.data.frame > 0) {
             rv$dataNew[i] = FALSE
             next
         }
