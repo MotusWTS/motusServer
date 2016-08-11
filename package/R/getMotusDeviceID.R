@@ -26,8 +26,8 @@ getMotusDeviceID = function(src, useFirst=TRUE) {
 
     ## temporary workaround of API weirdness: default null macAddr is
     ## an integer 0, not "0"
-    if (! isTRUE(macAddr > 0))
-        macAddr = 0L
+    if (! isTRUE(macAddr != 0 && macAddr != "0"))
+        macAddr = NULL
 
     ## see whether motus knows this receiver
     mm = motusListSensors(serialNo=m$recvSerno, macAddress=macAddr)

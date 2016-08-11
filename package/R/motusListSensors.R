@@ -22,11 +22,15 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 motusListSensors = function(projectID = NULL, year = NULL, serialNo=NULL, macAddress=NULL, ...) {
+    par = list(
+        projectID  = projectID,
+        year       = year,
+        serialNo   = serialNo
+        )
+
+    if (! is.null(macAddress))
+        par$macAddress = macAddress
     motusQuery(MOTUS_API_LIST_SENSORS, requestType="get",
-               list(
-                   projectID  = projectID,
-                   year       = year,
-                   serialNo   = serialNo,
-                   macAddress = macAddress
-               ), ...)
+               par,
+                ...)
 }
