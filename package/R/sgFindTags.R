@@ -69,7 +69,7 @@ sgFindTags = function(src, tagDB, resume=TRUE, par = "", mbn = NULL) {
         cat("  => ", bcmd, "\n")
 
         ## run the tag finder
-        cat(system(bcmd, intern=TRUE))
+        cat(paste(system(bcmd, intern=TRUE), collapse="\n"))
     }
     ## revert to journal mode delete, so we keep everything in a single file
 
