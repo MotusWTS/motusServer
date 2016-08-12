@@ -14,21 +14,23 @@
 #' @return the query result, which won't usually be useful
 #'
 #' @export
-#' 
+#'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 motusRegisterReceiver = function(serno, macAddr = NULL, secretKey = NULL) {
 
     if (is.null(secretKey)) {
+        newserno = sub("^SG-", "sg_", serno, perl=TRUE)
+        ## receiver is a sensorgnome
         ## see whether the receiver already has a private key
-        privKeyFile = paste0("/home/sg_remote/.ssh/id_dsa_sg_", substring(serno, 4))
+        privKeyFile = paste0("/home/sg_remote/.ssh/id_dsa_", newserno)
         privKey = readChar(pipe(paste("sudo cat", privKeyFile), "rb"), 1e5, useBytes=TRUE)
-        if (length(privKey) == 0) {
+        if (! isTRUE(length(privKey) == 1)) {
             ## generate a public/private key pair for this receiver
             ## NOTE: if the receiver ever connects via ssh to our server,
             ## it will still have a new keypair generated.
-            
-            privKeyFile = paste0("/home/sg_remote/.ssh/generated_by_server/id_dsa_sg_", substring(serno, 4))
+
+            privKeyFile = paste0("/home/sg_remote/.ssh/generated_by_server/id_dsa_", newserno)
             system(sprintf("sudo rm -f %s %s.pub", privKeyFile, privKeyFile))
             system(sprintf("sudo su -c 'ssh-keygen -q -t dsa -f %s -N \"\"' sg_remote", privKeyFile))
             privKey = readChar(pipe(paste("sudo cat", privKeyFile), "rb"), 1e5, useBytes=TRUE)
@@ -42,8 +44,7 @@ motusRegisterReceiver = function(serno, macAddr = NULL, secretKey = NULL) {
     }
 
     masterKey = "~/.secrets/motus_secret_key.txt"
-               
-    
+
     motusQuery(MOTUS_API_REGISTER_RECEIVER, requestType="get",
                params=list(
                    secretKey = toupper(secretKey),
