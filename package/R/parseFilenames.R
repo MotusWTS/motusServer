@@ -6,8 +6,8 @@
 #'
 #' \enumerate{
 #'  \item "prefix":  human readable short site name
-#'  \item "serno":  receiver serial number; 12 alphanumeric characters e.g. 1315BBBK2156
-#'  \item "macAddr": 12 byte hex mac address (lower case); NA if not available
+#'  \item "serno":  receiver serial number; 12 alphanumeric characters e.g. 1315BBBK2156, or possibly with an appended "_N" where N is 1, 2, ...
+#'  for disentangling serial number collisions.
 #'  \item "bootnum":  boot count (integer)
 #'  \item "ts":  timestamp embedded in name (double, with class \code{c("POSIXt", "POSIXct")} )
 #'  \item "tsCode":  timestamp code ('P' means before GPS fix, 'Z' means accurate to 1e-6 s, 'Y' to 1e-5s, 'X' to 1e-4s, ..., 'T' to 1s)
@@ -17,7 +17,12 @@
 #'
 #' }
 #' @note Returns NULL if no filenames match regex; otherwise, return value has rows
-#' filled with NA for any filenames not matching regex
+#' filled with NA for any filenames not matching regex.
+#'
+#' @note To resolve the collision between the CTRiver/Sugarloaf and Motus/PointLepreau receivers which
+#' both have serial number 1614BBBK1911, we give Sugarloaf an additional "_1".  This change is also
+#' effected by renaming the files on disk.
+#' 
 #' 
 #' @export
 
@@ -26,5 +31,10 @@ parseFilenames = function(f) {
     if (is.null(rv))
         return(rv)
     rv$ts = ymd_hms(rv$ts)
+    fix = which(rv$serno == "1614BBBK1911" & rv$prefix != "Lepreau")
+    if (length(fix) > 0) {
+        rv$serno[fix] = "1614BBBK1911_1"
+        file.rename(f[fix], sub("1614BBBK1911", "1614BBBK1911_1", f[fix], fixed=TRUE))
+    }
     return(rv)
 }
