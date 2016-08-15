@@ -7,6 +7,7 @@
 #'     recursively for raw sensorgnome data files.
 #'
 #' @return a data_frame reporting the fate of each file, with these columns:
+#' @return a data_frame reporting the details of each file, with these columns:
 #' \itemize{
 #' \item name - full path to filename
 #' \item use - TRUE iff data from this file were incorporated in this run
@@ -15,7 +16,9 @@
 #' \item corrupt      - TRUE the file was compressed but corrupted
 #' \item small - TRUE iff the file contents are shorter than existing contents for that file in the receiver DB
 #' \item partial - TRUE iff this is a partial compressed file for which an uncompressed version is in the same batch
-#' \item serno - serial number of the receiver which was parsed from this filename
+#' \item serno - serial number of the receiver, parsed from this filename
+#' \item monoBN - monotonic boot session, parsed from filename
+#' \item ts - starting timestamp, parsed from filename
 #' }
 #'
 #' Returns NULL if no valid sensorgnome data files were found.
@@ -253,7 +256,9 @@ sgMergeFiles = function(dbdir, files) {
                           corrupt = corrupt,
                           small = small,
                           partial = partial,
-                          serno = recv
+                          serno = recv,
+                          monoBN = Fbootnum,
+                          ts = Fts
                       ), nbadfiles=nbadfiles))
                       
 }
