@@ -10,7 +10,9 @@
 #' @param dbdir path to folder with existing receiver databases
 #' Default: \code{/sgm/recv}
 #'
-#' @return a data_frame reporting the details of each file, with these columns:
+#' @return a list with two items:
+#' \itemize{
+#' \item info- a data_frame reporting the details of each file, with these columns:
 #' \itemize{
 #' \item name - full path to filename
 #' \item use - TRUE iff data from this file will be incorporated in this run (i.e. the file is new, or has
@@ -23,6 +25,10 @@
 #' \item serno - serial number of the receiver, parsed from this filename
 #' \item monoBN - monotonic boot session, parsed from filename
 #' \item ts - starting timestamp, parsed from filename
+#' }
+#' \item resumable - a logical vector indicating the tag finder can be run with --resume for each
+#' subset of files from a distinct (serno, monoBN) pair.  The vector has names consisting of
+#' \code{paste(serno, monoBN)}.
 #' }
 #'
 #' Returns NULL if no valid sensorgnome data files were found.
@@ -114,6 +120,8 @@ sgMergeFiles = function(files, dbdir = "/sgm/recv") {
 
     nbadfiles = nrow(allf %>% filter_(~is.na(Fserno)))
 
+    resumable = logical()
+
     for (recv in recvs) {
         if (is.na(recv))
             next
@@ -132,6 +140,10 @@ sgMergeFiles = function(files, dbdir = "/sgm/recv") {
         ## existing files in database
 
         oldf = tbl(src, "files")
+
+        ## grab latest file timestamp for each boot session
+
+        maxOldTS = oldf %>% group_by(monoBN) %>% summarise_(maxOldTS=~max(ts)) %>% collect
 
         newf = newf %>%
 
@@ -254,19 +266,28 @@ sgMergeFiles = function(files, dbdir = "/sgm/recv") {
 
         allf    [ri, c("use", "new", "done", "corrupt", "small", "partial")] <-
             newf[  , c("use", "new", "done", "corrupt", "small", "partial")]
-    }
-    return (structure(allf %>%
-                      transmute(
-                          name = fullname,
-                          use = use & ! corrupt,
-                          new = new,
-                          done = done,
-                          corrupt = corrupt,
-                          small = small,
-                          partial = partial,
-                          serno = recv,
-                          monoBN = Fbootnum,
-                          ts = Fts
-                      ), nbadfiles=nbadfiles))
 
+        ## check for resumability
+
+        minNewTS = allf[ri, ] %>% select(use) %>% group_by(Fbootnum) %>% summarise_(minNewTS=~min(Fts)) %>% collect
+
+        compare = minNewTS %>% left_join (maxOldTS, by=c(Fbootnum="monoBN"))
+
+        resumable = c(resumable, structure(is.na(compare$maxOldTS) | compare$minNewTS >= compare$maxOldTS, names = paste(recv, compare$Fbootnum)))
+    }
+    return (list(
+        info = structure(allf %>%
+                         transmute(
+                             name = fullname,
+                             use = use & ! corrupt,
+                             new = new,
+                             done = done,
+                             corrupt = corrupt,
+                             small = small,
+                             partial = partial,
+                             serno = recv,
+                             monoBN = Fbootnum,
+                             ts = Fts
+                         ), nbadfiles=nbadfiles),
+        resumable = resumable))
 }

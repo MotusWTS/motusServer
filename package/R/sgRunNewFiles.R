@@ -42,18 +42,10 @@ sgRunNewFiles = function(files, dbdir = "/sgm/recv", par="") {
         if (! any(f$use))
             return(0)
 
-        ## grab src for this receiver
-        s = sgRecvSrc(f$serno[1])
-
-        ## get latest timestamp of existing files in this boot session
-        bn = f$monoBN[1]
-
-        lastTS = tbl(s, "files") %>% filter_(monoBN=bn) %>% summarise_(m = max(ts)) %>% collect %>% as.data.frame
-
-        canResume = min(f$ts) > lastTS
+        canResume = r$resumable[paste(f$serno[1], f$monoBN[1])]
 
         sgFindTags(s, getMotusMetaDB(), resume=canResume, par=par, mbn=bn)
     }
 
-    r %>% do (rv = runBootSession(.))
+    r$info %>% do (rv = runBootSession(.))
 }
