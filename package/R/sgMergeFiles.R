@@ -1,12 +1,12 @@
 #' Merge a batch of raw SG files with an existing database.
 #'
-#' @param dbdir path to folder with existing receiver databases
-#' 
 #' @param files either a character vector of full paths to files, or
 #'     the full path to a directory, which will be searched
 #'     recursively for raw sensorgnome data files.
 #'
-#' @return a data_frame reporting the fate of each file, with these columns:
+#' @param dbdir path to folder with existing receiver databases
+#' Default: \code{/sgm/recv}
+#' 
 #' @return a data_frame reporting the details of each file, with these columns:
 #' \itemize{
 #' \item name - full path to filename
@@ -27,7 +27,7 @@
 #' 
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-sgMergeFiles = function(dbdir, files) {
+sgMergeFiles = function(files, dbdir = "/sgm/recv") {
     if (! isTRUE(is.character(files) && all(file.exists(files))))
         stop("invalid or non-existent input files specified")
     if (file.info(files[1])$isdir) {
