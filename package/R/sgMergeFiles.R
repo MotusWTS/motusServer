@@ -1,4 +1,7 @@
-#' Merge a batch of raw SG files with an existing database.
+#' Merge a batch of raw SG files with an existing receiver database.
+#'
+#' Determines which files are redundant, new, or partially new.  Does *not*
+#' run the tag finder.
 #'
 #' @param files either a character vector of full paths to files, or
 #'     the full path to a directory, which will be searched
@@ -24,6 +27,9 @@
 #' Returns NULL if no valid sensorgnome data files were found.
 #'
 #' @export
+#'
+#' @seealso \code{sgRunNewFiles}, which calls this function and then calls \code{sgFindTags}
+#' as appropriate.
 #' 
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
