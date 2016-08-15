@@ -269,11 +269,12 @@ sgMergeFiles = function(files, dbdir = "/sgm/recv") {
 
         ## check for resumability
 
-        minNewTS = allf[ri, ] %>% select(use) %>% group_by(Fbootnum) %>% summarise_(minNewTS=~min(Fts)) %>% collect
+        minNewTS = allf[ri, ] %>% filter_(~use) %>% group_by(Fbootnum) %>% summarise_(recv=~first(Fserno), minNewTS=~min(Fts)) %>% collect
+        if (nrow(minNewTS) > 0) {
+            compare = minNewTS %>% left_join (maxOldTS, by=c(Fbootnum="monoBN"))
 
-        compare = minNewTS %>% left_join (maxOldTS, by=c(Fbootnum="monoBN"))
-
-        resumable = c(resumable, structure(is.na(compare$maxOldTS) | compare$minNewTS >= compare$maxOldTS, names = paste(recv, compare$Fbootnum)))
+            resumable = c(resumable, structure(is.na(compare$maxOldTS) | compare$minNewTS >= compare$maxOldTS, names = paste(compare$recv, compare$Fbootnum)))
+        }
     }
     return (list(
         info = structure(allf %>%
