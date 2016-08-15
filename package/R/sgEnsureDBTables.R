@@ -319,12 +319,14 @@ CREATE TABLE batchState (
                                                   -- 'lotek-plugins.so'
     monoBN INT NOT NULL,                          -- montonic boot count of last batch
     tsData FLOAT(53),                             -- timestamp (seconds since unix epoch) of last processed line in previous input
+    tsFile FLOAT(53),                             -- timestamp of last file being processed; this is a safer way to resume processing
+                                                  -- files from a particular boot session than using lastFileID.  file timestamps
+                                                  -- are unique within a boot session.
     tsRun FLOAT(53),                              -- timestamp (seconds since unix epoch) when program was paused
-    lastFileID INTEGER NOT NULL references files, -- ID of last file processed
     lastCharIndex INTEGER NOT NULL,               -- offset in (uncompressed file) of last char processed
     state  BLOB,                                  -- serialized state of program, if needed
 
-    PRIMARY KEY (batchID, progName)               -- only one saved state per program per batch
+    PRIMARY KEY (monoBN, progName)                -- only one saved state per program per boot session
 );
 ")
     }
