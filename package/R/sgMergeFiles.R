@@ -9,11 +9,12 @@
 #'
 #' @param dbdir path to folder with existing receiver databases
 #' Default: \code{/sgm/recv}
-#' 
+#'
 #' @return a data_frame reporting the details of each file, with these columns:
 #' \itemize{
 #' \item name - full path to filename
-#' \item use - TRUE iff data from this file were incorporated in this run
+#' \item use - TRUE iff data from this file will be incorporated in this run (i.e. the file is new, or has
+#' more content than its previous version)
 #' \item new  - TRUE iff a file of this name was not yet in database
 #' \item done  - TRUE iff this is a compressed file and we have its full contents
 #' \item corrupt      - TRUE the file was compressed but corrupted
@@ -30,7 +31,7 @@
 #'
 #' @seealso \code{sgRunNewFiles}, which calls this function and then calls \code{sgFindTags}
 #' as appropriate.
-#' 
+#'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 sgMergeFiles = function(files, dbdir = "/sgm/recv") {
@@ -112,18 +113,19 @@ sgMergeFiles = function(files, dbdir = "/sgm/recv") {
     recvs = allf %>% select_("Fserno") %>% distinct_ %>% `[[` (1)
 
     nbadfiles = nrow(allf %>% filter_(~is.na(Fserno)))
-    
+
     for (recv in recvs) {
         if (is.na(recv))
             next
         ri = allf %>% filter_(~Fserno==recv) %>% select_("ID") %>% `[[` (1)
         newf = allf %>% filter_(~Fserno==recv)
-        src = src_sqlite(file.path(dbdir, paste0("SG-", recv, ".motus")), TRUE)
 
-        sgEnsureDBTables(src)
-        
+        ## dplyr::src for receiver database
+
+        src = sgRecvSrc(recv)
+
         ## sqlite connection
-        
+
         con = src$con
         dbGetQuery(con, "pragma journal_mode=wal")
 
@@ -135,21 +137,21 @@ sgMergeFiles = function(files, dbdir = "/sgm/recv") {
 
     ## join against existing files
         left_join(oldf, by="name", copy=TRUE) %>%
-            
+
             ## Mark files for which an existing complete copy is in the database
             ## (note that isDone == NA means the file is not there at all)
             mutate(
-                done = is.finite(isDone) & isDone, 
-                
+                done = is.finite(isDone) & isDone,
+
                 ## Mark compressed version of new files which are present as both
                 ## compressed and uncompressed, as the compressed one is incomplete.
                 ## Files are sorted by name, so the compressed copy will be marked
                 ## as TRUE by duplicated().
-                
+
                 partial = duplicated(name),
-                
+
                 ## Mark uncompressed files which are not longer than the existing version
-                
+
                 nsize = file.info(fullname)[["size"]],
                 small = ! is.na(size) & nsize <= size & ! done & ! partial,
 
@@ -161,22 +163,22 @@ sgMergeFiles = function(files, dbdir = "/sgm/recv") {
 
                 ## Assume compressed files are not corrupt
                 corrupt = FALSE
-                
+
             )
-        
+
         ## get receiver information; if NULL, grab it from the first file
 
         ## FIXME? is there a cleaner way to do '%>% collect %>% as.XXX' to get a scalar entry from a tbl?
-        
+
         meta = getMap(src, "meta")
 
         meta$recvSerno = paste0("SG-", recv)
         meta$recvType = "SG"
         meta$recvModel = if (grepl("BBBK", newf$Fserno[1])) "BBBK" else if (grepl("RPi2", newf$Fserno[1])) "RPi2" else "BBW"
-        
+
         ## because macAddr has not been supplied in the past, we try grab it
         ## if *any* file provides it, so long as it's for the correct recv
-        
+
         if (is.null(meta$recvMACAddr)) {
             first = which(! is.na(newf$FmacAddr))
             if (length(first) > 0 && newf$Fserno[first[1]] == meta$serno) {
@@ -188,7 +190,7 @@ sgMergeFiles = function(files, dbdir = "/sgm/recv") {
             for (i in 1:nrow(newf)) {
                 if (! newf$use[i])
                     next
-                
+
                 ## grab file contents as bz2-compressed raw vector
                 fcon = tryCatch(
                     getFileAsBZ2(newf$fullname[i], newf$Fcomp[i], newf$nsize[i]),
@@ -206,7 +208,7 @@ sgMergeFiles = function(files, dbdir = "/sgm/recv") {
                     dbGetPreparedQuery(
                         con,
                         "insert into files (name, size, bootnum, monoBN, ts, tscode, tsDB, isDone) values (:name, :size, :bootnum, :monoBN, :ts, :tscode, :tsDB, :isDone)",
-                        
+
                         data.frame(
                             name     = newf$name[i],
                             size     = attr(fcon, "len"),
@@ -249,7 +251,7 @@ sgMergeFiles = function(files, dbdir = "/sgm/recv") {
         rm(src)
 
         ## record results
-        
+
         allf    [ri, c("use", "new", "done", "corrupt", "small", "partial")] <-
             newf[  , c("use", "new", "done", "corrupt", "small", "partial")]
     }
@@ -266,5 +268,5 @@ sgMergeFiles = function(files, dbdir = "/sgm/recv") {
                           monoBN = Fbootnum,
                           ts = Fts
                       ), nbadfiles=nbadfiles))
-                      
+
 }
