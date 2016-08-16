@@ -21,7 +21,7 @@
 #' @param dbdir path to folder with existing receiver databases
 #' Default: \code{/sgm/recv}
 #'
-#' @param par additional paramters to the tag finder
+#' @param ... additional parameters to the tag finder; see \link{\code{sgFindTags}}
 #'
 #' @return NULL so far.
 #'
@@ -31,7 +31,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-sgRunNewFiles = function(files, dbdir = "/sgm/recv", par="") {
+sgRunNewFiles = function(files, dbdir = "/sgm/recv", ...) {
     r = sgMergeFiles(files, dbdir)
     info = r$info %>% arrange(serno, monoBN) %>% group_by(serno, monoBN)
 
@@ -48,7 +48,7 @@ sgRunNewFiles = function(files, dbdir = "/sgm/recv", par="") {
 
         canResume = r$resumable[paste(recv, bn)]
 
-        sgFindTags(sgRecvSrc(recv, dbdir), getMotusMetaDB(), resume=canResume, par=par, mbn=bn)
+        sgFindTags(sgRecvSrc(recv, dbdir), getMotusMetaDB(), resume=canResume, mbn=bn, ...)
     }
 
     info %>% do (rv = runBootSession(.))
