@@ -32,7 +32,8 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 sgRunNewFiles = function(files, dbdir = "/sgm/recv", par="") {
-    r = sgMergeFiles(files, dbdir) %>% arrange(serno, monoBN) %>% group_by(serno, monoBN)
+    r = sgMergeFiles(files, dbdir)
+    info = r$info %>% arrange(serno, monoBN) %>% group_by(serno, monoBN)
 
     ## a function to process files from each boot session:
 
@@ -42,10 +43,13 @@ sgRunNewFiles = function(files, dbdir = "/sgm/recv", par="") {
         if (! any(f$use))
             return(0)
 
-        canResume = r$resumable[paste(f$serno[1], f$monoBN[1])]
+        bn = f$monoBN[1]
+        recv = f$serno[1]
 
-        sgFindTags(s, getMotusMetaDB(), resume=canResume, par=par, mbn=bn)
+        canResume = r$resumable[paste(recv, bn)]
+
+        sgFindTags(sgRecvSrc(recv, dbdir), getMotusMetaDB(), resume=canResume, par=par, mbn=bn)
     }
 
-    r$info %>% do (rv = runBootSession(.))
+    info %>% do (rv = runBootSession(.))
 }
