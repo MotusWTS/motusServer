@@ -229,7 +229,7 @@ sgMergeFiles = function(files, dbdir = "/sgm/recv") {
                             ts       = newf$Fts[i],
                             tscode   = newf$FtsCode[i],
                             tsDB     = now,
-                            isDone   = newf$Fextension[i] != "",
+                            isDone   = !is.na(newf$Fcomp[i]),  ## we see only the compressed file, so it must be finished (note that decompression succeeded)
                             stringsAsFactors = FALSE
                         )
                     )
@@ -241,7 +241,7 @@ sgMergeFiles = function(files, dbdir = "/sgm/recv") {
                 } else {
                     dbGetPreparedQuery(
                         con,
-                        "update files set size=:size fileID=:fileID ",
+                        "update files set size=:size, fileID=:fileID ",
                         data.frame(
                             size     = attr(fcon, "len"),
                             fileID   = newf$fileID[i]
@@ -250,10 +250,10 @@ sgMergeFiles = function(files, dbdir = "/sgm/recv") {
                     dbGetPreparedQuery(
                         con,
                         "update fileContents set contents=:contents where fileID=:fileID ",
-                        data.frame(
+                        data_frame(  ## NB: use this instead of data.frame because latter's handling of list columns is broken as of 2016 Aug 16.
                             contents = list(fcon),
                             fileID   = newf$fileID[i]
-                        )
+                        ) %>% as.data.frame
                     )
                 }
             }
