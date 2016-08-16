@@ -130,7 +130,7 @@ sgMergeFiles = function(files, dbdir = "/sgm/recv") {
 
         ## dplyr::src for receiver database
 
-        src = sgRecvSrc(recv)
+        src = sgRecvSrc(recv, dbdir)
 
         ## sqlite connection
 
