@@ -24,7 +24,8 @@
 #'     and relied on writing it to the SD card; updating to a new
 #'     SD card would typically reset the boot count.
 #'
-#' @param par list of parameters to the findtags code.
+#' @param par list of parameters to the findtags code; defaults to
+#' \code{\link{sgDefaultFindTagsParams}}
 #'
 #' @param mbn integer monotonic boot number(s); this is the monoBN field
 #'     from the \code{files} table in the receiver's sqlite database.
@@ -36,7 +37,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-sgFindTags = function(src, tagDB, resume=TRUE, par = "", mbn = NULL) {
+sgFindTags = function(src, tagDB, resume=TRUE, par = sgDefaultFindTagsParams, mbn = NULL) {
 
     cmd = "/home/john/proj/find_tags/find_tags_motus"
     if (is.list(par))
