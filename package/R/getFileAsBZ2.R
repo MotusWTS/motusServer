@@ -6,7 +6,7 @@
 #'
 #' @param ext [optional] file extension.  If not supplied, the
 #' extension is the substring of \code{f} beginning with the last period (\code{'.'}),
-#' for example ".gz".
+#' for example ".gz".  If NA, the file is treated as not compressed.
 #'
 #' @param size [optional] size of file on disk. If not supplied, it
 #' is obtained by a call to file.info
@@ -23,6 +23,8 @@
 getFileAsBZ2 = function(f, ext=stri_extract_last_regex(f, "\\.[A-Za-z0-9]*$"), size=file.info(f)$size) {
     if (size == 0)
         return(structure(raw(0), len=0))
+    if (is.na(ext))
+        ext = ""
     
     val = readBin(f, raw(), size)
     if (ext == ".bz2") {
