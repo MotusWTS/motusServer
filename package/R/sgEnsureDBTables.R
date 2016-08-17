@@ -134,7 +134,7 @@ primary key(ts, ant, id)                          -- no more than one detection 
     if (! "timeFixes" %in% tables) {
         sql("
 create table timeFixes (
-batchID  integer,      -- batch ID during which fixes were made
+monoBN  integer,       -- boot session during which fixes were made
 tsLow double,          -- low endpoint of timestamps before correction
 tsHigh double,         -- high endpoint of timestamps before correction
 fixedBy double,        -- amount which was added to uncorrected timestamps to obtain corrected ones, in seconds.
