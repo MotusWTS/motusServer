@@ -98,28 +98,35 @@ tagview = function(db, dbMeta=db, minRunLen=3, keep=TRUE) {
     ##   -10     Mary or Jill         2015-02-15
     ##   -10     Bill or Jill         2015-03-01
 
-    ## get a set of all tag deployments for the tags in all tag ambiguities
+    ## generate appropriate tagDeps records; each will have:
+    ##
+    ## - ambigID: negative bogus tag ID
+    ##
+    ## - fullID: pasted fullIDs, removing duplicate suffix like so:
+    ##    "Charley#45:8.1@166.38", "Baker#45:8.1@166.38" -> "Charley or Baker#45:8.1@166.38"
+    ##
+    ## - tsStart: maximum start time of any of the ambiguous tags
 
-    if (dbExistsTable(db$con, "tagAmbig")) {
-        ambDeps = dbGetQuery(db$con, "select t1.ambigID, t2.tagID, t2.tsStart, t2.fullID from tagAmbig as t1 join tagDeps as t2 on t2.tagID in (t1.motusTagID1, t1.motusTagID2, t1.motusTagID3, t1.motusTagID4, t1.motusTagID5, t1.motusTagID6) order by t1.ambigID, t2.tsStart")
+    if (dbExistsTable(db$con, "tagAmbig") && isTRUE(unlist(dbGetQuery(db$con, "select count(*) from tagAmbig")) > 0)) {
+        ## join all tag deployment records for the ambiguity
+        dbGetQuery(db$con, "CREATE TEMPORARY VIEW _ambigjoin AS SELECT t1.ambigID, t2.tagID, t2.tsStart, t2.fullID FROM tagAmbig AS t1 JOIN tagDeps AS t2 ON t2.tagID IN (t1.motusTagID1, t1.motusTagID2, t1.motusTagID3, t1.motusTagID4, t1.motusTagID5, t1.motusTagID6) ORDER BY t1.ambigID, t2.tsStart;")
 
-        ## generate appropriate tagDeps records
-        ambID = 0
-        fullIDs = character(0)
-        for (i in seq(length=nrow(ambDeps))) {
-            if (ambDeps$ambigID[i] != ambID) {
-                ambID = ambDeps$ambigID[i]
-                ## drop any existing deployment records for this ambiguity
-                dbGetQuery(db$con, sprintf("delete from tagDeps where tagID=%d", ambID))
-                fullIDs = ambDeps$fullID[i]
-            } else {
-                ## record another fullID for this ambiguity group
-                fullIDs = unique(c(fullIDs, ambDeps$fullID[i]))
-            }
-            if (length(fullIDs) > 1)
-                dbGetQuery(db$con, sprintf("insert into tagDeps (tagID, tsStart, fullID) values (%d, %f, '%s')", ambID, ambDeps$tsStart[i], paste0("(", paste(sub("#.*", "", fullIDs), collapse=" or "), ")", sub(".*#", "#", fullIDs[1]))))
+        ## remove any existing deployment records for these ambiguities
+        dbGetQuery(db$con, "DELETE FROM tagDeps WHERE tagID IN (SELECT ambigID FROM tagAmbig);")
+
+        ## create temporary ambiguity deployment records with a pasted fullID which we fix inside R
+
+        ambigdeps = dbGetQuery(db$con, "SELECT ambigID, max(tsStart) as tsStart, group_concat(fullID) as fullID FROM _ambigjoin GROUP BY ambigID;")
+
+        for (i in 1:nrow(ambigdeps)) {
+            parts = unique(strsplit(ambigdeps$fullID[i], ",", fixed=TRUE)[[1]])
+            ambigdeps$fullID[i] = paste0(paste(sub("#.*", "", perl=TRUE, parts), collapse=" or "), "#", sub(".*#", "", perl=TRUE, parts[1]))
         }
+        dbWriteTable(db$con, "_ambigdeps", ambigdeps, overwrite=TRUE, row.names=FALSE)
+        dbGetQuery(db$con, "insert into tagDeps (tagID, tsStart, fullID) select * from _ambigdeps;")
+        dbGetQuery(db$con, "drop table _ambigdeps;");
     }
+
     query = "
 CREATE VIEW allt AS SELECT
 t1.*, t2.*, t3.*, t4.*, t5.*, t6.*, t7.*, t8.*, t9.*, t10.* FROM
