@@ -147,12 +147,9 @@ getMotusMetaDB = function() {
 
     ## grab projects
     p =  motusListProjects()
-    ## add a label from our in-house database
-    ## FIXME: remove this once motus returns label in listProjects field.
 
-    labs = dbGetQuery(dbConnect(SQLite(), "/SG/motus_sg.sqlite"), "select motusID, projCode from projectMap as t1 where year = (select max(year) from projectMap as t2 where t2.projCode=t1.projCode) order by t1.motusID")
-
-    p$label = labs[match(p$id, labs$motusID), "projCode"]
+    ## rename "code" column to "label"
+    names(p)[match("code", names(p))] = "label"
 
     dbWriteTable(s$con, "projs", p, overwrite=TRUE)
 
@@ -194,4 +191,3 @@ getMotusMetaDB = function() {
     dbDisconnect(s$con)
     return (cachedDB)
 }
-
