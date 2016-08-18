@@ -50,7 +50,7 @@ ltFindTags = function(src, tagDB, par = NULL, toFile=NULL, keepOld=0) {
     tags = tagDB %>% src_sqlite %>% tbl("tags")
     
     x = tbl(src, "DTAtags")
-    xx = x %>% select (ts, id, ant, sig, antFreq, gain, codeSet, lat, lon) %>% arrange(ts) %>% filter (id != 999) %>% collect()
+    xx = x %>% select (ts, id, ant, sig, antFreq, gain, codeSet, lat, lon) %>% arrange(ts) %>% filter (id != 999) %>% collect(n=Inf)
     if (nrow(xx) > 0) {
         if (! is.null(toFile)) {
             p = file(toFile, "w")
