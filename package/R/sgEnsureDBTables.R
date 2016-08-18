@@ -242,7 +242,7 @@ CREATE TABLE runs (
     motusTagID INT NOT NULL,                          -- ID for the tag detected; foreign key to Motus DB
                                                       -- table
     ant TINYINT NOT NULL,                             -- antenna number (USB Hub port # for SG; antenna port
-                                                      -- # for Lotek)
+                                                      -- # for Lotek); 11 means Lotek master antenna 'A1+A2+A3+A4'
     len INT                                           -- length of run within batch
 );
 
