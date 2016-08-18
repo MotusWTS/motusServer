@@ -9,7 +9,8 @@
 #'
 #' @param tagDB path to sqlite tag registration database
 #'
-#' @param par list of parameters to the filtertags code.
+#' @param par list of parameters to the filtertags code.  Defaults
+#' to \link{\code{ltDefaultFindTagsParams}}
 #'
 #' @param toFile if not NULL (the default), write lotek output lines
 #' to the this file, rather than passing them to the tag finder.
@@ -25,7 +26,7 @@
 #' 
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-ltFindTags = function(src, tagDB, par = NULL, toFile=NULL, keepOld=0) {
+ltFindTags = function(src, tagDB, par = ltDefaultFindTagsParams, toFile=NULL, keepOld=0) {
 
     deleteOldFindTags(keepOld)
     
