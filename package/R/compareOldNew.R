@@ -21,11 +21,12 @@
 
 compareOldNew = function(year, proj, site, oldSym = 25, newSym = 24) {
     rv = character(0)
-    
-    f = sprintf("/SG/contrib/%d/%s/%s/%d_%s_%s_alltags.sqlite", year, proj, site, year, proj, site)
 
-    ylo = as.numeric(ymd(paste(year, 1, 1, sep="-")))
-    yhi = as.numeric(ymd(paste(year + 1, 1, 1, sep="-")))
+    f = sprintf("/SG/contrib/%d/%s/%s/%d_%s_%s_alltags.sqlite", year, proj, site, year, proj, site)
+    dbf = sub("_alltags", "", f)
+
+    ylo = as.numeric(ymd_h(paste(year, 1, 1, 1, sep="-")))
+    yhi = as.numeric(ymd_h(paste(year + 1, 1, 1, 1, sep="-")))
 
     ## get old dataset from either .rds or .sqlite files:
 
@@ -55,8 +56,8 @@ compareOldNew = function(year, proj, site, oldSym = 25, newSym = 24) {
         filter_ (~runLen >= 3 & (is.na(freqsd) | freqsd < 0.1) & ts >= ylo & ts <= yhi) %>%
         summarize(n=length(ts), ts=min(ts), freq=avg(freq), sig=max(sig)) %>%
         collect %>% as.data.frame
-        if (told %>% head(1) %>% collect %>% nrow != 1)
-            stop("No filtered tag detections for: ", year, proj, site, "\nPerhaps receiver clock was not correctly set?")
+        ## if (told %>% head(1) %>% collect %>% nrow != 1)
+        ##     stop("No filtered tag detections for: ", year, proj, site, "\nPerhaps receiver clock was not correctly set?")
     }
 
     n2014map = list(
@@ -74,7 +75,7 @@ compareOldNew = function(year, proj, site, oldSym = 25, newSym = 24) {
     for (old in names(n2014map))
         told$fullID = sub(old, n2014map[[old]], told$fullID, fixed=TRUE)
 
-    told$new = FALSE
+    told$new = rep(FALSE, nrow(told))
 
     ## generate physID of form ID:BI@FREQ
 
@@ -84,21 +85,33 @@ compareOldNew = function(year, proj, site, oldSym = 25, newSym = 24) {
 
     told$fullID = stri_replace_all_regex(told$fullID, "(.*)#(.*)@(.*):(.*)", "$2:$4#$1@$3")
 
-    ## for each receiver in the old dataset, grab data for this year from the new dataset
+    ## for each receiver in the old form site database, get the serial
+    ## number and range of dates.  A site in a given year might have used
+    ## several different receivers.  A single receiver might appear in
+    ## the deployments table multiple times, once for each different
+    ## file prefix set by the user via the "shortLabel" field in deployment.txt
+
+    olds = src_sqlite(dbf)
+    oldrec = tbl(olds, "deployments") %>%
+        left_join( tbl(olds, "files"), by="depID") %>%
+        filter(ts >= 1262304000) %>%
+        group_by(recv) %>%
+        summarize(tsLo = min(ts), tsHi = max(ts) + 3600) %>%
+        as.data.frame
 
     allnew = NULL
-    for (r in unique(told$recv)) {
-        newf = paste0("/sgm/recv/", r, ".motus")
-        ## get the numeric range of timestamps for this year
-        ## and truncate to year boundaries
-        trange = range(as.numeric(told$ts[told$recv==r]))
-        trange[1] = max(ylo, trange[1])
-        trange[2] = min(yhi, trange[2])
+    for (i in seq(length = nrow(oldrec))) {
+        newf = paste0("/sgm/recv/SG-", oldrec$recv[i], ".motus")
 
         if (! file.exists(newf)) {
             warning("No new-style database for receiver ", r)
             next
         }
+        ## get the numeric range of timestamps for this year
+        ## and truncate to year boundaries
+
+        trange = c(max(ylo, oldrec$tsLo[i]), min(yhi, oldrec$tsHi[i]))
+
         src = src_sqlite(newf)
         mot = getMotusMetaDB()
 
@@ -112,7 +125,7 @@ compareOldNew = function(year, proj, site, oldSym = 25, newSym = 24) {
 
         ## add recv column
         if (tnew %>% head(1) %>% collect %>% nrow > 0) {
-            tnew$recv = r
+            tnew$recv = oldrec$recv[i]
             tnew$new = TRUE
         }
 
@@ -158,7 +171,7 @@ compareOldNew = function(year, proj, site, oldSym = 25, newSym = 24) {
                          col=c(2, 1), points=FALSE, text=c("new: ^", "old: v")
                      ),
                      main = sprintf("%d %s %s Hourly Tags; Old vs. New data processing", year, proj, site),
-                     sub = sprintf("Receiver(s): %s", paste(unique(told$recv), collapse=",")),
+                     sub = sprintf("Receiver(s): %s", paste0("SG-", oldrec$recv, collapse=",")),
                      ylab = ylab,
                      xlab = dateLabel
                      )
