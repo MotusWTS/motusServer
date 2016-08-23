@@ -107,7 +107,7 @@ tagview = function(db, dbMeta=db, minRunLen=3, keep=TRUE) {
     ##
     ## - tsStart: maximum start time of any of the ambiguous tags
 
-    if (dbExistsTable(db$con, "tagAmbig") && isTRUE(nrow(dbGetQuery(db$con, "select count(*) from tagAmbig")) > 0)) {
+    if (dbExistsTable(db$con, "tagAmbig") && dbGetQuery(db$con, "select count(*) from tagAmbig") %>% as.numeric > 0) {
         ## join all tag deployment records for the ambiguity
         dbGetQuery(db$con, "CREATE TEMPORARY VIEW _ambigjoin AS SELECT t1.ambigID, t2.tagID, t2.tsStart, t2.fullID FROM tagAmbig AS t1 JOIN tagDeps AS t2 ON t2.tagID IN (t1.motusTagID1, t1.motusTagID2, t1.motusTagID3, t1.motusTagID4, t1.motusTagID5, t1.motusTagID6) ORDER BY t1.ambigID, t2.tsStart;")
 
