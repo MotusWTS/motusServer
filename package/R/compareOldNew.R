@@ -91,17 +91,22 @@ compareOldNew = function(year, proj, site, oldSym = 25, newSym = 24) {
     ## the deployments table multiple times, once for each different
     ## file prefix set by the user via the "shortLabel" field in deployment.txt
 
-    olds = src_sqlite(dbf)
-    oldrec = tbl(olds, "deployments") %>%
-        left_join( tbl(olds, "files"), by="depID") %>%
-        filter(ts >= 1262304000) %>%
-        group_by(recv) %>%
-        summarize(tsLo = min(ts), tsHi = max(ts) + 3600) %>%
-        as.data.frame
-
+    if (file.exists(dbf)) {
+        olds = src_sqlite(dbf)
+        oldrec = tbl(olds, "deployments") %>%
+            left_join( tbl(olds, "files"), by="depID") %>%
+            filter(ts >= 1262304000) %>%
+            group_by(recv) %>%
+            summarize(tsBegin = min(ts), tsEnd = max(ts) + 3600) %>%
+            as.data.frame
+        oldrec$recv = paste0("SG-", oldrec$recv)
+    } else {
+        ## it's a Lotek site
+        oldrec = read.csv(file.path(dirname(dbf), "RECEIVERS.TXT"), as.is=TRUE)
+    }
     allnew = NULL
     for (i in seq(length = nrow(oldrec))) {
-        newf = paste0("/sgm/recv/SG-", oldrec$recv[i], ".motus")
+        newf = paste0("/sgm/recv/", oldrec$recv[i], ".motus")
 
         if (! file.exists(newf)) {
             warning("No new-style database for receiver ", r)
@@ -110,7 +115,7 @@ compareOldNew = function(year, proj, site, oldSym = 25, newSym = 24) {
         ## get the numeric range of timestamps for this year
         ## and truncate to year boundaries
 
-        trange = c(max(ylo, oldrec$tsLo[i]), min(yhi, oldrec$tsHi[i]))
+        trange = c(max(ylo, oldrec$tsBegin[i]), min(yhi, oldrec$tsEnd[i]))
 
         src = src_sqlite(newf)
         mot = getMotusMetaDB()
@@ -171,7 +176,7 @@ compareOldNew = function(year, proj, site, oldSym = 25, newSym = 24) {
                          col=c(2, 1), points=FALSE, text=c("new: ^", "old: v")
                      ),
                      main = sprintf("%d %s %s Hourly Tags; Old vs. New data processing", year, proj, site),
-                     sub = sprintf("Receiver(s): %s", paste0("SG-", oldrec$recv, collapse=",")),
+                     sub = sprintf("Receiver(s): %s", paste0(oldrec$recv, collapse=",")),
                      ylab = ylab,
                      xlab = dateLabel
                      )
