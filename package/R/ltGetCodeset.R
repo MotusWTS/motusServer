@@ -3,7 +3,7 @@
 #' This function returns a dplyr data_frame with the nominal gap
 #' values for all Lotek tag IDs in the specified codeset.
 #'
-#' @param codeSet: character scalar; only "Lotek-3" or "Lotek-4"
+#' @param codeSet: character scalar; only "Lotek3" or "Lotek4"
 #' are permitted so far.
 #'
 #' @return a dplyr data_frame with these columns:
@@ -22,8 +22,8 @@
 #'     locked system memory, from where it can only be accessed by
 #'     users with sudo privileges.  The decrypted version resides in
 #'
-#'     /home/sg/ramfs/Lotek-4.sqlite and
-#'     /home/sg/ramfs/Lotek-3.sqlite
+#'     /home/sg/ramfs/Lotek4.sqlite and
+#'     /home/sg/ramfs/Lotek3.sqlite
 #'
 #'     while the encrypted versions are in /home/sg/lotekdb
 #' 
@@ -33,7 +33,7 @@
 #' 
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-ltGetCodeset = function(codeSet = c("Lotek-4", "Lotek-3")) {
+ltGetCodeset = function(codeSet = c("Lotek4", "Lotek3")) {
     codeSet = match.arg(codeSet)
 
     fn = sprintf("/home/sg/ramfs/%s.sqlite", codeSet)

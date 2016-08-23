@@ -136,10 +136,6 @@ getMotusMetaDB = function() {
     ## grab tags
     t = motusSearchTags()
 
-    ## drop "-" from codeSet names; i.e. Lotek-4 -> Lotek4
-    ## we should fix this upstream.
-    t$codeSet = sub("-", "", t$codeSet, fixed=TRUE)
-
     ## clean up tag registrations (only runs on server with access to full Lotek codeset)
     ## creates tables "tags" and "events" from the first parameter
 

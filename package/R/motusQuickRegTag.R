@@ -90,7 +90,7 @@ motusQuickRegTag = function(projectID,
 
     type = "ID"
 
-    codeSet = paste0("Lotek-", codeSet)
+    codeSet = paste0("Lotek", codeSet)
 
     offsetFreq = 4
 
