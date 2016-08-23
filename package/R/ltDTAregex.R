@@ -1,6 +1,6 @@
 #' A PCRE-style regular expression for matching interesting parts of
 #' Lotek .DTA files.  Note that we use the 'possessive' version of
-#' non-zero repeats.  i.e. '++' instead of '+', as this prevents huge
+#' non-zero repeats  i.e. '++' instead of '+', as this prevents huge
 #' consumption of stack space for possible backtracking, which we never
 #' need here.
 
@@ -8,8 +8,13 @@
 ltDTAregex = 
 "(?sx)
 
-# We're looking for an active scan table:
+# We're looking for model information at top of file:
 
+(?<model>SRX[^ \\n]++)[^\\n]+Information:\\n
+
+# or an active scan table:
+
+|
 (?:Active[[:blank:]]++scan_table:\\n
 CHANNEL[[:blank:]]++FREQUENCY[[:blank:]]++STATUS[[:blank:]]++TYPE\\n
 (?<active_scan>(?:[^\\n]++\\n)++)  ## capture lines until a blank line

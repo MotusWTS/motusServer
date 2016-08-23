@@ -55,10 +55,6 @@ readDTA = function(filename="", lines=NULL) {
   gain.tab = numeric()
   freq.tab = numeric()
 
-
-  ## receiver model is first word in file
-  model = strsplit(lines[1], " ")[[1]][1]
-
   ## paste text into one big string
   lines = paste(lines, collapse="\n")
 
@@ -97,6 +93,10 @@ readDTA = function(filename="", lines=NULL) {
     close(con)
     
     switch(piece.name,
+           model = {
+               model = tab[1, 1]
+           },
+
            serial_no = {
              serno = tab[1,1]
            },
