@@ -135,7 +135,7 @@ compareOldNew = function(year, proj, site, oldSym = 25, newSym = 24) {
         tnew = tagview(src, mot)
 
         ## look at only the first detection of each tag per hour
-        tnew = tnew %>% filter_(~is.na(freqsd) | freqsd < 0.1) %>% mutate(hourBin = round(ts/3600-0.5, 0)) %>% group_by(ant, fullID, hourBin) %>%
+        tnew = tnew %>% filter_(~(is.na(freqsd) | freqsd < 0.1) & len >= 3) %>% mutate(hourBin = round(ts/3600-0.5, 0)) %>% group_by(ant, fullID, hourBin) %>%
             filter_ (~ts >= trange[1] & ts <= trange[2]) %>%
             summarize(ts=min(ts), n=length(ts), freq=avg(freq), sig=max(sig)) %>%
             collect %>% as.data.frame
