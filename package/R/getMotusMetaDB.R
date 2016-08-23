@@ -143,7 +143,7 @@ getMotusMetaDB = function() {
     ## clean up tag registrations (only runs on server with access to full Lotek codeset)
     ## creates tables "tags" and "events" from the first parameter
 
-    cleanTagRegistrations(t, s)
+    t = cleanTagRegistrations(t, s)
 
     ## grab projects
     p =  motusListProjects()
