@@ -180,7 +180,8 @@ readDTA = function(filename="", lines=NULL) {
   ## sort in order by time; record with and without GPS fixes are segregated
   ## in the DTA file, even though their timestamps might be interleaved.
   ## (why are GPS fixes intermittent? weird...)
-  
-  tags = tags[order(tags$ts),]
+
+  if (! is.null(tags))
+     tags = tags[order(tags$ts),]
   return (list(tags=tags, recv = paste(model, serno, sep="-"), pieces=pieces, piece.lines.before=piece.lines.before))
 }
