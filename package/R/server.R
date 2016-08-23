@@ -25,9 +25,9 @@
 #'     linked to from that directory.  Handlers are permitted to
 #'     copy, move, or delete files, but must not modify them in-place.
 #'
-#' @param logFun a function to which formatted log messages are
-#'     passed.  Defaults to a function which prints the messages to
-#'     stderr.
+#' @param logFun a function to which log messages are
+#'     passed.  Defaults to a function which uses cat()s its arguments to
+#'     stderr.  \code{logFun} should have the parameter list "..."
 #'
 #' @return This function does not return.
 #'
@@ -49,7 +49,7 @@ server = function(watchDir, handlers, logFun) {
     if (! file.exists(watchDir) || ! file.info(watchDir)$isdir)
         stop("watchDir must be a directory")
     if (missing(logFun)) {
-        logFun = function(..) cat(..., file=stderr())
+        logFun = function(..) cat(..., "\n", file=stderr())
     } else if (! is.function(logFun) || length(formals(logFun)) != 1) {
         stop("logFun must be a function accepting a single argument")
     }
@@ -78,37 +78,41 @@ server = function(watchDir, handlers, logFun) {
 
     queue = c(queue, f)
 
-
     repeat {
         ## process the queue; it will typically have only 1 element
         while (length(queue) > 0) {
+            logFun("Handling ", queue[1])
             p = file.path(watchDir, queue[1])
             info = file.info(p)
-            weOwn = is.na(Sys.readlink(p)) ## NA if not a symlink, else the link target
 
-            ## create a temporary directory for each handler
-            tmpd = tempfile(rep("", length(handlers)))
-            for (d in tmpd)
-                dir.create(d, mode="0750")
+            for (h in handlers) {
+                ## create a temporary directory for each handler
+                tmpd = tempfile()
+                dir.create(tmpd, mode="0750")
 
-            ## copy the file or dir via hardlinks
-
-            for (i in seq(along=handlers)) {
-                system(paste("cp -l -r", p, tmpd[i]))
+                ## copy the file or dir via hardlinks
+                system(paste("cp -l -r", p, tmpd))
+                logFun("Using tempdir ", tmpd)
 
                 ## do stuff
-                if (handlers[[i]] (tmpd[i])) {
-                    ## remove the temporary directory
-                    unlink(tmpd[i], recursive=TRUE)
-                }
+                tryCatch( {
+                    if (isTRUE(h(tmpd))) {
+                        ## remove the temporary directory
+                        unlink(tmpd, recursive=TRUE)
+                        logFun("Deleting tempdir ", tmpd)
+                    }
+                }, error = function(e) {
+                    logFun("Exception while running handler")
+                })
             }
 
             ## drop file/dir from queue
             queue = queue[-1]
 
-            ## if we own the file/dir, remove it from the filesystem
-            if (weOwn)
-                unlink(p, recursive=TRUE)
+            ## delete the original item; if it was a symlink, the target
+            ## is not deleted
+            unlink(p, recursive=TRUE)
+            logFun("Deleted original ", p)
         }
         ## wait for a new file/dir
         queue = readLines(evtCon, n=1)
