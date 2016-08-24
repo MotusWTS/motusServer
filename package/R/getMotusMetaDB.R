@@ -113,8 +113,8 @@
 
 getMotusMetaDB = function() {
     ## location we store a cached copy of the motus tag DB
-    cachedDB = "/sgm/cached_motus_meta_db.sqlite"
-    oldCachedDB = "/sgm/cached_motus_meta_db_old.sqlite"
+    cachedDB = "/sgm/cache/motus_meta_db.sqlite"
+    oldCachedDB = "/sgm/cache/motus_meta_db_old.sqlite"
 
     ## if either the cached copy doesn't exist, or it is more than 1 day old,
     ## grab it again
