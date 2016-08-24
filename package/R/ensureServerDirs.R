@@ -1,8 +1,8 @@
 #' Ensure existence of a hierarchy of folders for running a motus
 #' data processing server.
 #'
-#' This will create, if necessary, a set of folders under the root
-#' which is \code{/sgm}:
+#' This will create, if necessary, a set of folders under the root folder
+#' \code{/sgm}
 #'
 #' Folder hierarchy:
 #'
