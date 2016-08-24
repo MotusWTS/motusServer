@@ -1,29 +1,26 @@
 #' wait for new data files to arrive, then process them
 #'
-#' This function watches a directory and when a file or folder is
-#' written to it, carries out the specified action.  Files or
-#' folders already in the watched directory are processed before
-#' any new ones, on the assumption that a previous call to this
+#' This function watches the /sgm/incoming directory and when a file
+#' or folder is written to it, carries out the specified action.
+#' Files or folders already in the watched directory are processed
+#' before any new ones, on the assumption that a previous call to this
 #' function was interrupted.
 #'
 #' The function does not return; it is meant for use in an R script
 #' run in the background.
 #'
-#' @param watchDir path to directory to watch; each time a new file or
-#'     directory is copied to this directory, it is processed by one
-#'     of the handlers below.
-#'
 #' @param handlers list of function to be called when a new file or
-#'     folder is added to \code{watchDir}.  Each function must accept
-#'     a single chararacter parameter, which will be a path to a
-#'     temporary directory containing the new file(s).  Each function
-#'     must return TRUE if all files were processed successfully, or
-#'     FALSE otherwise.  Returning FALSE will prevent the temporary
-#'     directory and its files from being deleted.  Handlers are called
-#'     once for each file or folder already in the watch directory,
-#'     and then once for each file or folder created in, moved into, or
-#'     linked to from that directory.  Handlers are permitted to
-#'     copy, move, or delete files, but must not modify them in-place.
+#'     folder is added to \code{/sgm/incoming}.  Each function must
+#'     accept a single chararacter parameter, which will be a path to
+#'     a temporary directory containing the new file(s).  Each
+#'     function must return TRUE if all files were processed
+#'     successfully, or FALSE otherwise.  Returning FALSE will prevent
+#'     the temporary directory and its files from being deleted.
+#'     Handlers are called once for each file or folder already in the
+#'     watch directory, and then once for each file or folder created
+#'     in, moved into, or linked to from that directory.  Handlers are
+#'     permitted to copy, move, or delete files, but must not modify
+#'     them in-place.
 #'
 #' @param logFun a function to which log messages are
 #'     passed.  Defaults to a function which uses cat()s its arguments to
@@ -32,22 +29,23 @@
 #' @return This function does not return.
 #'
 #' @note If a directory is added by creating a symlink to it in
-#'     \code{watchDir}, ownership of files in the directory remains
-#'     with the files' creator, and this function will not delete
-#'     them.  Otherwise, ownership is assumed by this function, and
-#'     after all handlers have been called, files are deleted.  Each
-#'     handler is passed a directory populated with hardlinks to the
-#'     original files.  That way, the handler can move or delete the
-#'     files without consequence to either other handlers or the
+#'     \code{/sgm/incoming}, ownership of files in the directory
+#'     remains with the files' creator, and this function will not
+#'     delete them.  Otherwise, ownership is assumed by this function,
+#'     and after all handlers have been called, files are deleted.
+#'     Each handler is passed a directory populated with hardlinks to
+#'     the original files.  That way, the handler can move or delete
+#'     the files without consequence to either other handlers or the
 #'     caller.
 #'
 #' @export
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-server = function(watchDir, handlers, logFun) {
-    if (! file.exists(watchDir) || ! file.info(watchDir)$isdir)
-        stop("watchDir must be a directory")
+server = function(handlers, logFun) {
+    ensureServerDirs()
+    watchDir = "/sgm/incoming"
+
     if (missing(logFun)) {
         logFun = function(..) cat(..., "\n", file=stderr())
     } else if (! is.function(logFun) || length(formals(logFun)) != 1) {
