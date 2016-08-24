@@ -66,11 +66,18 @@ ensureServerDirs = function() {
         "tmp"
         )
 
-    any(sapply(
+    rv = any(sapply(
         file.path(root, subdirs),
         dir.create,
         recursive = TRUE,     ## create parent dir if necessary
         mode = "0774",        ## full permissions for owner and group, read-only for others
         showWarnings = FALSE  ## ignore warnings of existing dirs
     ))
+
+    ## create symlinks to package scripts
+
+    instDir = system.file("scripts", package="motus")
+    file.symlink(dir(instDir, full.names=TRUE), file.path(root, "bin", dir(instDir)))
+
+    return(rv)
 }
