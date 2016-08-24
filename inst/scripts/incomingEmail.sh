@@ -2,8 +2,8 @@
 umask 0002
 
 DATE=`date -u +%Y-%m-%dT%H-%M-%S.%N`
-DEST=/home/sg/messages/msg_$DATE
-LOGFILE=/home/sg/log.txt
+DEST=/sgm/emails/msg_$DATE
+LOGFILE=/sgm/logs/email.log.txt
 
 echo Got message $DATE >> $LOGFILE
 
@@ -13,9 +13,10 @@ echo Got message $DATE >> $LOGFILE
 ## run the processing code on it
 OUTFILE=$(tempfile)
 
-/home/sg/bin/processMessage.py $DEST > $OUTFILE 2>&1
+/sgm/bin/processMessage.py $DEST > $OUTFILE 2>&1
 cat $OUTFILE >> $LOGFILE
 
+## send a copy with the same subject line to admin user
 SUBJECT=$(grep -m 1 ^Subject: $DEST)
 cat $OUTFILE | mail -s "$SUBJECT" jbrzusto@fastmail.fm
 rm -f $OUTFILE
