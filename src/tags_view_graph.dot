@@ -1,0 +1,23 @@
+digraph tags_join {
+        title [label="View of Tag Hits\rwith Full Metadata\r\lSolid edge: left join\lDashed edge: join to\rgreatest lower bound", shape=none, fontsize=24];
+        runs [shape=record,label="runs|{<runID>runID|<motusTagID>motusTagID|<ant>ant|...}"];
+        batches [shape=record,label="batches|{<batchID>batchID|<motusDeviceID>motusDeviceID|...}"];
+        hits [shape=record,label="hits|{<batchID>batchID|<runID>runID|<ts>ts|...}"];
+        tags [shape=record,label="tags|{<tagID>tagID|mfgID|model|...}"];
+        projs [shape=record,label="projs|{<id>id|project Name|...}"];
+        tagDeps [shape=record,label="tagDeps|{<deployID> deployID|<tagID>tagID|<projectID>projectID|<tsStart>tsStart|<tsEnd> tsEnd|<speciesID> speciesID|<fullID>fullID|...}"];
+        species [shape=record,label="species|{<id>id|commonName|...}"];
+        recvDeps [shape=record,label="recvDeps|{<deployID>deployID | <deviceID> deviceID|<tsStart> tsStart|<tsEnd> tsEnd|...}"];
+        antDeps [shape=record,label="antDeps|{<deployID>deployID |<port> port|<antType> antType|<antOrient> antOrient|...}"];
+        hits:runID            -> runs:runID;
+        hits:batchID          -> batches:batchID;
+        runs:ant              -> antDeps:port;
+        runs:motusTagID       -> tagDeps:tagID;
+        runs:motusTagID       -> tags:tagID;
+        hits:ts               -> tagDeps:tsStart[style="dashed"];
+        hits:ts               -> recvDeps:tsStart[style="dashed"];
+        batches:motusDeviceID -> recvDeps:deviceID;
+        recvDeps:deployID     -> antDeps:deployID;
+        tagDeps:speciesID     -> species:id;
+        tagDeps:projectID     -> projs:id;
+}
