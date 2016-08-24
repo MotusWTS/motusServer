@@ -43,7 +43,7 @@
 #'    want erased on system reboot
 #' }
 #'
-#' @return returns TRUE if the directories had to be created.
+#' @return returns TRUE if any directories had to be created, FALSE otherwise.
 #'
 #' @export
 #'
@@ -65,9 +65,12 @@ ensureServerDirs = function() {
         "tags",
         "tmp"
         )
-    rv = FALSE
-    for (d in file.path(root, subdirs))
-        if (! dir.exists(d))
-            rv = rv || dir.create(d, recursive=TRUE, mode="0774")
-    return(rv)
+
+    any(sapply(
+        file.path(root, subdirs),
+        dir.create,
+        recursive = TRUE,     ## create parent dir if necessary
+        mode = "0774",        ## full permissions for owner and group, read-only for others
+        showWarnings = FALSE  ## ignore warnings of existing dirs
+    ))
 }
