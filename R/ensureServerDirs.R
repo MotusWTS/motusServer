@@ -55,6 +55,7 @@ ensureServerDirs = function() {
     subdirs = c(
         "bin",
         "cache",
+        "emails",
         "incoming",
         "logs",
         "motr",

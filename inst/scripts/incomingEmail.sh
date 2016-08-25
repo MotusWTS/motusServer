@@ -3,7 +3,7 @@ umask 0002
 
 DATE=`date -u +%Y-%m-%dT%H-%M-%S.%N`
 DEST=/sgm/emails/msg_$DATE
-LOGFILE=/sgm/logs/email.log.txt
+LOGFILE=/sgm/logs/emails.log.txt
 
 echo Got message $DATE >> $LOGFILE
 
