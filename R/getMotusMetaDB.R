@@ -150,7 +150,7 @@ getMotusMetaDB = function() {
     dbWriteTable(s$con, "projs", p, overwrite=TRUE)
 
     ## add a fullID label for each tagDep
-    t$fullID = sprintf("%s#%s:%.1f@%g", p$label[match(t$projectID, p$id)], t$mfgID, t$period, t$nomFreq)
+    t$fullID = sprintf("%s#%s:%g@%g", p$label[match(t$projectID, p$id)], t$mfgID, t$period, t$nomFreq)
 
     ## write just the deployment portion of the records to tagDeps
     dbWriteTable(s$con, "tagDeps", t[, c(1:2, match("deployID", names(t)): ncol(t))], overwrite=TRUE)
