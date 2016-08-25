@@ -183,7 +183,7 @@ getMotusMetaDB = function() {
     }
     recv = recv %>% as.data.frame
     ## workaround until upstream changes format of serial numbers for Lotek receivers
-    recv$serno = sub("(SRX600|SRX800|SRX-DL)", "Lotek", perl=TRUE, t$serno)
+    recv$serno = sub("(SRX600|SRX800|SRX-DL)", "Lotek", perl=TRUE, recv$serno)
     dbWriteTable(s$con, "recvDeps", recv, overwrite=TRUE)
     dbWriteTable(s$con, "antDeps", ant %>% as.data.frame, overwrite=TRUE)
 
