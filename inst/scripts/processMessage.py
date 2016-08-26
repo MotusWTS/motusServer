@@ -75,6 +75,6 @@ while not known:
 
 ## NO 2016-08-12:  Pause automatic incoming processing until we've got it working in tandem            
 if known:
-    if not subprocess.call(["/SG/code/process_incoming_files.R", "."], shell=False) and not subprocess.call(["/SG/code/motusIncomingFiles.R", "."], shell=False):
+    if not subprocess.call(["/sgm/bin/processIncomingFiles.R", "."], shell=False) and not subprocess.call(["/SG/code/motusIncomingFiles.R", "."], shell=False):
         os.chdir("..")
         shutil.rmtree(td)
