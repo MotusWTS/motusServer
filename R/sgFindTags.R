@@ -39,7 +39,7 @@
 
 sgFindTags = function(src, tagDB, resume=TRUE, par = sgDefaultFindTagsParams, mbn = NULL) {
 
-    cmd = "/home/john/proj/find_tags/find_tags_motus"
+    cmd = "LD_LIBRARY_PATH=/usr/local/lib/boost_1.60 /home/john/proj/find_tags/find_tags_motus"
     if (is.list(par))
         pars = paste0("--", names(par), '=', as.character(par), collapse=" ")
     else
