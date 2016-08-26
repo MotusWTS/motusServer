@@ -30,7 +30,11 @@
 #' The true number of random bits will be somewhat smaller, due
 #' to removal of non-alphnumeric characters '/' and '+'.
 #'
-#' @return a character scalar giving the token, including its preamble.
+#' @return a list with these items:
+#' \itemize{
+#' \item token character scalar giving the token, including its preamble.
+#' \item expiry expiry date, as a timestamp
+#' }
 #' 
 #' @export
 #'
@@ -46,15 +50,16 @@ getUploadToken = function(user, email, lifeSpan = 14, numBits = 144) {
 
     now = as.numeric(Sys.time())
     
-    token = mtsql("select token from upload_tokens where username='%s' and email='%s' and expiry - %f >= %f order by expiry desc",
+    old = mtsql("select token, expiry from upload_tokens where username='%s' and email='%s' and expiry - %f >= %f order by expiry desc limit 1",
                   user,
                   email,
                   now,
                   lifeSpan / 2 * 24 * 3600
                   )
 
-    if (nrow(token) > 0) {
-        token = token$token[1]
+    if (nrow(old) == 1) {
+        token = old$token
+        expiry = old$expiry
     } else {
            
         ## delete expired tokens
@@ -78,5 +83,5 @@ getUploadToken = function(user, email, lifeSpan = 14, numBits = 144) {
               token,
               expiry)
     }    
-    return(paste0(MOTUS_UPLOAD_TOKEN_PREFIX, token))
+    return(list(token = paste0(MOTUS_UPLOAD_TOKEN_PREFIX, token), expiry=structure(expiry, class=c("POSIXt", "POSIXct"))))
 }

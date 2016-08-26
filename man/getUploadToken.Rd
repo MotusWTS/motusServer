@@ -18,7 +18,11 @@ The true number of random bits will be somewhat smaller, due
 to removal of non-alphnumeric characters '/' and '+'.}
 }
 \value{
-a character scalar giving the token, including its preamble.
+a list with these items:
+\itemize{
+\item token character scalar giving the token, including its preamble.
+\item expiry expiry date, as a timestamp
+}
 }
 \description{
 To verify that incoming data are from a legitimate user, and to determine that
