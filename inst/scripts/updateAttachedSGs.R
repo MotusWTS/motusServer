@@ -1,31 +1,31 @@
 #!/usr/bin/Rscript
 
-._(` (
-update_attached_SGs.R [MATCH]
+## ._(` (
+## update_attached_SGs.R [MATCH]
 
-For any remote SG with a live connection to the server, download any
-new/changed files and re-run tag finding and distribution.
-This script can be run from a crontab, but probably shouldn't
-be run too often (hourly is fine) as re-running the tag finder currently
-causes all raw data from a site to be re-run, which is obviously
-massive overkill (the current boot session would be sufficient).
-FIXME: we need checkpointing on the tagfinder, so it can be paused
-and restarted when new data arrive.
+## For any remote SG with a live connection to the server, download any
+## new/changed files and re-run tag finding and distribution.
+## This script can be run from a crontab, but probably shouldn't
+## be run too often (hourly is fine) as re-running the tag finder currently
+## causes all raw data from a site to be re-run, which is obviously
+## massive overkill (the current boot session would be sufficient).
+## FIXME: we need checkpointing on the tagfinder, so it can be paused
+## and restarted when new data arrive.
 
-If MATCH, a regular expression, is specified, only the SGs whose serial number,
-port number matches the regexp is processed.  Otherwise, all attached SGs are
-processed.
+## If MATCH, a regular expression, is specified, only the SGs whose serial number,
+## port number matches the regexp is processed.  Otherwise, all attached SGs are
+## processed.
 
-Call this script as so:
+## Call this script as so:
 
-  update_attached_SGs.R [MATCH]
+##   update_attached_SGs.R [MATCH]
 
 
-._(` )
+## ._(` )
 
 options(error=dump.frames)
 
-LOGFILENAME = "/SG/receivers/logs/online_site_update_log.txt"
+LOGFILENAME = "/sgm/logs/online_site_updates.log.txt"
 logfile = file(LOGFILENAME, "a")
 sink(logfile)
 sink(logfile, type="message")
@@ -36,16 +36,15 @@ library(dplyr)
 library(RSQLite)
 MATCH = commandArgs(TRUE)
 ## get dataframe of attached receivers
-ports = system("/SG/code/sgwho", intern=TRUE) %>%
-    grep(pattern=",", value=TRUE) %>%
+ports = system("/sgm/bin/sgwho.R", intern=TRUE) %>%
+    grep(pattern=",4[0-9]{4},", value=TRUE, perl=TRUE) %>%
         textConnection %>%
             read.csv(as.is=TRUE, header=FALSE)
 
 if (nrow(ports) == 0)
     stop("No receivers connected")
 
-names(ports) = c("serno", "port")
-ports$serno = paste("SG-", ports$serno, sep="")
+names(ports) = c("serno", "port", "projSite")
 
 if (length(MATCH) > 0) {
     ports = ports[grepl(MATCH, paste(ports$serno, ports$port), perl=TRUE),]
@@ -112,6 +111,3 @@ for (i in 1:nrow(ports)) {
     system(cmd)
 
 }
-
-
-
