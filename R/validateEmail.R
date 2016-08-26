@@ -2,8 +2,8 @@
 #' the user who sent it.
 #'
 #' The body and text of the email is searched for a valid token (see
-#' \link{\code{getUploadToken}}) and if found, a character vector
-#' giving username and email address are returned.
+#' \link{\code{getUploadToken}}) and if found, the username and email
+#' address are returned.
 #'
 #' @param msg the text of the email.  This is the results of running
 #'     the linux utility \code{munpack} on the message.
