@@ -4,7 +4,8 @@
 \alias{motusLoadSecrets}
 \title{load secrets for motus web API}
 \usage{
-motusLoadSecrets(f, quiet = FALSE)
+motusLoadSecrets(f = system.file("motusSecrets.json", package = "motus"),
+  quiet = FALSE)
 }
 \arguments{
 \item{f}{filename: path to json-formatted file of secrets,
@@ -14,7 +15,9 @@ with these items:
   \item user: username at motus-wts.org
   \item passwd: password at motus-wts.org
   \item serno: serial number of a sensorgnome
-}}
+}
+This defaults to the file \code{motusSecrets.json} installed
+with this package.}
 
 \item{quiet}{if TRUE, return silently on failure; otherwise,
 report errors.}
