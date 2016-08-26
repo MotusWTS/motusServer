@@ -210,3 +210,12 @@ CREATE TABLE IF NOT EXISTS history (
 
 CREATE INDEX history_serno on history(serno);----
 CREATE INDEX history_ts on history(ts);----
+
+-- Table upload_tokens records tokens granted to users for data transfers
+
+CREATE TABLE IF NOT EXISTS upload_tokens (
+       token CHAR(32) PRIMARY KEY UNIQUE NOT NULL, -- token; looks like "lofHipkeXXX" where XXX is 24 random alphanum chars
+       username CHAR(64),                          -- name of user on sensorgnome.org
+       email CHAR(128),                            -- email address of user on sensorgnome.org
+       expiry FLOAT(53)                            -- unix timestamp when this token expires
+);----

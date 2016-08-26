@@ -33,3 +33,7 @@ MOTUS_FLOAT_FIELDS = c("tsStart", "tsEnd", "regStart", "regEnd",
 
 MOTUS_FLOAT_REGEXP = sprintf("((%s):-?[0-9]+)([,}])",
                              paste(sprintf("\"%s\"", MOTUS_FLOAT_FIELDS), collapse="|"))
+
+## a pre-amble that gets pasted before upload tokens so they can easily be found in emails
+
+MOTUS_UPLOAD_TOKEN_PREFIX = "3cQejZ7j"
