@@ -14,6 +14,9 @@
 #' \item /sgm/cache - cached copy of motus metadata
 #'     e.g.:  motus_meta_db.sqlite
 #'
+#' \item /sgm/emails - emails, compressed using lzip
+#'     e.g.:  msg_2016-08-25T14-14-11.810348517.lz
+#'
 #' \item /sgm/incoming - where new files or directories are linked from or copied to so that
 #'    they get processed; the server() function from the motus R package watches
 #'    this folder for new entries, then processes them
@@ -35,6 +38,8 @@
 #'
 #' \item /sgm/refs - symlinks by old SG hierarchy to receiver(s) used at a given Year, Project, Site
 #'     e.g.:  2014_adamsmith_block_island1 -> /sgm/recv/SG-4001BBBK2230.motus
+#'
+#' \item /sgm/spam - emails which are not recognized as valid
 #'
 #' \item /sgm/tags - one .motus sqlite database per tag project, by motus project code
 #'     e.g.:  project_47_tags.motus
@@ -63,6 +68,7 @@ ensureServerDirs = function() {
         "pub",
         "recv",
         "refs",
+        "spam",
         "tags",
         "tmp"
         )
