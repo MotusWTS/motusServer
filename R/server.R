@@ -9,18 +9,44 @@
 #' The function does not return; it is meant for use in an R script
 #' run in the background.
 #'
-#' @param handlers list of function to be called when a new file or
-#'     folder is added to \code{/sgm/incoming}.  Each function must
-#'     accept a single chararacter parameter, which will be a path to
-#'     a temporary directory containing the new file(s).  Each
-#'     function must return TRUE if all files were processed
-#'     successfully, or FALSE otherwise.  Returning FALSE will prevent
-#'     the temporary directory and its files from being deleted.
-#'     Handlers are called once for each file or folder already in the
-#'     watch directory, and then once for each file or folder created
-#'     in, moved into, or linked to from that directory.  Handlers are
-#'     permitted to copy, move, or delete files, but must not modify
-#'     them in-place.
+#' @param handlers list of handlers to be called when a new file or
+#'     folder is added to \code{/sgm/incoming}.  Each handler is a
+#'     function that takes these paramters:
+#'
+#' \itemize{
+#'
+#' \item path: the full path to the new file or directory
+#'
+#' \item isdir: boolean; TRUE iff the path is a directory
+#'
+#' \item test: boolean; TRUE on the first call of the function for a
+#'  given new file or folder; FALSE on the second call
+#'
+#' \item val: object; NULL on the first call; the return value
+#' of the first call on the second call.  This permits passing
+#' information between the first and second call of the handler.
+#'
+#' }
+#'
+#' The handler function is called first with \code{test=TRUE}.  Further
+#' action depends on whether the return value \code{V} is NULL:
+#' \itemize{
+#' \item \code{V: NULL}: do not call the handler again for this file/dir.
+#' \item \code{V: not NULL}: call the handler again with \code{test=FALSE, val=V}
+#'
+#' If the second call to a handler returns NULL, no further handlers
+#' are run for that object.
+#'
+#' Between the first and second call to a handler (for a given file or
+#' folder), a recursive hardlink shadow copy of the incoming file or
+#' folder is created, so that the second call can dispose of the files
+#' as needed without preventing subsequent handlers from using them
+#' too.
+#'
+#' Handlers are called for each file or folder already in the watch
+#' directory, and then for each file or folder created in, moved
+#' into, or linked to from that directory.  Handlers are permitted to
+#' copy, move, or delete files, but must not modify them in-place.
 #'
 #' @param logFun a function to which log messages are
 #'     passed.  Defaults to a function which uses cat()s its arguments to
@@ -84,24 +110,29 @@ server = function(handlers, logFun) {
             info = file.info(p)
 
             for (h in handlers) {
-                ## create a temporary directory for each handler
-                tmpd = tempfile()
-                dir.create(tmpd, mode="0750")
+                if (! is.function(h) || ! sort(names(formals(h))) == c("isdir", "path", "test", "val"))
+                    stop("Handler must be a function with formals 'path', 'isdir', 'test', and 'val'")
+                val = h(path=p, isdir=info$isdir, test=TRUE, val=NULL)
+                if (! is.null(vall)) {
+                    ## create a temporary directory or file for each handler
+                    tmpd = tempfile(tmpdir="/sgm/tmp")
+                    if (info$isdir)
+                        dir.create(tmpd, mode="0750")
 
-                ## copy the file or dir via hardlinks
-                system(paste("cp -l -r", p, tmpd))
-                logFun("Using tempdir ", tmpd)
+                    ## copy the file or dir via hardlinks
+                    safeSys("/bin/cp", "-l", "-r", p, tmpd)
+                    logFun("Using copy ", tmpd)
 
-                ## do stuff
-                tryCatch( {
-                    if (isTRUE(h(tmpd))) {
-                        ## remove the temporary directory
+                    ## do stuff
+                    tryCatch(
+                    {
+                        h(path=p, isdir=info$isdir, test=FALSE, val=val)
                         unlink(tmpd, recursive=TRUE)
-                        logFun("Deleting tempdir ", tmpd)
-                    }
-                }, error = function(e) {
-                    logFun("Exception while running handler")
-                })
+                        logFun("Deleting copy ", tmpd)
+                    }, error = function(e) {
+                        logFun("Exception while running handler")
+                    })
+                }
             }
 
             ## drop file/dir from queue
