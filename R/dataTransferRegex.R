@@ -29,13 +29,15 @@ dataTransferRegex =
 #or
 #
 # A link from dropbox
-#
-# FIXME: unsupported for now
+# e.g. https://www.dropbox.com/sh/3vyywr47arjkzin/AABRC9v82kdJ-2Eabfe-vfGa?dl=0
+
+|
+((?<dropbox>https://www.dropbox.com/[^[:space:]]++)[[:space:]])
 
 #or
 #
 # An FTP URL:
 |
-((?<FTP>ftp://[^[:space:]])[[:space:]])
+((?<FTP>ftp://[^[:space:]]++)[[:space:]])
 "
 
