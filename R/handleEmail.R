@@ -8,15 +8,21 @@
 #'
 #' @param test: boolean; TRUE on the first call to this function
 #'
-#' @param val: object; on first call, NULL; on second call, path to
-#'     temporary directory where email was unpacked into multiple text
+#' @param val: object; on first call, NULL; on second call, a list
+#' with these items:
+#' \itemize{
+#' \item user: username
+#' \item email: user email
+#' \item msg: text of message
+#' \item dir: temporary directory where email was unpacked into multiple text
 #'     and attachment parts.
+#' }
 #'
 #' @return
 #' When \code{test} is TRUE,
 #' \enumerate{
 #'
-#'    \item if the email includes a valid token, saves a compresseded
+#'    \item if the email includes a valid token, saves a compressed
 #'      copy in \code{/sgm/emails} and returns a list with username,
 #'      email, and path to unpacked file components.  See
 #'      \link{\code{getUploadToken}} for details on tokens.
@@ -81,29 +87,47 @@ handleEmail = function(path, isdir, test, val) {
         parts = dir(tmpdir, full.names=TRUE)
         textpart = match("part1", basename(parts))
 
-        ## paste the subject line and first text part of the message (if any)
-
-        msg = paste0(subj, "\n", readChar(parts[textpart], n = file.info(parts[textpart])$size))
-
-        ## validate
-        ok = TRUE
-        valid = validateEmail(msg)
-
-        ## for now, be strict about token expiry
-
-        if (is.null(valid) || valid$expired) {
-            valid = NULL
+        if (is.na(textpart)) {
+            ## nothing unpacked, so just use original message
+            msg = readChar(path, file.info(path)$size)
         } else {
-            ## figure out what kind of email this is
-            kind = splitToDF(dataTransferRegex, msg, guess = FALSE)
-
-            ## TODO: complete this; return value is a dataframe with one or more rows
-            ## and columns for each of the possible link types.
-
+            ## paste the subject line and first text part of the message (if any)
+            msg = paste0(subj, "\n", readChar(parts[textpart], n = file.info(parts[textpart])$size))
         }
 
-        ## archive compressed message in either emails or spam directory
-        system(sprintf("cat %s \ /usr/bin/lzip -o %s", path, file.path("/sgm", if (is.null(valid)) "spam" else "emails", paste0(basename(path), ".lz"))))
+        ## validate
+        ue = validateEmail(msg)
 
-        return (valid)
+        ## for now, be strict about token expiry
+        valid = ! (is.null(ue) || ue$expired)
+
+        ## archive compressed message in either emails or spam directory
+        system(sprintf("cat %s \ /usr/bin/lzip -o %s", path,
+                       file.path("/sgm",
+                                 if (valid) "spam" else "emails",
+                                 paste0(basename(path), ".lz"))))
+        return (
+            if (valid) {
+                list(
+                    user =ue$user,
+                    email=ue$email,
+                    msg = msg,
+                    dir = tmpdir
+                )
+            } else {
+                NULL
+            })
+    } else {
+        ## parse out all links
+        kind = regexPieces(dataTransferRegex, val$msg)
+        ## call handlers for each link, downloading it to
+        ## the same directory as message parts
+        for (i in seq(along=kind))
+            get(paste0("download.", names(kind)[i]))(val$dir, kinds[i])
+
+        ## move the temporary directory to the incoming folder
+        ## so the server function sees it
+        file.rename(val$dir, file.path("/sgm/incoming", basename(val$dir)))
+        return (NULL)
+    }
 }
