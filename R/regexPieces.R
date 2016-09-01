@@ -1,13 +1,13 @@
 #' Extract named items from strings according to a regular expression.
 #'
 #' FIXME (eventually): when the stringi package regex code can handle
-#' named subexpressions, use stri_extract_all_regex(...,
-#' simplify=TRUE)
+#' named subexpressions, use \code{stri_extract_all_regex(...,
+#' simplify=TRUE)}
 #'
-#' @param rx: Perl-type regular expression with named fields, as
+#' @param rx Perl-type regular expression with named fields, as
 #'     described in \code{?regex}
 #'
-#' @param s: character vector.
+#' @param s character vector.
 #'
 #' @return a list of character vectors.  Each vector corresponds to an
 #'     item of \code{s}.  The vector items are substrings of the input
@@ -23,7 +23,7 @@
 #' rx = "(?<ayes>a+)|(?<bees>b+)|(?<sees>c+)"
 #' s = c("anybbody", "something", "aebbfcbggaa")
 #' regexPieces(rx, s)
-#' ## gives:
+#' ## returns:
 #' ##  [[1]]
 #' ##  ayes bees
 #' ##   "a" "bb"
@@ -43,15 +43,16 @@ regexPieces = function(rx, s) {
 
     lapply(seq(along=s),
            function(i) {
-               ## transpose to extract in order of appearance
+               ## transpose to extract in order of appearance,
+               ## rather than in order by capture group
                a = t(attr(v[[i]], "capture.start"))
                b = t(attr(v[[i]], "capture.length"))
                nz = b > 0
                structure(
                    stri_sub(
                        s[i],
-                       from   = c(a)[nz],
-                       length = c(b)[nz]
+                       from   = a[nz],
+                       length = b[nz]
                    ),
                    names = rownames(b)[row(b)[nz]]
                )
