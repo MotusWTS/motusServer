@@ -1,6 +1,6 @@
 #' handler for incoming email
 #'
-#' called by \link{\code{server()}} for emails.
+#' called by \code{\link{server}} for emails.
 #'
 #' @param path the full path to the new file or directory
 #'
@@ -34,7 +34,7 @@
 #'       \item msg text portion of message, with attribute "tmpdir" giving
 #'       the directory in which message components have been unpacked.
 #'    }
-#'    See \link{\code{getUploadToken}} for details on tokens.
+#'    See \code{\link{getUploadToken}} for details on tokens.
 #'
 #'    \item otherwise, saves a compressed copy in \code{/sgm/spam} and
 #'      returns NULL }
@@ -74,7 +74,7 @@
 #'
 #' }
 #'
-#' @seealso \link{\code{server}}
+#' @seealso \code{\link{server}}
 #'
 #' @export
 #'

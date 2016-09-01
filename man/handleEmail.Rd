@@ -39,7 +39,7 @@ When \code{test} is TRUE,
       \item msg text portion of message, with attribute "tmpdir" giving
       the directory in which message components have been unpacked.
    }
-   See \link{\code{getUploadToken}} for details on tokens.
+   See \code{\link{getUploadToken}} for details on tokens.
 
    \item otherwise, saves a compressed copy in \code{/sgm/spam} and
      returns NULL }
@@ -80,12 +80,12 @@ in which they are attempted:
 }
 }
 \description{
-called by \link{\code{server()}} for emails.
+called by \code{\link{server}} for emails.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
 \seealso{
-\link{\code{server}}
+\code{\link{server}}
 }
 
