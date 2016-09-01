@@ -37,3 +37,11 @@ MOTUS_FLOAT_REGEXP = sprintf("((%s):-?[0-9]+)([,}])",
 ## a pre-amble that gets pasted before upload tokens so they can easily be found in emails
 
 MOTUS_UPLOAD_TOKEN_PREFIX = "3cQejZ7j"
+
+## the regular expression for recognizing an authorization token in an email
+
+MOTUS_UPLOAD_TOKEN_REGEXP = paste0(MOTUS_UPLOAD_TOKEN_PREFIX, "(?<token>[A-Za-z0-9]{10,100})")
+
+## when an email is stored, the filename has this format:
+
+MOTUS_EMAIL_FILE_REGEXP = "msg_[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}\\.[0-9]*"

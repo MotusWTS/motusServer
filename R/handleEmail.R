@@ -1,14 +1,14 @@
 #' handler for incoming email
 #'
-#' called by \link{\code{server}} for emails.
+#' called by \link{\code{server()}} for emails.
 #'
-#' @param path: the full path to the new file or directory
+#' @param path the full path to the new file or directory
 #'
-#' @param isdir: boolean; TRUE iff the path is a directory
+#' @param isdir boolean; TRUE iff the path is a directory
 #'
-#' @param test: boolean; TRUE on the first call to this function
+#' @param test boolean; TRUE on the first call to this function
 #'
-#' @param val: object; on first call, NULL; on second call, a list
+#' @param val object; on first call, NULL; on second call, a list
 #' with these items:
 #' \itemize{
 #' \item user: username
@@ -20,12 +20,21 @@
 #'
 #' @return
 #' When \code{test} is TRUE,
-#' \enumerate{
+#' \itemize{
+#'
+#'    \item if \code{isdir} is TRUE, return NULL, since the item is not
+#'          an email message.
 #'
 #'    \item if the email includes a valid token, saves a compressed
-#'      copy in \code{/sgm/emails} and returns a list with username,
-#'      email, and path to unpacked file components.  See
-#'      \link{\code{getUploadToken}} for details on tokens.
+#'      copy in \code{/sgm/emails} and returns a list with these items:
+#'
+#'    \itemize{
+#'       \item user user name
+#'       \item email user email address
+#'       \item msg text portion of message, with attribute "tmpdir" giving
+#'       the directory in which message components have been unpacked.
+#'    }
+#'    See \link{\code{getUploadToken}} for details on tokens.
 #'
 #'    \item otherwise, saves a compressed copy in \code{/sgm/spam} and
 #'      returns NULL }
@@ -73,27 +82,13 @@
 
 handleEmail = function(path, isdir, test, val) {
     if (test) {
-        ## grab the (first) Subject: and From: line, which we assume is in the
-        ## first 500 lines of the message.
-
-        hdrs = readLines(path, n=500)
-        subj = hdrs %>% grep("^Subject:", ., perl=TRUE) %>% head(1)
+        ## an email must be a single file, not a dir
+        if (isdir || ! grepl(MOTUS_EMAIL_FILE_REGEXP, basename(path), perl=TRUE)
+            return (NULL)
 
         ## unpack the email
 
-        tmpdir = tempfile(tempdir="/sgm/tmp")
-        dir.create(tmpdir)
-        safeSys("/usr/bin/munpack", "-C", tmpdir, "-q", "-t", path)
-        parts = dir(tmpdir, full.names=TRUE)
-        textpart = match("part1", basename(parts))
-
-        if (is.na(textpart)) {
-            ## nothing unpacked, so just use original message
-            msg = readChar(path, file.info(path)$size)
-        } else {
-            ## paste the subject line and first text part of the message (if any)
-            msg = paste0(subj, "\n", readChar(parts[textpart], n = file.info(parts[textpart])$size))
-        }
+        msg = unpackEmail(path, "/sgm/tmp")
 
         ## validate
         ue = validateEmail(msg)
@@ -102,32 +97,43 @@ handleEmail = function(path, isdir, test, val) {
         valid = ! (is.null(ue) || ue$expired)
 
         ## archive compressed message in either emails or spam directory
-        system(sprintf("cat %s \ /usr/bin/lzip -o %s", path,
+        ## note that .lz suffix is added automatically to "basename(path)"
+
+        system(sprintf("cat %s | /usr/bin/lzip -o %s", path,
                        file.path("/sgm",
-                                 if (valid) "spam" else "emails",
-                                 paste0(basename(path), ".lz"))))
+                                 if (valid) "emails" else "spam",
+                                 basename(path))))
         return (
             if (valid) {
                 list(
-                    user =ue$user,
-                    email=ue$email,
-                    msg = msg,
-                    dir = tmpdir
+                    user  = ue$user,
+                    email = ue$email,
+                    msg   = msg
                 )
             } else {
                 NULL
             })
     } else {
-        ## parse out all links
-        kind = regexPieces(dataTransferRegex, val$msg)
-        ## call handlers for each link, downloading it to
-        ## the same directory as message parts
-        for (i in seq(along=kind))
-            get(paste0("download.", names(kind)[i]))(val$dir, kinds[i])
+        ## parse out all links to remote data storage
+        links = regexPieces(dataTransferRegex, val$msg)[[1]]
 
-        ## move the temporary directory to the incoming folder
-        ## so the server function sees it
-        file.rename(val$dir, file.path("/sgm/incoming", basename(val$dir)))
+        ## call handlers for each link, downloading the file(s) to
+        ## its own temporary subdirectory
+
+        for (i in seq(along=links)) {
+
+            tmpdir = tempfile(tmpdir=attr(val$msg, "tmpdir"))
+            dir.create(tmpdir)
+
+            ## handlers are called 'download.XXX' where XXX is the link type,
+            ## e.g. 'dropbox'
+            get(paste0("download.", names(links)[i])) (links[i], tmpdir)
+
+            ## move the temporary directory to the incoming folder
+            ## (giving it a unique name there) so the server function sees it
+
+            file.rename(tmpdir, tempfile(tmpdir="/sgm/incoming"))
+        }
         return (NULL)
     }
 }

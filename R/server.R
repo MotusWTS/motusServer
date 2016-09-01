@@ -33,6 +33,7 @@
 #' \itemize{
 #' \item \code{V: NULL}: do not call the handler again for this file/dir.
 #' \item \code{V: not NULL}: call the handler again with \code{test=FALSE, val=V}
+#' }
 #'
 #' If the second call to a handler returns NULL, no further handlers
 #' are run for that object.
@@ -49,7 +50,7 @@
 #' copy, move, or delete files, but must not modify them in-place.
 #'
 #' @param logFun a function to which log messages are
-#'     passed.  Defaults to a function which uses cat()s its arguments to
+#'     passed.  Defaults to a function which cat()s its arguments to
 #'     stderr.  \code{logFun} should have the parameter list "..."
 #'
 #' @return This function does not return.
@@ -73,9 +74,9 @@ server = function(handlers, logFun) {
     watchDir = "/sgm/incoming"
 
     if (missing(logFun)) {
-        logFun = function(..) cat(..., "\n", file=stderr())
-    } else if (! is.function(logFun) || length(formals(logFun)) != 1) {
-        stop("logFun must be a function accepting a single argument")
+        logFun = function(...) cat(..., "\n", file=stderr())
+    } else if (! is.function(logFun) || ! isTRUE(names(formals(logFun)) == "...")) {
+        stop("logFun must be a function accepting a single '...' argument")
     }
 
     ## launch inotifywait to report copying into, moving into, and
@@ -84,18 +85,22 @@ server = function(handlers, logFun) {
     ## path to the file
 
     evtCon = pipe(
-        paste("inotifywait -q -m -e close_write -e moved_to -e create --format %f", watchDir),
+        paste("inotifywait -q -m -e close_write -e moved_to -e create --format %e:%f", watchDir),
         "r")
 
     ## initialize file queue with list of files in watch directory.
     ## Some of these might be created after starting evtCon but
     ## before calling dir(), so we consume any events for these files
-    ## without adding them to the queue
+    ## without adding them to the queue.
 
     queue = dir(watchDir)
 
     repeat {
         f = readLines(evtCon, n=1)
+        logFun("Got event ", f)
+        f = sub("^[^:]*:", "", f)
+        if (length(f) == 0)
+            next
         if (! f %in% queue)
             break
     }
@@ -113,7 +118,7 @@ server = function(handlers, logFun) {
                 if (! is.function(h) || ! sort(names(formals(h))) == c("isdir", "path", "test", "val"))
                     stop("Handler must be a function with formals 'path', 'isdir', 'test', and 'val'")
                 val = h(path=p, isdir=info$isdir, test=TRUE, val=NULL)
-                if (! is.null(vall)) {
+                if (! is.null(val)) {
                     ## create a temporary directory or file for each handler
                     tmpd = tempfile(tmpdir="/sgm/tmp")
                     if (info$isdir)
@@ -130,7 +135,7 @@ server = function(handlers, logFun) {
                         unlink(tmpd, recursive=TRUE)
                         logFun("Deleting copy ", tmpd)
                     }, error = function(e) {
-                        logFun("Exception while running handler")
+                        logFun("Exception while running handler", e)
                     })
                 }
             }
@@ -144,6 +149,10 @@ server = function(handlers, logFun) {
             logFun("Deleted original ", p)
         }
         ## wait for a new file/dir
-        queue = readLines(evtCon, n=1)
+        logFun("Reading from queue")
+        f = readLines(evtCon, n=1)
+        logFun("Got event ", f)
+        f = sub("^[^:]*:", "", f)
+        queue = f
     }
 }

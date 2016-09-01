@@ -28,19 +28,16 @@ validateEmail = function(msg) {
     ## a token is recognized by having a known prefix followed by 10
     ## to 100 alphanumeric characters
 
-    tokenRE = paste0(MOTUS_UPLOAD_TOKEN_PREFIX, "(?<token>[A-Za-z0-9]{10,100})")
+    res = regexPieces(MOTUS_UPLOAD_TOKEN_REGEXP, msg)
 
-    res = regexpr(tokenRE, msg, perl=TRUE)
-
-    if (length(res) == 0 || res[1] == -1) {
+    if (length(res) == 0) {
         ## no token found
         return(NULL)
     }
 
-    ## token found; look it up
-    s = attr(res, "capture.start")[1, "token"]
-    len = attr(res, "capture.length")[1, "token"]
-    tok = substr(msg, s, s + len - 1)
+    ## look up the first token found
+
+    tok = res[1]
 
     x = tbl(openMotusDB(), "upload_tokens") %>% filter_(~token==tok) %>% collect
 
@@ -49,8 +46,8 @@ validateEmail = function(msg) {
 
     now = as.numeric(Sys.time())
 
-    return(list(username=x$username,
-                email = x$email,
-                expired = as.numeric(Sys.time()) > x$expiry
+    return(list(username = x$username,
+                email    = x$email,
+                expired  = as.numeric(Sys.time()) > x$expiry
                 ))
 }

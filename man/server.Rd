@@ -7,21 +7,48 @@
 server(handlers, logFun)
 }
 \arguments{
-\item{handlers}{list of function to be called when a new file or
-folder is added to \code{/sgm/incoming}.  Each function must
-accept a single chararacter parameter, which will be a path to
-a temporary directory containing the new file(s).  Each
-function must return TRUE if all files were processed
-successfully, or FALSE otherwise.  Returning FALSE will prevent
-the temporary directory and its files from being deleted.
-Handlers are called once for each file or folder already in the
-watch directory, and then once for each file or folder created
-in, moved into, or linked to from that directory.  Handlers are
-permitted to copy, move, or delete files, but must not modify
-them in-place.}
+\item{handlers}{list of handlers to be called when a new file or
+    folder is added to \code{/sgm/incoming}.  Each handler is a
+    function that takes these paramters:
+
+\itemize{
+
+\item path: the full path to the new file or directory
+
+\item isdir: boolean; TRUE iff the path is a directory
+
+\item test: boolean; TRUE on the first call of the function for a
+ given new file or folder; FALSE on the second call
+
+\item val: object; NULL on the first call; the return value
+of the first call on the second call.  This permits passing
+information between the first and second call of the handler.
+
+}
+
+The handler function is called first with \code{test=TRUE}.  Further
+action depends on whether the return value \code{V} is NULL:
+\itemize{
+\item \code{V: NULL}: do not call the handler again for this file/dir.
+\item \code{V: not NULL}: call the handler again with \code{test=FALSE, val=V}
+}
+
+If the second call to a handler returns NULL, no further handlers
+are run for that object.
+
+Between the first and second call to a handler (for a given file or
+folder), a recursive hardlink shadow copy of the incoming file or
+folder is created, so that the second call can dispose of the files
+as needed without preventing subsequent handlers from using them
+too.
+
+Handlers are called for each file or folder already in the watch
+directory, and then for each file or folder created in, moved
+into, or linked to from that directory.  Handlers are permitted to
+copy, move, or delete files, but must not modify them in-place.}
 
 \item{logFun}{a function to which log messages are
-passed.  Defaults to a function which uses cat()s its arguments to
+passed.  Defaults to a function which cat()s its arguments to
 stderr.  \code{logFun} should have the parameter list "..."}
 }
 \value{

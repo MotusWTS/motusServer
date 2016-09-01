@@ -16,4 +16,4 @@ LOGFILE=/sgm/logs/emails.log.txt
 echo Got message $DATE >> $LOGFILE
 
 ## Save it to a file.
-/bin/cat > $DEST
+/bin/cat | tr -d '\r' > $DEST
