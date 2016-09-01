@@ -34,7 +34,7 @@ preceded by some headers.
 }
 \note{
 Trailing DOS-style newlines are translated into unix-style newlines
-before unpacking the message.
+before unpacking the message, since \code{munpack} can't handle this.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
