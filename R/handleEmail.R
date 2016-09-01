@@ -83,7 +83,7 @@
 handleEmail = function(path, isdir, test, val) {
     if (test) {
         ## an email must be a single file, not a dir
-        if (isdir || ! grepl(MOTUS_EMAIL_FILE_REGEXP, basename(path), perl=TRUE)
+        if (isdir || ! grepl(MOTUS_EMAIL_FILE_REGEXP, basename(path), perl=TRUE))
             return (NULL)
 
         ## unpack the email
