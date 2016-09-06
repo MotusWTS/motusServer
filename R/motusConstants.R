@@ -42,6 +42,60 @@ MOTUS_UPLOAD_TOKEN_PREFIX = "3cQejZ7j"
 
 MOTUS_UPLOAD_TOKEN_REGEXP = paste0(MOTUS_UPLOAD_TOKEN_PREFIX, "(?<token>[A-Za-z0-9]{10,100})")
 
-## when an email is stored, the filename has this format:
+## when an incoming email is stored, the filename has this format:
 
 MOTUS_EMAIL_FILE_REGEXP = "msg_[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}\\.[0-9]*"
+
+## when an outgoing email is stored, the filename has this format:
+
+MOTUS_OUTGOING_MSG_FILENAME_FMT = "out_%Y-%m-%dT%H-%M-%OS6"
+
+## format of date/time in logfiles
+
+MOTUS_LOG_TIME_FORMAT = "%Y-%m-%dT%H-%M-%OS6"
+
+## "From" address for outgoing emails
+
+MOTUS_OUTGOING_EMAIL_ADDRESS = "info@sensorgnome.org"
+
+## filesystem layout; dirs end in "/"
+
+MOTUS_PATH = list(
+    ROOT    = "/sgm",
+    BIN     = "/sgm/bin",             ## executable scripts
+    CACHE   = "/sgm/cache",           ## recent results of large queries from motus.org
+    QUEUE   = "/sgm/incoming",        ## files / dirs moved here are processed by server()
+    EMAILS  = "/sgm/emails",          ## saved copies of valid data-transfer emails
+    LOGS    = "/sgm/logs",            ## processing logs
+    MOTR    = "/sgm/motr",            ## links to receiver DBs by motus ID
+    OUTBOX  = "/sgm/outbox",          ## copies of all sent emails
+    PLOTS   = "/sgm/plots",           ## generated plots
+    PUB     = "/sgm/pub",             ## web-visible public content
+    RECV    = "/sgm/recv",            ## receiver databases
+    REFS    = "/sgm/refs",            ## links to receiver DBs by year, projCode, siteCode
+    SPAM    = "/sgm/spam",            ## saved invalid emails
+    TAGS    = "/sgm/tags",            ## ??
+    TMP     = "/sgm/tmp"              ## temporary storage persistent across reboots
+)
+
+## main logfile name
+MOTUS_MAINLOG_NAME = "mainlog.txt"
+
+## default file mode for new files, folders:
+MOTUS_DEFAULT_FILEMODE = "0750"
+
+## allowed file suffixes for emailed data files:
+
+MOTUS_FILE_ATTACHMENT_SUFFIXES = c(
+    "zip",
+    "7z",
+    "rar",
+    "txt",
+    "txt\\.gz"
+    )
+
+## regexp to match filenames against for checking suffix
+
+MOTUS_FILE_ATTACHMENT_REGEX = paste0("(?i)\\.(",
+                                     paste(MOTUS_FILE_ATTACHMENT_SUFFIXES, collapse="|"),
+                                     ")$")

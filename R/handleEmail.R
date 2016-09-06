@@ -82,12 +82,12 @@
 
 handleEmail = function(path, isdir, test, val) {
     if (test) {
-        ## an email must be a single file, not a dir
+        ## an email must be a single file, not a dir, and match the pattern
+        ## for email message files
         if (isdir || ! grepl(MOTUS_EMAIL_FILE_REGEXP, basename(path), perl=TRUE))
             return (NULL)
 
         ## unpack the email
-
         msg = unpackEmail(path, "/sgm/tmp")
 
         ## validate
@@ -98,11 +98,8 @@ handleEmail = function(path, isdir, test, val) {
 
         ## archive compressed message in either emails or spam directory
         ## note that .lz suffix is added automatically to "basename(path)"
+        archiveMessage(path, valid)
 
-        system(sprintf("cat %s | /usr/bin/lzip -o %s", path,
-                       file.path("/sgm",
-                                 if (valid) "emails" else "spam",
-                                 basename(path))))
         return (
             if (valid) {
                 list(
@@ -114,26 +111,12 @@ handleEmail = function(path, isdir, test, val) {
                 NULL
             })
     } else {
-        ## parse out all links to remote data storage
-        links = regexPieces(dataTransferRegex, val$msg)[[1]]
+        ## parse out and handle links to remote data storage
+        handleDownloadableLinks(links)
 
-        ## call handlers for each link, downloading the file(s) to
-        ## its own temporary subdirectory
+        ## deal with any attached files of known type
+        handleAttachments(val)
 
-        for (i in seq(along=links)) {
-
-            tmpdir = tempfile(tmpdir=attr(val$msg, "tmpdir"))
-            dir.create(tmpdir)
-
-            ## handlers are called 'download.XXX' where XXX is the link type,
-            ## e.g. 'dropbox'
-            get(paste0("download.", names(links)[i])) (links[i], tmpdir)
-
-            ## move the temporary directory to the incoming folder
-            ## (giving it a unique name there) so the server function sees it
-
-            file.rename(tmpdir, tempfile(tmpdir="/sgm/incoming"))
-        }
         return (NULL)
     }
 }

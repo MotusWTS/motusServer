@@ -6,15 +6,13 @@
 #'
 #' @param path path to the raw email message
 #'
-#' @param tmp directory in which the new temporary directory is created
-#'
 #' @param headers character vector of message header lines to include at the
-#' start of the returned message.  Defaults to "Subject".
+#' start of the returned message.  Defaults to \code{c("Subject", "Reply-To")}.
 #'
 #' @param maxHeaderLines maximum number of lines assumed to be headers in
 #' the message.
 #'
-#' @return a character scalar consisting of any selecte headers
+#' @return a character scalar consisting of any selected headers
 #'     followed by the first text part of the message.  This has a
 #'     single attribute named "tmpdir", which is the full path to the
 #'     temporary directory where the message parts have been unpacked.
@@ -29,7 +27,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-unpackEmail = function(path, tmp, headers=c("Subject", "Reply-To:"), maxHeaderLines=500) {
+unpackEmail = function(path, headers=c("Subject", "Reply-To:"), maxHeaderLines=500) {
 
     ## grab any requested header lines
     if (length(headers) > 0) {
@@ -42,8 +40,7 @@ unpackEmail = function(path, tmp, headers=c("Subject", "Reply-To:"), maxHeaderLi
         h = character(0)
     }
 
-    tmpdir = tempfile(tmpdir="tmp")
-    dir.create(tmpdir)
+    tmpdir = motusTempPath()
 
     ## because the incoming email might (incorrectly) use \r\n end of lines,
     ## convert these to \n

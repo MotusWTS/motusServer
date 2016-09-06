@@ -56,25 +56,8 @@
 #'
 
 ensureServerDirs = function() {
-    root = "/sgm"
-    subdirs = c(
-        "bin",
-        "cache",
-        "emails",
-        "incoming",
-        "logs",
-        "motr",
-        "plots",
-        "pub",
-        "recv",
-        "refs",
-        "spam",
-        "tags",
-        "tmp"
-        )
-
     rv = any(sapply(
-        file.path(root, subdirs),
+        MOTUS_PATH,
         dir.create,
         recursive = TRUE,     ## create parent dir if necessary
         mode = "0774",        ## full permissions for owner and group, read-only for others
@@ -84,7 +67,7 @@ ensureServerDirs = function() {
     ## create symlinks to package scripts
 
     instDir = system.file("scripts", package="motus")
-    suppressWarnings(file.symlink(dir(instDir, full.names=TRUE), file.path(root, "bin", dir(instDir))))
+    suppressWarnings(file.symlink(dir(instDir, full.names=TRUE), file.path(MOTUS_PATH$BIN, dir(instDir))))
 
     return(rv)
 }

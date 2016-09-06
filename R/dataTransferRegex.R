@@ -29,10 +29,10 @@ dataTransferRegex =
 #or
 #
 # A link from dropbox
-# e.g. https://www.dropbox.com/sh/3vyywr47arjkzin/AABRC9v82kdJ-2Eabfe-vfGa?dl=0
+# e.g. https://www.dropbox.com/s/biie8sdq0oc5jm6/testfile.txt?dl=0
 
 |
-(?:(?<dropbox>https://www.dropbox.com/[^[:space:]]++)[[:space:]])
+(?:(?<dropbox>https://www.dropbox.com/s/[^[:space:]]++)[[:space:]])
 
 #or
 #

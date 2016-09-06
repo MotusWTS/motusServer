@@ -1,6 +1,6 @@
 #' wait for new data files to arrive, then process them
 #'
-#' This function watches the /sgm/incoming directory and when a file
+#' This function watches the \code{incoming} directory and when a file
 #' or folder is written to it, carries out the specified action.
 #' Files or folders already in the watched directory are processed
 #' before any new ones, on the assumption that a previous call to this
@@ -10,7 +10,7 @@
 #' run in the background.
 #'
 #' @param handlers list of handlers to be called when a new file or
-#'     folder is added to \code{/sgm/incoming}.  Each handler is a
+#'     folder is added to the incoming directory.  Each handler is a
 #'     function that takes these paramters:
 #'
 #' \itemize{
@@ -49,14 +49,10 @@
 #' into, or linked to from that directory.  Handlers are permitted to
 #' copy, move, or delete files, but must not modify them in-place.
 #'
-#' @param logFun a function to which log messages are
-#'     passed.  Defaults to a function which cat()s its arguments to
-#'     stderr.  \code{logFun} should have the parameter list "..."
-#'
 #' @return This function does not return.
 #'
-#' @note If a directory is added by creating a symlink to it in
-#'     \code{/sgm/incoming}, ownership of files in the directory
+#' @note If a directory is added by creating a symlink to it in the
+#'     \code{incoming} directory, ownership of files in the directory
 #'     remains with the files' creator, and this function will not
 #'     delete them.  Otherwise, ownership is assumed by this function,
 #'     and after all handlers have been called, files are deleted.
@@ -69,15 +65,13 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-server = function(handlers, logFun) {
+server = function(handlers) {
+    ## sanity check for handlers
+    for (h in handlers)
+        if (! is.function(h) || ! sort(names(formals(h))) == c("isdir", "path", "test", "val"))
+            stop("Handler must be a function with formals 'path', 'isdir', 'test', and 'val'")
+    
     ensureServerDirs()
-    watchDir = "/sgm/incoming"
-
-    if (missing(logFun)) {
-        logFun = function(...) cat(..., "\n", file=stderr())
-    } else if (! is.function(logFun) || ! isTRUE(names(formals(logFun)) == "...")) {
-        stop("logFun must be a function accepting a single '...' argument")
-    }
 
     ## launch inotifywait to report copying into, moving into, and
     ## link creation in the spool directory; report events and
@@ -85,7 +79,7 @@ server = function(handlers, logFun) {
     ## path to the file
 
     evtCon = pipe(
-        paste("inotifywait -q -m -e close_write -e moved_to -e create --format %e:%f", watchDir),
+        paste("inotifywait -q -m -e close_write -e moved_to -e create --format %e:%f", MOTUS_PATH$QUEUE),
         "r")
 
     ## initialize file queue with list of files in watch directory.
@@ -93,11 +87,12 @@ server = function(handlers, logFun) {
     ## before calling dir(), so we consume any events for these files
     ## without adding them to the queue.
 
-    queue = dir(watchDir)
+    queue = dir(MOTUS$PATH_QUEUE)
+
+    motusLog("Server started")
 
     repeat {
         f = readLines(evtCon, n=1)
-        logFun("Got event ", f)
         f = sub("^[^:]*:", "", f)
         if (length(f) == 0)
             next
@@ -110,32 +105,28 @@ server = function(handlers, logFun) {
     repeat {
         ## process the queue; it will typically have only 1 element
         while (length(queue) > 0) {
-            logFun("Handling ", queue[1])
-            p = file.path(watchDir, queue[1])
+            motusLog("Handling event %s", queue[1])
+            p = file.path(MOTUS_PATH$QUEUE, queue[1])
             info = file.info(p)
 
             for (h in handlers) {
-                if (! is.function(h) || ! sort(names(formals(h))) == c("isdir", "path", "test", "val"))
-                    stop("Handler must be a function with formals 'path', 'isdir', 'test', and 'val'")
                 val = h(path=p, isdir=info$isdir, test=TRUE, val=NULL)
                 if (! is.null(val)) {
                     ## create a temporary directory or file for each handler
-                    tmpd = tempfile(tmpdir="/sgm/tmp")
-                    if (info$isdir)
-                        dir.create(tmpd, mode="0750")
+                    tmpd = motusTempPath(info$isdir)
 
                     ## copy the file or dir via hardlinks
                     safeSys("/bin/cp", "-l", "-r", p, tmpd)
-                    logFun("Using copy ", tmpd)
+                    motusLog("Using copy ", tmpd)
 
                     ## do stuff
                     tryCatch(
                     {
                         h(path=p, isdir=info$isdir, test=FALSE, val=val)
                         unlink(tmpd, recursive=TRUE)
-                        logFun("Deleting copy ", tmpd)
+                        motusLog("Deleting copy %s", tmpd)
                     }, error = function(e) {
-                        logFun("Exception while running handler", e)
+                        motusLog("Exception while running handler: %s", e)
                     })
                 }
             }
@@ -146,12 +137,10 @@ server = function(handlers, logFun) {
             ## delete the original item; if it was a symlink, the target
             ## is not deleted
             unlink(p, recursive=TRUE)
-            logFun("Deleted original ", p)
+            motusLog("Deleted original %s", p)
         }
         ## wait for a new file/dir
-        logFun("Reading from queue")
         f = readLines(evtCon, n=1)
-        logFun("Got event ", f)
         f = sub("^[^:]*:", "", f)
         queue = f
     }

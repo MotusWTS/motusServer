@@ -4,11 +4,11 @@
 \alias{server}
 \title{wait for new data files to arrive, then process them}
 \usage{
-server(handlers, logFun)
+server(handlers)
 }
 \arguments{
 \item{handlers}{list of handlers to be called when a new file or
-    folder is added to \code{/sgm/incoming}.  Each handler is a
+    folder is added to the incoming directory.  Each handler is a
     function that takes these paramters:
 
 \itemize{
@@ -46,16 +46,12 @@ Handlers are called for each file or folder already in the watch
 directory, and then for each file or folder created in, moved
 into, or linked to from that directory.  Handlers are permitted to
 copy, move, or delete files, but must not modify them in-place.}
-
-\item{logFun}{a function to which log messages are
-passed.  Defaults to a function which cat()s its arguments to
-stderr.  \code{logFun} should have the parameter list "..."}
 }
 \value{
 This function does not return.
 }
 \description{
-This function watches the /sgm/incoming directory and when a file
+This function watches the \code{incoming} directory and when a file
 or folder is written to it, carries out the specified action.
 Files or folders already in the watched directory are processed
 before any new ones, on the assumption that a previous call to this
@@ -66,8 +62,8 @@ The function does not return; it is meant for use in an R script
 run in the background.
 }
 \note{
-If a directory is added by creating a symlink to it in
-    \code{/sgm/incoming}, ownership of files in the directory
+If a directory is added by creating a symlink to it in the
+    \code{incoming} directory, ownership of files in the directory
     remains with the files' creator, and this function will not
     delete them.  Otherwise, ownership is assumed by this function,
     and after all handlers have been called, files are deleted.
