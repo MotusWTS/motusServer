@@ -18,6 +18,7 @@ Depends:
     openssl,
     RCurl,
     RMySQL,
+    sendmailR,
     sensorgnome,
     stringi
 License: GPL-2+
