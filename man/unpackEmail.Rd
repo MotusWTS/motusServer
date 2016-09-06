@@ -4,22 +4,19 @@
 \alias{unpackEmail}
 \title{Unpack an email message, returning the text portion.}
 \usage{
-unpackEmail(path, tmp, headers = c("Subject", "Reply-To:"),
-  maxHeaderLines = 500)
+unpackEmail(path, headers = c("Subject", "Reply-To:"), maxHeaderLines = 500)
 }
 \arguments{
 \item{path}{path to the raw email message}
 
-\item{tmp}{directory in which the new temporary directory is created}
-
 \item{headers}{character vector of message header lines to include at the
-start of the returned message.  Defaults to "Subject".}
+start of the returned message.  Defaults to \code{c("Subject", "Reply-To")}.}
 
 \item{maxHeaderLines}{maximum number of lines assumed to be headers in
 the message.}
 }
 \value{
-a character scalar consisting of any selecte headers
+a character scalar consisting of any selected headers
     followed by the first text part of the message.  This has a
     single attribute named "tmpdir", which is the full path to the
     temporary directory where the message parts have been unpacked.
