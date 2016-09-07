@@ -15,18 +15,19 @@
 .onLoad = function(...) {
 
     options(digits=14)
-    if (motusLoadSecrets(quiet=TRUE, "~/.secrets/motusSecrets"))
-        return()
-    MOTUS_SECRETS <<- new.env(emptyenv())
-    makeActiveBinding(
-        'key',
-        function(x) {
-            stop(call. = FALSE,
-                "This function requires motus credentials.\nUse motusLoadSecrets() to load them.")
-        }, MOTUS_SECRETS
-    )
 
-    MOTUS_MAINLOG = file(file.path(MOTUS_PATH$LOGS, MOTUS_MAINLOG_NAME), "a")
+    if (! motusLoadSecrets(quiet=TRUE, "~/.secrets/motusSecrets")) {
+        MOTUS_SECRETS <<- new.env(emptyenv())
+        makeActiveBinding(
+            'key',
+            function(x) {
+                stop(call. = FALSE,
+                     "This function requires motus credentials.\nUse motusLoadSecrets() to load them.")
+            }, MOTUS_SECRETS
+        )
+    }
+
+    MOTUS_MAINLOG <<- file(file.path(MOTUS_PATH$LOGS, MOTUS_MAINLOG_NAME), "a")
 
     invisible(NULL)
 }
