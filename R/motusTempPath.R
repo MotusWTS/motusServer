@@ -14,7 +14,7 @@
 motusTempPath = function(isdir) {
     
     tmpd = tempfile(tmpdir=MOTUS_PATH$TMP)
-    if (info$isdir) {
+    if (isdir) {
         dir.create(tmpd, mode=MOTUS_DEFAULT_FILEMODE)
     } else {
         close(file(tmpd, "wb"))
