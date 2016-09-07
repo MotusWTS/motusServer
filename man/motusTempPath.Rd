@@ -4,14 +4,14 @@
 \alias{motusTempPath}
 \title{Create a temporary filename or folder for the motus server.}
 \usage{
-motusTempPath(isdir)
+motusTempPath(isdir = TRUE)
 }
 \arguments{
-\item{isdir}{boolean scalar: if TRUE, a temporary folder is created; otherwise,
-a file is created}
+\item{isdir}{boolean scalar: if TRUE, the default, a temporary
+folder is created; otherwise, a file is created}
 }
 \value{
-invisible(NULL)
+the path to the new file or folder
 }
 \description{
 Create a temporary filename or folder for the motus server.
