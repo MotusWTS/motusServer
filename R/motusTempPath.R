@@ -1,9 +1,9 @@
 #' Create a temporary filename or folder for the motus server.
 #'
-#' @param isdir boolean scalar: if TRUE, a temporary folder is created; otherwise,
-#' a file is created
+#' @param isdir boolean scalar: if TRUE, the default, a temporary
+#'     folder is created; otherwise, a file is created
 #'
-#' @return invisible(NULL)
+#' @return the path to the new file or folder
 #'
 #' @seealso \link{\code{server}}
 #' 
@@ -11,7 +11,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-motusTempPath = function(isdir) {
+motusTempPath = function(isdir = TRUE) {
     
     tmpd = tempfile(tmpdir=MOTUS_PATH$TMP)
     if (isdir) {
@@ -20,5 +20,5 @@ motusTempPath = function(isdir) {
         close(file(tmpd, "wb"))
         Sys.chmod(tmpd, mode=MOTUS_DEFAULT_FILEMODE)
     }
-    invisible(NULL)
+    return(tmpd)
 }
