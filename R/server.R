@@ -87,7 +87,7 @@ server = function(handlers) {
     ## before calling dir(), so we consume any events for these files
     ## without adding them to the queue.
 
-    queue = dir(MOTUS$PATH_QUEUE)
+    queue = dir(MOTUS_PATH$QUEUE)
 
     motusLog("Server started")
 
