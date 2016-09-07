@@ -42,9 +42,9 @@ MOTUS_UPLOAD_TOKEN_PREFIX = "3cQejZ7j"
 
 MOTUS_UPLOAD_TOKEN_REGEXP = paste0(MOTUS_UPLOAD_TOKEN_PREFIX, "(?<token>[A-Za-z0-9]{10,100})")
 
-## when an incoming email is stored, the filename has this format:
+## when an incoming email is stored, the filename has this format: (see inst/scripts/incomingEmail.sh )
 
-MOTUS_EMAIL_FILE_REGEXP = "msg_[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}\\.[0-9]*.txt.bz2"
+MOTUS_EMAIL_FILE_REGEXP = "msg_[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}\\.[0-9]{6}.txt.bz2"
 
 ## when an outgoing email is stored, the filename has this format:
 
