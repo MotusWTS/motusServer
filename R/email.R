@@ -27,7 +27,9 @@ email = function(to, subj, msg, ...) {
     msg = sprintf(msg, ...)
     sendmail(MOTUS_OUTGOING_EMAIL_ADDRESS, to, subj, msg)
     saveMsg = file.path(MOTUS_PATH$OUTBOX, format(Sys.time(), MOTUS_OUTGOING_MSG_FILENAME_FMT))
-    writeLines(msg, bzfile(saveMsg, "wb"))
+    f = bzfile(saveMsg, "wb")
+    writeLines(msg, f)
+    close(f)
     motusLog("Emailed %s subj: \"%s\" body: %s", to, subj, saveMsg)
     invisible(NULL)
 }
