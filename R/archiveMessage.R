@@ -15,7 +15,7 @@
 archiveMessage = function(path, valid) {
     outf = paste0(
         file.path(
-            if (valid) MOTUS_PATH_EMAILS else MOTUS_PATH_SPAM,
+            if (valid) MOTUS_PATH$EMAILS else MOTUS_PATH$SPAM,
             basename(path)
         ),
         ".bz2"
