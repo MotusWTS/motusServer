@@ -5,8 +5,7 @@
 #' credentials.  This URL is downloaded recursively into a directory
 #' using the gdrive command-line client (see references).
 #'
-#' @param link URL of file on drive.google.com, from the wetransfer.com, from confirmation email
-#' sent to file sender.
+#' @param link URL of file on drive.google.com
 #'
 #' @param dir directory into which the file(s) will be downloaded
 #'
@@ -32,7 +31,7 @@ download.googleDrive = function(link, dir) {
 
     info = readLines(pipe(paste("gdrive", "info", ID)))
 
-    ## see whether its a folder
+    ## see whether it's a folder
     isdir = any(info == "Mime: application/vnd.google-apps.folder")
 
     if (isdir) {

@@ -7,8 +7,7 @@
 download.googleDrive(link, dir)
 }
 \arguments{
-\item{link}{URL of file on drive.google.com, from the wetransfer.com, from confirmation email
-sent to file sender.}
+\item{link}{URL of file on drive.google.com}
 
 \item{dir}{directory into which the file(s) will be downloaded}
 }
