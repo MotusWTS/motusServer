@@ -25,8 +25,8 @@ Folder hierarchy:
 \item /sgm/cache - cached copy of motus metadata
     e.g.:  motus_meta_db.sqlite
 
-\item /sgm/emails - emails, compressed using lzip
-    e.g.:  msg_2016-08-25T14-14-11.810348517.lz
+\item /sgm/emails - emails, compressed using bzip2
+    e.g.:  msg_2016-08-25T14-14-11.810349.txt.bz2
 
 \item /sgm/incoming - where new files or directories are linked from or copied to so that
    they get processed; the server() function from the motus R package watches
@@ -46,6 +46,11 @@ Folder hierarchy:
 
 \item /sgm/recv - one .motus sqlite database per receiver, by serial number
     e.g.:  SG-4001BBBK2230.motus
+
+\item /sgm/recvlog - log files retrieved from receivers; this folder will have a subfolder
+    for each receiver, by serial number, and those folders will have subfolders for each
+    date at which log files were retrieved
+    e.g. /sgm/recvlog/SG-4001BBBK2230/2016-07-30/...
 
 \item /sgm/refs - symlinks by old SG hierarchy to receiver(s) used at a given Year, Project, Site
     e.g.:  2014_adamsmith_block_island1 -> /sgm/recv/SG-4001BBBK2230.motus
