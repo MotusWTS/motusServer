@@ -36,6 +36,11 @@
 #' \item /sgm/recv - one .motus sqlite database per receiver, by serial number
 #'     e.g.:  SG-4001BBBK2230.motus
 #'
+#' \item /sgm/recvlog - log files retrieved from receivers; this folder will have a subfolder
+#'     for each receiver, by serial number, and those folders will have subfolders for each
+#'     date at which log files were retrieved
+#'     e.g. /sgm/recvlog/SG-4001BBBK2230/2016-07-30/...
+#'
 #' \item /sgm/refs - symlinks by old SG hierarchy to receiver(s) used at a given Year, Project, Site
 #'     e.g.:  2014_adamsmith_block_island1 -> /sgm/recv/SG-4001BBBK2230.motus
 #'
