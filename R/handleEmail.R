@@ -96,8 +96,7 @@ handleEmail = function(path, isdir, test, val) {
         ## for now, be strict about token expiry
         valid = ! (is.null(ue) || ue$expired)
 
-        ## archive compressed message in either emails or spam directory
-        ## note that .lz suffix is added automatically to "basename(path)"
+        ## archive message
         archiveMessage(path, valid)
 
         return (

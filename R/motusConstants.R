@@ -44,11 +44,11 @@ MOTUS_UPLOAD_TOKEN_REGEXP = paste0(MOTUS_UPLOAD_TOKEN_PREFIX, "(?<token>[A-Za-z0
 
 ## when an incoming email is stored, the filename has this format:
 
-MOTUS_EMAIL_FILE_REGEXP = "msg_[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}\\.[0-9]*"
+MOTUS_EMAIL_FILE_REGEXP = "msg_[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}\\.[0-9]*.txt.bz2"
 
 ## when an outgoing email is stored, the filename has this format:
 
-MOTUS_OUTGOING_MSG_FILENAME_FMT = "out_%Y-%m-%dT%H-%M-%OS6"
+MOTUS_OUTGOING_MSG_FILENAME_FMT = "out_%Y-%m-%dT%H-%M-%OS6.txt.bz2"
 
 ## format of date/time in logfiles
 

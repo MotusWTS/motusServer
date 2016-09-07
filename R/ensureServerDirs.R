@@ -14,8 +14,8 @@
 #' \item /sgm/cache - cached copy of motus metadata
 #'     e.g.:  motus_meta_db.sqlite
 #'
-#' \item /sgm/emails - emails, compressed using lzip
-#'     e.g.:  msg_2016-08-25T14-14-11.810348517.lz
+#' \item /sgm/emails - emails, compressed using bzip2
+#'     e.g.:  msg_2016-08-25T14-14-11.810349.txt.bz2
 #'
 #' \item /sgm/incoming - where new files or directories are linked from or copied to so that
 #'    they get processed; the server() function from the motus R package watches
