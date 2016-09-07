@@ -28,7 +28,7 @@ validateEmail = function(msg) {
     ## a token is recognized by having a known prefix followed by 10
     ## to 100 alphanumeric characters
 
-    res = regexPieces(MOTUS_UPLOAD_TOKEN_REGEXP, msg)
+    res = regexPieces(MOTUS_UPLOAD_TOKEN_REGEXP, msg)[[1]]
 
     if (length(res) == 0) {
         ## no token found
