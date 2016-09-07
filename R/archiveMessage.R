@@ -20,5 +20,7 @@ archiveMessage = function(path, valid) {
         ),
         ".bz2"
     )
-    writeLines(readLines(path), bzfile(outf, "wb"))
+    f = bzfile(outf, "wb")
+    writeLines(readLines(path), f)
+    close(f)
 }

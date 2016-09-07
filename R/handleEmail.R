@@ -111,10 +111,10 @@ handleEmail = function(path, isdir, test, val) {
             })
     } else {
         ## parse out and handle links to remote data storage
-        handleDownloadableLinks(links)
+        handleDownloadableLinks(val$msg)
 
         ## deal with any attached files of known type
-        handleAttachments(val)
+        handleAttachments(val$msg)
 
         return (NULL)
     }
