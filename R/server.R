@@ -113,11 +113,11 @@ server = function(handlers) {
                 val = h(path=p, isdir=info$isdir, test=TRUE, val=NULL)
                 if (! is.null(val)) {
                     ## create a temporary directory or file for each handler
-                    tmpd = motusTempPath(info$isdir)
+                    tmpd = motusTempPath()
 
                     ## copy the file or dir via hardlinks
                     safeSys("/bin/cp", "-l", "-r", p, tmpd)
-                    motusLog("Using copy ", tmpd)
+                    motusLog("Using copy %s", tmpd)
 
                     ## do stuff
                     tryCatch(
