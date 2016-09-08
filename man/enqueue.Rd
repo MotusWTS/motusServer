@@ -4,19 +4,30 @@
 \alias{enqueue}
 \title{Add a file or folder to the server queue.}
 \usage{
-enqueue(path)
+enqueue(path, ...)
 }
 \arguments{
-\item{path}{the full path to the new file or directory
+\item{path}{the full path to the file or directory.}
+
+\item{...}{further parameters to the tempfile function; e.g.
+specifying \code{pattern="URL_"} will cause the file or folder
+name to begin with "URL_".
 
 After this call, the file or directory will no longer exist at the
-same location.}
+same location, but will be renamed into the server's incoming
+directory.  The new name will be unique there, and can include
+a pattern and fileext specified in \code{...}}
 }
 \value{
 TRUE on success; FALSE otherwise
 }
 \description{
 Add a file or folder to the server queue.
+}
+\examples{
+## Not run:
+enqueue("/tmp/mytmpurlfile", pattern="url_", fileext=".txt")
+
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}

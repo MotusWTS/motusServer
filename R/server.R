@@ -1,7 +1,16 @@
 #' wait for new data files to arrive, then process them
 #'
-#' This function watches the \code{incoming} directory and when a file
-#' or folder is written to it, carries out the specified action.
+#' Watch the \code{incoming} directory and when a file or folder is
+#' written to it, call a sequence of handlers until one of them is
+#' successful in processing the item.  Handlers are meant to perform
+#' small, self-contained tasks, such as unpacking a compressed
+#' archive, parsing an email for downloadable links, updating a
+#' receiver database with new files, etc.  This way, if a step fails,
+#' the server can continue to try doing other things.  Moreover, we
+#' try to ensure that files are left in places where they will
+#' automatically be retried if this server function has to be
+#' restarted, or can be dealt with manually.
+#'
 #' Files or folders already in the watched directory are processed
 #' before any new ones, on the assumption that a previous call to this
 #' function was interrupted.
@@ -9,9 +18,9 @@
 #' The function does not return; it is meant for use in an R script
 #' run in the background.
 #'
-#' @param handlers list of handlers to be called when a new file or
-#'     folder is added to the incoming directory.  Each handler is a
-#'     function that takes these paramters:
+#' @param handlers named list of handlers to be called when a new file
+#'     or folder is added to the incoming directory.  Each handler is
+#'     a function that takes these parameters:
 #'
 #' \itemize{
 #'
@@ -19,57 +28,56 @@
 #'
 #' \item isdir: boolean; TRUE iff the path is a directory
 #'
-#' \item test: boolean; TRUE on the first call of the function for a
-#'  given new file or folder; FALSE on the second call
-#'
-#' \item val: object; NULL on the first call; the return value
-#' of the first call on the second call.  This permits passing
-#' information between the first and second call of the handler.
-#'
 #' }
 #'
-#' The handler function is called first with \code{test=TRUE}.  Further
-#' action depends on whether the return value \code{V} is NULL:
-#' \itemize{
-#' \item \code{V: NULL}: do not call the handler again for this file/dir.
-#' \item \code{V: not NULL}: call the handler again with \code{test=FALSE, val=V}
-#' }
-#'
-#' If the second call to a handler returns NULL, no further handlers
-#' are run for that object.
-#'
-#' Between the first and second call to a handler (for a given file or
-#' folder), a recursive hardlink shadow copy of the incoming file or
-#' folder is created, so that the second call can dispose of the files
-#' as needed without preventing subsequent handlers from using them
-#' too.
+#' and returns TRUE iff the handler succeeded in processing the item.
+#' Files/folders will be deleted if any handler returns TRUE.  The
+#' names of handlers are used only for logging.
 #'
 #' Handlers are called for each file or folder already in the watch
 #' directory, and then for each file or folder created in, moved
 #' into, or linked to from that directory.  Handlers are permitted to
 #' copy, move, or delete files, but must not modify them in-place.
 #'
+#' The default list of handlers is:
+#' \code{
+#' list(
+#'    handleEmail,
+#'    handleDownloadableLink,
+#'    handleArchive,
+#'    handleDTAs,
+#'    handleSGs,
+#'    handleOneSG,
+#'    handleLogs,
+#'    handlePath
+#' )
+#' }
+#' 
 #' @return This function does not return.
 #'
 #' @note If a directory is added by creating a symlink to it in the
 #'     \code{incoming} directory, ownership of files in the directory
 #'     remains with the files' creator, and this function will not
 #'     delete them.  Otherwise, ownership is assumed by this function,
-#'     and after all handlers have been called, files are deleted.
-#'     Each handler is passed a directory populated with hardlinks to
-#'     the original files.  That way, the handler can move or delete
-#'     the files without consequence to either other handlers or the
-#'     caller.
+#'     and files are deleted if any handler returns TRUE.
 #'
 #' @export
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-server = function(handlers) {
+server = function(handlers = list(handleEmail,
+                                  handleDownloadableLink,
+                                  handleArchive,
+                                  handleDTAs,
+                                  handleSGs,
+                                  handleOneSG,
+                                  handleLogs,
+                                  handlePath)
+                  ) {
     ## sanity check for handlers
     for (h in handlers)
-        if (! is.function(h) || ! sort(names(formals(h))) == c("isdir", "path", "test", "val"))
-            stop("Handler must be a function with formals 'path', 'isdir', 'test', and 'val'")
+        if (! is.function(h) || ! sort(names(formals(h))) == c("isdir", "path"))
+            stop("Handler must be a function with formals 'path' and 'isdir'")
     
     ensureServerDirs()
 
@@ -107,37 +115,30 @@ server = function(handlers) {
         while (length(queue) > 0) {
             motusLog("Handling event %s", queue[1])
             p = file.path(MOTUS_PATH$QUEUE, queue[1])
-            info = file.info(p)
-
-            for (h in handlers) {
-                val = h(path=p, isdir=info$isdir, test=TRUE, val=NULL)
-                if (! is.null(val)) {
-                    ## create a temporary directory or file for each handler
-                    tmpd = motusTempPath()
-
-                    ## copy the file or dir via hardlinks
-                    safeSys("/bin/cp", "-l", "-r", p, tmpd)
-                    motusLog("Using copy %s", tmpd)
-
-                    ## do stuff
-                    tryCatch(
-                    {
-                        h(path=p, isdir=info$isdir, test=FALSE, val=val)
-                        unlink(tmpd, recursive=TRUE)
-                        motusLog("Deleting copy %s", tmpd)
-                    }, error = function(e) {
-                        motusLog("Exception while running handler: %s", e)
-                    })
-                }
+            isdir = file.info(p)$isdir
+            handled = FALSE
+            for (i in seq(along=handlers)) {
+                h = handlers[[i]]
+                hname = names(handlers)[i]
+                tryCatch(
+                {
+                    handled <- h(path=p, isdir=isdir)
+                    if (isTRUE(handled)) {
+                        unlink(p, recursive=TRUE)
+                        motusLog("Handled by %s", hname)
+                    }
+                }, error = function(e) {
+                    motusLog("Exception while running handler %s: %s", hname, e)
+                })
+                if (handled)
+                    break
             }
-
+            ## if not handled, save the file or folder in the manual handling folder
+            if (! handled)
+                archivePath(p, MOTUS_PATH$MANUAL)
+            
             ## drop file/dir from queue
             queue = queue[-1]
-
-            ## delete the original item; if it was a symlink, the target
-            ## is not deleted
-            unlink(p, recursive=TRUE)
-            motusLog("Deleted original %s", p)
         }
         ## wait for a new file/dir
         f = readLines(evtCon, n=1)

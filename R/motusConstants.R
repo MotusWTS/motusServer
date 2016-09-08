@@ -31,7 +31,7 @@ MOTUS_FLOAT_FIELDS = c("tsStart", "tsEnd", "regStart", "regEnd",
 ## a regular expression for replacing values that need to be floats
 ## Note: only works for named scalar parameters; i.e. "XXXXX":00000
 
-MOTUS_FLOAT_REGEXP = sprintf("((%s):-?[0-9]+)([,}])",
+MOTUS_FLOAT_REGEX = sprintf("((%s):-?[0-9]+)([,}])",
                              paste(sprintf("\"%s\"", MOTUS_FLOAT_FIELDS), collapse="|"))
 
 ## a pre-amble that gets pasted before upload tokens so they can easily be found in emails
@@ -40,11 +40,14 @@ MOTUS_UPLOAD_TOKEN_PREFIX = "3cQejZ7j"
 
 ## the regular expression for recognizing an authorization token in an email
 
-MOTUS_UPLOAD_TOKEN_REGEXP = paste0(MOTUS_UPLOAD_TOKEN_PREFIX, "(?<token>[A-Za-z0-9]{10,100})")
+MOTUS_UPLOAD_TOKEN_REGEX = paste0(MOTUS_UPLOAD_TOKEN_PREFIX, "(?<token>[A-Za-z0-9]{10,100})")
 
 ## when an incoming email is stored, the filename has this format: (see inst/scripts/incomingEmail.sh )
 
-MOTUS_EMAIL_FILE_REGEXP = "msg_[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}\\.[0-9]{6}.txt"
+MOTUS_EMAIL_FILE_REGEX = "msg_[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}\\.[0-9]{6}.txt"
+
+## a downloadable link file has a filename of this form:
+MOTUS_DOWNLOADABLE_LINK_FILE_REGEX = "url_[[:alphanum:]]*.txt"
 
 ## when an outgoing email is stored, the filename has this format:
 
@@ -67,6 +70,7 @@ MOTUS_PATH = list(
     QUEUE   = "/sgm/incoming",        ## files / dirs moved here are processed by server()
     EMAILS  = "/sgm/emails",          ## saved copies of valid data-transfer emails
     LOGS    = "/sgm/logs",            ## processing logs
+    MANUAL  = "/sgm/manual",          ## folders needing manual attention
     MOTR    = "/sgm/motr",            ## links to receiver DBs by motus ID
     OUTBOX  = "/sgm/outbox",          ## copies of all sent emails
     PLOTS   = "/sgm/plots",           ## generated plots
@@ -85,18 +89,40 @@ MOTUS_MAINLOG_NAME = "mainlog.txt"
 ## default file mode for new files, folders:
 MOTUS_DEFAULT_FILEMODE = "0750"
 
+## compressed archives we can handle
+MOTUS_ARCHIVE_SUFFIXES = c(
+    "zip",
+    "7z",
+    "rar"
+)
+
+MOTUS_ARCHIVE_REGEX = paste0("(?i)\\.(?<suffix>",
+                             paste(MOTUS_ARCHIVE_SUFFIXES, collapse="|"),
+                             ")$")
+
 ## allowed file suffixes for emailed data files:
 
 MOTUS_FILE_ATTACHMENT_SUFFIXES = c(
-    "zip",
-    "7z",
-    "rar",
-    "txt",
-    "txt\\.gz"
+    MOTUS_ARCHIVE_SUFFIXES,
+    "txt",                 ## Some users directly attach raw sensorgome files
+    "txt\\.gz",            ## to an email.
+    "dta"                  ## File from lotek receiver
     )
 
-## regexp to match filenames against for checking suffix
+## regex to match filenames against for checking suffix
 
-MOTUS_FILE_ATTACHMENT_REGEX = paste0("(?i)\\.(",
+MOTUS_FILE_ATTACHMENT_REGEX = paste0("(?i)\\.(?<suffix>",
                                      paste(MOTUS_FILE_ATTACHMENT_SUFFIXES, collapse="|"),
                                      ")$")
+
+
+## regex to match receiver serial numbers (adapted from sgFilenameRegex, which differs
+## in not using the 'SG-' prefix).
+
+MOTUS_SG_SERNO_REGEX = "(?<serno>SG-[0-9A-Z]{4}(?:RPi2|BBBK|BB)[0-9A-Z]{4,6}(_[0-9])?)"
+
+## deprecated: path to db for looking up proj, site by serial number
+## this for processing data the old sensorgnome way, not the new
+## motus way.
+
+MOTUS_RECV_SERNO_DB = "/SG/receiver_serno.sqlite"
