@@ -20,7 +20,6 @@ server(handlers)
 }
 
 and returns TRUE iff the handler succeeded in processing the item.
-Files/folders will be deleted if any handler returns TRUE.
 
 Handlers are called for each file or folder already in the watch
 directory, and then for each file or folder created in, moved
@@ -28,7 +27,10 @@ into, or linked to from that directory. Successful handlers will
 typically move some or all of the files in \code{path} to another
 location.
 
-The default list of handlers is:
+The file or folder at \code{path} will be deleted if any handler
+returns TRUE.
+
+The default value of \code{handlers} is:
 \code{
 list(
    handleEmail,

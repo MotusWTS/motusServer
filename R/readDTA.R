@@ -12,7 +12,7 @@
 #' @return a named list with these items:
 #'
 #' \itemize{
-#' \item  recv receiver model + SN
+#' \item  recv serial number; e.g. "Lotek-123"
 #' \item  tags a data.frame with these columns:
 #' \itemize{
 #'
