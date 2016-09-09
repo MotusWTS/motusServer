@@ -7,7 +7,7 @@ dataTransferRegex =
 # A link from https://wetransfer.com from the sender's confirmation email
 # e.g. https://we.tl/nV6Uc5KHs5
 
-(?:(?<wetransferConf>https://we.tl/[[:alnum:]]++)[[:space:]]*$)
+(?:(?<wetransferConf>https://we\\.tl/[[:alnum:]]++)[[:space:]]*$)
 
 # or
 #
@@ -15,7 +15,7 @@ dataTransferRegex =
 # e.g. https://www.wetransfer.com/downloads/74f82c0655e1eb53db89fbd31e606bdd201608034623/932867cd82a0664f2687eed55cf7d95220160829034623/a9ef2e
 
 |
-(?:(?<wetransferDirect>https://(?:www\\.)?wetransfer.com/downloads/[[:xdigit:]]++/[[:xdigit:]]++/[[:xdigit:]]++))
+(?:(?<wetransferDirect>https://(?:www\\.)?wetransfer\\.com/downloads/[[:xdigit:]]++/[[:xdigit:]]++/[[:xdigit:]]++))
 
 # or
 #
@@ -24,7 +24,7 @@ dataTransferRegex =
 # or   https://drive.google.com/open?id=3D0B-bl0wWafEk1F1Y0hMdGZJQkk
 
 |
-(?:(?<googleDrive>https://drive.google.com/[^[:space:]]*id=[-[:alnum:]]*[^[:space:]]*)[[:space:]])
+(?:(?<googleDrive>https://drive\\.google\\.com/[^[:space:]]*id=[-[:alnum:]]*[^[:space:]]*)[[:space:]])
 
 #or
 #
@@ -32,7 +32,7 @@ dataTransferRegex =
 # e.g. https://www.dropbox.com/s/biie8sdq0oc5jm6/testfile.txt?dl=0
 
 |
-(?:(?<dropbox>https://www.dropbox.com/s/[^[:space:]]++)[[:space:]])
+(?:(?<dropbox>https://www\\.dropbox\\.com/s/[^[:space:]]++)[[:space:]])
 
 #or
 #
@@ -40,4 +40,3 @@ dataTransferRegex =
 |
 (?:(?<FTP>ftp://[^[:space:]]++)[[:space:]])
 "
-
