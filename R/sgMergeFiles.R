@@ -130,7 +130,7 @@ sgMergeFiles = function(files, dbdir = MOTUS_PATH$RECV) {
 
         ## dplyr::src for receiver database
 
-        src = sgRecvSrc(recv, dbdir)
+        src = sgRecvSrc(paste0("SG-", recv), dbdir)
 
         ## sqlite connection
 
