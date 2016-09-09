@@ -4,13 +4,13 @@
 \alias{sgRecvSrc}
 \title{Get the src_sqlite for a receiver database given its serial number.}
 \usage{
-sgRecvSrc(serno, dbdir = "/sgm/recv")
+sgRecvSrc(serno, dbdir = MOTUS_PATH$RECV)
 }
 \arguments{
 \item{serno}{raw sensorgnome serial number (i.e. without "SG-")}
 
 \item{dbdir}{path to folder with existing receiver databases
-Default: \code{/sgm/recv}}
+Default: \code{MOTUS_PATH$RECV}}
 }
 \value{
 a src_sqlite for the receiver; if the receiver is new, this database

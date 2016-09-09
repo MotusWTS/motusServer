@@ -4,13 +4,14 @@
 \alias{ltMergeFiles}
 \title{Merge a batch of Lotek .DTA files with an existing database.}
 \usage{
-ltMergeFiles(dbdir, files)
+ltMergeFiles(files, dbdir = MOTUS_PATH$RECV)
 }
 \arguments{
-\item{dbdir}{path to folder with existing receiver databases}
-
 \item{files}{either a character vector of full paths to files, or the full
 path to a directory, which will be searched recursively for .DTA files.}
+
+\item{dbdir}{path to folder with existing receiver databases; defaults
+to \code{MOTUS_PATH$RECV}}
 }
 \value{
 a data_frame reporting the fate of each file, with these columns:

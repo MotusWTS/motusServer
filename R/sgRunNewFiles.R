@@ -19,7 +19,7 @@
 #'     recursively for raw sensorgnome data files.
 #'
 #' @param dbdir path to folder with existing receiver databases
-#' Default: \code{/sgm/recv}
+#' Default: \code{MOTUS_PATH$RECV}
 #'
 #' @param ... additional parameters to the tag finder; see \link{\code{sgFindTags}}
 #'
@@ -31,7 +31,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-sgRunNewFiles = function(files, dbdir = "/sgm/recv", ...) {
+sgRunNewFiles = function(files, dbdir = MOTUS_PATH$RECV, ...) {
     r = sgMergeFiles(files, dbdir)
     info = r$info %>% arrange(serno, monoBN) %>% group_by(serno, monoBN)
 

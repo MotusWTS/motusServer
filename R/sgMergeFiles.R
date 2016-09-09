@@ -8,7 +8,7 @@
 #'     recursively for raw sensorgnome data files.
 #'
 #' @param dbdir path to folder with existing receiver databases
-#' Default: \code{/sgm/recv}
+#' Default: \code{MOTUS_PATH$RECV}
 #'
 #' @return a list with two items:
 #' \itemize{
@@ -40,7 +40,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-sgMergeFiles = function(files, dbdir = "/sgm/recv") {
+sgMergeFiles = function(files, dbdir = MOTUS_PATH$RECV) {
     if (! isTRUE(is.character(files) && all(file.exists(files))))
         stop("invalid or non-existent input files specified")
     if (file.info(files[1])$isdir) {

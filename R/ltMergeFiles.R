@@ -1,9 +1,10 @@
 #' Merge a batch of Lotek .DTA files with an existing database.
 #'
-#' @param dbdir path to folder with existing receiver databases
-#' 
 #' @param files either a character vector of full paths to files, or the full
 #' path to a directory, which will be searched recursively for .DTA files.
+#'
+#' @param dbdir path to folder with existing receiver databases; defaults
+#' to \code{MOTUS_PATH$RECV}
 #'
 #' @return a data_frame reporting the fate of each file, with these columns:
 #' \enumerate{
@@ -16,12 +17,12 @@
 #'
 #' @note If err is not NA for a file, then other fields for that file
 #'     might not be set appropriately in the return value.
-#' 
+#'
 #' @export
-#' 
+#'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-ltMergeFiles = function(dbdir, files) {
+ltMergeFiles = function(files, dbdir=MOTUS_PATH$RECV) {
     if (! isTRUE(is.character(files) && all(file.exists(files)))) {
         warning("invalid or non-existent input files specified")
         return()

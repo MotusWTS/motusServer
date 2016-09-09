@@ -4,7 +4,7 @@
 \alias{sgRunNewFiles}
 \title{Process a new batch of files from a receiver.}
 \usage{
-sgRunNewFiles(files, dbdir = "/sgm/recv", ...)
+sgRunNewFiles(files, dbdir = MOTUS_PATH$RECV, ...)
 }
 \arguments{
 \item{files}{either a character vector of full paths to files, or
@@ -12,7 +12,7 @@ the full path to a directory, which will be searched
 recursively for raw sensorgnome data files.}
 
 \item{dbdir}{path to folder with existing receiver databases
-Default: \code{/sgm/recv}}
+Default: \code{MOTUS_PATH$RECV}}
 
 \item{...}{additional parameters to the tag finder; see \link{\code{sgFindTags}}}
 }
