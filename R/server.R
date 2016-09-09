@@ -1,26 +1,22 @@
 #' wait for new data files to arrive, then process them
 #'
 #' Watch the \code{incoming} directory and when a file or folder is
-#' written to it, call a sequence of handlers until one of them is
-#' successful in processing the item.  Handlers are meant to perform
-#' small, self-contained tasks, such as unpacking a compressed
+#' written or moved to it, call a sequence of handlers until one of
+#' them is successful in processing the item.  Handlers are meant to
+#' perform small, self-contained tasks, such as unpacking a compressed
 #' archive, parsing an email for downloadable links, updating a
-#' receiver database with new files, etc.  This way, if a step fails,
-#' the server can continue to try doing other things.  Moreover, we
-#' try to ensure that files are left in places where they will
-#' automatically be retried if this server function has to be
-#' restarted, or can be dealt with manually.
+#' receiver database with new files, etc.  This helps limit the effect
+#' of failure of one task.  Moreover, we try to ensure that files are
+#' left in places where they will automatically be retried if this
+#' server function has to be restarted, or can be dealt with manually.
 #'
 #' Files or folders already in the watched directory are processed
 #' before any new ones, on the assumption that a previous call to this
 #' function was interrupted.
 #'
-#' The function does not return; it is meant for use in an R script
-#' run in the background.
-#'
-#' @param handlers named list of handlers to be called when a new file
-#'     or folder is added to the incoming directory.  Each handler is
-#'     a function that takes these parameters:
+#' @param handlers list of handlers to be called when a new file or
+#'     folder is added to the incoming directory.  Each handler is a
+#'     function that takes these parameters:
 #'
 #' \itemize{
 #'
@@ -31,15 +27,17 @@
 #' }
 #'
 #' and returns TRUE iff the handler succeeded in processing the item.
-#' Files/folders will be deleted if any handler returns TRUE.  The
-#' names of handlers are used only for logging.
 #'
 #' Handlers are called for each file or folder already in the watch
 #' directory, and then for each file or folder created in, moved
-#' into, or linked to from that directory.  Handlers are permitted to
-#' copy, move, or delete files, but must not modify them in-place.
+#' into, or linked to from that directory. Successful handlers will
+#' typically move some or all of the files in \code{path} to another
+#' location.
 #'
-#' The default list of handlers is:
+#' The file or folder at \code{path} will be deleted if any handler
+#' returns TRUE.
+#'
+#' The default value of \code{handlers} is:
 #' \code{
 #' list(
 #'    handleEmail,
@@ -52,8 +50,9 @@
 #'    handlePath
 #' )
 #' }
-#' 
-#' @return This function does not return.
+#'
+#' @return This function does not return; it is meant for use in an R
+#'     script run in the background.
 #'
 #' @note If a directory is added by creating a symlink to it in the
 #'     \code{incoming} directory, ownership of files in the directory
@@ -65,20 +64,27 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-server = function(handlers = list(handleEmail,
-                                  handleDownloadableLink,
-                                  handleArchive,
-                                  handleDTAs,
-                                  handleSGs,
-                                  handleOneSG,
-                                  handleLogs,
-                                  handlePath)
-                  ) {
+server = function(handlers) {
+    if (missing(handlers))
+        handlers =  list(
+            handleEmail,
+            handleDownloadableLink,
+            handleArchive,
+            handleDTAs,
+            handleSGs,
+            handleOneSG,
+            handleLogs,
+            handlePath
+        )
+
+    ## get names of handler functions
+    handlerNames = as.character(substitute(handlers))[-1]
+
     ## sanity check for handlers
     for (h in handlers)
         if (! is.function(h) || ! sort(names(formals(h))) == c("isdir", "path"))
             stop("Handler must be a function with formals 'path' and 'isdir'")
-    
+
     ensureServerDirs()
 
     ## launch inotifywait to report copying into, moving into, and
@@ -119,7 +125,7 @@ server = function(handlers = list(handleEmail,
             handled = FALSE
             for (i in seq(along=handlers)) {
                 h = handlers[[i]]
-                hname = names(handlers)[i]
+                hname = handlerNames[i]
                 tryCatch(
                 {
                     handled <- h(path=p, isdir=isdir)
@@ -136,7 +142,7 @@ server = function(handlers = list(handleEmail,
             ## if not handled, save the file or folder in the manual handling folder
             if (! handled)
                 archivePath(p, MOTUS_PATH$MANUAL)
-            
+
             ## drop file/dir from queue
             queue = queue[-1]
         }
