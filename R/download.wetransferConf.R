@@ -49,6 +49,6 @@ download.wetransferConf = function(link, dir) {
     file = file.path(dir, sub("[/~]", "", file, perl=TRUE))
     f = CFILE(file, "wb")
     curlPerform(url=directLink, writedata=f@ref)
-    close(f)
+    RCurl::close(f)
     invisible(NULL)
 }

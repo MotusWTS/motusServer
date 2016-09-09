@@ -36,7 +36,7 @@ download.dropbox = function(link, dir) {
     url = sub("dl=0$", "dl=1", link, perl=TRUE)
     
     curlPerform(url=url, followLocation = TRUE, writedata=f@ref)
-    
-    close(f)
+
+    RCurl::close(f)
     invisible(NULL)
 }

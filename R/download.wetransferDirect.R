@@ -50,7 +50,7 @@ download.wetransferDirect = function(link, dir) {
         }
         f = CFILE(file, "wb")
         curlPerform(url=resp$direct_link, writedata=f@ref)
-        close(f)
+        RCurl::close(f)
     } else {
         file = file.path(dir, resp$fields$filename)
         if (! isTRUE(nchar(file) > 0)) {
@@ -65,7 +65,7 @@ download.wetransferDirect = function(link, dir) {
         f = CFILE(file, "wb")
         ## awkward assembly of query:
         curlPerform(url=paste0(resp$formdata$action,'?', paste0(names(resp$fields), '=', curlEscape(resp$fields), collapse="&")), writedata=f@ref)
-        close(f)
+        RCurl::close(f)
     }
     invisible(NULL)
 }
