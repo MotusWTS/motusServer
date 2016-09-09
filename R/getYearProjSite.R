@@ -33,9 +33,8 @@ getYearProjSite = function(serno, ts) {
     sql("attach database '%s' as d", MOTUS_RECV_SERNO_DB)
     dbWriteTable(con, "serts", serts %>% as.data.frame, row.names=FALSE)
 
-    ## left join trick to get latest row (largest tsHi) for each receiver
-    res = sql("select t1.serno as serno, t1.ts as year, t2.Project as proj, t2.Site as site
-    from serts as t1 left outer join d.map as t2 on t1.serno = t2.Serno and t1.ts >= t2.tsLo left outer join d.map as t3 on t2.Serno=t3.Serno and t3.tsLo > t2.tsLo where t1.ts >= t2.tsLo and t3.Serno is null")
+    ## get latest row (largest tsHi) that is still no later than ts for each receiver 
+    res = sql("select t1.serno as serno, t1.ts as year, t2.Project as proj, t2.Site as site, t2.tsLo as tsLo, t2.tsHi as tsHi   from serts as t1 left outer join d.map as t2 on t1.serno = t2.Serno and t2.tsLo = (select max(t3.tsLo) from d.map as t3 where t3.Serno=t2.Serno and t3.tsLo <= t1.ts)")
 
     res$year = as.integer(year(structure(res$year, class=class(Sys.time()))))
     dbDisconnect(con)
