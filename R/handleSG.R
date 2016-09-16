@@ -33,21 +33,15 @@ handleSG = function(path, isdir, params) {
     ## run files the new way
     rv = sgRunNewFiles(path)
 
-    ## log any errors
-    if (any(is.na(rv$err))) {
-        motusLog("HandleDTA errors: %s", paste0("   ", rv$err[!is.na(rv$err)], collapse="\n"))
-        handled = FALSE
-    }
-
-    rv = cbind(rv, getYearProjSite(rv$serno, rv$ts))
+    rv = cbind(rv, getYearProjSite(paste0("SG-", rv$serno), rv$ts))
 
     ## queue a reprocessing of each old site with the new files
 
     ## function to handle files from one old site
-    queueOldsite = function(files) {
+    queueOldSite = function(files) {
         ## move files for this receiver to a new temp folder
-        tmpdir = makeQueuePath("sgold", sub('/', '%', fixed=TRUE, oldSitePath(files$year[1], files$proj[1], files$site[1])))
-        file.rename(files$fullname, file.path(tmpdir, basename(files$fullname)))
+        tmpdir = makeQueuePath("sgold", gsub('/', '%', fixed=TRUE, oldSitePath(files$year[1], files$proj[1], files$site[1])))
+        file.rename(files$name, file.path(tmpdir, basename(files$name)))
         enqueue(tmpdir)
     }
 
