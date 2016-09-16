@@ -38,7 +38,7 @@ handleDownloadableLink = function(path, isdir, params) {
     if (is.null(getter))
         return (FALSE)
 
-    tmpdir = makeQueuePath("download")
+    tmpdir = makeQueuePath()
     motusLog("Downloading to %s type=%s url=%s", tmpdir, s[1], s[2])
     motusLog(paste0(getter(s[2], tmpdir), collapse="\n   "))
     enqueue(tmpdir)
