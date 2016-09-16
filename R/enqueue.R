@@ -10,12 +10,13 @@
 #'
 #' @details Items specified in \code{part1} and \code{...} are appended
 #' to the path, separated by '_' (underscore).
-#' 
+#'
 #' After this call, the file or directory will no longer exist at the
 #' same location, but will be moved into the server's incoming
-#' directory.
+#' directory.  Also, the path to the item's new location will be appended
+#' to the global variable MOTUS_QUEUE.
 #'
-#' @return TRUE on success; FALSE otherwise
+#' @return the new value of MOTUS_QUEUE (invisibly).
 #'
 #' @seealso \code{\link{server}}
 #'
@@ -30,8 +31,12 @@
 
 enqueue = function(path, part1, ...) {
     if (missing(part1)) {
-        file.rename(path, file.path(MOTUS_PATH$QUEUE, basename(path)))
+        newName = file.path(MOTUS_PATH$QUEUE, basename(path))
     } else {
-        file.rename(path, makeQueuePath(part1, ..., isdir=file.info(path), create=FALSE))
+        newName = makeQueuePath(part1, ..., isdir=file.info(path)$isdir, create=FALSE)
     }
+    file.rename(path, newName)
+
+    ## add to the internal representation of the queue, so server() can see it.
+    MOTUS_QUEUE <<- c(MOTUS_QUEUE, newName)
 }

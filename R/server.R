@@ -1,8 +1,19 @@
-#' wait for new data files to arrive, then process them
+#' process items in the motus queue.
 #'
-#' Watch the \code{incoming} directory and when a file or folder is
-#' written or moved to it, process it.  Processing is delegated based
-#' on the name of the file or folder like so:
+#' The queue consists of items in the \code{MOTUS_PATH$QUEUE} folder.
+#' When the queue is empty, it is fed an item from the
+#' \code{MOTUS_PATH$INCOMING} folder, which receives email messages
+#' and directly moved folders.
+#'
+#' Processing an item in the queue usually leads to more items being
+#' added to the queue, and these are processed in chronological order.
+#' When the queue is finally empty again, a new item is obtained from
+#' the external feed.  This way, each external event has all of its
+#' processing conducted before the next event, and interruptions
+#' to the server process leave the queue and feed in a coherent
+#' state for automatic resumption.
+#'
+#' Each queue item is handled like so:
 #'
 #' \enumerate{
 #' \item if the name has a known form, call the "typed"
@@ -10,7 +21,7 @@
 #' \item otherwise, call a sequence of "free" handlers until one of them
 #' returns \code{TRUE}, indicating it has handled the file/folder.
 #' }
-#' 
+#'
 #' Handlers are meant to perform small, self-contained tasks, such as
 #' unpacking a compressed archive, parsing an email for downloadable
 #' links, updating a receiver database with new files, etc.  This
@@ -23,9 +34,10 @@
 #' before any new ones, on the assumption that a previous call to this
 #' function was interrupted.
 #'
-#' @param typedHandlers list of functions, one of which will be called when
-#' an incoming file or folder has a name of known form, that includes a handler
-#' type. Each typed handler function takes these parameters:
+#' @param typedHandlers list of functions, one of which will be called
+#'     when an incoming file or folder has a name of known form that
+#'     includes a handler type. Each typed handler function takes
+#'     these parameters:
 #'
 #' \itemize{
 #'
@@ -38,6 +50,8 @@
 #'
 #' }
 #' and returns TRUE or FALSE, according to whether handling succeded.
+#' If a typedHandler failed, the queued item is stored for manual
+#' intervention.
 #'
 #' @param freeHandlers list of functions to be called when the name of
 #'     an incoming file or folder does not have a recognized form.
@@ -56,7 +70,7 @@
 #'
 #' @param tracing boolean scalar; if TRUE, enter the debugger before
 #' each handler is called
-#' 
+#'
 #' Successful handlers will typically move some or all of the files in
 #' \code{path} to another location.
 #'
@@ -84,6 +98,9 @@
 #' )
 #' }
 #'
+#' If free handlers are called for an item and none of them returns
+#' TRUE, the item is filed for manual intervention.
+#'
 #' @return This function does not return; it is meant for use in an R
 #'     script run in the background.
 #'
@@ -102,10 +119,10 @@ server = function(typedHandlers, freeHandlers, tracing=FALSE) {
         typedHandlers = list (
          msg      = handleEmail,
          url      = handleDownloadableLink,
-         log      = handleLogs,
-         dta      = handleDTAs,
+         log      = handleLog,
+         dta      = handleDTA,
          dtaold   = handleDTAold,
-         sg       = handleSGs,
+         sg       = handleSG,
          sgold    = handleSGold
         )
     }
@@ -133,110 +150,74 @@ server = function(typedHandlers, freeHandlers, tracing=FALSE) {
 
     ensureServerDirs()
 
-    ## launch inotifywait to report copying into, moving into, and
-    ## link creation in the spool directory; report events and
-    ## filenames.  Everything after the first colon is part of the
-    ## path to the file
-
-    evtCon = pipe(
-        paste("inotifywait -q -m -e close_write -e moved_to -e create --format %e:%f", MOTUS_PATH$QUEUE),
-        "r")
-
-    ## initialize file queue with list of files in watch directory.
-    
-    ## Some of these might be created after starting evtCon but
-    ## before calling dir(), so that we see them twice.
-    ## Deal with this by keeping track of existing files.
-    ## i.e. the queue looks like this:
-    ##
-    ## 1     ---+
-    ## 2        |
-    ## ...      +--- files existing before dir()
-    ## n     ---+
-    ##
-    ## n + 1 ---+
-    ## n + 2    |
-    ## n + 3    +--- files created before dir() but after inotifywait is active
-    ## ...      |    These files are seen twice:  once from calling dir()...
-    ## n + m ---+    
-    ##
-    ## n + m + 1 --+
-    ## n + m + 2   |
-    ## ...         +--- and this second time, from the inotifywait pipe
-    ## n + 2m   ---+
-    ##
-    ## n + 2m + 1 ---+
-    ## n + 2m + 2    |--- files created after dir()
-    ## ...        ---+
-
-    ## m will usually be zero, but that can't be guaranteed.
-    
-    existing = queue = dir(MOTUS_PATH$QUEUE)
-
     motusLog("Server started")
 
+    ## get a feed of items from external (asynchronous) sources
+    ## this feed is only checked when the internal queue is empty
+
+    feed = getFeeder(MOTUS_PATH$INCOMING, tracing)
+
+    ## Create a global variable to hold the queue of paths to process.
+    ## This is initialized with the set of items already in
+    ## MOTUS_PATH$QUEUE, sorted by mtime.
+
+    MOTUS_QUEUE <<- dirSortedBy(MOTUS_PATH$QUEUE, "mtime")
+
+    ## process the next item to process from the queue.  If the queue is empty,
+    ## wait for an item from the feed.  Note global assignments for MOTUS_QUEUE
+
     repeat {
-        ## process the queue; it will typically have only 1 element
-        while (length(queue) > 0) {
-            motusLog("Handling event %s", queue[1])
-            p = file.path(MOTUS_PATH$QUEUE, queue[1])
-            isdir = file.info(p)$isdir
 
-            ## parse item name to see if it requires a typed handler
-            pieces = regexPieces(MOTUS_QUEUEFILE_REGEX, queue[1])[[1]]
-            params = strsplit(pieces["params"], "_", fixed=TRUE)[[1]]
-            hname = params[1]
-            params = params[-1]
-            h = typedHandlers[[hname]]
+        if (length(MOTUS_QUEUE) == 0)
+            MOTUS_QUEUE <<- feed()  ## this might might wait a long time
 
-            handled = FALSE
+        p = MOTUS_QUEUE[1]
+        MOTUS_QUEUE <<- MOTUS_QUEUE[-1] ## drop the item from the queue
 
-            if (isTRUE(is.function(h))) {
-                ## try the appropriate typed handler:
+        motusLog("Handling item %s", p)
+        isdir = file.info(p)$isdir
+
+        ## parse item name to see if it requires a typed handler
+        pieces = regexPieces(MOTUS_QUEUEFILE_REGEX, basename(p))[[1]]
+        params = strsplit(pieces["params"], "_", fixed=TRUE)[[1]]
+        hname = params[1]
+        params = params[-1]
+        h = typedHandlers[[hname]]
+
+        handled = FALSE
+
+        if (isTRUE(is.function(h))) {
+            ## try the appropriate typed handler:
+            if (tracing)
+                browser()
+            tryCatch(
+            {
+                handled <- h(path=p, isdir=isdir, params = params)
+            }, error = function(e) {
+                motusLog("Exception while running typed handler %s: %s", hname, e)
+            })
+        } else {
+            ## try free handlers until one succeeds
+            for (i in seq(along = freeHandlers)) {
+                hname <- names(freeHandlers)[[i]]
                 if (tracing)
                     browser()
-            
                 tryCatch(
                 {
-                    handled <- h(path=p, isdir=isdir, params = params)
+                    handled <- freeHandlers[[i]](path=p, isdir=isdir)
+                    if (isTRUE(handled)) {
+                        break
+                    }
                 }, error = function(e) {
-                    motusLog("Exception while running typed handler %s: %s", hname, e)
+                    motusLog("Exception while running free handler %s: %s", hname, e)
                 })
-            } else {
-                ## try free handlers until one succeeds
-                for (i in seq(along = freeHandlers)) {
-                    if (tracing)
-                        browser()
-            
-                    tryCatch(
-                    {
-                        handled <- freeHandlers[[i]](path=p, isdir=isdir)
-                        if (isTRUE(handled)) {
-                            break
-                        }
-                    }, error = function(e) {
-                        motusLog("Exception while running free handler %s: %s", hname, e)
-                    })
-                }
             }
-            if (isTRUE(handled)) {
-                unlink(p, recursive=TRUE)
-                motusLog("Handled by %s", hname)
-            } else {
-                embroilHuman(p, "No handlers worked for this item.")
-            }
-            ## drop file/dir from queue
-            queue = queue[-1]
         }
-        ## wait for a new file/dir
-        f = readLines(evtCon, n=1)
-        f = sub("^[^:]*:", "", f)
-        if (f %in% existing) {
-            ## we've seen this event; it's part of the doubly-detected set (see above)
-            next
+        if (isTRUE(handled)) {
+            unlink(p, recursive=TRUE)
+            motusLog("Handled by %s", hname)
+        } else {
+            embroilHuman(p, "No handlers worked for this item.")
         }
-        ## event is new; so we're finished with any double-detections
-        existing = c()
-        queue = f
     }
 }

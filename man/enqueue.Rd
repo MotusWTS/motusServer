@@ -16,7 +16,7 @@ new path.}
 of the new path.}
 }
 \value{
-TRUE on success; FALSE otherwise
+the new value of MOTUS_QUEUE (invisibly).
 }
 \description{
 Add a file or folder to the server queue.
@@ -27,7 +27,8 @@ to the path, separated by '_' (underscore).
 
 After this call, the file or directory will no longer exist at the
 same location, but will be moved into the server's incoming
-directory.
+directory.  Also, the path to the item's new location will be appended
+to the global variable MOTUS_QUEUE.
 }
 \examples{
 ## Not run:

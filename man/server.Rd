@@ -2,14 +2,15 @@
 % Please edit documentation in R/server.R
 \name{server}
 \alias{server}
-\title{wait for new data files to arrive, then process them}
+\title{process items in the motus queue.}
 \usage{
 server(typedHandlers, freeHandlers, tracing = FALSE)
 }
 \arguments{
-\item{typedHandlers}{list of functions, one of which will be called when
-an incoming file or folder has a name of known form, that includes a handler
-type. Each typed handler function takes these parameters:
+\item{typedHandlers}{list of functions, one of which will be called
+    when an incoming file or folder has a name of known form that
+    includes a handler type. Each typed handler function takes
+    these parameters:
 
 \itemize{
 
@@ -21,7 +22,9 @@ type. Each typed handler function takes these parameters:
 file/folder name
 
 }
-and returns TRUE or FALSE, according to whether handling succeded.}
+and returns TRUE or FALSE, according to whether handling succeded.
+If a typedHandler failed, the queued item is stored for manual
+intervention.}
 
 \item{freeHandlers}{list of functions to be called when the name of
     an incoming file or folder does not have a recognized form.
@@ -66,18 +69,32 @@ list(
          archive  = handleArchive,
          default  = handlePath
 )
-}}
+}
+
+If free handlers are called for an item and none of them returns
+TRUE, the item is filed for manual intervention.}
 }
 \value{
 This function does not return; it is meant for use in an R
     script run in the background.
 }
 \description{
-Watch the \code{incoming} directory and when a file or folder is
-written or moved to it, process it.  Processing is delegated based
-on the name of the file or folder like so:
+The queue consists of items in the \code{MOTUS_PATH$QUEUE} folder.
+When the queue is empty, it is fed an item from the
+\code{MOTUS_PATH$INCOMING} folder, which receives email messages
+and directly moved folders.
 }
 \details{
+Processing an item in the queue usually leads to more items being
+added to the queue, and these are processed in chronological order.
+When the queue is finally empty again, a new item is obtained from
+the external feed.  This way, each external event has all of its
+processing conducted before the next event, and interruptions
+to the server process leave the queue and feed in a coherent
+state for automatic resumption.
+
+Each queue item is handled like so:
+
 \enumerate{
 \item if the name has a known form, call the "typed"
 handler corresponding to the appropriate slot in the name

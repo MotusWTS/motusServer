@@ -67,24 +67,26 @@ MOTUS_OUTGOING_EMAIL_ADDRESS = "info@sensorgnome.org"
 ## filesystem layout; dirs end in "/"
 
 MOTUS_PATH = list(
-    ROOT    = "/sgm",
-    BIN     = "/sgm/bin",             ## executable scripts
-    CACHE   = "/sgm/cache",           ## recent results of large queries from motus.org
-    QUEUE   = "/sgm/incoming",        ## files / dirs moved here are processed by server()
-    EMAILS  = "/sgm/emails",          ## saved copies of valid data-transfer emails
-    LOGS    = "/sgm/logs",            ## processing logs
-    MANUAL  = "/sgm/manual",          ## folders needing manual attention
-    MOTR    = "/sgm/motr",            ## links to receiver DBs by motus ID
-    OLDROOT = "/SG",                  ## root of old-style folder hierarchy
-    OUTBOX  = "/sgm/outbox",          ## copies of all sent emails
-    PLOTS   = "/sgm/plots",           ## generated plots
-    PUB     = "/sgm/pub",             ## web-visible public content
-    RECV    = "/sgm/recv",            ## receiver databases
-    RECVLOG = "/sgm/recvlog",         ## logfiles from receivers
-    REFS    = "/sgm/refs",            ## links to receiver DBs by year, projCode, siteCode
-    SPAM    = "/sgm/spam",            ## saved invalid emails
-    TAGS    = "/sgm/tags",            ## ??
-    TMP     = "/sgm/tmp"              ## temporary storage persistent across reboots
+    ROOT     = "/sgm",
+    BIN      = "/sgm/bin",             ## executable scripts
+    CACHE    = "/sgm/cache",           ## recent results of large queries from motus.org
+    EMAILS   = "/sgm/emails",          ## saved copies of valid data-transfer emails
+    INCOMING = "/sgm/incoming",        ## files / dirs moved here are processed by server(); this is the external / asynchronous
+                                       ## access point to the processing queue
+    LOGS     = "/sgm/logs",            ## processing logs
+    MANUAL   = "/sgm/manual",          ## folders needing manual attention
+    MOTR     = "/sgm/motr",            ## links to receiver DBs by motus ID
+    OLDROOT  = "/SG",                  ## root of old-style folder hierarchy
+    OUTBOX   = "/sgm/outbox",          ## copies of all sent emails
+    PLOTS    = "/sgm/plots",           ## generated plots
+    PUB      = "/sgm/pub",             ## web-visible public content
+    QUEUE    = "/sgm/queue",           ## queue for processing items
+    RECV     = "/sgm/recv",            ## receiver databases
+    RECVLOG  = "/sgm/recvlog",         ## logfiles from receivers
+    REFS     = "/sgm/refs",            ## links to receiver DBs by year, projCode, siteCode
+    SPAM     = "/sgm/spam",            ## saved invalid emails
+    TAGS     = "/sgm/tags",            ## ??
+    TMP      = "/sgm/tmp"              ## temporary storage persistent across reboots
 )
 
 ## main logfile name
