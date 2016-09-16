@@ -4,12 +4,12 @@
 \alias{server}
 \title{wait for new data files to arrive, then process them}
 \usage{
-server(handlers)
+server(typedHandlers, freeHandlers, tracing = FALSE)
 }
 \arguments{
-\item{handlers}{list of handlers to be called when a new file or
-    folder is added to the incoming directory.  Each handler is a
-    function that takes these parameters:
+\item{typedHandlers}{list of functions, one of which will be called when
+an incoming file or folder has a name of known form, that includes a handler
+type. Each typed handler function takes these parameters:
 
 \itemize{
 
@@ -17,30 +17,54 @@ server(handlers)
 
 \item isdir: boolean; TRUE iff the path is a directory
 
+\item params: character vector of parameters parsed from the
+file/folder name
+
 }
+and returns TRUE or FALSE, according to whether handling succeded.}
 
-and returns TRUE iff the handler succeeded in processing the item.
+\item{freeHandlers}{list of functions to be called when the name of
+    an incoming file or folder does not have a recognized form.
+    Handlers are called one at a time until one of them returns
+    TRUE.
 
-Handlers are called for each file or folder already in the watch
-directory, and then for each file or folder created in, moved
-into, or linked to from that directory. Successful handlers will
-typically move some or all of the files in \code{path} to another
-location.
+Each free handler function takes these parameters:
+
+\itemize{
+
+\item path: the full path to the new file or directory
+
+\item isdir: boolean; TRUE iff the path is a directory
+
+}}
+
+\item{tracing}{boolean scalar; if TRUE, enter the debugger before
+each handler is called
+
+Successful handlers will typically move some or all of the files in
+\code{path} to another location.
 
 The file or folder at \code{path} will be deleted if any handler
-returns TRUE.
+returns TRUE, otherwise it will be filed for manual intervention.
 
-The default value of \code{handlers} is:
+The default value of \code{typedHandlers} is:
 \code{
 list(
-   handleEmail,
-   handleDownloadableLink,
-   handleArchive,
-   handleDTAs,
-   handleSGs,
-   handleOneSG,
-   handleLogs,
-   handlePath
+         msg      = handleEmail,
+         url      = handleDownloadableLink,
+         log      = handleLog,
+         dta      = handleDTA,
+         dtaold   = handleDTAold,
+         sg       = handleSG,
+         sgold    = handleSGold
+)
+}
+
+The default value of \code{freeHandlers} is:
+\code{
+list(
+         archive  = handleArchive,
+         default  = handlePath
 )
 }}
 }
@@ -50,16 +74,25 @@ This function does not return; it is meant for use in an R
 }
 \description{
 Watch the \code{incoming} directory and when a file or folder is
-written or moved to it, call a sequence of handlers until one of
-them is successful in processing the item.  Handlers are meant to
-perform small, self-contained tasks, such as unpacking a compressed
-archive, parsing an email for downloadable links, updating a
-receiver database with new files, etc.  This helps limit the effect
-of failure of one task.  Moreover, we try to ensure that files are
-left in places where they will automatically be retried if this
-server function has to be restarted, or can be dealt with manually.
+written or moved to it, process it.  Processing is delegated based
+on the name of the file or folder like so:
 }
 \details{
+\enumerate{
+\item if the name has a known form, call the "typed"
+handler corresponding to the appropriate slot in the name
+\item otherwise, call a sequence of "free" handlers until one of them
+returns \code{TRUE}, indicating it has handled the file/folder.
+}
+
+Handlers are meant to perform small, self-contained tasks, such as
+unpacking a compressed archive, parsing an email for downloadable
+links, updating a receiver database with new files, etc.  This
+helps limit the effect of failure of one task.  Moreover, we try to
+ensure that files are named and left in places where they will
+automatically be retried if this server function has to be
+restarted, or can be dealt with manually.
+
 Files or folders already in the watched directory are processed
 before any new ones, on the assumption that a previous call to this
 function was interrupted.

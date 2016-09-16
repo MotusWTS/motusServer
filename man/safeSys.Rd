@@ -14,14 +14,12 @@ for example)}
 using \code{c()} and then quoted using \link{\code{shQuote()}}}
 }
 \value{
-no return value.
+character vector of the stdout and stderr streams from
+    running \code{cmd}, one line per item.
 }
 \description{
 Quotes all parameters for a bash-type shell then runs the command with
 them using \link{\code{system2}}
-}
-\note{
-
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}

@@ -1,8 +1,8 @@
 #' Queue any files of known type from a folder.
 #'
 #' The email must already have been unpacked into the specified
-#' directory.  This function recursively deletes any files which
-#' are not of usable type:
+#' directory.  Files from these known types are enqueued:
+#'
 #' \itemize{
 #' \item .DTA files from a lotek receiver
 #' \item .txt.gz  compressed files from an SG
@@ -12,7 +12,7 @@
 #' \item .rar ...
 #' }
 #'
-#' The folder is then enqueued.
+#' Any remaining files are relegated to manual intervention.
 #'
 #' @param dir character vector of directories; default \code{character(0)}
 #'
@@ -32,13 +32,15 @@ queueKnownFiles = function(dir = character(0), files = character(0)) {
 
     parts = c(files, dir(dir, full.names=TRUE, recursive=TRUE))
 
-    goodParts = grepl(MOTUS_FILE_ATTACHMENT_REGEX, parts, perl=TRUE)
+    known = grepl(MOTUS_FILE_ATTACHMENT_REGEX, parts, perl=TRUE)
 
-    for (p in parts[goodParts])
+    for (p in parts[known])
         enqueue(p)
 
-    motusLog("Discarding files of unknown type: %s", paste0("   ", basename(parts[! goodParts]), collapse="\n"))
+    embroilHuman(parts[ ! known ])
 
+    ## delete the directory skeleton, in case it is still there.
     unlink(dir, recursive=TRUE)
-    return(c(sum(goodParts), length(parts)))
+
+    return(c(sum(known), length(parts)))
 }

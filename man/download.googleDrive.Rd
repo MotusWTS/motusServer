@@ -12,7 +12,7 @@ download.googleDrive(link, dir)
 \item{dir}{directory into which the file(s) will be downloaded}
 }
 \value{
-returns invisible(NULL)
+stdout and stderr from running \code{gdrive}
 }
 \description{
 An email from a user via Google Drive offering a file or folder for

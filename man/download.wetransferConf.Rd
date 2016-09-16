@@ -13,7 +13,7 @@ sent to file sender.}
 \item{dir}{directory into which the file(s) will be downloaded}
 }
 \value{
-returns invisible(NULL)
+a messages saying how many bytes were downloaded.
 }
 \description{
 The confirmation email sent from wetransfer.com to a file sender

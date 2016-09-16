@@ -9,7 +9,7 @@
 #'
 #' @param dir directory into which the file(s) will be downloaded
 #'
-#' @return returns invisible(NULL)
+#' @return a messages saying how many bytes were downloaded.
 #'
 #' @note wetransfer.com does not have a published download API, so we
 #'     do this the tedious way, by parsing responses from their
@@ -67,5 +67,5 @@ download.wetransferDirect = function(link, dir) {
         curlPerform(url=paste0(resp$formdata$action,'?', paste0(names(resp$fields), '=', curlEscape(resp$fields), collapse="&")), writedata=f@ref)
         RCurl::close(f)
     }
-    invisible(NULL)
+    return(paste("Downloaded", file.info(file)$size, "bytes"))
 }

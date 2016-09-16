@@ -9,9 +9,8 @@
 #' @param ... list of parameters to the command; these are combined
 #'     using \code{c()} and then quoted using \link{\code{shQuote()}}
 #'
-#' @return no return value.
-#'
-#' @note
+#' @return character vector of the stdout and stderr streams from
+#'     running \code{cmd}, one line per item.
 #'
 #' @export
 #'
@@ -19,5 +18,5 @@
 
 safeSys = function(cmd, ...) {
     ## Note: cmd is already quoted by system2(), but for some reason args are not
-    system2(cmd, shQuote(c(...)))
+    system2(cmd, shQuote(c(...)), stdout=TRUE, stderr=TRUE)
 }

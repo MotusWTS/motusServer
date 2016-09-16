@@ -9,7 +9,7 @@
 #'
 #' @param dir directory into which the file(s) will be downloaded
 #'
-#' @return returns invisible(NULL)
+#' @return stdout and stderr from running \code{gdrive}
 #'
 #' @references \url{https://github.com/prasmussen/gdrive}
 #'
@@ -23,11 +23,19 @@ download.googleDrive = function(link, dir) {
 
     ## URL from email looks like
     ## e.g. https://drive.google.com/folderview?id=0B483BNeq2WIsdXZDde78dDA
+    ## or   https://drive.google.com/open?id=3D0B-bl0wWafEk1F1Y0hMdGZJQkk
+    ## or   https://drive.google.com/file/d/0Bx3KaXOwqMcBU1NfMTlOSHFUVm8/view?usp=drive_web
 
     x = parse_url(link)
 
     ## each file or folder has a unique ID
     ID = x$query$id
+
+    if (is.null(ID)) {
+        ID = regexPieces("file/[[:alnum:]]+/(?<id>[[:alnum:]]+)/", x$path)[[1]]["id"][1]
+        if (is.na(ID))
+            return(invisible(NULL))
+    }
 
     info = readLines(pipe(paste("gdrive", "info", ID)))
 
@@ -52,5 +60,4 @@ download.googleDrive = function(link, dir) {
                 ID
                 )
     }
-    invisible(NULL)
 }

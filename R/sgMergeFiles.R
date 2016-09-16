@@ -60,12 +60,6 @@ sgMergeFiles = function(files, dbdir = MOTUS_PATH$RECV) {
         basename = ff %>% basename %>% iconv(to="UTF-8", sub="byte")
     )
 
-    ## parse filenames into components
-    pfc = parseFilenames(allf$basename)
-
-    ## modify component names to avoid collisions with names in database 'files' table
-    names(pfc) = paste0("F", names(pfc))
-
     ## On the SG, data are written simultaneously to .txt and .txt.gz files; when
     ## a size or time threshold is reached, the .txt.gz file is closed, and the
     ## uncompressed .txt version is deleted.  Until then, the .txt file will have
@@ -93,7 +87,7 @@ sgMergeFiles = function(files, dbdir = MOTUS_PATH$RECV) {
     ## - otherwise, copy the compressed F (if valid) from allf to oldf.
 
     ## parse filenames into components
-    pfc = parseFilenames(allf$basename)
+    pfc = parseFilenames(allf$fullname, allf$basename)
 
     ## modify component names to avoid collisions with names in database 'files' table
     names(pfc) = paste0("F", names(pfc))

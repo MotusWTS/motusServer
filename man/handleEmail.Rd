@@ -4,12 +4,14 @@
 \alias{handleEmail}
 \title{handler for incoming email}
 \usage{
-handleEmail(path, isdir)
+handleEmail(path, isdir, params)
 }
 \arguments{
 \item{path}{the full path to the new file or directory}
 
 \item{isdir}{boolean; TRUE iff the path is a directory}
+
+\item{params}{not used}
 }
 \value{
 TRUE if the file is an email; FALSE otherwise

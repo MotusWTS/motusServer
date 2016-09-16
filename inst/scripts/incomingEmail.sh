@@ -6,11 +6,11 @@ umask 0002
 ## when it detects a file has been written there.
 ## Emails are recognized by their filename format:
 ##
-##   msg_YYYY-MM-DDTHH-MM-SS.SSSSSS.txt
+##   YYYY-MM-DDTHH-MM-SS.SSSSSS_msg
 ##
 
 DATE=`date -u +%Y-%m-%dT%H-%M-%S.%6N`
-DEST=/sgm/incoming/msg_$DATE.txt
+DEST=/sgm/incoming/${DATE}_msg
 LOGFILE=/sgm/logs/emails.log.txt
 
 echo Got message $DATE >> $LOGFILE

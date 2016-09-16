@@ -2,7 +2,7 @@
 % Please edit documentation in R/handleArchive.R
 \name{handleArchive}
 \alias{handleArchive}
-\title{handle a compressed archive.}
+\title{Try handle a compressed archive.}
 \usage{
 handleArchive(path, isdir)
 }
@@ -12,11 +12,11 @@ handleArchive(path, isdir)
 \item{isdir}{boolean; TRUE iff the path is a directory}
 }
 \value{
-TRUE iff the archive \code{path} was succesfully extracted.
+TRUE iff the \code{path} was an archive and succesfully extracted.
 }
 \description{
-If possible the compressed archive is extracted into a temporary folder
-which is then enqueued.
+If \code{path} is a compressed archive of known type, it is
+extracted into a temporary folder which is then enqueued.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}

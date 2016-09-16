@@ -2,14 +2,18 @@
 #'
 #' @param path the full path to the file or directory.
 #'
-#' @param ... further parameters to the tempfile function; e.g.
-#' specifying \code{pattern="URL_"} will cause the file or folder
-#' name to begin with "URL_".
+#' @param part1 if present, a string to add to the name of the
+#' new path.
+#'
+#' @param ... if present, additional strings to add to the name
+#' of the new path.
+#'
+#' @details Items specified in \code{part1} and \code{...} are appended
+#' to the path, separated by '_' (underscore).
 #' 
 #' After this call, the file or directory will no longer exist at the
-#' same location, but will be renamed into the server's incoming
-#' directory.  The new name will be unique there, and can include
-#' a pattern and fileext specified in \code{...}
+#' same location, but will be moved into the server's incoming
+#' directory.
 #'
 #' @return TRUE on success; FALSE otherwise
 #'
@@ -19,11 +23,15 @@
 #'
 #' @examples
 #' ## Not run:
-#' enqueue("/tmp/mytmpurlfile", pattern="url_", fileext=".txt")
+#' enqueue("/tmp/mytmpurlfile")
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 
-enqueue = function(path, ...) {
-    file.rename(path, tempfile(tmpdir=MOTUS_PATH$QUEUE, ...))
+enqueue = function(path, part1, ...) {
+    if (missing(part1)) {
+        file.rename(path, file.path(MOTUS_PATH$QUEUE, basename(path)))
+    } else {
+        file.rename(path, makeQueuePath(part1, ..., isdir=file.info(path), create=FALSE))
+    }
 }

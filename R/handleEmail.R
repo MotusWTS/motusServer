@@ -6,6 +6,8 @@
 #'
 #' @param isdir boolean; TRUE iff the path is a directory
 #'
+#' @param params not used
+#'
 #' @return TRUE if the file is an email; FALSE otherwise
 #'
 #' @seealso \code{\link{server}}
@@ -14,18 +16,18 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-handleEmail = function(path, isdir) {
+handleEmail = function(path, isdir, params) {
     ## an email must be a single file, not a dir, and match the
     ## pattern for email message files
 
-    if (isdir || ! grepl(MOTUS_EMAIL_FILE_REGEX, basename(path), perl=TRUE))
+    if (isdir)
         return (FALSE)
+
+    ## validate
+    ue = validateEmail(paste(readLines(path), collapse="\n"))
 
     ## unpack the email
     msg = unpackEmail(path)
-
-    ## validate
-    ue = validateEmail(msg)
 
     ## for now, be strict about token expiry
     valid = ! (is.null(ue) || ue$expired)
@@ -37,8 +39,18 @@ handleEmail = function(path, isdir) {
         ## parse out and enqueue links to remote data storage
         queueDownloadableLinks(msg)
 
-        ## deal with any attached files of known type
-        queueKnownFiles(attr(msg, "tmpdir"))
+        ## drop text parts with names like "partN"
+        tmpdir = attr(msg, "tmpdir")
+        file.remove (
+            dir(tmpdir,
+                pattern    = "^part[0-9]+$",
+                recursive  = TRUE,
+                full.names = TRUE
+                )
+        )
+        
+        ## deal with any remaining attached files of known type
+        queueKnownFiles(tmpdir)
     }
     return (TRUE)
 }

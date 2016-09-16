@@ -7,7 +7,7 @@
 sgRecvSrc(serno, dbdir = MOTUS_PATH$RECV)
 }
 \arguments{
-\item{serno}{raw sensorgnome serial number (i.e. without "SG-")}
+\item{serno}{receiver serial number}
 
 \item{dbdir}{path to folder with existing receiver databases
 Default: \code{MOTUS_PATH$RECV}}
@@ -18,7 +18,7 @@ will be empty, but have the correct schema.
 }
 \description{
 receiver database files are stored in a single directory, and
-have names like "SG-XXXXBBBKYYYY.motus".
+have names like "SG-XXXXBBBKYYYY.motus" or "Lotek-NNNNN.motus"
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}

@@ -14,15 +14,15 @@
 #' \itemize{
 #'
 #'    \item any .DTA (Lotek) files are moved into a new temporary
-#' directory whose name starts with dta_, which is then enqueued.
+#' directory whose name ends with _dta, which is then enqueued.
 #'
 #'    \item any folder with a file named "syslog" is given a new name
-#' that begins with "log_", and is enqueued
+#' that ends with "_log", and is enqueued
 #'
 #'    \item any files with names ending in ".gz" or ".txt.gz", or
 #' which have an 8.3 character filename that includes a tilde ("~")
 #' character are moved into a new temporary directory whose name
-#' starts with sg_, which is then enqueued. See the references
+#' ends with _sg, which is then enqueued. See the references
 #' regarding 8.3 filenames
 #'
 #'    \item any remaining files of recognized type are enqueued
@@ -43,7 +43,7 @@ handlePath = function(path, isdir) {
     ## treat single file as folder with single file
 
     if (! isdir) {
-        newdir = motusTempPath()
+        newdir = makeQueuePath("file")
         newpath = file.path(newdir, basename(path))
         file.rename(path, newpath)
         path = newpath
@@ -55,9 +55,9 @@ handlePath = function(path, isdir) {
 
     dta = grep("(?i)\\.DTA$", all, perl=TRUE)
     if (length(dta)) {
-        newdir = motusTempPath()
+        newdir = makeQueuePath("dta")
         file.rename(all[dta], file.path(newdir, basename(all[dta])))
-        enqueue(newdir, pattern="dta_")
+        enqueue(newdir)
         all = all[ - dta]
     }
 
@@ -66,7 +66,7 @@ handlePath = function(path, isdir) {
     syslog = grep("^syslog$", basename(all), perl=TRUE)
     if (length(syslog)) {
         for (d in sylog)
-            enqueue(dirname(all[d]), pattern="log_")
+            enqueue(dirname(all[d]), "log")
         all = all[ - syslog ]
     }
 
@@ -76,9 +76,9 @@ handlePath = function(path, isdir) {
 
     sg = grep("(\\.txt(\\.gz)?$)|~", all, perl=TRUE)
     if (length(sg)) {
-        newdir = motusTempPath()
+        newdir = makeQueuePath("sg")
         file.rename(all[sg], file.path(newdir, basename(all[sg])))
-        enqueue(newdir, pattern="sg_")
+        enqueue(newdir)
         all = all[ - sg ]
     }
 
@@ -86,4 +86,6 @@ handlePath = function(path, isdir) {
     ## compressed archives
 
     queueKnownFiles(path)
+
+    return(TRUE)
 }

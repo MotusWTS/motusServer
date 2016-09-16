@@ -17,8 +17,9 @@ an integer vector with two elements: the number of
 }
 \description{
 The email must already have been unpacked into the specified
-directory.  This function recursively deletes any files which
-are not of usable type:
+directory.  Files from these known types are enqueued:
+}
+\details{
 \itemize{
 \item .DTA files from a lotek receiver
 \item .txt.gz  compressed files from an SG
@@ -27,9 +28,8 @@ are not of usable type:
 \item .7z ...
 \item .rar ...
 }
-}
-\details{
-The folder is then enqueued.
+
+Any remaining files are relegated to manual intervention.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}

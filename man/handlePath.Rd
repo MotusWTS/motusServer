@@ -19,15 +19,15 @@ The algorithm is this:
 \itemize{
 
    \item any .DTA (Lotek) files are moved into a new temporary
-directory whose name starts with dta_, which is then enqueued.
+directory whose name ends with _dta, which is then enqueued.
 
    \item any folder with a file named "syslog" is given a new name
-that begins with "log_", and is enqueued
+that ends with "_log", and is enqueued
 
    \item any files with names ending in ".gz" or ".txt.gz", or
 which have an 8.3 character filename that includes a tilde ("~")
 character are moved into a new temporary directory whose name
-starts with sg_, which is then enqueued. See the references
+ends with _sg, which is then enqueued. See the references
 regarding 8.3 filenames
 
    \item any remaining files of recognized type are enqueued

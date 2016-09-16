@@ -9,6 +9,8 @@
 #'
 #' @param isdir boolean; TRUE iff the path is a directory
 #'
+#' @param params not used
+#'
 #' @return TRUE iff the folder could be archived; i.e. iff a valid
 #'     sensorgnome serial number was found in at least one of the log
 #'     files
@@ -20,8 +22,8 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-handleLogs = function(path, isdir) {
-    if (! isdir || ! grepl("^log_", path, perl=TRUE))
+handleLog = function(path, isdir, params) {
+    if (! isdir)
         return (FALSE)
 
     ## use zgrep to look for receiver serial number strings in

@@ -15,7 +15,7 @@ email(to, subj, msg, ...)
 \code{sprintf}-style formatting string, with fields filled in
 from \code{...}.}
 
-\item{...}{paramters for replacing \code{sprintf} formatting codes
+\item{...}{parameters for replacing \code{sprintf} formatting codes
 in \code{msg}}
 }
 \value{

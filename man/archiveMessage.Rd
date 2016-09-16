@@ -2,7 +2,7 @@
 % Please edit documentation in R/archiveMessage.R
 \name{archiveMessage}
 \alias{archiveMessage}
-\title{Save a handled email message in the appropriate place}
+\title{Save a handled email message in the appropriate place.}
 \usage{
 archiveMessage(path, valid)
 }

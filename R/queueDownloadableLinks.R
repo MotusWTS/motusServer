@@ -19,18 +19,15 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-extractDownloadableLinks = function(msg) {
+queueDownloadableLinks = function(msg) {
 
     links = regexPieces(dataTransferRegex, msg)[[1]]
 
     ## queue any links
 
     for (i in seq(along=links)) {
-
-        motusLog("Calling download.%s for %s", names(links)[i], links[i])
-        tmpf = file(motusTempPath(TRUE), "w")
+        tmpf = makeQueuePath("url", isdir=FALSE)
         cat(sprintf("%s %s\n", names(links)[i], links[i]), file=tmpf)
-        close(tmpf)
-        enqueue(tmpf, pattern="url_", fileext=".txt")
+        enqueue(tmpf)
     }
 }

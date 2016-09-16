@@ -40,11 +40,11 @@ unpackEmail = function(path, headers=c("Subject", "Reply-To:"), maxHeaderLines=5
         h = character(0)
     }
 
-    tmpdir = motusTempPath()
+    tmpdir = makeQueuePath("msgparts")
 
     ## because the incoming email might (incorrectly) use \r\n end of lines,
     ## convert these to \n
-    system(sprintf("cat %s | sed -e 's/\\r$//' | munpack -C %s -q -t", path, tmpdir))
+    system(sprintf("cat %s | sed -e 's/\\r$//' | munpack -C %s -q -t", path, tmpdir), ignore.stdout=TRUE)
 
     parts = dir(tmpdir, full.names=TRUE)
     textpart = match("part1", basename(parts))
@@ -56,6 +56,5 @@ unpackEmail = function(path, headers=c("Subject", "Reply-To:"), maxHeaderLines=5
         ## paste the subject line and first text part of the message (if any)
         msg = paste0(paste0(c(h, readLines(parts[textpart])), collapse="\n"), "\n")
     }
-
     return(structure(msg, tmpdir=tmpdir))
 }

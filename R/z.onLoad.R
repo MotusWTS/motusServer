@@ -27,7 +27,11 @@
         )
     }
 
-    MOTUS_MAINLOG <<- file(file.path(MOTUS_PATH$LOGS, MOTUS_MAINLOG_NAME), "a")
+    tryCatch( {
+        MOTUS_MAINLOG <<- file(file.path(MOTUS_PATH$LOGS, MOTUS_MAINLOG_NAME), "a")
+    }, error = function(e) {
+        MOTUS_MAINLOG <<- stdout()
+    })
 
     invisible(NULL)
 }

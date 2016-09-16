@@ -1,6 +1,6 @@
 #' Grab content from a downloadable link.
 #'
-#' The link is contained a file whose name looks like url_XXX.txt
+#' The link is contained a file whose name looks like TIMESTAMP_url
 #' The file contains a single line, with this form:
 #'
 #'    \code{TYPE URL}
@@ -13,10 +13,11 @@
 #'
 #' @param isdir boolean; TRUE iff the path is a directory
 #'
-#' @return TRUE if \code{path} contained a link which was
-#'     successfully downloaded.
+#' @param params character vector; not used.
 #'
-#' If the content is successfully downloaded, it is enqueued.
+#' @return TRUE if the link was successfully downloaded.
+#'
+#' @note If the download was successful, the file/folder is enqueued.
 #'
 #' @seealso \link{\code{server}}
 #'
@@ -24,12 +25,12 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-handleDownloadableLink = function(path, isdir) {
+handleDownloadableLink = function(path, isdir, params) {
 
-    if (isdir || ! grepl(MOTUS_DOWNLOADABLE_LINK_FILE_REGEX, path, perl=TRUE))
+    if (isdir)
         return (FALSE)
 
-    s = readLines(path, n=1) %>% strsplit(" ", fixed=TRUE)[[1]]
+    s = (readLines(path, n=1) %>% strsplit(., " ", fixed=TRUE))[[1]]
 
     ## try call a function called 'download.TYPE'
 
@@ -37,8 +38,9 @@ handleDownloadableLink = function(path, isdir) {
     if (is.null(getter))
         return (FALSE)
 
-    tmpdir = motusTempPath()
+    tmpdir = makeQueuePath("download")
     motusLog("Downloading to %s type=%s url=%s", tmpdir, s[1], s[2])
-    getter(s[2], tmpdir)
+    motusLog(paste0(getter(s[2], tmpdir), collapse="\n   "))
     enqueue(tmpdir)
+    return(TRUE)
 }

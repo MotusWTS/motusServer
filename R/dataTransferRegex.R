@@ -22,9 +22,10 @@ dataTransferRegex =
 # A link for a shared google drive file or folder
 # e.g. https://drive.google.com/folderview?id=0B-bl0wW8891FEy2QVpXOUU&usp=sharing
 # or   https://drive.google.com/open?id=3D0B-bl0wWafEk1F1Y0hMdGZJQkk
+# or   https://drive.google.com/file/d/0Bx3KaXOwqMcBU1NfMTlOSHFUVm8/view?usp=drive_web
 
 |
-(?:(?<googleDrive>https://drive\\.google\\.com/[^[:space:]]*id=[-[:alnum:]]*[^[:space:]]*)[[:space:]])
+(?:(?<googleDrive>https://drive\\.google\\.com/(?:([^[:space:]]*id=[-[:alnum:]]*[^[:space:]]*)[[:space:]])|(?:file/[[:alnum:]]+/[[:alnum:]]+/)))
 
 #or
 #

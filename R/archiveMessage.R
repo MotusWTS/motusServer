@@ -1,4 +1,4 @@
-#' Save a handled email message in the appropriate place
+#' Save a handled email message in the appropriate place.
 #'
 #' Both valid and invalid emails are compressed and archived.
 #'

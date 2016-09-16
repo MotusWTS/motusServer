@@ -4,21 +4,20 @@
 \alias{handleDownloadableLink}
 \title{Grab content from a downloadable link.}
 \usage{
-handleDownloadableLink(path, isdir)
+handleDownloadableLink(path, isdir, params)
 }
 \arguments{
 \item{path}{the full path to the file with the download link}
 
 \item{isdir}{boolean; TRUE iff the path is a directory}
+
+\item{params}{character vector; not used.}
 }
 \value{
-TRUE if \code{path} contained a link which was
-    successfully downloaded.
-
-If the content is successfully downloaded, it is enqueued.
+TRUE if the link was successfully downloaded.
 }
 \description{
-The link is contained a file whose name looks like url_XXX.txt
+The link is contained a file whose name looks like TIMESTAMP_url
 The file contains a single line, with this form:
 }
 \details{
@@ -27,6 +26,9 @@ The file contains a single line, with this form:
 where TYPE is the name of a handler, e.g. dropbox for which a function
 \code{dowload.TYPE} is defined, and \code{URL} is the location
 of the item.
+}
+\note{
+If the download was successful, the file/folder is enqueued.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}

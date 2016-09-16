@@ -23,7 +23,8 @@
 #'
 #' @param ... additional parameters to the tag finder; see \link{\code{sgFindTags}}
 #'
-#' @return NULL so far.
+#' @return the value returned from \code{sgMergeFiles(files, dbdir)},
+#'     desribing how files were processed.
 #'
 #' @export
 #'
@@ -33,7 +34,6 @@
 
 sgRunNewFiles = function(files, dbdir = MOTUS_PATH$RECV, ...) {
     r = sgMergeFiles(files, dbdir)
-    info = r$info %>% arrange(serno, monoBN) %>% group_by(serno, monoBN)
 
     ## a function to process files from each boot session:
 
@@ -51,5 +51,10 @@ sgRunNewFiles = function(files, dbdir = MOTUS_PATH$RECV, ...) {
         sgFindTags(sgRecvSrc(paste0("SG-", recv), dbdir), getMotusMetaDB(), resume=canResume, mbn=bn, ...)
     }
 
-    info %>% do (rv = runBootSession(.))
+    r$info %>%
+        arrange(serno, monoBN) %>%
+        group_by(serno, monoBN) %>%
+        do (rv = runBootSession(.))
+
+    return (r)
 }

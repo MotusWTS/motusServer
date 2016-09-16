@@ -1,13 +1,13 @@
-#' handle a compressed archive.
+#' Try handle a compressed archive.
 #'
-#' If possible the compressed archive is extracted into a temporary folder
-#' which is then enqueued.
+#' If \code{path} is a compressed archive of known type, it is
+#' extracted into a temporary folder which is then enqueued.
 #'
 #' @param path the full path to the file with the download link
 #'
 #' @param isdir boolean; TRUE iff the path is a directory
 #'
-#' @return TRUE iff the archive \code{path} was succesfully extracted.
+#' @return TRUE iff the \code{path} was an archive and succesfully extracted.
 #'
 #' @seealso \link{\code{server}}
 #'
@@ -16,12 +16,12 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 handleArchive = function(path, isdir) {
-    suffix = regexPieces(MOTUS_ARCHIVE_REGEXP, path)[[1]] %>% tolower
+    suffix = regexPieces(MOTUS_ARCHIVE_REGEX, path)[[1]] %>% tolower
 
     if (isdir || length(suffix) == 0)
         return (FALSE)
 
-    tmpdir = motusTempPath()
+    tmpdir = makeQueuePath()
 
     cmd = switch(suffix,
                  "zip" = "unzip",
@@ -36,11 +36,11 @@ handleArchive = function(path, isdir) {
         sprintf("cd %s;%s %s",
                 tmpdir,
                 cmd,
-                shquote(path)
+                shQuote(path)
                 )
     )) return (FALSE)  ## unpacking failed
 
-    enqueue(path)
+    enqueue(tmpdir)
 
     return (TRUE)
 }
