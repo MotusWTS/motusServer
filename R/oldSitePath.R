@@ -17,5 +17,5 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 oldSitePath = function(year, proj, site) {
-    paste("/SG", as.integer(year), proj, site, sep="/")
+    paste("/SG/contrib", as.integer(year), proj, site, sep="/")
 }
