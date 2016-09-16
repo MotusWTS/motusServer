@@ -42,7 +42,7 @@ handleDTA = function(path, isdir, params) {
     ## function to handle files from one old site
     queueOldsite = function(files) {
         ## move files for this receiver to a new temp folder
-        tmpdir = makeQueuePath("dtaold", sub('/', '%', fixed=TRUE, oldSitePath(files$year[1], files$proj[1], files$site[1])))
+        tmpdir = makeQueuePath("dtaold", gsub('/', '%', fixed=TRUE, oldSitePath(files$year[1], files$proj[1], files$site[1])))
         file.rename(files$fullname, file.path(tmpdir, basename(files$fullname)))
 
         ## name of dir in queue will be "TIMESTAMP_dtaold_%SG%YEAR%PROJ%SITE"
