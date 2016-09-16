@@ -43,25 +43,27 @@ download.wetransferDirect = function(link, dir) {
         if (is.null(file))
             file = basename(p$path)
         if (! isTRUE(nchar(file) > 0)) {
-            file = tempfile(tmpdir=dir)
+            file = basename(tempfile())
         } else {
             ## sanitize to protect against malicious filenames
-            file = file.path(dir, sub("[/~]", "", file, perl=TRUE))
+            file = sub("[/~]", "", file, perl=TRUE)
         }
+        file = file.path(dir, file)
         f = CFILE(file, "wb")
         curlPerform(url=resp$direct_link, writedata=f@ref)
         RCurl::close(f)
     } else {
-        file = file.path(dir, resp$fields$filename)
+        file = resp$fields$filename
         if (! isTRUE(nchar(file) > 0)) {
             ## another possible location for the filename
             file = basename(resp$formdata$action)
             if (! isTRUE(nchar(file) > 0)) {
-                file = tempfile(tmpdir=dir)
+                file = basename(tempfile())
             }
         } else {
-            file = file.path(dir, sub("[/~]", "", file, perl=TRUE))
+            file = sub("[/~]", "", file, perl=TRUE)
         }
+        file = file.path(dir, file)
         f = CFILE(file, "wb")
         ## awkward assembly of query:
         curlPerform(url=paste0(resp$formdata$action,'?', paste0(names(resp$fields), '=', curlEscape(resp$fields), collapse="&")), writedata=f@ref)
