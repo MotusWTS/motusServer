@@ -35,9 +35,9 @@ handleDTAold = function(path, isdir, params) {
 
     ## run the old site update script
 
-    motusLog("Running %s old style with files %s", sitePath, paste(newFiles, collapse="\n   "))
+    motusLog("Running %s old style with file(s): %s", sitePath, paste(newFiles, collapse="\n   "))
 
-    system(sprintf("cd %s; /SG/code/update_lotek_site.R -f"), shQuote(oldpath))
+    system(sprintf("cd %s; /SG/code/update_lotek_site.R -f"), shQuote(sitePath))
 
     return(TRUE)
 }
