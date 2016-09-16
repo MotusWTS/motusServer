@@ -23,7 +23,7 @@
 #'
 #' @param ... additional parameters to the tag finder; see \link{\code{sgFindTags}}
 #'
-#' @return the value returned from \code{sgMergeFiles(files, dbdir)},
+#' @return the \code{info} item returned from \code{sgMergeFiles(files, dbdir)},
 #'     desribing how files were processed.
 #'
 #' @export
@@ -56,5 +56,5 @@ sgRunNewFiles = function(files, dbdir = MOTUS_PATH$RECV, ...) {
         group_by(serno, monoBN) %>%
         do (rv = runBootSession(.))
 
-    return (r)
+    return (r$info)
 }
