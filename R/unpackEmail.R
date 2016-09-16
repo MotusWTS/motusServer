@@ -1,8 +1,8 @@
 #' Unpack an email message, returning the text portion.
 #'
-#' Unpacks a raw RFC-822 style email message, possibly with attachments,
-#' into a temporary directory, and return the first text part, possibly
-#' preceded by some headers.
+#' Unpacks a raw RFC-822 style email message, possibly with
+#' attachments, into a temporary directory, and return the
+#' concatenation of all text parts, possibly preceded by some headers.
 #'
 #' @param path path to the raw email message
 #'
@@ -13,9 +13,14 @@
 #' the message.
 #'
 #' @return a character scalar consisting of any selected headers
-#'     followed by the first text part of the message.  This has a
+#'     followed by the texts part of the message.  This has a
 #'     single attribute named "tmpdir", which is the full path to the
 #'     temporary directory where the message parts have been unpacked.
+#'     All text parts are returned so that messages forwarded as attachments
+#'     can be blessed with a token. e.g. if I receive an email without
+#'     a token, but trust the sender and content, I can forward the message
+#'     as an attachment to data@sensorgnome.org with my own token in the
+#'     body of a new email.
 #'
 #' If the messages is not a multi-part mime message, the full text of
 #' the messages is returned instead of the first text part.
@@ -44,17 +49,17 @@ unpackEmail = function(path, headers=c("Subject", "Reply-To:"), maxHeaderLines=5
 
     ## because the incoming email might (incorrectly) use \r\n end of lines,
     ## convert these to \n
-    system(sprintf("cat %s | sed -e 's/\\r$//' | munpack -C %s -q -t", path, tmpdir), ignore.stdout=TRUE)
+    res = system(sprintf("cat %s | sed -e 's/\\r$//' | munpack -C %s -q -t", path, tmpdir), intern=TRUE)
+    res = read.csv(textConnection(res), sep=" ", header=FALSE, as.is=TRUE)
+    names(res) = c("name", "mime")
+    textParts = file.path(tmpdir, subset(res, mime=="(text/plain)")$name)
 
-    parts = dir(tmpdir, full.names=TRUE)
-    textpart = match("part1", basename(parts))
-
-    if (is.na(textpart)) {
+    if (length(textParts) == 0){
         ## nothing unpacked, so just use original message
         msg = paste0(paste0(readLines(path), collapse="\n"), "\n")
     } else {
-        ## paste the subject line and first text part of the message (if any)
-        msg = paste0(paste0(c(h, readLines(parts[textpart])), collapse="\n"), "\n")
+        ## paste the subject line and text parts of the message (if any)
+        msg = paste0(paste0(c(h, unlist(lapply(textParts, readLines))), collapse="\n"), "\n")
     }
     return(structure(msg, tmpdir=tmpdir))
 }

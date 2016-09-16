@@ -17,17 +17,22 @@ the message.}
 }
 \value{
 a character scalar consisting of any selected headers
-    followed by the first text part of the message.  This has a
+    followed by the texts part of the message.  This has a
     single attribute named "tmpdir", which is the full path to the
     temporary directory where the message parts have been unpacked.
+    All text parts are returned so that messages forwarded as attachments
+    can be blessed with a token. e.g. if I receive an email without
+    a token, but trust the sender and content, I can forward the message
+    as an attachment to data@sensorgnome.org with my own token in the
+    body of a new email.
 
 If the messages is not a multi-part mime message, the full text of
 the messages is returned instead of the first text part.
 }
 \description{
-Unpacks a raw RFC-822 style email message, possibly with attachments,
-into a temporary directory, and return the first text part, possibly
-preceded by some headers.
+Unpacks a raw RFC-822 style email message, possibly with
+attachments, into a temporary directory, and return the
+concatenation of all text parts, possibly preceded by some headers.
 }
 \note{
 Trailing DOS-style newlines are translated into unix-style newlines
