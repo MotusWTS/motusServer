@@ -33,5 +33,11 @@ handleSGold = function(path, isdir, params) {
     ## rewrite '%' to '/' in site path
     sitePath = gsub('%', '/', params[1], fixed=TRUE)
 
-    return (FALSE) ## implementation pending...
+    ## run the old site update script
+
+    motusLog("Running %s old style with files here: %s", sitePath, path)
+
+    system(sprintf("cd %s; /SG/code/update_site.R -f -i %s", sitePath, path))
+
+    return(TRUE)
 }
