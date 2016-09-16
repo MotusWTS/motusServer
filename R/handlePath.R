@@ -65,7 +65,7 @@ handlePath = function(path, isdir) {
 
     syslog = grep("^syslog$", basename(all), perl=TRUE)
     if (length(syslog)) {
-        for (d in sylog)
+        for (d in syslog)
             enqueue(dirname(all[d]), "log")
         all = all[ - syslog ]
     }
