@@ -17,7 +17,7 @@ Default: \code{MOTUS_PATH$RECV}}
 \item{...}{additional parameters to the tag finder; see \link{\code{sgFindTags}}}
 }
 \value{
-the value returned from \code{sgMergeFiles(files, dbdir)},
+the \code{info} item returned from \code{sgMergeFiles(files, dbdir)},
     desribing how files were processed.
 }
 \description{
