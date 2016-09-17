@@ -70,6 +70,7 @@ MOTUS_PATH = list(
     ROOT     = "/sgm",
     BIN      = "/sgm/bin",             ## executable scripts
     CACHE    = "/sgm/cache",           ## recent results of large queries from motus.org
+    DONE     = "/sgm/done",            ## files we (probably) no longer need
     EMAILS   = "/sgm/emails",          ## saved copies of valid data-transfer emails
     INCOMING = "/sgm/incoming",        ## files / dirs moved here are processed by server(); this is the external / asynchronous
                                        ## access point to the processing queue
