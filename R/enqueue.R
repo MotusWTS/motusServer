@@ -28,12 +28,11 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-
 enqueue = function(path, part1, ...) {
     if (missing(part1)) {
         newName = file.path(MOTUS_PATH$QUEUE, basename(path))
     } else {
-        newName = makeQueuePath(part1, ..., isdir=file.info(path)$isdir, create=FALSE)
+        newName = makeQueuePath(part1, ..., isdir=file.info(path)$isdir, dir=MOTUS_PATH$QUEUE, create=FALSE)
     }
     file.rename(path, newName)
 
