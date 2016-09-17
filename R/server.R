@@ -214,7 +214,13 @@ server = function(typedHandlers, freeHandlers, tracing=FALSE) {
             }
         }
         if (isTRUE(handled)) {
-            unlink(p, recursive=TRUE)
+            ## once we're confident enough, do this:
+            ## unlink(p, recursive=TRUE)
+            try(
+                file.rename(p, file.path(MOTUS_PATH$DONE, basename(p))),
+                silent=TRUE
+            )
+
             motusLog("Handled by %s", hname)
         } else {
             embroilHuman(p, "No handlers worked for this item.")
