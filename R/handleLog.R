@@ -38,7 +38,7 @@ handleLog = function(path, isdir, params) {
     x = regexPieces(MOTUS_SG_SERNO_REGEX, res)
 
     ## archive the folder
-    archivePath(path, file.path(MOTUS_PATH$RECVLOG, x[[1]]$serno[1]))
+    archivePath(path, file.path(MOTUS_PATH$RECVLOG, x[[1]]["serno"][1]))
 
     return(TRUE)
 }
