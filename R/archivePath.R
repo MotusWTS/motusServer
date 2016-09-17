@@ -38,6 +38,7 @@ archivePath = function(path, newdir) {
     recvdir = file.path(newdir, format(Sys.time(), MOTUS_TIMESTAMP_FORMAT))
     if (length(path) == 1 && file.info(path)$isdir) {
         if (grepl(MOTUS_LEADING_TIMESTAMP_REGEX, basename(path), perl=TRUE)) {
+            dir.create(newdir, recursive=TRUE) ## ensure parent dirs exist
             file.rename(path, file.path(newdir, basename(path)))
             return (TRUE)
         }
