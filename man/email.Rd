@@ -11,9 +11,10 @@ email(to, subj, msg, ...)
 
 \item{subj}{character scalar subject line}
 
-\item{msg}{character scalar message content.  This is treated as a
+\item{msg}{character scalar message content. If further parameters
+are specified in \code{...}, this is treated as a
 \code{sprintf}-style formatting string, with fields filled in
-from \code{...}.}
+from \code{...}.  Otherwise, it is used as-is.}
 
 \item{...}{parameters for replacing \code{sprintf} formatting codes
 in \code{msg}}

@@ -4,12 +4,14 @@
 \alias{getUploadToken}
 \title{Get a random token for inclusion in data transfer emails}
 \usage{
-getUploadToken(user, email, lifeSpan = 14, numBits = 144)
+getUploadToken(user = MOTUS_ADMIN_USERNAME, email = MOTUS_ADMIN_EMAIL,
+  lifeSpan = 14, numBits = 144)
 }
 \arguments{
-\item{user}{name of user on sensorgnome.org}
+\item{user}{name of user on sensorgnome.org; default: MOTUS_ADMIN_USERNAME}
 
-\item{email}{email address of user on sensorgnome.org}
+\item{email}{email address of user on sensorgnome.org
+default: MOTUS_ADMIN_EMAIL}
 
 \item{lifeSpan}{token lifespan, in days.  Default: 14.}
 
