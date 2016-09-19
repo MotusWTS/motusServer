@@ -25,7 +25,7 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 email = function(to, subj, msg, ...) {
-    if (length(as.list(...)) > 0)
+    if (length(list(...)) > 0)
         msg = sprintf(msg, ...)
     sendmail(MOTUS_OUTGOING_EMAIL_ADDRESS, to, subj, msg)
     saveMsg = makeQueuePath("out.bz2", isdir=FALSE, dir=MOTUS_PATH$OUTBOX, create=FALSE)
