@@ -20,9 +20,10 @@
 #' the motus transfer database.  Expired tokens are deleted when new
 #' tokens are generated.
 #'
-#' @param user name of user on sensorgnome.org
+#' @param user name of user on sensorgnome.org; default: MOTUS_ADMIN_USERNAME
 #'
 #' @param email email address of user on sensorgnome.org
+#' default: MOTUS_ADMIN_EMAIL
 #'
 #' @param lifeSpan token lifespan, in days.  Default: 14.
 #'
@@ -40,7 +41,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-getUploadToken = function(user, email, lifeSpan = 14, numBits = 144) {
+getUploadToken = function(user=MOTUS_ADMIN_USERNAME, email=MOTUS_ADMIN_EMAIL, lifeSpan = 14, numBits = 144) {
     mt = openMotusDB()
     mtcon = mt$con
     mtsql = function(...) dbGetQuery(mtcon, sprintf(...))
