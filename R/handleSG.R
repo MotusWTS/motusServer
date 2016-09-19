@@ -7,7 +7,7 @@
 #'     the incoming files, a temporary folder is created, and
 #'     corresponding files are moved there.  That folder is then enqueued
 #'     with a name beggining with "sgsingle_" (see \link{\code{server}})
-#' 
+#'
 #' @param path the full path to the file or directory.  It is only
 #'     treated as a file of sensorgnome files if it is a directory
 #'     whose name ends with "_sg_PATH".
@@ -35,6 +35,11 @@ handleSG = function(path, isdir, params) {
 
     rv = cbind(rv, getYearProjSite(paste0("SG-", rv$serno), rv$ts))
 
+    ## deal with any files where we were unable to get the project or site
+    unknown = with(rv, is.na(proj) | is.na(site))
+    embroilHuman(rv$name[unknown], "Unable to determine the project and/or site for these files")
+
+    rv = subset(rv, ! unknown)
     ## queue a reprocessing of each old site with the new files
 
     ## function to handle files from one old site
