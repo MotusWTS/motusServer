@@ -42,10 +42,6 @@ MOTUS_UPLOAD_TOKEN_PREFIX = "3cQejZ7j"
 
 MOTUS_UPLOAD_TOKEN_REGEX = paste0(MOTUS_UPLOAD_TOKEN_PREFIX, "(?<token>[A-Za-z0-9]{10,100})")
 
-## when an incoming email is stored, the filename has this format: (see inst/scripts/incomingEmail.sh )
-
-MOTUS_EMAIL_FILE_REGEX = "[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}\\.[0-9]{6}_msg"
-
 ## format of date/time in logfiles
 
 MOTUS_LOG_TIME_FORMAT = "%Y-%m-%dT%H-%M-%OS6"
