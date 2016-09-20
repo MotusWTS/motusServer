@@ -59,6 +59,7 @@ list(
          dta      = handleDTA,
          dtaold   = handleDTAold,
          sg       = handleSG,
+         sgnew    = handleSGnew,
          sgold    = handleSGold
 )
 }

@@ -86,6 +86,7 @@
 #'          dta      = handleDTA,
 #'          dtaold   = handleDTAold,
 #'          sg       = handleSG,
+#'          sgnew    = handleSGnew,
 #'          sgold    = handleSGold
 #' )
 #' }
@@ -123,6 +124,7 @@ server = function(typedHandlers, freeHandlers, tracing=FALSE) {
          dta      = handleDTA,
          dtaold   = handleDTAold,
          sg       = handleSG,
+         sgnew    = handleSGnew,
          sgold    = handleSGold
         )
     }

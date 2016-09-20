@@ -30,16 +30,39 @@ handleSG = function(path, isdir, params) {
 
     handled = TRUE
 
-    ## run files the new way
-    rv = sgRunNewFiles(path)
+    r = sgMergeFiles(path)
+    info = r$info
 
-    rv = cbind(rv, getYearProjSite(paste0("SG-", rv$serno), rv$ts))
+    ## function to queue a run of files the new way
+
+    queueNewSession = function(f) {
+        ## nothing to do if no files to use
+
+        if (! any(f$use))
+            return(0)
+
+        bn = f$monoBN[1]
+        recv = f$serno[1]
+
+        canResume = isTRUE(r$resumable[paste(recv, bn)])
+
+        enqueueCommand("sgnew", recv, bn, canResume)
+    }
+
+    ## queue runs of all receiver boot sessions with new data
+
+    info %>%
+        arrange(serno, monoBN) %>%
+        group_by(serno, monoBN) %>%
+        do (ignore=queueNewSession(.))
+
+    info = cbind(info, getYearProjSite(paste0("SG-", info$serno), info$ts))
 
     ## deal with any files where we were unable to get the project or site
-    unknown = with(rv, is.na(proj) | is.na(site))
-    embroilHuman(rv$name[unknown], "Unable to determine the project and/or site for these files")
+    unknown = with(info, is.na(proj) | is.na(site))
+    embroilHuman(info$name[unknown], "Unable to determine the project and/or site for these files")
 
-    rv = subset(rv, ! unknown)
+    info = subset(info, ! unknown)
     ## queue a reprocessing of each old site with the new files
 
     ## function to handle files from one old site
@@ -50,7 +73,7 @@ handleSG = function(path, isdir, params) {
         enqueue(tmpdir)
     }
 
-    rv %>% group_by(year, proj, site) %>% do(ignore = queueOldSite(.))
+    info %>% group_by(year, proj, site) %>% do(ignore = queueOldSite(.))
 
     return(handled)
 }
