@@ -29,7 +29,7 @@
 #'
 #' @param mbn integer monotonic boot number(s); this is the monoBN field
 #'     from the \code{files} table in the receiver's sqlite database.
-#'     Defaults to NULL, meaning process GPS fixes for all streams.
+#'     Defaults to NULL, meaning run the tag finder on all boot sessions.
 #'
 #' @return the batch number and the number of tag detections in the stream.
 #'
@@ -70,7 +70,11 @@ sgFindTags = function(src, tagDB, resume=TRUE, par = sgDefaultFindTagsParams, mb
         cat("  => ", bcmd, "\n")
 
         ## run the tag finder
-        cat(paste(system(bcmd, intern=TRUE), collapse="\n"))
+        tryCatch({
+            cat(paste(system(bcmd, intern=TRUE), collapse="\n"))
+        }, error = function(e) {
+            motusLog("sgFindTags failed with %s", paste(as.character(e), collapse="   \n"))
+        })
     }
     ## revert to journal mode delete, so we keep everything in a single file
 
