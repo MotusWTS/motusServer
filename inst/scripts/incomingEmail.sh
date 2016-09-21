@@ -15,10 +15,10 @@ umask 0002
 
 DATE=`date -u +%Y-%m-%dT%H-%M-%S.%6N`
 DEST=/sgm/tmp/${DATE}_msg
-if [[ -f /sgm/QUEUE_OPEN ]]; then 
-    INCOMING=/sgm/incoming
-else
+if [[ -f /sgm/EMBARGO ]]; then 
     INCOMING=/sgm/embargoed_incoming
+else
+    INCOMING=/sgm/incoming
 fi
 
 LOGFILE=/sgm/logs/emails.log.txt
