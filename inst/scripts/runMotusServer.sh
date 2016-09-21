@@ -19,10 +19,10 @@ EOF
     exit 1;
 fi
 
-if [[ "$1" == "-e"]]; then
-    rm -f /sgm/EMBARGO
-else
+if [[ "$1" == "-e" ]]; then
     touch /sgm/EMBARGO
+else
+    rm -f /sgm/EMBARGO
 fi
 
 ## restart the process whenever it dies, allowing a
