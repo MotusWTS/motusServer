@@ -25,7 +25,16 @@
 download.dropbox = function(link, dir) {
 
     ## URL from email looks like
-    ## e.g. https://www.dropbox.com/s/biie8sdq0oc5jm6/testfile.txt?dl=0
+    ## e.g. https://www.dropbox.com/sh?/biie8sdq0oc5jm6/testfile.txt?dl=0
+    ##
+    ## FIXME: to get valid filename from /sh/ links,
+    ## grab true filename using e.g.  curl -X POST
+    ## https://api.dropboxapi.com/2/sharing/get_shared_link_metadata
+    ## --header "Authorization: Bearer XXX
+    ## --header "Content-Type: application/json" --data "{\"url\":
+    ## \"https://www.dropbox.com/sh/u0q66gy0cetwe5k/AACIXlLrNmIgexPHbz197ciQa?dl=0\"}"
+    ##
+    ## with Bearer token replacing XXX
 
     ## parse out the filename
     file = parse_url(link)$path %>% basename

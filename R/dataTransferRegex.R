@@ -33,7 +33,7 @@ dataTransferRegex =
 # e.g. https://www.dropbox.com/s/biie8sdq0oc5jm6/testfile.txt?dl=0
 
 |
-(?:(?<dropbox>https://www\\.dropbox\\.com/s/[^[:space:]]++)[[:space:]])
+(?:(?<dropbox>https://www\\.dropbox\\.com/sh?/[^[:space:]]++))
 
 #or
 #
