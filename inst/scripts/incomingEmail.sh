@@ -1,9 +1,13 @@
 #!/bin/bash
 umask 0002
 
-## Emails are saved uncompressed into the queue directory /sgm/incoming
+## Emails are saved uncompressed into the incoming directory /sgm/incoming
+## if the file /sgm/QUEUE_OPEN exists; otherwise into /sgm/embargoed_incoming
+## where no further action is taken.
+##
 ## A server() function from the motus package handles further processing
-## when it detects a file has been written there.
+## when it detects a file has been written to /sgm/incoming
+##
 ## Emails are recognized by their filename format:
 ##
 ##   YYYY-MM-DDTHH-MM-SS.SSSSSS_msg
@@ -11,7 +15,12 @@ umask 0002
 
 DATE=`date -u +%Y-%m-%dT%H-%M-%S.%6N`
 DEST=/sgm/tmp/${DATE}_msg
-INCOMING=/sgm/incoming
+if [[ -f /sgm/QUEUE_OPEN ]]; then 
+    INCOMING=/sgm/incoming
+else
+    INCOMING=/sgm/embargoed_incoming
+fi
+
 LOGFILE=/sgm/logs/emails.log.txt
 
 echo Got message $DATE >> $LOGFILE
