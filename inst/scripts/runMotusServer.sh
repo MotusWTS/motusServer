@@ -20,7 +20,7 @@ EOF
 fi
 
 if [[ "$1" == "-e" ]]; then
-    touch /sgm/EMBARGO
+    printf "Presence of this file prevents new emails from being processed,\ndiverting them to /sgm/embargoed_incoming instead.\n" > /sgm/EMBARGO
 else
     rm -f /sgm/EMBARGO
 fi
@@ -28,7 +28,11 @@ fi
 ## restart the process whenever it dies, allowing a
 ## short interval to prevent thrashing
 
+echo $$ > /sgm/server.pid
+
 while (( 1 )); do
    nohup Rscript -e 'library(motus);server(tracing=FALSE)'
+## kill off the inotifywait process; it's in our process group
+   pkill -g $$ inotifywait
    sleep 15
 done
