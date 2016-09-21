@@ -138,7 +138,7 @@ MOTUS_DOS_FILENAME_REGEX = "^[a-zA-Z0-9]+~[0-9].(GZ|TXT)"
 
 ## the unfortunate individual who receives emails when things need attention
 
-MOTUS_ADMIN_EMAIL = "admin@sensorgnome.org"
+MOTUS_ADMIN_EMAIL = "jbrzusto@fastmail.fm"
 
 ## the sensorgnome.org username for the administrator
 
