@@ -217,11 +217,14 @@ server = function(typedHandlers, freeHandlers, tracing=FALSE) {
         }
         if (isTRUE(handled)) {
             ## once we're confident enough, do this:
-            ## unlink(p, recursive=TRUE)
-            try(
-                file.rename(p, file.path(MOTUS_PATH$DONE, basename(p))),
-                silent=TRUE
-            )
+            unlink(p, recursive=TRUE)
+
+            ## If debugging, do this:
+            ##
+            ## try(
+            ##     file.rename(p, file.path(MOTUS_PATH$DONE, basename(p))),
+            ##     silent=TRUE
+            ## )
 
             motusLog("Handled by %s", hname)
         } else {
