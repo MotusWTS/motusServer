@@ -19,12 +19,8 @@
 #' If monoBN is omitted, this parameter must also be.
 #' }
 #'
-#' @return integer vector with these items
-#' \enumerate{
-#' \item batch number
-#' \item number of detections
-#' }
-#'
+#' @return TRUE
+#' 
 #' @seealso \code{\link{server}}
 #'
 #' @export
@@ -46,4 +42,5 @@ handleSGnew = function(path, isdir, params) {
     } else {
         sgFindTags(sgRecvSrc(serno), getMotusMetaDB())
     }
+    return(TRUE)
 }
