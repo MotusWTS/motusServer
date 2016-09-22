@@ -7,7 +7,8 @@
 motusLog(fmt, ...)
 }
 \arguments{
-\item{fmt}{character scalar \code{sprintf}-style formatting string}
+\item{fmt}{character scalar \code{sprintf}-style formatting string
+or character vector.}
 
 \item{...}{any parameters required for \code{fmt}}
 }
@@ -17,7 +18,8 @@ invisible(NULL)
 \description{
 Works like sprintf, but sends output to the motus main log file,
 after prepending the current date/time.  Output is followed by an
-end-of-line.
+end-of-line.  If passed only a character vector, it is logged
+with one item per line, with those after the first line indented.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}

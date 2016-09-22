@@ -30,7 +30,7 @@ SD card would typically reset the boot count.}
 
 \item{mbn}{integer monotonic boot number(s); this is the monoBN field
 from the \code{files} table in the receiver's sqlite database.
-Defaults to NULL, meaning process GPS fixes for all streams.}
+Defaults to NULL, meaning run the tag finder on all boot sessions.}
 }
 \value{
 the batch number and the number of tag detections in the stream.

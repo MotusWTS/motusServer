@@ -14,16 +14,14 @@ handleSGnew(path, isdir, params)
 \item{params}{character vector of parameters:
 \itemize{
 \item serno serial number of receiver (including leading 'SG-')
-\item monoBN monotonic boot session number
+\item monoBN monotonic boot session number; if missing, run all boot sessions
+for this receiver.
 \item boolean TRUE or FALSE; can the tag finder be run with \code{--resume}?
+If monoBN is omitted, this parameter must also be.
 }}
 }
 \value{
-integer vector with these items
-\enumerate{
-\item batch number
-\item number of detections
-}
+TRUE
 }
 \description{
 Called by \code{\link{server}}.
