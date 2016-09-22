@@ -20,8 +20,8 @@ enqueueCommand = function( name, ...) {
         stop("Need command name")
 
     path = file.path(MOTUS_PATH$TMP,
-                     paste0(c(format(Sys.time(), MOTUS_TIMESTAMP_FORMAT),
-                              '_', paste0( list(name, ...), collapse='_')))
+                     paste0(format(Sys.time(), MOTUS_TIMESTAMP_FORMAT),
+                              '_', paste0( list(name, ...), collapse='_'))
                      )
     f = file(path, "wb")
     close(f)
