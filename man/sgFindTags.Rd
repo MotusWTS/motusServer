@@ -12,18 +12,19 @@ sgFindTags(src, tagDB, resume = TRUE, par = sgDefaultFindTagsParams,
 
 \item{tagDB}{path to sqlite tag registration database}
 
-\item{resume}{if TRUE, tag detection resumes where it last left
-off.  Typically, a new batch of data files arrives and is added
-to the receiver database using \code{sgMergeFiles()}, and then
-\code{sgFindTags} is called again to continue processing these
-new data.  When running archived data retroactively, it is
-better to set \code{resume=FALSE}, otherwise if bootnums
-are not monotonic, then tag event histories will be scrambled
-leading to searching for the wrong tags at the wrong times.
-This has often been the case for Beaglebone White receivers,
-since they had no internal memory for storing the bootcount,
-and relied on writing it to the SD card; updating to a new
-SD card would typically reset the boot count.}
+\item{resume}{if TRUE, tag detection resumes where it last left off
+for each given item in \code{mbn}.  Typically, a new batch of
+data files arrives and is added to the receiver database using
+\code{sgMergeFiles()}, and then \code{sgFindTags} is called
+again to continue processing these new data.  When running
+archived data retroactively, it is better to set
+\code{resume=FALSE}, otherwise if bootnums are not monotonic,
+then tag event histories will be scrambled leading to searching
+for the wrong tags at the wrong times.  This has often been the
+case for Beaglebone White receivers, since they had no internal
+memory for storing the bootcount, and relied on writing it to
+the SD card; updating to a new SD card would typically reset
+the boot count.}
 
 \item{par}{list of parameters to the findtags code; defaults to
 \code{\link{sgDefaultFindTagsParams}}}
