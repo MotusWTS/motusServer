@@ -116,6 +116,8 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 server = function(typedHandlers, freeHandlers, tracing=FALSE) {
+    options(error=serverError)
+
     if (missing(typedHandlers)) {
         typedHandlers = list (
          msg      = handleEmail,
@@ -192,27 +194,26 @@ server = function(typedHandlers, freeHandlers, tracing=FALSE) {
             ## try the appropriate typed handler:
             if (tracing)
                 browser()
-            tryCatch(
+            withCallingHandlers(
             {
                 handled <- h(path=p, isdir=isdir, params = params)
-            }, error = function(e) {
-                motusLog("Exception while running typed handler %s: %s", hname, e)
-            })
+            },
+            error = serverError
+            )
         } else {
             ## try free handlers until one succeeds
             for (i in seq(along = freeHandlers)) {
                 hname <- names(freeHandlers)[[i]]
                 if (tracing)
                     browser()
-                tryCatch(
+                withCallingHandlers(
                 {
                     handled <- freeHandlers[[i]](path=p, isdir=isdir)
                     if (isTRUE(handled)) {
                         break
                     }
-                }, error = function(e) {
-                    motusLog("Exception while running free handler %s: %s", hname, e)
-                })
+                }, error = serverError
+                )
             }
         }
         if (isTRUE(handled)) {

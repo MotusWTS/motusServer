@@ -4,10 +4,10 @@
 \alias{serverError}
 \title{Handle an error for the motus server.}
 \usage{
-serverError()
+serverError(...)
 }
 \value{
-character scalar summary error message
+nothing
 }
 \description{
 This function is installed as the top-level error handler by
