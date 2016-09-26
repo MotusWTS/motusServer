@@ -29,6 +29,12 @@ handleEmail = function(path, isdir, params) {
     ## unpack the email
     msg = unpackEmail(path)
 
+    ## remove "quoted block" formatting (e.g. "> > > ") which might
+    ## word-wrapped the original text and broken up URLs in forwarded
+    ## messages (looking at you, fastmail.fm!)
+
+    msg = gsub("\n(> )+", "", msg, perl=TRUE)
+
     ## for now, be strict about token expiry
     valid = ! (is.null(ue) || ue$expired)
 
