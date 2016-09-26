@@ -25,14 +25,18 @@ download.googleDrive = function(link, dir) {
     ## e.g. https://drive.google.com/folderview?id=0B483BNeq2WIsdXZDde78dDA
     ## or   https://drive.google.com/open?id=3D0B-bl0wWafEk1F1Y0hMdGZJQkk
     ## or   https://drive.google.com/file/d/0Bx3KaXOwqMcBU1NfMTlOSHFUVm8/view?usp=drive_web
+    ## or   https://drive.google.com/drive/folders/0B-bl0wW8KbDxb2FQc3kwLU5YQnc?usp=sharing
+    ##
+    ## in each case, we extract the ID and determine whether it's to a folder or to a file
 
     x = parse_url(link)
 
-    ## each file or folder has a unique ID
+    ## the id might be in the query
     ID = x$query$id
 
     if (is.null(ID)) {
-        ID = regexPieces("file/[[:alnum:]]+/(?<id>[[:alnum:]]+)/", x$path)[[1]]["id"][1]
+        ## or it might be in the path
+        ID = regexPieces("(?:(?:file/[[:alnum:]]+)|(?:drive/folders))/(?<id>[-[:alnum:]]+)", x$path)[[1]]["id"][1]
         if (is.na(ID))
             return(invisible(NULL))
     }

@@ -23,9 +23,13 @@ dataTransferRegex =
 # e.g. https://drive.google.com/folderview?id=0B-bl0wW8891FEy2QVpXOUU&usp=sharing
 # or   https://drive.google.com/open?id=3D0B-bl0wWafEk1F1Y0hMdGZJQkk
 # or   https://drive.google.com/file/d/0Bx3KaXOwqMcBU1NfMTlOSHFUVm8/view?usp=drive_web
-
+# or   https://drive.google.com/drive/folders/0B-bl0wW8KbDxb2FQc3kwLU5YQnc?usp=sharing
 |
-(?:(?<googleDrive>https://drive\\.google\\.com/(?:([^[:space:]]*id=[-[:alnum:]]*[^[:space:]]*)[[:space:]])|(?:file/[[:alnum:]]+/[[:alnum:]]+/)))
+(?:(?<googleDrive>https://drive\\.google\\.com/
+  (?:([^[:space:]]*id=[-[:alnum:]]*[^[:space:]]*)[[:space:]])
+ |(?:file/[[:alnum:]]++/[-[:alnum:]]++)
+ |(?:drive/folders/[-[:alnum:]]++)
+))
 
 #or
 #
