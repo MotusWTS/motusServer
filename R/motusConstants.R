@@ -68,6 +68,7 @@ MOTUS_PATH = list(
     CACHE    = "/sgm/cache",           ## recent results of large queries from motus.org
     DONE     = "/sgm/done",            ## files we (probably) no longer need
     EMAILS   = "/sgm/emails",          ## saved copies of valid data-transfer emails
+    ERRORS   = "/sgm/errors",          ## save dumped call stacks of server errors
     INCOMING = "/sgm/incoming",        ## files / dirs moved here are processed by server(); this is the external / asynchronous
                                        ## access point to the processing queue
     LOGS     = "/sgm/logs",            ## processing logs
