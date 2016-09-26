@@ -4,12 +4,15 @@
 \alias{getYearProjSite}
 \title{Get the project and site folders, given a year and receiver serial number.}
 \usage{
-getYearProjSite(serno, ts)
+getYearProjSite(serno, ts, bootnum = NULL)
 }
 \arguments{
 \item{serno}{character vector of serial numbers}
 
 \item{ts}{timestamp; recycled along \code{serno}}
+
+\item{bootnum}{boot session count; default: NULL meaning no bootnums
+available.}
 }
 \value{
 a data.frame with these columns:
@@ -21,11 +24,12 @@ a data.frame with these columns:
 }
 }
 \description{
-This is a deprecated function to help process data files in the
-old sensorgnome YEAR/PROJECT/SITE hierarchy.  For each
-\code{(serno, ts)} pair, it looks up the latest and project for the
-receiver with serial number \code{serno} which is not later than
-\code{ts}.
+This is a deprecated function to help process data files in the old
+sensorgnome YEAR/PROJECT/SITE hierarchy.  For each \code{(serno,
+ts)} pair, it looks up the latest project and site for the receiver
+with serial number \code{serno} which is not later than \code{ts}.
+If no site is found for the given valid timestamp, boot numbers are
+used, if possible.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
