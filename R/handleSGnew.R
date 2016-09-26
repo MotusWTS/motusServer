@@ -28,7 +28,7 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 handleSGnew = function(path, isdir, params) {
-    if (isdir || ! length(params) %in% c(1, 3)) return (FALSE)
+    if (isdir || ! (length(params) %in% c(1, 3))) return (FALSE)
 
     serno = params[1]
     ## FIXME: at some point, all sernos in this package should include the 'SG-' prefix
