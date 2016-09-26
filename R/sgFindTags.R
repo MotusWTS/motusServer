@@ -11,18 +11,19 @@
 #'
 #' @param tagDB path to sqlite tag registration database
 #'
-#' @param resume if TRUE, tag detection resumes where it last left
-#'     off.  Typically, a new batch of data files arrives and is added
-#'     to the receiver database using \code{sgMergeFiles()}, and then
-#'     \code{sgFindTags} is called again to continue processing these
-#'     new data.  When running archived data retroactively, it is
-#'     better to set \code{resume=FALSE}, otherwise if bootnums
-#'     are not monotonic, then tag event histories will be scrambled
-#'     leading to searching for the wrong tags at the wrong times.
-#'     This has often been the case for Beaglebone White receivers,
-#'     since they had no internal memory for storing the bootcount,
-#'     and relied on writing it to the SD card; updating to a new
-#'     SD card would typically reset the boot count.
+#' @param resume if TRUE, tag detection resumes where it last left off
+#'     for each given item in \code{mbn}.  Typically, a new batch of
+#'     data files arrives and is added to the receiver database using
+#'     \code{sgMergeFiles()}, and then \code{sgFindTags} is called
+#'     again to continue processing these new data.  When running
+#'     archived data retroactively, it is better to set
+#'     \code{resume=FALSE}, otherwise if bootnums are not monotonic,
+#'     then tag event histories will be scrambled leading to searching
+#'     for the wrong tags at the wrong times.  This has often been the
+#'     case for Beaglebone White receivers, since they had no internal
+#'     memory for storing the bootcount, and relied on writing it to
+#'     the SD card; updating to a new SD card would typically reset
+#'     the boot count.
 #'
 #' @param par list of parameters to the findtags code; defaults to
 #' \code{\link{sgDefaultFindTagsParams}}
@@ -50,8 +51,10 @@ sgFindTags = function(src, tagDB, resume=TRUE, par = sgDefaultFindTagsParams, mb
     tStart = as.numeric(Sys.time())
     Sys.setenv(TZ=saveTZ)
 
+    sql = function(...) dbGetQuery(src$con, sprintf(...))
+
     if (is.null(mbn))
-        mbn = dbGetQuery(src$con, "select distinct monoBN from files order by monoBN") [[1]]
+        mbn = sql("select distinct monoBN from files order by monoBN") [[1]]
 
     ## enable write-ahead-log mode so we can be reading from files table
     ## while tag finder writes to other tables
@@ -62,7 +65,7 @@ sgFindTags = function(src, tagDB, resume=TRUE, par = sgDefaultFindTagsParams, mb
 
         ## if not resuming, discard resume information.
         if (! resume)
-            dbGetQuery(src$con, "delete from batchState")
+            sql("delete from batchState where progName='find_tags_motus' and monoBN=%d", bn)
 
         ## start the child;
         bcmd = paste(cmd, pars, if (resume) "--resume", paste0("--bootnum=", bn), "--src_sqlite", tagDB, src$path, " 2>&1 ")
