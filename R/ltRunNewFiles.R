@@ -22,7 +22,7 @@
 
 ltRunNewFiles = function(files, dbdir = MOTUS_PATH$RECV, ...) {
     rv = ltMergeFiles(files, dbdir)
-    info = r$info %>% arrange(serno) %>% group_by(serno)
+    info = rv %>% arrange(serno) %>% group_by(serno)
 
     ## a function to process files from each receiver
 
