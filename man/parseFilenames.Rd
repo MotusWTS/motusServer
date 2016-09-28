@@ -34,27 +34,10 @@ parse sensorgnome filenames into components
 }
 \note{
 Returns NULL if no filenames match regex; otherwise, return value has rows
-filled with NA for any filenames not matching regex.
+filled with NA for any filenames not matching the expected form
 
 To resolve the collision between the CTRiver/Sugarloaf and Motus/PointLepreau receivers which
 both have serial number 1614BBBK1911, we give Sugarloaf an additional "_1".  This change is also
 effected by renaming the files on disk.
-
-Sometimes filenames arrive with shortened, DOS-style (8.3 character)  names.  This function will handle
-such files like so:
-
-\itemize{
-
-\item if there are files with unaltered long names from exactly one
-sensorgnome in \code{f}, then the shortened files are assumed to
-have come from that receiver, and their names are corrected
-post-hoc using content timestamps (see
-\link{\code{fixDOSfilenames}}).
-
-\item otherwise, we can't tell which receiver(s) the misnamed files
-belong to, so they are saved in a subfolder of "/sgm/manual" with a
-"README.TXT" giving details.
-
-}
 }
 
