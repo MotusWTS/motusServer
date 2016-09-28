@@ -162,13 +162,17 @@ motusQuickRegTag = function(projectID,
             assign(n, as.numeric(v))
     }
     
-    if (is.null(tsStart))
+    if (is.null(tsStart) && is.null(species))
         return (c(res$tagID, NA, period))
 
-    sp = motusListSpecies(species, qlang="CD")
-    if (length(sp) == 0) {
-        warning("Unknown species code: ", species, ". Tag registered, but no deployment record will be generated")
-        return (c(res$tagID, NA, period))
+    speciesID = NULL
+    if (! is.null(species)) {
+        sp = motusListSpecies(species, qlang="CD")
+        if (length(sp) == 0) {
+            warning("Unknown species code: ", species, ". Tag registered, but no deployment record will be generated")
+        } else {
+            speciesID = sp$id
+        }
     }
 
     resD = motusDeployTag(res$tagID, "pending", tsStart=tsStart, speciesID=sp$id)
