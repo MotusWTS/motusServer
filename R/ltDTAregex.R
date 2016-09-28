@@ -55,4 +55,10 @@ CHANNEL[[:blank:]]++FREQUENCY[[:blank:]]++STATUS[[:blank:]]++TYPE\\n
 |
 (?:Receiver[[:blank:]]++S\\/N:[[:blank:]]++
 (?<serial_no>[a-zA-Z0-9]++)
-\\n)"
+\\n)
+
+# Or a manually triggered coded record section
+|
+(?:CODED[[:blank:]]++\\(\\+[[:blank:]]++2D[[:blank:]]++GPS\\):\\n\\n[[:blank:]]++Date[[:blank:]]++Time[[:blank:]]++Freq[[:blank:]]++\\[MHz\\][[:blank:]]++Gain[[:blank:]]++Tag[[:blank:]]++ID[[:blank:]]++Antenna[[:blank:]]++Power[[:blank:]]++Data[[:blank:]]++Latitude[[:blank:]]++Longitude\\n(?<id_manual>(?:[0-9][^\\n]++\\n{1,2})++)
+)
+"

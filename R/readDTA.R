@@ -121,6 +121,25 @@ readDTA = function(filename="", lines=NULL) {
              gain.tab[as.character(tab[,1])] = tab[,2]
            },
 
+           id_manual = {
+               ## manually triggered readings are fully self-contained with these columns
+               ## Date   Time               Freq [MHz]    Gain  Tag ID        Antenna   Power   Data       Latitude      Longitude
+               ##   1     2                   3            4      5              6        7      8            9            10
+               ## parse date / time from first two columns
+               tab = data.frame(
+                   ts = as.numeric(as.POSIXct(strptime(paste(tab[[1]], tab[[2]]), date.format, tz="GMT"))),
+                   id = tab[[5]],
+                   ant = tab[[6]],
+                   sig = tab[[7]],
+                   lat = tab[[9]],
+                   lon = tab[[10]],
+                   dtaline = piece.lines.before[ip] + 1:nrow(tab),
+                   antfreq = tab[[3]],
+                   gain = tab[[4]],
+                   codeset = factor(1, labels=codeset),
+                   stringsAsFactors = FALSE)
+               tags = rbind(tags, tab)
+           },
            ## default =
            {
              ## this is a table of tag hits, either ID only or ID + GPS
@@ -181,7 +200,9 @@ readDTA = function(filename="", lines=NULL) {
   ## in the DTA file, even though their timestamps might be interleaved.
   ## (why are GPS fixes intermittent? weird...)
 
-  if (! is.null(tags))
-     tags = tags[order(tags$ts),]
+  if (! is.null(tags)) {
+      tags = subset(tags, ! is.na(tags$ts))
+      tags = tags[order(tags$ts),]
+  }
   return (list(tags=tags, recv = paste0("Lotek-", serno), pieces=pieces, piece.lines.before=piece.lines.before))
 }
