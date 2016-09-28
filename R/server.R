@@ -116,7 +116,6 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 server = function(typedHandlers, freeHandlers, tracing=FALSE) {
-    options(error=serverError)
 
     if (missing(typedHandlers)) {
         typedHandlers = list (
@@ -194,11 +193,8 @@ server = function(typedHandlers, freeHandlers, tracing=FALSE) {
             ## try the appropriate typed handler:
             if (tracing)
                 browser()
-            withCallingHandlers(
-            {
+            loggingTry(
                 handled <- h(path=p, isdir=isdir, params = params)
-            },
-            error = serverError
             )
         } else {
             ## try free handlers until one succeeds
@@ -206,14 +202,12 @@ server = function(typedHandlers, freeHandlers, tracing=FALSE) {
                 hname <- names(freeHandlers)[[i]]
                 if (tracing)
                     browser()
-                withCallingHandlers(
-                {
+                loggingTry(
                     handled <- freeHandlers[[i]](path=p, isdir=isdir)
-                    if (isTRUE(handled)) {
-                        break
-                    }
-                }, error = serverError
                 )
+                if (isTRUE(handled)) {
+                    break
+                }
             }
         }
         if (isTRUE(handled)) {
