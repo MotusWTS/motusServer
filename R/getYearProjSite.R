@@ -44,7 +44,9 @@ getYearProjSite = function(serno, ts, bootnum = NULL) {
     dbWriteTable(con, "serts", serts %>% as.data.frame, row.names=FALSE)
 
     ## get latest row (largest tsHi) that is still no later than ts for each receiver 
-    res = sql("create table res as select t1.serno as serno, t1.ts as year, t2.Project as proj, t2.Site as site, t2.tsLo as tsLo, t2.tsHi as tsHi   from serts as t1 left outer join d.map as t2 on t1.serno = t2.Serno and t2.tsLo = (select max(t3.tsLo) from d.map as t3 where t3.Serno=t2.Serno and t3.tsLo <= t1.ts)")
+    sql("create table res as select t1.serno as serno, t1.ts as year, t2.Project as proj, t2.Site as site, t2.tsLo as tsLo, t2.tsHi as tsHi   from serts as t1 left outer join d.map as t2 on t1.serno = t2.Serno and t2.tsLo = (select max(t3.tsLo) from d.map as t3 where t3.Serno=t2.Serno and t3.tsLo <= t1.ts)")
+
+    res = sql("select * from res")
 
     res$year = as.integer(year(structure(res$year, class=class(Sys.time()))))
 
