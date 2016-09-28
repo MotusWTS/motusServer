@@ -1,39 +1,87 @@
 #' Correct DOS-style 8.3 filenames into their original long filenames.
+#' Any files needing renaming are renamed on disk.
 #'
 #' Some users move SG data files along a route that fails to preserve
 #' their long filenames, forcing them into a DOS-style 8.3 filename.
+#' Typically, this only happens to a few files per batch, for some reason.
 #' Perhaps they are storing raw files in the top level folder of a VFAT
 #' filesystem, which limits the total length of filenames in a folder.
-#' 
-#' In any case, these can be recognized by a tilde \code{~} in the filename.
 #'
-#' If these files are in a folder where there's at least one original filename,
-#' then we can 
+#' In any case, these can be recognized by a tilde \code{~} in the
+#' filename, and the first two letters of the shortened name will
+#' match (case insensitively) the first two letters of the original
+#' name.
 #'
-#' @param name info
+#' @param f vector of full paths to files
 #'
-#' @param name info
-#'
-#' @param name info
-#'
-#' @param name info
-#'
-#' @param name info
-#'
-#' @param name info
+#' @param info data frame of split filename components, which are the
+#' named capture groups in \link{\code{sgFilenameRegex}}
 #'
 #' @return info
 #'
-#' @note
+#' @note Corrections are performed as so:
 #'
-#' @seealso \link{\code{}}
-#' 
+#' \itemize{
+#'
+#' \item if there are files with unaltered long names from exactly one
+#' sensorgnome in \code{f}, then the shortened files are assumed to
+#' have come from that receiver, and their names are corrected
+#' post-hoc using content timestamps.
+#'
+#' \item otherwise, take the the first two characters of each
+#' shortened name and see whether they match (case insensitively) the
+#' first two characters of unshortened names of a single receiver.
+#' Any shortened names for which that is true are corrected.
+#'
+#' \item otherwise, for any remaining shortened filenames, we can't
+#' tell which receiver(s) the misnamed files belong to, so they are
+#' saved in a subfolder of "/sgm/manual" with a "README.TXT" giving
+#' details.  FIXME: get first and last timestamps in shortened files
+#' and compare to timestamps parsed from full names.
+#'
+#' }
+#'
 #' @export
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-a = function() {
+fixDOSfilenames = function(f, info) {
+    base = basename(f)
+    dos = grepl(MOTUS_DOS_FILENAME_REGEX, base, perl=TRUE)
+
+    if (! any(dos))
+        return(info)
+
+    ## FIXME: make this work
+    ## if (length(unique(rv$serno)) == 1) {
+    ##     f[dos] = fixDOSfilenames(f, dos)
+    ##     base[dos] = basename(f[dos])  ##
+    ## } else {
+    ##     ## look at first two chars of all names; shortened names should have
+    ##     ## the same two chars as their original long names, ignoring case.
+    ##     ## Those two char prefixes mapping to unique serial numbers among
+    ##     ## full names are fixable.
+
+    ##     rv$twoChar = toupper(substr(basename(f), 1, 2))
+    ##     map = table(rv$twoChar, rv$serno)
+    ##     map = map[apply(map, 1, function(x) sum(x > 0) == 1),]
+
+    ##     ## rows of `map` now map uniquely
+
+    ##     s2 = unique(substr(basename(f[  dos]), 1, 2))
+    ##     f2 = unique(substr(basename(f[! dos]), 1, 2))
+
+
+    ## oops - can't tell what receiver these are from.
+
+    motusLog("Can't determine receiver for files with short names: %s",
+             paste(base[dos], collapse="\n   "))
+    embroilHuman(f[dos], "Annoying files with shortened names!")
+    f = f[! dos]
+    base = base[! dos]
 }
+
+
 #!/usr/bin/Rscript
 
 ## ._(` (
@@ -141,7 +189,7 @@ a = function() {
 ##    finfo = sql(con, "select * from files where ts <= %.4f order by ts desc limit 1", t)
 ##    bootnum = finfo$bootnum
 ##    recv = sql(con, "select proj,recv from deployments where depID=%d", finfo$depID)
-##    filename = sprintf("%s-%s-%06d-%s-all.txt%s", 
+##    filename = sprintf("%s-%s-%06d-%s-all.txt%s",
 ##        recv$proj,
 ##        recv$recv,
 ##        bootnum,
