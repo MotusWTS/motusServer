@@ -36,12 +36,17 @@
 #' \item token character scalar giving the token, including its preamble.
 #' \item expiry expiry date, as a timestamp
 #' }
-#' 
+#'
+#' @note if \code{user} is "Anonymous", return an invalid token and timestamp of 0.
+#'
 #' @export
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 getUploadToken = function(user=MOTUS_ADMIN_USERNAME, email=MOTUS_ADMIN_EMAIL, lifeSpan = 14, numBits = 144) {
+    if (user=="Anonymous")
+        return(list(token="INVALID; YOU MUST BE LOGGED IN", expiry=structure(0, class=c("POSIXt", "POSIXct"))))
+
     mt = openMotusDB()
     mtcon = mt$con
     mtsql = function(...) dbGetQuery(mtcon, sprintf(...))
@@ -50,7 +55,7 @@ getUploadToken = function(user=MOTUS_ADMIN_USERNAME, email=MOTUS_ADMIN_EMAIL, li
     ## for at least 1/2 a lifetime, return it
 
     now = as.numeric(Sys.time())
-    
+
     old = mtsql("select token, expiry from upload_tokens where username='%s' and email='%s' and expiry - %f >= %f order by expiry desc limit 1",
                   user,
                   email,
@@ -62,9 +67,9 @@ getUploadToken = function(user=MOTUS_ADMIN_USERNAME, email=MOTUS_ADMIN_EMAIL, li
         token = old$token
         expiry = old$expiry
     } else {
-           
+
         ## delete expired tokens
-        
+
         mtsql("delete from upload_tokens where username='%s' and email='%s' and expiry <= %f", user, email, now)
 
         ## generate new token with lots of extra bits so we can remove non-alphanum chars
@@ -77,12 +82,12 @@ getUploadToken = function(user=MOTUS_ADMIN_USERNAME, email=MOTUS_ADMIN_EMAIL, li
         }
         token = substr(token, 1, ceiling(numBits / 6))
         expiry = now + lifeSpan * 24 * 3600
-        
+
         mtsql("insert into upload_tokens (username, email, token, expiry) values ('%s', '%s', '%s', %f)",
               user,
               email,
               token,
               expiry)
-    }    
+    }
     return(list(token = paste0(MOTUS_UPLOAD_TOKEN_PREFIX, token), expiry=structure(expiry, class=c("POSIXt", "POSIXct"))))
 }
