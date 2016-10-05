@@ -46,7 +46,7 @@ handlePath = function(path, isdir) {
         newdir = makeQueuePath("file")
         newpath = file.path(newdir, basename(path))
         file.rename(path, newpath)
-        path = newpath
+        path = newdir
     }
 
     all = dir(path, recursive=TRUE, full.names=TRUE)
