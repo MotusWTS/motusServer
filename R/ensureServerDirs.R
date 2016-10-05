@@ -17,6 +17,9 @@
 #' \item /sgm/emails - emails, compressed using bzip2
 #'     e.g.:  msg_2016-08-25T14-14-11.810349.txt.bz2
 #'
+#' \item /sgm/errors - stack dumps of server errors
+#'     e.g.: 2016-09-27T02-24-21.885735_dump.rds
+#'
 #' \item /sgm/incoming - where new files or directories are linked from or copied to so that
 #'    they get processed; the server() function from the motus R package watches
 #'    this folder for new entries, then processes them

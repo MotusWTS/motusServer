@@ -10,10 +10,12 @@ loggingTry(expr)
 \item{expr}{expression to evaluate}
 }
 \value{
-nothing
+value of \code{expr}
 }
 \description{
-This function wraps handlers called by \link{\code{server}}
+This function wraps handlers called by \link{\code{server}}.  When
+an error occurs, the timestamped stack dump is saved in
+\code{MOTUS_PATH$errors}
 }
 \note{
 based on R's \code{util::dump.frames()} and \code{tools:::.try_quietly()}

@@ -48,6 +48,9 @@ As a side-effect, tokens are stored in the table 'upload_tokens' in
 the motus transfer database.  Expired tokens are deleted when new
 tokens are generated.
 }
+\note{
+if \code{user} is "Anonymous", return an invalid token and timestamp of 0.
+}
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
