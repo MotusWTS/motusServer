@@ -12,7 +12,8 @@
 #'     file before returning.
 #' 
 #' @details  The name for the new path is a timestamp with any additional
-#' components specified in \code{...} pasted afterward, separated by '_' (underscore); e.g. 2016-09-14T00-43-29.586886_dta
+#' components specified in \code{...} pasted afterward, separated by MOTUS_QUEUE_SEP
+#' which defaults to ',' (comma); e.g. 2016-09-14T00-43-29.586886,dta
 #'
 #' @return the path to the new file or folder
 #'
@@ -24,7 +25,7 @@
 
 makeQueuePath = function( ..., isdir=TRUE, dir=MOTUS_PATH$TMP, create=TRUE) {
     
-    path = file.path(dir, paste(c(format(Sys.time(), MOTUS_TIMESTAMP_FORMAT),...), collapse="_"))
+    path = file.path(dir, paste(c(format(Sys.time(), MOTUS_TIMESTAMP_FORMAT),...), collapse=MOTUS_QUEUE_SEP))
     if (create) {
         if (isdir) {
             dir.create(path, mode=MOTUS_DEFAULT_FILEMODE)

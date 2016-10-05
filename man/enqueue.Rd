@@ -23,7 +23,7 @@ Add a file or folder to the server queue.
 }
 \details{
 Items specified in \code{part1} and \code{...} are appended
-to the path, separated by '_' (underscore).
+to the path, separated by MOTUS_QUEUE_SEP (defaults to ',').
 
 After this call, the file or directory will no longer exist at the
 same location, but will be moved into the server's incoming

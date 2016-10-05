@@ -5,7 +5,7 @@
 #'
 #' @param ... additional parameters for the command
 #'
-#' @details  An empty file is created with the name \code{paste0(TIMESTAMP, '_', paste0(c(name, ...), collapse='_'))}.  This file is moved to the processing queue.
+#' @details  An empty file is created with the name \code{paste0(TIMESTAMP, MOTUS_QUEUE_SEP, paste0(c(name, ...), collapse=MOTUS_QUEUE_SEP))}.  This file is moved to the processing queue.
 #'
 #' @return TRUE on success.
 #'
@@ -21,7 +21,7 @@ enqueueCommand = function( name, ...) {
 
     path = file.path(MOTUS_PATH$TMP,
                      paste0(format(Sys.time(), MOTUS_TIMESTAMP_FORMAT),
-                              '_', paste0( list(name, ...), collapse='_'))
+                              MOTUS_QUEUE_SEP, paste0( list(name, ...), collapse=MOTUS_QUEUE_SEP))
                      )
     f = file(path, "wb")
     close(f)

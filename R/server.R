@@ -182,10 +182,14 @@ server = function(typedHandlers, freeHandlers, tracing=FALSE) {
 
         ## parse item name to see if it requires a typed handler
         pieces = regexPieces(MOTUS_QUEUEFILE_REGEX, basename(p))[[1]]
-        params = strsplit(pieces["params"], "_", fixed=TRUE)[[1]]
-        hname = params[1]
-        params = params[-1]
-        h = typedHandlers[[hname]]
+        if (isTRUE(is.character(pieces["params"]))) {
+            params = strsplit(pieces["params"], MOTUS_QUEUE_SEP, fixed=TRUE)[[1]]
+            hname = params[1]
+            params = params[-1]
+            h = typedHandlers[[hname]]
+        } else {
+            h = NULL
+        }
 
         handled = FALSE
 

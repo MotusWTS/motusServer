@@ -26,7 +26,8 @@ Create a filename or folder for the motus processing queue.
 }
 \details{
 The name for the new path is a timestamp with any additional
-components specified in \code{...} pasted afterward, separated by '_' (underscore); e.g. 2016-09-14T00-43-29.586886_dta
+components specified in \code{...} pasted afterward, separated by MOTUS_QUEUE_SEP
+which defaults to ',' (comma); e.g. 2016-09-14T00-43-29.586886,dta
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}

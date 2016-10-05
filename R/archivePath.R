@@ -14,11 +14,11 @@
 #' i.e.
 #'
 #'   myfile  -> newdir/YYYY-MM-DDTHH-MM-SS.SSSSSS/myfile      ## when \code{path} is a file
-#'   mydir/* -> newdir/YYYY-MM-DDTHH-MM-SS.SSSSSS_mydir/*     ## when \code{path} is a folder
+#'   mydir/* -> newdir/YYYY-MM-DDTHH-MM-SS.SSSSSS,mydir/*     ## when \code{path} is a folder
 #'
 #' or, when \code{path} is a folder whose name begins with a timestamp:
 #' 
-#'   2016-07-30T02-12-23.123455_mystuff/* -> newdir/2016-07-30T02-12-23.123455_mystuff/*
+#'   2016-07-30T02-12-23.123455,mystuff/* -> newdir/2016-07-30T02-12-23.123455,mystuff/*
 #' 
 #' This means the basename of \code{path} is preserved, either as the
 #' destination filename, or as part of the destination folder name.
@@ -42,7 +42,7 @@ archivePath = function(path, newdir) {
             file.rename(path, file.path(newdir, basename(path)))
             return (TRUE)
         }
-        recvdir = paste0(recvdir, "_", basename(path))
+        recvdir = paste0(recvdir, MOTUS_QUEUE_SEP, basename(path))
         dir.create(dirname(recvdir), recursive=TRUE) ## ensure parent dirs exist
         file.rename(path, recvdir)
     } else {

@@ -10,11 +10,13 @@ umask 0002
 ##
 ## Emails are recognized by their filename format:
 ##
-##   YYYY-MM-DDTHH-MM-SS.SSSSSS_msg
+##   YYYY-MM-DDTHH-MM-SS.SSSSSS,msg
+## 
+## (elsewhere in this package, the ',' is called MOTUS_QUEUE_SEP)
 ##
 
 DATE=`date -u +%Y-%m-%dT%H-%M-%S.%6N`
-DEST=/sgm/tmp/${DATE}_msg
+DEST=/sgm/tmp/${DATE},msg
 if [[ -f /sgm/EMBARGO ]]; then 
     INCOMING=/sgm/embargoed_incoming
 else
