@@ -32,13 +32,7 @@ handleArchive = function(path, isdir) {
         return (FALSE)
 
     motusLog("Unpacking into %s with %s:  %s", tmpdir, cmd, path)
-    if ( system(
-        sprintf("cd %s;%s %s",
-                tmpdir,
-                cmd,
-                shQuote(path)
-                )
-    )) return (FALSE)  ## unpacking failed
+    safeSys("cd", tmpdir, ";", cmd, path, shell=TRUE)
 
     enqueue(tmpdir)
 

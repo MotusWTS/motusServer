@@ -14,7 +14,7 @@
 #' \item g2 gap between 2nd, 3rd pulses, in ms
 #' \item g3 gap between 3rd, 4th pulses, in ms
 #' }
-#' 
+#'
 #' @note This function will only work on the sensorgnome.org server,
 #'     where we have Lotek's permission to host an encrypted copy of
 #'     their ID code database.  At server boot time, a user with sudo
@@ -26,11 +26,11 @@
 #'     /home/sg/ramfs/Lotek3.sqlite
 #'
 #'     while the encrypted versions are in /home/sg/lotekdb
-#' 
+#'
 #'     The decryption script is in /home/sg/bin/decryptLotekDB.R
-#' 
+#'
 #' @export
-#' 
+#'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 ltGetCodeset = function(codeSet = c("Lotek4", "Lotek3")) {
@@ -38,12 +38,12 @@ ltGetCodeset = function(codeSet = c("Lotek4", "Lotek3")) {
 
     fn = sprintf("/home/sg/ramfs/%s.sqlite", codeSet)
 
-    db = system(
+    db = safeSys(
         sprintf("sudo su -c 'sqlite3 -header -separator , %s \"select id, g1, g2, g3 from tags order by id\"' sg",
                 fn
                 ),
-        intern=TRUE)
+        shell=TRUE
+    )
 
     return(read.csv(textConnection(db), as.is=TRUE))
 }
-

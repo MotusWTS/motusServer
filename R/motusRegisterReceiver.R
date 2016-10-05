@@ -31,8 +31,8 @@ motusRegisterReceiver = function(serno, macAddr = NULL, secretKey = NULL) {
             ## it will still have a new keypair generated.
 
             privKeyFile = paste0("/home/sg_remote/.ssh/generated_by_server/id_dsa_", newserno)
-            system(sprintf("sudo rm -f %s %s.pub", privKeyFile, privKeyFile))
-            system(sprintf("sudo su -c 'ssh-keygen -q -t dsa -f %s -N \"\"' sg_remote", privKeyFile))
+            safeSys(printf("sudo rm -f %s %s.pub", privKeyFile, privKeyFile))
+            safeSys(sprintf("sudo su -c 'ssh-keygen -q -t dsa -f %s -N \"\"' sg_remote", privKeyFile))
             privKey = readChar(pipe(paste("sudo cat", privKeyFile), "rb"), 1e5, useBytes=TRUE)
         }
         ## now calculate the SHA1 sum of the private key file, which is what

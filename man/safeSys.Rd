@@ -2,24 +2,51 @@
 % Please edit documentation in R/safeSys.R
 \name{safeSys}
 \alias{safeSys}
-\title{call a shell command safely.}
+\title{Call an external program safely, return its output and
+propagate any error into R.}
 \usage{
-safeSys(cmd, ...)
+safeSys(cmd, ..., shell = TRUE, minErrorCode = 1)
 }
 \arguments{
 \item{cmd}{full path to the executable file (can be a shell script,
 for example)}
 
-\item{...}{list of parameters to the command; these are combined
-using \code{c()} and then quoted using \link{\code{shQuote()}}}
+\item{...}{list of un-named parameters to the command; if
+\code{shell == TRUE}, these are quoted as appropriate for
+bash-type shell.  Otherwise, they are passed as-is.}
+
+\item{shell}{logical scalar; if TRUE, invoke command using a shell;
+otherwise, invoke cmd directly.}
+
+\item{minErrorCode}{the smallest integer return value that indicates
+an error.  Some programs (e.g. 'grep') violate the usual convention that
+0 = no error, and > 0 indicates an error.  Default: 1}
 }
 \value{
-character vector of the stdout and stderr streams from
-    running \code{cmd}, one line per item.
+character vector of the stdout streams from running
+    \code{cmd}, one line per item.
 }
 \description{
-Quotes all parameters for a bash-type shell then runs the command with
-them using \link{\code{system2}}
+This function provides the sole access point to external programs
+for this package.
+}
+\details{
+If the exit status of the command is non-zero, then this function
+triggers an error using \code{stop(E)} where the message \code{E}
+will be a character scalar consisting of the lines written to
+stderr by the command, pasted together with "\\n".
+
+Otherwise, this function returns a character scalar with liens
+written to stdout by the command, pasted together with "\\n".
+
+The point of internalizing errors is so that we save the
+intermediate files and record a full stack dump.  Otherwise, the
+server might delete downloaded files, thinking (incorrectly) that
+it has processed them successfully.
+}
+\note{
+stdout and stderr for the command are redirected to temporary
+    files which are deleted before this function returns.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}

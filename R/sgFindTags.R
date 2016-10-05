@@ -74,7 +74,7 @@ sgFindTags = function(src, tagDB, resume=TRUE, par = sgDefaultFindTagsParams, mb
 
         ## run the tag finder
         tryCatch({
-            cat(paste(system(bcmd, intern=TRUE), collapse="\n"))
+            cat(safeSys(bcmd))
         }, error = function(e) {
             motusLog("sgFindTags failed with %s", paste(as.character(e), collapse="   \n"))
         })

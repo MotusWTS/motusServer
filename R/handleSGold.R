@@ -11,7 +11,7 @@
 #' Results are posted to user pages on the sensorgnome.org wiki.
 #' An hour-by-hour tag presence summary and plot are generated,
 #' which compare old and new styles of running the data.
-#' 
+#'
 #' @param path the full path to the directory of SG files.
 #'
 #' @param isdir boolean; TRUE iff the path is a directory
@@ -37,7 +37,7 @@ handleSGold = function(path, isdir, params) {
 
     motusLog("Running %s old style with files here: %s", sitePath, path)
 
-    system(sprintf("cd %s; /SG/code/update_site.R -f -i %s", sitePath, path))
+    safeSys("cd", sitePath, ";", "/SG/code/update_site.R -f -i", path)
 
     return(TRUE)
 }

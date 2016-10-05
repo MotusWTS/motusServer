@@ -27,9 +27,10 @@ handleLog = function(path, isdir, params) {
         return (FALSE)
 
     ## use zgrep to look for receiver serial number strings in
-    ## possibly gz-compressed logfiles
+    ## possibly gz-compressed logfiles; note that grep returns 1 to indicate
+    ## "match found", rather than an error.  So we specify minErrorCode=2
 
-    res = system(sprintf('zgrep -P -h "%s" %s/* | head -1l', MOTUS_SG_SERNO_REGEX, path), intern=TRUE)
+    res = safeSys(sprintf('zgrep -P -h "%s" %s/* | head -1l', MOTUS_SG_SERNO_REGEX, path), shell=TRUE, minErrorCode=2)
 
     if (length(res) == 0)
         return (FALSE)   ## no serial number found
