@@ -29,7 +29,7 @@ handleDTA = function(path, isdir, params) {
     rv = ltRunNewFiles(path)
 
     ## log any errors
-    if (any(is.na(rv$err))) {
+    if (any(! is.na(rv$err))) {
         motusLog("HandleDTA errors: %s", paste0("   ", rv$err[!is.na(rv$err)], collapse="\n"))
         handled = FALSE
     }
@@ -37,10 +37,14 @@ handleDTA = function(path, isdir, params) {
     ## try running the old way;
     rv = cbind(rv, getYearProjSite(rv$serno, rv$ts))
 
+    ## fix bad years; Lotek receivers don't always have correct dates
+
+    rv$year[rv$year < 2010] = year(Sys.time())
+
     ## queue a reprocessing of each old site with the new files
 
     ## function to handle files from one old site
-    queueOldsite = function(files) {
+    queueOldSite = function(files) {
         ## move files for this receiver to a new temp folder
         tmpdir = makeQueuePath("dtaold", gsub('/', '%', fixed=TRUE, oldSitePath(files$year[1], files$proj[1], files$site[1])))
         file.rename(files$fullname, file.path(tmpdir, basename(files$fullname)))
