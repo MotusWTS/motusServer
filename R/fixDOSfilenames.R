@@ -79,6 +79,7 @@ fixDOSfilenames = function(f, info) {
     embroilHuman(f[dos], "Annoying files with shortened names!")
     f = f[! dos]
     base = base[! dos]
+    return(info[! dos, ])
 }
 
 
