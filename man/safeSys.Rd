@@ -5,7 +5,7 @@
 \title{Call an external program safely, return its output and
 propagate any error into R.}
 \usage{
-safeSys(cmd, ..., shell = TRUE, minErrorCode = 1)
+safeSys(cmd, ..., shell = TRUE, quote = TRUE, minErrorCode = 1)
 }
 \arguments{
 \item{cmd}{full path to the executable file (can be a shell script,
@@ -13,14 +13,21 @@ for example)}
 
 \item{...}{list of un-named parameters to the command; if
 \code{shell == TRUE}, these are quoted as appropriate for
-bash-type shell.  Otherwise, they are passed as-is.}
+bash-type shell.  Otherwise, they are passed as-is.
+Note that any args consisting of a single semicolon (';') will
+not be quoted, since they are presumably intended to delimit
+commands.}
 
 \item{shell}{logical scalar; if TRUE, invoke command using a shell;
 otherwise, invoke cmd directly.}
 
-\item{minErrorCode}{the smallest integer return value that indicates
-an error.  Some programs (e.g. 'grep') violate the usual convention that
-0 = no error, and > 0 indicates an error.  Default: 1}
+\item{quote}{logical scalar; if TRUE (the default) and if
+\code{shell == TRUE}, quote individual arguments for the shell}
+
+\item{minErrorCode}{the smallest integer return value that
+indicates an error.  Some programs (e.g. 'grep') violate the
+usual convention that 0 = no error, and > 0 indicates an error.
+Default: 1}
 }
 \value{
 character vector of the stdout streams from running

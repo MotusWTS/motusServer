@@ -23,13 +23,20 @@
 #' @param ... list of un-named parameters to the command; if
 #'     \code{shell == TRUE}, these are quoted as appropriate for
 #'     bash-type shell.  Otherwise, they are passed as-is.
+#'     Note that any args consisting of a single semicolon (';') will
+#'     not be quoted, since they are presumably intended to delimit
+#'     commands.
 #'
 #' @param shell logical scalar; if TRUE, invoke command using a shell;
 #' otherwise, invoke cmd directly.
 #'
-#' @param minErrorCode the smallest integer return value that indicates
-#' an error.  Some programs (e.g. 'grep') violate the usual convention that
-#' 0 = no error, and > 0 indicates an error.  Default: 1
+#' @param quote logical scalar; if TRUE (the default) and if
+#'     \code{shell == TRUE}, quote individual arguments for the shell
+#'
+#' @param minErrorCode the smallest integer return value that
+#'     indicates an error.  Some programs (e.g. 'grep') violate the
+#'     usual convention that 0 = no error, and > 0 indicates an error.
+#'     Default: 1
 #' 
 #' @return character vector of the stdout streams from running
 #'     \code{cmd}, one line per item.
@@ -41,23 +48,29 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-safeSys = function(cmd, ..., shell=TRUE, minErrorCode=1) {
+safeSys = function(cmd, ..., shell=TRUE, quote=TRUE, minErrorCode=1) {
+    ## redirect stdout, stderr to temporary files
     errFile = tempfile()
     outFile = tempfile()
     on.exit(file.remove(errFile, outFile))
 
+    args = c(...)
     if (shell) {
-        ## redirect stderr to a temporary file
-        command = paste(cmd, paste(shQuote(c(...)), collapse=" "), ">", outFile, "2>", errFile)
+        if (quote) {
+            ## shell-quote args except for semi-colons
+            semis = args==";"
+            args[! semis] = shQuote(args[! semis])
+        }
+        command = paste(cmd, paste(args, collapse=" "), ">", outFile, "2>", errFile)
         rv = suppressWarnings(system(command = command, intern = FALSE))
     } else {
-        rv = suppressWarnings(system2(cmd, shQuote(c(...)), stdout=outFile, stderr=errFile))
+        rv = suppressWarnings(system2(cmd, args, stdout=outFile, stderr=errFile))
     }
     if (rv >= minErrorCode) {
         err = sprintf("Error %d from '%s':\n%s",
                       rv,
                       ## paste command as it would look, without redirections
-                      paste(cmd, paste(shQuote(c(...)), collapse=" ")),
+                      paste(cmd, paste(args, collapse=" ")),
                       if(rv == 127) "unable to run command" else textFileContents(errFile)
                       )
         stop(err)
