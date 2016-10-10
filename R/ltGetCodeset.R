@@ -42,7 +42,8 @@ ltGetCodeset = function(codeSet = c("Lotek4", "Lotek3")) {
         sprintf("sudo su -c 'sqlite3 -header -separator , %s \"select id, g1, g2, g3 from tags order by id\"' sg",
                 fn
                 ),
-        shell=TRUE
+        shell=TRUE,
+        quote=FALSE
     )
 
     return(read.csv(textConnection(db), as.is=TRUE))

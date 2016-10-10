@@ -49,7 +49,7 @@ unpackEmail = function(path, headers=c("Subject", "Reply-To:"), maxHeaderLines=5
 
     ## because the incoming email might (incorrectly) use \r\n end of lines,
     ## convert these to \n
-    res = safeSys(sprintf("cat %s | sed -e 's/\\r$//' | munpack -C %s -q -t", path, tmpdir))
+    res = safeSys(sprintf("cat %s | sed -e 's/\\r$//' | munpack -C %s -q -t", path, tmpdir), quote=FALSE)
     res = read.csv(textConnection(res), sep=" ", header=FALSE, as.is=TRUE)
     names(res) = c("name", "mime")
     textParts = file.path(tmpdir, subset(res, mime=="(text/plain)")$name)

@@ -30,7 +30,7 @@ handleLog = function(path, isdir, params) {
     ## possibly gz-compressed logfiles; note that grep returns 1 to indicate
     ## "match found", rather than an error.  So we specify minErrorCode=2
 
-    res = safeSys(sprintf('zgrep -P -h "%s" %s/* | head -1l', MOTUS_SG_SERNO_REGEX, path), shell=TRUE, minErrorCode=2)
+    res = safeSys('zgrep -P -h', paste0('"', MOTUS_SG_SERNO_REGEX, '"'), paste0(path, "/*"), "| head -1l", shell=TRUE, quote=FALSE, minErrorCode=2)
 
     if (length(res) == 0)
         return (FALSE)   ## no serial number found
