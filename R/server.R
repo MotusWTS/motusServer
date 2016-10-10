@@ -160,6 +160,9 @@ server = function(typedHandlers, freeHandlers, tracing=FALSE) {
 
     feed = getFeeder(MOTUS_PATH$INCOMING, tracing)
 
+    ## kill off the inotifywait process when we exit this function
+    on.exit(feed(TRUE), add=TRUE)
+
     ## Create a global variable to hold the queue of paths to process.
     ## This is initialized with the set of items already in
     ## MOTUS_PATH$QUEUE, sorted by mtime.

@@ -12,12 +12,15 @@
 #' @param tracing boolean; if TRUE, each event on the incoming folder
 #' is printed.  Default: FALSE.
 #'
-#' @return a function with no parameters.  This function returns the
-#'     full path to the next available incoming item, or waits if
-#'     there are none.
+#' @return a function, \code{f}, with one optional parameter, \code{quit}, which
+#'     defaults to FALSE.  If \code{quit == FALSE}, then \code{f}
+#'     returns the full path to the next available incoming item, or
+#'     waits if there are none.  If \code{quit == FALSE}, then \code{f}
+#'     closes the inotifywait process, and any subsequent call to \code{f}
+#'     will generate an error.
 #'
 #' @details
-#' The algorithm is this:
+#' Algorithm:
 #'
 #' \enumerate{
 #' \item initialize file queue with list of files and folders in \code{incoming}.
@@ -25,7 +28,7 @@
 #' folders.
 #' }
 #'
-#' There's a race condition in which files might be created after
+#' There's a race condition in that files might be created after
 #' starting to watch \code{incoming} but before calling \code{dir()}
 #' to list existing items, so that we see them twice.  Deal with this
 #' by keeping track of existing files.  i.e. the queue looks like
@@ -74,9 +77,23 @@ getFeeder = function(incoming, tracing = FALSE) {
 
     ## create the getter function
 
-    function () {
-        ## this closure's local environment has i, old, and evtCon
+    function (quit=FALSE) {
+        ## this closure's local environment has i, old, incoming, and evtCon
+        if (is.null(evtCon))
+            stop("Event connection has died")
 
+        if (quit) {
+            ## ugly shell hack to kill child inotifywait process,
+            ## since simply calling close() on the pipe doesn't work.
+            ## Note we're killing only the inotifywait in our own
+            ## process group which is watching the same directory.
+            ## There should only be one of these!
+
+            system(sprintf("pkill -KILL -g %d -f inotifywait.*%s", Sys.getpid(), incoming))
+            close(evtCon)
+            evtCon <<- NULL
+            return(NULL)
+        }
         if (i < length(old)) {
             ## still have items in the old, so return the current one
             i <<- i + 1
@@ -88,7 +105,7 @@ getFeeder = function(incoming, tracing = FALSE) {
             if (tracing)
                 print(evt)
             f = file.path(incoming, sub("^[^:]*:", "", evt))
-            if (! f %in% old) {
+            if (! isTRUE(f %in% old)) {
                 ## it's a new event, not part of the doubly-detected set (see above)
                 break
             }

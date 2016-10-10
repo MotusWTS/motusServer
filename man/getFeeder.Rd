@@ -13,9 +13,12 @@ getFeeder(incoming, tracing = FALSE)
 is printed.  Default: FALSE.}
 }
 \value{
-a function with no parameters.  This function returns the
-    full path to the next available incoming item, or waits if
-    there are none.
+a function, \code{f}, with one optional parameter, \code{quit}, which
+    defaults to FALSE.  If \code{quit == FALSE}, then \code{f}
+    returns the full path to the next available incoming item, or
+    waits if there are none.  If \code{quit == FALSE}, then \code{f}
+    closes the inotifywait process, and any subsequent call to \code{f}
+    will generate an error.
 }
 \description{
 The returned function maintains a queue of path names which is
