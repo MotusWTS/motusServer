@@ -28,7 +28,7 @@
 
 ltFindTags = function(src, tagDB, par = ltDefaultFindTagsParams, toFile=NULL, keepOld=0) {
 
-    deleteOldFindTags(keepOld)
+##    deleteOldFindTags(keepOld)
     
     ## FIXME: this should be the path to the executable provided with
     ## the motus package
