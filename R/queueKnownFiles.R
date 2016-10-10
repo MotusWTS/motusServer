@@ -39,8 +39,5 @@ queueKnownFiles = function(dir = character(0), files = character(0)) {
 
     embroilHuman(parts[ ! known ])
 
-    ## delete the directory skeleton, in case it is still there.
-    unlink(dir, recursive=TRUE)
-
     return(c(sum(known), length(parts)))
 }
