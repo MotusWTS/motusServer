@@ -31,7 +31,9 @@ Default: 1}
 }
 \value{
 character vector of the stdout streams from running
-    \code{cmd}, one line per item.
+    \code{cmd}, one line per item.  This will have attribute "exitCode"
+    giving the exit code of the command, which will be in the range
+    \code{0: (minErrorCode - 1)}
 }
 \description{
 This function provides the sole access point to external programs

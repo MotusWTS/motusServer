@@ -39,7 +39,9 @@
 #'     Default: 1
 #' 
 #' @return character vector of the stdout streams from running
-#'     \code{cmd}, one line per item.
+#'     \code{cmd}, one line per item.  This will have attribute "exitCode"
+#'     giving the exit code of the command, which will be in the range
+#'     \code{0: (minErrorCode - 1)}
 #'
 #' @note stdout and stderr for the command are redirected to temporary
 #'     files which are deleted before this function returns.
@@ -75,5 +77,5 @@ safeSys = function(cmd, ..., shell=TRUE, quote=TRUE, minErrorCode=1) {
                       )
         stop(err)
     }
-    return (textFileContents(outFile))
+    return (structure(textFileContents(outFile), exitCode=rv))
 }
