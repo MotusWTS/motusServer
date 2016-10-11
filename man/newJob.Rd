@@ -12,9 +12,9 @@ newJob(type, params)
 \item{params}{R object representable in JSON}
 }
 \value{
-This function returns a named integer vector of length 1.
-    The value is the job number, and the name is the full path to
-    the new folder.
+This function returns a named integer vector of length 1
+    with class "motusJob".  The value is the job number, and the
+    name is the full path to the new folder.
 }
 \description{
 A new unique job # is generated, and a folder for it is added to /sgm/queue/0

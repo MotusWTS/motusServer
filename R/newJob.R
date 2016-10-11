@@ -7,9 +7,9 @@
 #'
 #' @param params R object representable in JSON
 #'
-#' @return This function returns a named integer vector of length 1.
-#'     The value is the job number, and the name is the full path to
-#'     the new folder.
+#' @return This function returns a named integer vector of length 1
+#'     with class "motusJob".  The value is the job number, and the
+#'     name is the full path to the new folder.
 #'
 #' @export
 #'
@@ -26,5 +26,5 @@ newJob = function(type, params) {
     sql(.CLOSE=TRUE)
     np = file.path(MOTUS_PATH$QUEUE0, sprintf("%08d", id))
     dir.create(np)
-    return(structure(id, names=np))
+    return(structure(id, names=np, class="motusJob"))
 }
