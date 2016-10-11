@@ -1,37 +1,32 @@
 #!/bin/bash
-umask 0002
+umask 0007
 
-## Emails are saved uncompressed into the incoming directory /sgm/incoming
-## if the file /sgm/QUEUE_OPEN exists; otherwise into /sgm/embargoed_incoming
-## where no further action is taken.
+## Each email is saved in a newly-created directory with a timestamp name.
+## The email is saved uncompressed but with CR (ascii 0x0d) deleted into
+## a file called "msg" in that directory.
+## The new directory is moved to:
 ##
-## A server() function from the motus package handles further processing
-## when it detects a file has been written to /sgm/incoming
+##   - /sgm/embargoed_inbox if the file /sgm/EMBARGO exists
+##   - /sgm/inbox           otherwise
 ##
-## Emails are recognized by their filename format:
-##
-##   YYYY-MM-DDTHH-MM-SS.SSSSSS,msg
-## 
-## (elsewhere in this package, the ',' is called MOTUS_QUEUE_SEP)
+## An emailServer() function from the motus package handles further processing
+## when it detects a folder has been moved to /sgm/inbox
 ##
 
-DATE=`date -u +%Y-%m-%dT%H-%M-%S.%6N`
-DEST=/sgm/tmp/${DATE},msg
-if [[ -f /sgm/EMBARGO ]]; then 
-    INCOMING=/sgm/embargoed_incoming
+if [[ -f /sgm/EMBARGO ]]; then
+    INCOMING=/sgm/embargoed_inbox
 else
-    INCOMING=/sgm/incoming
+    INCOMING=/sgm/inbox
 fi
+
+## bash printf %()T formats don't support fractional seconds, so use date
+DATE=`date -u +%Y-%m-%dT%H-%M-%S.%9N`
+
+DEST=$INCOMING/$DATE
 
 LOGFILE=/sgm/logs/emails.log.txt
 
-echo Got message $DATE >> $LOGFILE
+echo Received $DATE >> $LOGFILE
 
 ## Save it to a file, dropping CR
 /bin/cat | tr -d '\r' > $DEST
-
-## Move it (once complete) to the incoming folder
-## We do this in two steps so as not to trigger two separate
-## events per email, one on file creation, one on file close.
-
-/bin/mv $DEST $INCOMING

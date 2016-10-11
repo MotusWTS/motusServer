@@ -72,6 +72,7 @@ MOTUS_PATH = list(
     DONE     = "/sgm/done",            ## files we (probably) no longer need
     EMAILS   = "/sgm/emails",          ## saved copies of valid data-transfer emails
     ERRORS   = "/sgm/errors",          ## save dumped call stacks of server errors
+    INBOX    = "/sgm/inbox",           ## emails go here, unless /sgm/EMBARGO exists
     INCOMING = "/sgm/incoming",        ## files / dirs moved here are processed by server(); this is the external / asynchronous
                                        ## access point to the processing queue
     LOGS     = "/sgm/logs",            ## processing logs
@@ -147,3 +148,6 @@ MOTUS_ADMIN_EMAIL = "jbrzusto@fastmail.fm"
 ## the sensorgnome.org username for the administrator
 
 MOTUS_ADMIN_USERNAME = "john"
+
+## the database used to record server activity
+MOTUS_SERVER_DB = "/sgm/server.sqlite"

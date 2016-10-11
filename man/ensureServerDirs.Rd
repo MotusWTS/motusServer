@@ -31,6 +31,10 @@ Folder hierarchy:
 \item /sgm/errors - stack dumps of server errors
     e.g.: 2016-09-27T02-24-21.885735_dump.rds
 
+\item /sgm/inbox - target for initial emails, unless embargoed
+
+\item /sgm/embargoed_inbox - target for initial emails when email processing is embargoed
+
 \item /sgm/incoming - where new files or directories are linked from or copied to so that
    they get processed; the server() function from the motus R package watches
    this folder for new entries, then processes them
