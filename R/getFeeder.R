@@ -12,6 +12,12 @@
 #' @param tracing boolean; if TRUE, each event on the incoming folder
 #' is printed.  Default: FALSE.
 #'
+#' @param messages: list of inotifywait message to watch for.
+#'     Default: c("close_write", "move_to", "create").  Other possible
+#'     values: "move_from", "close_nowrite", "open", "access",
+#'     "modify", "attrib", "delete", "delete_self", "move_self",
+#'     "unmount".  See \code{man inotifywait} for details.
+#'
 #' @return a function, \code{f}, with one optional parameter, \code{quit}, which
 #'     defaults to FALSE.  If \code{quit == FALSE}, then \code{f}
 #'     returns the full path to the next available incoming item, or
@@ -64,10 +70,10 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-getFeeder = function(incoming, tracing = FALSE) {
+getFeeder = function(incoming, tracing = FALSE, messages=c("close_write", "moved_to", "create")) {
 
     ## watch the directory
-    evtCon = pipe(paste("inotifywait -q -m -e close_write -e moved_to -e create --format %e:%f", incoming), "r")
+    evtCon = pipe(paste("inotifywait -q -m", paste("-e", messages, collapse=" "), "--format %e:%f", incoming), "r")
 
     ## grab list of items already there, with full path, sorted by mtime
     old = dirSortedBy(incoming, "mtime")

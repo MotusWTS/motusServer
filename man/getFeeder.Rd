@@ -4,13 +4,20 @@
 \alias{getFeeder}
 \title{return a function which returns the next item from a folder.}
 \usage{
-getFeeder(incoming, tracing = FALSE)
+getFeeder(incoming, tracing = FALSE, messages = c("close_write", "moved_to",
+  "create"))
 }
 \arguments{
 \item{incoming}{the full path to the incoming folder.}
 
 \item{tracing}{boolean; if TRUE, each event on the incoming folder
 is printed.  Default: FALSE.}
+
+\item{messages:}{list of inotifywait message to watch for.
+Default: c("close_write", "move_to", "create").  Other possible
+values: "move_from", "close_nowrite", "open", "access",
+"modify", "attrib", "delete", "delete_self", "move_self",
+"unmount".  See \code{man inotifywait} for details.}
 }
 \value{
 a function, \code{f}, with one optional parameter, \code{quit}, which
@@ -29,7 +36,7 @@ typically email messages with attached data files or links to
 download them, or folders of data files already on the server.
 }
 \details{
-The algorithm is this:
+Algorithm:
 
 \enumerate{
 \item initialize file queue with list of files and folders in \code{incoming}.
@@ -37,7 +44,7 @@ The algorithm is this:
 folders.
 }
 
-There's a race condition in which files might be created after
+There's a race condition in that files might be created after
 starting to watch \code{incoming} but before calling \code{dir()}
 to list existing items, so that we see them twice.  Deal with this
 by keeping track of existing files.  i.e. the queue looks like
