@@ -2,25 +2,42 @@
 % Please edit documentation in R/newJob.R
 \name{newJob}
 \alias{newJob}
-\title{create a new job.}
+\title{create a new job}
 \usage{
-newJob(type, params)
+newJob(path, type, params, ..., .parent = NULL)
 }
 \arguments{
+\item{path}{to the folder in which to create the new job's folder}
+
 \item{type}{character scalar name of job handler}
 
-\item{params}{R object representable in JSON}
+\item{params}{list of parameters for this job}
+
+\item{...}{additional named metadata for this job}
+
+\item{parent}{.parent job, if any}
 }
 \value{
-This function returns a named integer vector of length 1
+A Twig object (see \link{\code{Copse}}) representing the job.
     with class "motusJob".  The value is the job number, and the
     name is the full path to the new folder.
 }
 \description{
-A new unique job # is generated, and a folder for it is added to /sgm/queue/0
-An entry in the server database is created.
+create a new job
+}
+\details{
+A job is a Twig object from the Copse created by
+\link{\code{loadJobs}}, and an associated folder named NNNNNNNN,
+where N is the job number padded on the left with zeroes to a
+length of 8 digits.  Files associated with the job are stored in
+the folder, while metadata are stored in the Twig object, which is
+maintained in persistent storage in the Copse's SQLite database.
+Jobs can have subjobs via the Twig's parent() relationship.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}
+\seealso{
+\link{\code{Copse}}
 }
 
