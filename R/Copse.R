@@ -36,7 +36,7 @@
 #'       pid   INTEGER REFERENCES <table> (id), -- ID of parent twig, if any
 #'       ctime FLOAT(53),                       -- twig creation time, unix timestamp
 #'       mtime FLOAT(53),                       -- twig modification time, unix timestamp
-#'       data  BLOB                             -- serialized object data
+#'       data  JSON                             -- JSON-serialized object data
 #'    )
 #' }
 #'
@@ -81,7 +81,7 @@
 #' \item copse(Twig): get Copse object that owns Twig
 #' \item mtime(Twig): twig creation time, as unix timestamp
 #' \item ctime(Twig): twig modification time, as unix timestamp
-#' \item blob(Twig): twig data serialized as a little-endian raw vector
+#' \item blob(Twig): twig data JSON-serialized
 #' \item setData(Twig, names, values, clearOld=FALSE): set named data items for twig; if clearOld is TRUE, delete all existing data first. As a shortcut, if values is missing, treat names as a named list, rather than a char vector of names.  Uses a single DB query to set all items.
 #' \item delete(Twig): called only from garbage collection; reduces the use count of the real twig, dropping it from its Copse's map when the count reaches zero
 #'}
@@ -118,7 +118,7 @@ CREATE TABLE IF NOT EXISTS", table, "(
  pid INTEGER REFERENCES", table, "(id),
  ctime FLOAT(53),
  mtime FLOAT(53),
- data BLOB)"))
+ data JSON)"))
     sql(paste("CREATE INDEX IF NOT EXISTS", paste0(table,"_pid"), "on", table, "(pid)"))
     rv = new.env(parent=emptyenv())
     rv$sql = sql
@@ -168,10 +168,10 @@ twigWithID.Copse = function(C, twigID) {
 
         twig = as.environment(twig)
         twig$copse = C
-        if (is.null(twig$data[[1]]))
+        if (is.na(twig$data))
             twig$data = list()
         else
-            twig$data = unserialize(twig$data[[1]])
+            twig$data = fromJSON(twig$data)
         twig$uc = 0  ## use count initially zero but will be incremented below
         C$map[[sid]] = twig
     }
@@ -294,7 +294,7 @@ setData.Twig = function(T, names, values, clearOld=FALSE) {
     }
     now = as.numeric(Sys.time())
     C$sql(paste("update", C$table, "set data=:data, mtime=:mtime where id=:id"),
-          data = I(list(blob(T))),
+          data = blob(T),
           id = P$id,
           mtime = now
           )
@@ -366,7 +366,7 @@ ctime.Twig = function(T) {
 #' @export
 
 blob.Twig = function(T) {
-    serialize(get("data", envir=parent.env(T), inherits=FALSE), NULL, xdr=FALSE)
+    unclass(toJSON(get("data", envir=parent.env(T), inherits=FALSE), auto_unbox=TRUE, digits=NA))
 }
 
 #' @export
