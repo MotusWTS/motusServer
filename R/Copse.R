@@ -6,11 +6,11 @@
 #' This function is a factory for an S3 class ("Copse") that uses an
 #' SQLite database to store R objects of class ("Twig") which are
 #' related as one or more trees.  Each Twig holds a named set of
-#' arbitrary R objects. Twigs get/set semantics use \code{$} and
-#' \code{$[[]]}; i.e. they work like environments.  Each Twig's data
-#' is shared across all instances in the workspace, and changes are
-#' recorded atomically to the SQLite database, so that other processes
-#' also have access to them.
+#' plain-old-data R objects (i.e. those representable in JSON). Twigs
+#' get/set semantics use \code{$} and \code{$[[]]}; i.e. they work
+#' like environments.  Each Twig's data is shared across all instances
+#' in the workspace, and changes are recorded atomically to the SQLite
+#' database, so that other processes also have access to them.
 #'
 #' The copse manages these functions:
 #' \itemize{
@@ -50,8 +50,14 @@
 #' \item parent(Copse, Twig): Twig which is parent to given twig
 #' \item parent<-(Copse, Twig, TwigID): set Twig which is parent to given twig
 #' \item parentID(Copse, TwigID): ID of Twig which is parent to twig with given ID
-#' \item query(Copse, query): run an sql query on the Copse
-#' \item listTwigIDs(Copse, query): list of TwigIDs matching given query
+#' \item query(Copse, query): run an arbitrary sql query on the Copse
+#'
+#' \item twigIDsWhere(Copse, expr): list of TwigIDs for which given
+#'       expr is TRUE.  The expression is applied against the data field
+#'       of each row.  The identifier "." stands for the item's top
+#'       level, so the third element of a numeric vector called 'blam'
+#'       would be represented as \code{'.$blam[3]'} in \code{expr}
+#'
 #' \item setTwigParent(Copse, TwigID1, TwigID2): set parent of TwigID1 to be TwigID2
 #' }
 #'
@@ -77,6 +83,14 @@
 #' \item parent<-(Twig, TwigID): set parent of Twig to Twig with ID TwigID (can pass a Twig instead):
 #' \item child(Twig, n): get nth child of Twig, or NULL if it doesn't exist
 #' \item childIDs(Twig): get list of IDs of children of Twig
+#'
+#' \item childIDsWhere(Twig, expr): list of child TwigIDs for which
+#'       given expr is TRUE.  The expression is applied against the
+#'       data field of each row.  The identifier "." stands for the
+#'       item's top level, so the third element of a numeric vector
+#'       called 'blam' would be represented as \code{'.$blam[3]'} in
+#'       \code{expr}
+#'
 #' \item numChildren(Twig): get number of children of Twig
 #' \item copse(Twig): get Copse object that owns Twig
 #' \item mtime(Twig): twig creation time, as unix timestamp
@@ -236,6 +250,63 @@ setTwigParent.Copse = function(C, T, t) {
 
 #' @export
 
+twigIDsWhere.Copse = function(C, expr) {
+    ## expr: expression that uses json1 paths
+    e = deparse(substitute(expr))
+    C$sql(paste("select id from", C$table, "where", rewriteQuery(e)))[[1]]
+}
+
+rewriteQuery = function(q) {
+    ## translate stringified query into a json1-compatible query
+    ##
+    ## json1 "paths" look like $NAME((.NAME) | ([NUM]))*
+    ## where NAME are symbols, and NUM are integers
+    ##
+    ## In \code{expr}, the user specifies paths in R style, i.e.:
+    ## .$NAME(($NAME) | ([NUM]))*
+    ## where "." is an identifier representing the top level.
+    ## We can switch from one representation to another using
+    ## regular expression substitution; we're essentially just
+    ## swapping '$' and '.'
+    ##
+    ## Example:
+    ## rewriteQuery( .$a[3]$b - 2 * pi >= id
+
+    pathrx = "(?<![[:alnum:]])\\.[[:space:]]*\\$[[:space:]]*([[:alpha:]][[:alnum:]]*)(?:[[:space:]]*(?:(?:\\$[[:space:]]*[[:alpha:]][[:alnum:]]*)|(?:\\[[[:space:]]*[1-9][0-9]*[[:space:]]*\\])))*"
+    m = gregexpr(pathrx, q, perl=TRUE)
+    paths = regmatches(q, m)[[1]]
+    new = gsub("[[:space:]]*", "", paths, perl=TRUE)
+
+    ## To swap '$' and '.' via sequential gsub(), we
+    ## substitute:  .$ -> @, $ -> ., @ -> json_extract(data, ... )
+    new = paste0("json_extract(data, '", new, "')")
+
+    subs = c(
+        ".$" = "@",
+        "$" = ".",
+        "@" = "$."
+    )
+    for (i in seq(along=subs))
+        new = gsub(names(subs)[i], subs[i], new, fixed=TRUE)
+
+    regmatches(q, m) = list(new)
+
+    ## replace operators;
+    subs = c(
+        "&&" = " AND ",
+        "||" = " OR ",
+        "!=" = "<>",
+        "==" = "=",
+        "!" = " NOT ",
+    )
+    for (i in seq(along=subs))
+        q = gsub(names(subs)[i], subs[i], q, fixed=TRUE)
+
+    return(q)
+}
+
+#' @export
+
 query.Copse = function(C, ...) {
     C$sql(...)
 }
@@ -347,6 +418,14 @@ childIDs.Twig = function(T) {
 
 #' @export
 
+childIDsWhere.Twig = function(T, expr) {
+    e = rewriteQuery(deparse(substitute(expr)))
+    C = copse(T)
+    C$sql(paste("select id from", C$table, "where", paste0('(', e, ') and pid==', twigID(T))))[[1]]
+}
+
+#' @export
+
 copse.Twig = function(T) {
     get("copse", envir=parent.env(T))
 }
@@ -394,6 +473,10 @@ parent = function(T, ...) UseMethod("parent")
 #' @export
 
 parentID = function(T, ...) UseMethod("parentID")
+
+#' @export
+
+childIDsWhere = function(T, ...) UseMethod("childIDsWhere")
 
 #' @export
 
@@ -462,3 +545,7 @@ query = function(C, ...) UseMethod("query")
 #' @export
 
 setTwigParent = function(C, ...) UseMethod("setTwigParent")
+
+#' @export
+
+twigIDsWhere = function(C, ...) UseMethod("twigIDsWhere")
