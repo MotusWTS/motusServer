@@ -252,8 +252,25 @@ setTwigParent.Copse = function(C, T, t) {
 
 twigIDsWhere.Copse = function(C, expr) {
     ## expr: expression that uses json1 paths
-    e = deparse(substitute(expr))
+    e = deparse(Reval(substitute(expr)))
     C$sql(paste("select id from", C$table, "where", rewriteQuery(e)))[[1]]
+}
+
+#' evaluate portions of an expression enclosed in \code{R( )},
+#' returning the resulting, possibly reduced, expression
+#' This allows query expressions to include portions to be
+#' evaluated in R before converting the remaining expression into
+#' an SQLite:json1 query
+#'
+Reval = function(e) {
+    if (! is.call(e))
+        return(e)
+    if(e[[1]]=="R")
+        return(eval(e[[2]]))
+    if (length(e) > 1)
+        for(i in 2:length(e))
+            e[[i]] = Reval(e[[i]])
+    return(e)
 }
 
 rewriteQuery = function(q) {
@@ -297,7 +314,7 @@ rewriteQuery = function(q) {
         "||" = " OR ",
         "!=" = "<>",
         "==" = "=",
-        "!" = " NOT ",
+        "!" = " NOT "
     )
     for (i in seq(along=subs))
         q = gsub(names(subs)[i], subs[i], q, fixed=TRUE)
@@ -419,7 +436,7 @@ childIDs.Twig = function(T) {
 #' @export
 
 childIDsWhere.Twig = function(T, expr) {
-    e = rewriteQuery(deparse(substitute(expr)))
+    e = rewriteQuery(deparse(Reval(substitute(expr))))
     C = copse(T)
     C$sql(paste("select id from", C$table, "where", paste0('(', e, ') and pid==', twigID(T))))[[1]]
 }
