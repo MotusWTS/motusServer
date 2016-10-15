@@ -44,21 +44,20 @@
 #' \itemize{
 #' \item newTwig(Copse, ..., .parent=NULL): new twig with the named items in (...), and with parent Twig .parent
 #' \item twigWithID(Copse, TwigID): twig with given ID or NULL
-#' \item child(Copse, TwigID, n): nth child of given twig, or NULL
-#' \item childIDs(Copse, Twig): list of Twig IDs which are children of Twig
+#' \item child(Copse, Twig, n): nth child of given twig, or NULL
+#' \item children(Copse, Twig): Twigs which are children of Twig
+#' \item childrenWhere(Copse, Twig, expr): Twigs which are children of Twig and satisfy the expression
 #' \item numChildren(Copse, Twig): number of children of Twig
-#' \item parent(Copse, Twig): Twig which is parent to given twig
-#' \item parent<-(Copse, Twig, TwigID): set Twig which is parent to given twig
-#' \item parentID(Copse, TwigID): ID of Twig which is parent to twig with given ID
+#' \item parent(Copse, Twig): all Twigs which are parents to given Twig(s)
 #' \item query(Copse, query): run an arbitrary sql query on the Copse
 #'
-#' \item twigIDsWhere(Copse, expr): list of TwigIDs for which given
+#' \item twigsWhere(Copse, expr): list of TwigIDs for which given
 #'       expr is TRUE.  The expression is applied against the data field
 #'       of each row.  The identifier "." stands for the item's top
 #'       level, so the third element of a numeric vector called 'blam'
 #'       would be represented as \code{'.$blam[3]'} in \code{expr}
 #'
-#' \item setTwigParent(Copse, TwigID1, TwigID2): set parent of TwigID1 to be TwigID2
+#' \item setParent(Copse, Twig1, Twig2): set parent of Twig1 to be Twig2
 #'
 #' \item with(Copse, expr): evaluate \code{expr} within a transaction
 #'       on the Copse database; this provides atomic get-and-set semantics across
@@ -71,7 +70,6 @@
 #' \item sql: safeSQL connection object to DB
 #' \item db: path to db
 #' \item table: name of table in DB
-#' \item map: environment mapping twigIDs to environments, to maintain uniqueness of twigs
 #' }
 #'
 #' Twigs are S3 objects of class "Twig" with these S3 methods:
@@ -87,9 +85,9 @@
 #' \item parentID(Twig): get ID of parent Twig of Twig, or NULL if it has none
 #' \item parent<-(Twig, TwigID): set parent of Twig to Twig with ID TwigID (can pass a Twig instead):
 #' \item child(Twig, n): get nth child of Twig, or NULL if it doesn't exist
-#' \item childIDs(Twig): get list of IDs of children of Twig
+#' \item children(Twig): get list of IDs of children of Twig
 #'
-#' \item childIDsWhere(Twig, expr): list of child TwigIDs for which
+#' \item childrenWhere(Twig, expr): list of child Twigs for which
 #'       given expr is TRUE.  The expression is applied against the
 #'       data field of each row.  The identifier "." stands for the
 #'       item's top level, so the third element of a numeric vector
@@ -105,26 +103,15 @@
 #' \item delete(Twig): called only from garbage collection; reduces the use count of the real twig, dropping it from its Copse's map when the count reaches zero
 #'}
 #'
-#' Internally, a Twig uses these symbols:
-#' \itemize{
-#' \item  copse: environment of owning Copse
-#' \item  id: integer ID
-#' \item  pid: integer parent ID
-#' \item  ctime: unix creation timestamp
-#' \item  mtime: unix modification timestamp
-#' \item  data: all named objects stored in this list
-#' \item  uc: use count of (real) twig
-#' }
+#' Internally, a Twig is a numeric vector of class "Twig" with attribute Copse
+#' being the Twig's Copse.
 #'
 #' @examples
 #'
 #' hats = Copse("/home/john/inventory.sqlite", "hats")
 #' b = newTwig(hats, name="bowler", size=22, colour="black")
-#' hid = listTwigIDs(hats, "id < 10")  ## query can involve id, pid, mtime, ctime
-#' h1 = twigWithID(hats, h[1])
-#' ## grow a bit; change will be written to DB immediately
-#' h1$size = h1$size * 1.10
-#'
+#' h = twigsWhere(hats, id < 10 || .$size > 20)  ## query can involve id, pid, mtime, ctime, or data variables selected using .$...$...[]...
+#' h[1]
 #' @export
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
@@ -143,8 +130,14 @@ CREATE TABLE IF NOT EXISTS", table, "(
     rv$sql = sql
     rv$table = table
     rv$db = db
-    rv$map = new.env(parent=emptyenv())
     return(structure(rv, class="Copse"))
+}
+
+#' @export
+
+print.Copse = function(x, ...) {
+    n = x$sql(paste("select count(*) from", x$table))[[1]]
+    cat("Copse with", n, "Twigs in table",x$table, "of database", x$db, "\n")
 }
 
 ## FIXME: put all this stuff in separate files in its own package
@@ -156,7 +149,7 @@ newTwig.Copse = function(C, ..., .parent=NULL) {
 
     ## create the empty twig
     C$sql(paste("insert into", C$table, "(pid, ctime, mtime) values (:pid, :ctime, :mtime)"),
-            pid = if (is.null(.parent)) NA else twigID(.parent),
+            pid = if (is.null(.parent)) NA else .parent[1], ## subscript to drop class
             ctime = now,
             mtime = now
             )
@@ -173,100 +166,87 @@ newTwig.Copse = function(C, ..., .parent=NULL) {
 #' @export
 
 twigWithID.Copse = function(C, twigID) {
-    if (! isTRUE(is.finite(twigID)))
+    if (length(twigID) == 0 || ! isTRUE(all(is.finite(twigID))))
         return(NULL)
 
-    ## check if twig already exists
-    sid = as.character(twigID)
+    twigID = as.integer(twigID)
 
-    if (! exists(sid, envir=C$map)) {
-        ## load twig from DB
-        twig = C$sql(paste("select * from", C$table, "where id=", twigID))
-        if (! isTRUE(nrow(twig) == 1))
-            return(NULL)
+    ## check twig existence
+    existing = C$sql(paste("select id from", C$table, "where id in (",
+                           paste(twigID, collapse=","),
+                           ")"))[[1]]
 
-        twig = as.environment(twig)
-        twig$copse = C
-        if (is.na(twig$data))
-            twig$data = list()
-        else
-            twig$data = fromJSON(twig$data)
-        twig$uc = 0  ## use count initially zero but will be incremented below
-        C$map[[sid]] = twig
-    }
-    ## bump up use counter
-    C$map[[sid]]$uc <- C$map[[sid]]$uc + 1
-    rv = structure(new.env(parent=C$map[[sid]]), class="Twig")
-    reg.finalizer(rv, delete.Twig)
-    return(rv)
+    if (length(existing) != sum(!is.na(twigID)))
+        stop("These IDs don't correspond to existing twigs: ",
+             paste(twigID[is.na(match(twigID[!is.na(twigID)], existing))], collapse=","))
+
+    return(structure(twigID, class="Twig", Copse=C))
 }
 
 #' @export
 
 child.Copse = function(C, t, n) {
-    if (inherits(t, "Twig"))
-        t = twigID(t)
+    if (! inherits(t, "Twig"))
+        stop("t must be a Twig")
     twigWithID(C, C$sql(paste("select id from", C$table, "where pid=", t, "limit 1 offset", n-1))[[1]])
 }
 
-childIDs.Copse = function(C, t) {
-    if (inherits(t, "Twig"))
-        t = twigID(t)
-    C$sql(paste("select id from", C$table, "where pid=", t))[[1]]
+children.Copse = function(C, t) {
+    if (! inherits(t, "Twig"))
+        stop("t must be a Twig")
+    twigWithID(C, C$sql(paste("select id from", C$table, "where pid=", t, "order by id"))[[1]])
 }
 
 #' @export
 
 numChildren.Copse = function(C, t) {
-    if (inherits(t, "Twig"))
-        t = twigID(t)
+    if (! inherits(t, "Twig"))
+        stop("t must be a Twig")
     C$sql(paste("select count(*) from", C$table, "where pid=", t))[[1]]
 }
 
 #' @export
 
-parentID.Copse = function(C, t) {
-    if (inherits(t, "Twig"))
-        return(parentID(t))
-    C$sql(paste("select pid from", C$table, "where id=", t))[[1]]
-}
-
-#' @export
-
 parent.Copse = function(C, t) {
-    twigWithID(C, parentID(C, t))
+    if (! inherits(t, "Twig"))
+        stop("t must be a Twig")
+    ids = C$sql(paste("select pid from", C$table, "where pid is not null and id in (", paste(t, collapse=","), ")"))[[1]]
+    twigWithID(C, ids)
 }
 
 #' @export
 
-setTwigParent.Copse = function(C, T, t) {
-    if (inherits(T, "Twig"))
-        T = twigID(T)
-    if (inherits(t, "Twig"))
-        t = twigID(t)
-    if (! isTRUE(all(is.finite(c(T, t)))))
-        stop("Parameters are not twigs or twig IDs")
-    C$sql(paste("update", C$table, "set pid=", t, "where id=", T))
-    T = as.character(T)
-    ## update parent for in-memory copy
-    if (exists(T, envir=C$map))
-        C$map[[T]]$pid=t
+setParent.Copse = function(C, t1, t2) {
+    if (! all(sapply(list(t1, t2), inherits, "Twig")))
+        stop("t1 and t2 must both be a Twig")
+    if (length(t2) > 1)
+        stop("Can only specify a single twig as parent")
+    C$sql(paste("update", C$table, "set pid=", t2, "where id in (", paste(t1, collapse=","), ")"))
 }
 
 #' @export
 
-twigIDsWhere.Copse = function(C, expr) {
+twigsWhere.Copse = function(C, expr) {
     ## expr: expression that uses json1 paths
     e = deparse(Reval(substitute(expr)))
-    C$sql(paste("select id from", C$table, "where", rewriteQuery(e)))[[1]]
+    twigWithID(C, C$sql(paste("select id from", C$table, "where", rewriteQuery(e)))[[1]])
+}
+
+#' find children of Twig which satisfy a query
+#' @export
+
+childrenWhere.Copse = function(C, T, expr) {
+    ## expr: expression that uses json1 paths
+    e = deparse(Reval(substitute(expr)))
+    twigWithID(C, C$sql(paste("select id from", C$table, "where pid in (", paste(T, collapse=","), ") and (", rewriteQuery(e), ")"))[[1]])
 }
 
 #' evaluate portions of an expression enclosed in \code{R( )},
-#' returning the resulting, possibly reduced, expression
+#' returning the reduced expression
 #' This allows query expressions to include portions to be
 #' evaluated in R before converting the remaining expression into
 #' an SQLite:json1 query
-#'
+
 Reval = function(e) {
     if (! is.call(e))
         return(e)
@@ -335,12 +315,6 @@ query.Copse = function(C, ...) {
 
 #' @export
 
-listTwigIDs.Copse = function(C, query) {
-    C$sql(paste("select id from", C$table, "where", query))[[1]]
-}
-
-#' @export
-
 with.Copse = function(C, expr, ...) {
     C$sql("begin transaction")
     .rollback = TRUE
@@ -352,20 +326,37 @@ with.Copse = function(C, expr, ...) {
 
 #' @export
 
-names.Twig = function(T) {
-    names(parent.env(T)$data)
+print.Twig = function(x, ...) {
+    C = copse(x)
+    cat("Twig(s) with id(s)", paste(x, collapse=","), "from table", C$table, "in database", C$db, "\n")
 }
 
-#' @export
-
-`$.Twig` = function(T, name) {
-    get("data", envir=parent.env(T))[[substitute(name)]]
+names.Twig = function(T) {
+    C = copse(T)
+    C$sql(paste("select key from", C$table, "as t1, json_each(data) where t1.id=", T[1]))[[1]]
 }
 
 #' @export
 
 `[[.Twig` = function(T, name) {
-    get("data", envir=parent.env(T))[[name]]
+    C = copse(T)
+    C$sql("begin transaction")
+    .rollback = TRUE
+    on.exit(C$sql(if(.rollback) "rollback" else "commit"))
+    xs = paste0("'$.",name,"'")
+    fr = paste0("from ", C$table, " where id in (", paste(T, collapse=","), ")")
+    type = C$sql(paste0("select json_type(data,", xs, ")", fr))[[1]][1]
+    rv = C$sql(paste("select json_extract(data,", xs, ")", fr))[[1]]
+    if (isTRUE(type == "object" || type == "array"))
+        rv = fromJSON(rv)
+    .rollback = FALSE
+    return(rv)
+}
+
+#' @export
+
+`$.Twig` = function(T, name) {
+    `[[.Twig`(T, substitute(name))
 }
 
 #' @export
@@ -383,33 +374,34 @@ names.Twig = function(T) {
 #' @export
 
 setData.Twig = function(T, names, values, clearOld=FALSE) {
-    P = parent.env(T)
     C = copse(T)
-    if (clearOld)
-        assign("data", list(), envir=P)
+    C$sql("begin transaction")
+    .rollback = TRUE
+    on.exit(C$sql(if(.rollback) "rollback" else "commit"))
+
     if (missing(values)) {
-        for(i in seq(along=names)) {
-            P$data[[names(names)[i]]] = names[[i]]
-        }
-    } else {
-        for(i in seq(along=names)) {
-            P$data[[names[i]]] = values[[i]]
-        }
+        values = names
+        names = names(values)
+    }
+    if (length(names) == 1)
+        values = list(values)
+
+    wh = paste0("where id in (", paste(T, collapse=","), ")")
+    if (clearOld)
+        C$sql(paste("update", C$table, "set data='{}'", wh))
+
+    for(i in seq(along=names)) {
+        C$sql(paste("update", C$table, "set data=json_set(ifnull(data, '{}'), '$.' ||:name, json(:value))", wh),
+              name = names[i],
+              value = unclass(toJSON(values[[i]], auto_unbox=TRUE, digits=NA))
+              )
     }
     now = as.numeric(Sys.time())
-    C$sql(paste("update", C$table, "set data=:data, mtime=:mtime where id=:id"),
-          data = blob(T),
-          id = P$id,
+    C$sql(paste("update", C$table, "set mtime=:mtime", wh),
           mtime = now
           )
-    P$mtime = now
+    .rollback = FALSE
     return(T)
-}
-
-#' @export
-
-twigID.Twig = function(T) {
-    get("id", envir=parent.env(T))
 }
 
 #' @export
@@ -421,7 +413,7 @@ parent.Twig = function(T) {
 #' @export
 
 `parent<-.Twig` = function(T, value) {
-    setTwigParent(copse(T), T, value)
+    setParent(copse(T), T, value)
     return(T)
 }
 
@@ -445,13 +437,13 @@ child.Twig = function(T, n) {
 
 #' @export
 
-childIDs.Twig = function(T) {
-    childIDs(copse(T), T)
+children.Twig = function(T) {
+    children(copse(T), T)
 }
 
 #' @export
 
-childIDsWhere.Twig = function(T, expr) {
+childrenWhere.Twig = function(T, expr) {
     e = rewriteQuery(deparse(Reval(substitute(expr))))
     C = copse(T)
     C$sql(paste("select id from", C$table, "where", paste0('(', e, ') and pid==', twigID(T))))[[1]]
@@ -460,7 +452,7 @@ childIDsWhere.Twig = function(T, expr) {
 #' @export
 
 copse.Twig = function(T) {
-    get("copse", envir=parent.env(T))
+    attr(T, "Copse")
 }
 
 #' @export
@@ -485,19 +477,8 @@ blob.Twig = function(T) {
 
 delete.Twig = function(T) {
     C = copse(T)
-    tid = as.character(twigID(T))
-    C$map[[tid]]$uc = C$map[[tid]]$uc - 1
-    if (C$map[[tid]]$uc == 0)
-        remove(list=tid, envir=C$map)
+    C$sql(paste("delete from", C$table, "where id in (", paste(T, collapse=","), ")"))
 }
-
-#' @export
-
-`==.Twig` = function(x, y) isTRUE(twigID(x)==twigID(y))
-
-#' @export
-
-twigID = function(T, ...) UseMethod("twigID")
 
 #' @export
 
@@ -509,7 +490,7 @@ parentID = function(T, ...) UseMethod("parentID")
 
 #' @export
 
-childIDsWhere = function(T, ...) UseMethod("childIDsWhere")
+childrenWhere = function(T, ...) UseMethod("childrenWhere")
 
 #' @export
 
@@ -557,7 +538,7 @@ child = function(C, ...) UseMethod("child")
 
 #' @export
 
-childIDs = function(C, ...) UseMethod("childIDs")
+children = function(C, ...) UseMethod("children")
 
 #' @export
 
@@ -569,16 +550,12 @@ parentID = function(C, ...) UseMethod("parentID")
 
 #' @export
 
-listTwigIDs = function(C, ...) UseMethod("listTwigIDs")
-
-#' @export
-
 query = function(C, ...) UseMethod("query")
 
 #' @export
 
-setTwigParent = function(C, ...) UseMethod("setTwigParent")
+setParent = function(C, ...) UseMethod("setParent")
 
 #' @export
 
-twigIDsWhere = function(C, ...) UseMethod("twigIDsWhere")
+twigsWhere = function(C, ...) UseMethod("twigsWhere")
