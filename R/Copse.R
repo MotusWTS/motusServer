@@ -59,6 +59,11 @@
 #'       would be represented as \code{'.$blam[3]'} in \code{expr}
 #'
 #' \item setTwigParent(Copse, TwigID1, TwigID2): set parent of TwigID1 to be TwigID2
+#'
+#' \item with(Copse, expr): evaluate \code{expr} within a transaction
+#'       on the Copse database; this provides atomic get-and-set semantics across
+#'       processes accessing the same Copse.  If an error occurs while evaluating \code{expr},
+#'       the transaction is rolled back.
 #' }
 #'
 #' Internally a Copse uses these symbols:
@@ -332,6 +337,17 @@ query.Copse = function(C, ...) {
 
 listTwigIDs.Copse = function(C, query) {
     C$sql(paste("select id from", C$table, "where", query))[[1]]
+}
+
+#' @export
+
+with.Copse = function(C, expr, ...) {
+    C$sql("begin transaction")
+    .rollback = TRUE
+    on.exit(C$sql(if (.rollback) "rollback" else "commit"))
+    ## any access to Twigs in C in expr are now within a transaction
+    eval(substitute(expr), parent.frame(2))
+    .rollback = FALSE
 }
 
 #' @export
