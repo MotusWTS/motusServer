@@ -4,25 +4,21 @@
 \alias{handleEmail}
 \title{handler for incoming email}
 \usage{
-handleEmail(path, isdir, params)
+handleEmail(msg)
 }
 \arguments{
-\item{path}{the full path to the new file or directory}
-
-\item{isdir}{boolean; TRUE iff the path is a directory}
-
-\item{params}{not used}
+\item{msg}{the full path to the new message}
 }
 \value{
-TRUE if the file is an email; FALSE otherwise
+TRUE if the file is a valid email; FALSE otherwise
 }
 \description{
-called by \code{\link{server}} for emails.
+called by \code{\link{emailServer}} for emails.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
 \seealso{
-\code{\link{server}}
+\code{\link{emailServer}}
 }
 

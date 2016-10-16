@@ -8,8 +8,7 @@ the user who sent it.}
 validateEmail(msg)
 }
 \arguments{
-\item{msg}{the text of the email.  This is the results of running
-the linux utility \code{munpack} on the message.}
+\item{msg}{the full text of the email.}
 }
 \value{
 if the message contains a valid token, returns a 3-element

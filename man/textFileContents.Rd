@@ -2,7 +2,7 @@
 % Please edit documentation in R/textFileContents.R
 \name{textFileContents}
 \alias{textFileContents}
-\title{return the contents of a text file as a character vector, or the
+\title{return the contents of a text file as a character scalar, or the
 empty string if the file doesn't exist.}
 \usage{
 textFileContents(f)
@@ -15,7 +15,7 @@ character scalar with the file contents, or empty if the file is empty
 or doesn't exist.
 }
 \description{
-return the contents of a text file as a character vector, or the
+return the contents of a text file as a character scalar, or the
 empty string if the file doesn't exist.
 }
 \note{

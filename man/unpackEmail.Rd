@@ -7,7 +7,8 @@
 unpackEmail(path, headers = c("Subject", "Reply-To:"), maxHeaderLines = 500)
 }
 \arguments{
-\item{path}{path to the raw email message}
+\item{path}{path to the raw email message; its parent folder must
+also contain a folder called "attachments"}
 
 \item{headers}{character vector of message header lines to include at the
 start of the returned message.  Defaults to \code{c("Subject", "Reply-To")}.}
@@ -31,7 +32,7 @@ the messages is returned instead of the first text part.
 }
 \description{
 Unpacks a raw RFC-822 style email message, possibly with
-attachments, into a temporary directory, and return the
+attachments, into the "attachments" subdirectory, and return the
 concatenation of all text parts, possibly preceded by some headers.
 }
 \note{

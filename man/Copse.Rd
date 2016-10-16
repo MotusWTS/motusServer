@@ -19,15 +19,21 @@ if it doesn't exist in \code{db}, with this schema:
       pid   INTEGER REFERENCES <table> (id), -- ID of parent twig, if any
       ctime FLOAT(53),                       -- twig creation time, unix timestamp
       mtime FLOAT(53),                       -- twig modification time, unix timestamp
+      ...
       data  JSON                             -- JSON-serialized object data
    )
-}}
+}
+where \code{...} represents additional user-specified columns present in all twigs.
+
+The \code{...} columns can be considered the structurally constant
+part of a Copse, while the \code{data} column holds the
+structurally varaible part.}
 }
 \value{
 This function creates an object of class "Copse".  It has these S3 methods:
 \itemize{
 \item newTwig(Copse, ..., .parent=NULL): new twig with the named items in (...), and with parent Twig .parent
-\item twigWithID(Copse, TwigID): twig with given ID or NULL
+\item Copse[TwigID]: twig(s) with given ID(s) or NULL
 \item child(Copse, Twig, n): nth child of given twig, or NULL
 \item children(Copse, Twig): Twigs which are children of Twig
 \item childrenWhere(Copse, Twig, expr): Twigs which are children of Twig and satisfy the expression
@@ -94,24 +100,23 @@ Manage collections of persistent objects.
 This function is a factory for an S3 class ("Copse") that uses an
 SQLite database to store R objects of class ("Twig") which are
 related as one or more trees.  Each Twig holds a named set of
-plain-old-data R objects (i.e. those representable in JSON). Twigs
-get/set semantics use \code{$} and \code{$[[]]}; i.e. they work
-like environments.  Each Twig's data is shared across all instances
-in the workspace, and changes are recorded atomically to the SQLite
-database, so that other processes also have access to them.
+plain-old-data R objects stored in a JSON field, and zero or more
+user-specified fixed fields, stored as SQLite columns. Twig get/set
+semantics use \code{$} and \code{$[[]]}; i.e. they work like
+environments.  Within an R process, Twigs are copied by reference
+so that there's really only one version of any Twig. Changes to
+Twigs are recorded atomically to the SQLite database, so that other
+processes also have access to them.  An atomic get/modify/set
+operation can be performed on a Twig by using the \code{with()}
+method.
 
 The copse manages these functions:
 \itemize{
  \item create the database table
- \item get twigs from the DB
- \item put twigs to the DB when they change in R
- \item record timestamps for twig creation and modification
- \item ensure uniqueness of twig data
- \item garbage collect unused twigs out of the workspace
+ \item get Twigs from the DB
+ \item put Twigs to the DB when they change in R
+ \item record timestamps for Twig creation and modification
 }
-
-Changes are made atomically using SQLite locking, so that processes can
-share a copse, and so twigs are always in a consistent state on disk.
 }
 \examples{
 
