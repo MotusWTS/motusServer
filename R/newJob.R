@@ -10,20 +10,18 @@
 #' maintained in persistent storage in the Copse's SQLite database.
 #' Jobs can have subjobs via the Twig's parent() relationship.
 #'
-#'
-#' @param path to the folder in which to create the new job's folder
-#'
 #' @param type character scalar name of job handler
 #'
-#' @param params list of parameters for this job
+#' @param path to the folder in which to create the new job's folder; 
+#' if omitted and if .parent is specified, create the folder in the parent's
+#' folder.  If neither, create the path in MOTUS_PATH$TMP
 #'
 #' @param ...  additional named metadata for this job
 #'
 #' @param parent .parent job, if any
 #'
-#' @return A Twig object (see \link{\code{Copse}}) representing the job.
-#'     with class "motusJob".  The value is the job number, and the
-#'     name is the full path to the new folder.
+#' @return A Twig (see \link{\code{Copse}}) object \code{j} representing the job.
+#'     The path to the job folder is accessible as \code{j$dir}.
 #'
 #' @export
 #'
@@ -31,9 +29,17 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-newJob = function(path, type, params, ..., .parent=NULL) {
-    rv = newTwig(Jobs, type=type, params=params, ..., .parent=.parent)
-    np = file.path(path, sprintf("%08d", twigID(rv)))
-    rv$dir = np
+newJob = function(type, path, ..., .parent=NULL) {
+    if (missing(path)) {
+        if (is.null(.parent)) {
+            path = MOTUS_PATH$QUEUE0
+        } else {
+            path = .parent$path
+        }
+    }
+    rv = newTwig(Jobs, type=type, done=FALSE, ..., .parent=.parent)
+    np = file.path(path, sprintf("%08d", rv))
+    rv$path = np
+    dir.create(np, recursive=TRUE, mode=MOTUS_DEFAULT_FILEMODE)
     return(rv)
 }

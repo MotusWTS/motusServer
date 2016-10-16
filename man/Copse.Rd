@@ -5,7 +5,7 @@
 \title{Create a copse, a persistent structure for holding R objects with a tree
 structure.}
 \usage{
-Copse(db, table)
+Copse(db, table, ...)
 }
 \arguments{
 \item{db}{path to sqlite database with the copse table.  This will
@@ -19,7 +19,7 @@ if it doesn't exist in \code{db}, with this schema:
       pid   INTEGER REFERENCES <table> (id), -- ID of parent twig, if any
       ctime FLOAT(53),                       -- twig creation time, unix timestamp
       mtime FLOAT(53),                       -- twig modification time, unix timestamp
-      data  BLOB                             -- serialized object data
+      data  JSON                             -- JSON-serialized object data
    )
 }}
 }
@@ -28,15 +28,25 @@ This function creates an object of class "Copse".  It has these S3 methods:
 \itemize{
 \item newTwig(Copse, ..., .parent=NULL): new twig with the named items in (...), and with parent Twig .parent
 \item twigWithID(Copse, TwigID): twig with given ID or NULL
-\item child(Copse, TwigID, n): nth child of given twig, or NULL
-\item childIDs(Copse, Twig): list of Twig IDs which are children of Twig
+\item child(Copse, Twig, n): nth child of given twig, or NULL
+\item children(Copse, Twig): Twigs which are children of Twig
+\item childrenWhere(Copse, Twig, expr): Twigs which are children of Twig and satisfy the expression
 \item numChildren(Copse, Twig): number of children of Twig
-\item parent(Copse, Twig): Twig which is parent to given twig
-\item parent<-(Copse, Twig, TwigID): set Twig which is parent to given twig
-\item parentID(Copse, TwigID): ID of Twig which is parent to twig with given ID
-\item query(Copse, query): run an sql query on the Copse
-\item listTwigIDs(Copse, query): list of TwigIDs matching given query
-\item setTwigParent(Copse, TwigID1, TwigID2): set parent of TwigID1 to be TwigID2
+\item parent(Copse, Twig): all Twigs which are parents to given Twig(s)
+\item query(Copse, query): run an arbitrary sql query on the Copse
+
+\item twigsWhere(Copse, expr): list of TwigIDs for which given
+      expr is TRUE.  The expression is applied against the data field
+      of each row.  The identifier "." stands for the item's top
+      level, so the third element of a numeric vector called 'blam'
+      would be represented as \code{'.$blam[3]'} in \code{expr}
+
+\item setParent(Copse, Twig1, Twig2): set parent of Twig1 to be Twig2
+
+\item with(Copse, expr): evaluate \code{expr} within a transaction
+      on the Copse database; this provides atomic get-and-set semantics across
+      processes accessing the same Copse.  If an error occurs while evaluating \code{expr},
+      the transaction is rolled back.
 }
 
 Internally a Copse uses these symbols:
@@ -44,7 +54,6 @@ Internally a Copse uses these symbols:
 \item sql: safeSQL connection object to DB
 \item db: path to db
 \item table: name of table in DB
-\item map: environment mapping twigIDs to environments, to maintain uniqueness of twigs
 }
 
 Twigs are S3 objects of class "Twig" with these S3 methods:
@@ -54,31 +63,29 @@ Twigs are S3 objects of class "Twig" with these S3 methods:
 \item [[(Twig, name): return value of name in Twig, with name a quoted character scalar
 \item [[<-(Twig, name, value): set value of name in Twig, with name a quoted character scalar
 \item names(Twig): list names in Twig
-\item twigID(Twig): get ID of Twig
 \item parent(Twig): get parent Twig of Twig, or NULL if it has none
-\item parentID(Twig): get ID of parent Twig of Twig, or NULL if it has none
-\item parent<-(Twig, TwigID): set parent of Twig to Twig with ID TwigID (can pass a Twig instead):
+\item parent<-(Twig, Twig): set parent of Twig to Twig with ID TwigID (can pass a Twig instead):
 \item child(Twig, n): get nth child of Twig, or NULL if it doesn't exist
-\item childIDs(Twig): get list of IDs of children of Twig
+\item children(Twig): get list of IDs of children of Twig
+
+\item childrenWhere(Twig, expr): list of child Twigs for which
+      given expr is TRUE.  The expression is applied against the
+      data field of each row.  The identifier "." stands for the
+      item's top level, so the third element of a numeric vector
+      called 'blam' would be represented as \code{'.$blam[3]'} in
+      \code{expr}
+
 \item numChildren(Twig): get number of children of Twig
 \item copse(Twig): get Copse object that owns Twig
 \item mtime(Twig): twig creation time, as unix timestamp
 \item ctime(Twig): twig modification time, as unix timestamp
-\item blob(Twig): twig data serialized as a little-endian raw vector
+\item blob(Twig): twig data JSON-serialized
 \item setData(Twig, names, values, clearOld=FALSE): set named data items for twig; if clearOld is TRUE, delete all existing data first. As a shortcut, if values is missing, treat names as a named list, rather than a char vector of names.  Uses a single DB query to set all items.
 \item delete(Twig): called only from garbage collection; reduces the use count of the real twig, dropping it from its Copse's map when the count reaches zero
 }
 
-Internally, a Twig uses these symbols:
-\itemize{
-\item  copse: environment of owning Copse
-\item  id: integer ID
-\item  pid: integer parent ID
-\item  ctime: unix creation timestamp
-\item  mtime: unix modification timestamp
-\item  data: all named objects stored in this list
-\item  uc: use count of (real) twig
-}
+Internally, a Twig is a numeric vector of class "Twig" with attribute Copse
+being the Twig's Copse.
 }
 \description{
 Manage collections of persistent objects.
@@ -87,11 +94,11 @@ Manage collections of persistent objects.
 This function is a factory for an S3 class ("Copse") that uses an
 SQLite database to store R objects of class ("Twig") which are
 related as one or more trees.  Each Twig holds a named set of
-arbitrary R objects. Twigs get/set semantics use \code{$} and
-\code{$[[]]}; i.e. they work like environments.  Each Twig's data
-is shared across all instances in the workspace, and changes are
-recorded atomically to the SQLite database, so that other processes
-also have access to them.
+plain-old-data R objects (i.e. those representable in JSON). Twigs
+get/set semantics use \code{$} and \code{$[[]]}; i.e. they work
+like environments.  Each Twig's data is shared across all instances
+in the workspace, and changes are recorded atomically to the SQLite
+database, so that other processes also have access to them.
 
 The copse manages these functions:
 \itemize{
@@ -110,11 +117,8 @@ share a copse, and so twigs are always in a consistent state on disk.
 
 hats = Copse("/home/john/inventory.sqlite", "hats")
 b = newTwig(hats, name="bowler", size=22, colour="black")
-hid = listTwigIDs(hats, "id < 10")  ## query can involve id, pid, mtime, ctime
-h1 = twigWithID(hats, h[1])
-## grow a bit; change will be written to DB immediately
-h1$size = h1$size * 1.10
-
+h = twigsWhere(hats, id < 10 || .$size > 20)  ## query can involve id, pid, mtime, ctime, or data variables selected using .$...$...[]...
+h[1]
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}

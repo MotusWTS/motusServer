@@ -10,7 +10,7 @@ loadJobs()
 no return value.
 }
 \description{
-A global JOBS object is created, which manages jobs.
+A global object \code{Jobs} is created, which manages jobs.
 It is populated from the "jobs" table in the server database.
 }
 \author{

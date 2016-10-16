@@ -4,23 +4,22 @@
 \alias{newJob}
 \title{create a new job}
 \usage{
-newJob(path, type, params, ..., .parent = NULL)
+newJob(type, path, ..., .parent = NULL)
 }
 \arguments{
-\item{path}{to the folder in which to create the new job's folder}
-
 \item{type}{character scalar name of job handler}
 
-\item{params}{list of parameters for this job}
+\item{path}{to the folder in which to create the new job's folder; 
+if omitted and if .parent is specified, create the folder in the parent's
+folder.  If neither, create the path in MOTUS_PATH$TMP}
 
 \item{...}{additional named metadata for this job}
 
 \item{parent}{.parent job, if any}
 }
 \value{
-A Twig object (see \link{\code{Copse}}) representing the job.
-    with class "motusJob".  The value is the job number, and the
-    name is the full path to the new folder.
+A Twig (see \link{\code{Copse}}) object \code{j} representing the job.
+    The path to the job folder is accessible as \code{j$dir}.
 }
 \description{
 create a new job

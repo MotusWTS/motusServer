@@ -80,10 +80,8 @@
 #' \item [[(Twig, name): return value of name in Twig, with name a quoted character scalar
 #' \item [[<-(Twig, name, value): set value of name in Twig, with name a quoted character scalar
 #' \item names(Twig): list names in Twig
-#' \item twigID(Twig): get ID of Twig
 #' \item parent(Twig): get parent Twig of Twig, or NULL if it has none
-#' \item parentID(Twig): get ID of parent Twig of Twig, or NULL if it has none
-#' \item parent<-(Twig, TwigID): set parent of Twig to Twig with ID TwigID (can pass a Twig instead):
+#' \item parent<-(Twig, Twig): set parent of Twig to Twig with ID TwigID (can pass a Twig instead):
 #' \item child(Twig, n): get nth child of Twig, or NULL if it doesn't exist
 #' \item children(Twig): get list of IDs of children of Twig
 #'
@@ -116,20 +114,47 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-Copse = function(db, table) {
+Copse = function(db, table, ...) {
     sql = safeSQL(db)
+    fixed = list(...)
+    if (length(fixed) > 0) {
+        fixedTypes = c(
+            "numeric" = "FLOAT(53)",
+            "integer" = "INTEGER",
+            "logical" = "INTEGER",
+            "character" = "TEXT"
+        ) [sapply(fixed, class)]
+        extraCols = paste(names(fixed), fixedTypes, ",", collapse="\n")
+        extraIndex = paste0("CREATE INDEX IF NOT EXISTS ", table, "_", names(fixed), " ON ", table, " (", names(fixed), ")", ";")
+    } else {
+        extraCols = ""
+        extraIndex = character()
+    }
+
+    have = dbExistsTable(environment(sql)$con, table)
+    if (have) {
+        haveTypes = sql(paste("pragma table_info(", table, ")"))
+        haveTypes = subset(haveTypes, ! name %in% c("id", "pid", "mtime", "ctime", "data"))
+        if (length(fixed) > 0 && ! identical(sort(haveTypes$name), sort(names(fixed))))
+            stop("table exists but its column names\n   (", paste(sort(haveTypes$name), collapse=","), ")\ndon't match those specified:\n   (", paste(sort(names(fixed)), collapse=","), ")")
+        fixed = structure(haveTypes$type, names=haveTypes$name)
+    }
     sql(paste("
 CREATE TABLE IF NOT EXISTS", table, "(
  id INTEGER UNIQUE PRIMARY KEY NOT NULL,
  pid INTEGER REFERENCES", table, "(id),
  ctime FLOAT(53),
- mtime FLOAT(53),
+ mtime FLOAT(53),",
+extraCols,"
  data JSON)"))
-    sql(paste("CREATE INDEX IF NOT EXISTS", paste0(table,"_pid"), "on", table, "(pid)"))
+    sql(paste("CREATE INDEX IF NOT EXISTS", paste0(table,"_pid"), "ON", table, "(pid)"))
+    for (i in seq(along=extraIndex))
+        sql(extraIndex[i])
     rv = new.env(parent=emptyenv())
     rv$sql = sql
     rv$table = table
     rv$db = db
+    rv$fixed = fixed
     return(structure(rv, class="Copse"))
 }
 
@@ -343,12 +368,16 @@ names.Twig = function(T) {
     C$sql("begin transaction")
     .rollback = TRUE
     on.exit(C$sql(if(.rollback) "rollback" else "commit"))
-    xs = paste0("'$.",name,"'")
     fr = paste0("from ", C$table, " where id in (", paste(T, collapse=","), ")")
-    type = C$sql(paste0("select json_type(data,", xs, ")", fr))[[1]][1]
-    rv = C$sql(paste("select json_extract(data,", xs, ")", fr))[[1]]
-    if (isTRUE(type == "object" || type == "array"))
-        rv = fromJSON(rv)
+    if (name %in% names(C$fixed)) {
+        rv = C$sql(paste("select", name, fr))[[1]]
+    } else {
+        xs = paste0("'$.",name,"'")
+        type = C$sql(paste0("select json_type(data,", xs, ")", fr))[[1]][1]
+        rv = C$sql(paste("select json_extract(data,", xs, ")", fr))[[1]]
+        if (isTRUE(type == "object" || type == "array"))
+            rv = fromJSON(rv)
+    }
     .rollback = FALSE
     return(rv)
 }
@@ -391,10 +420,14 @@ setData.Twig = function(T, names, values, clearOld=FALSE) {
         C$sql(paste("update", C$table, "set data='{}'", wh))
 
     for(i in seq(along=names)) {
-        C$sql(paste("update", C$table, "set data=json_set(ifnull(data, '{}'), '$.' ||:name, json(:value))", wh),
-              name = names[i],
-              value = unclass(toJSON(values[[i]], auto_unbox=TRUE, digits=NA))
-              )
+        if (names[i] %in% names(C$fixed)) {
+            C$sql(paste("update", C$table, "set ", names[i], "=:value", wh), value=values[[i]])
+        } else {
+            C$sql(paste("update", C$table, "set data=json_set(ifnull(data, '{}'), '$.' ||:name, json(:value))", wh),
+                  name = names[i],
+                  value = unclass(toJSON(values[[i]], auto_unbox=TRUE, digits=NA))
+                  )
+        }
     }
     now = as.numeric(Sys.time())
     C$sql(paste("update", C$table, "set mtime=:mtime", wh),
@@ -446,7 +479,7 @@ children.Twig = function(T) {
 childrenWhere.Twig = function(T, expr) {
     e = rewriteQuery(deparse(Reval(substitute(expr))))
     C = copse(T)
-    C$sql(paste("select id from", C$table, "where", paste0('(', e, ') and pid==', twigID(T))))[[1]]
+    C$sql(paste("select id from", C$table, "where", paste0('(', e, ') and pid in (', paste(T, collapse=","), ")")))[[1]]
 }
 
 #' @export
