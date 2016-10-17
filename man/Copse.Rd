@@ -17,6 +17,7 @@ if it doesn't exist in \code{db}, with this schema:
    CREATE TABLE <table> (
       id    INTEGER UNIQUE PRIMARY KEY,
       pid   INTEGER REFERENCES <table> (id), -- ID of parent twig, if any
+      stump INTEGER REFERENCES <table> (id), -- ID of ultimate ancestor, if any
       ctime FLOAT(53),                       -- twig creation time, unix timestamp
       mtime FLOAT(53),                       -- twig modification time, unix timestamp
       ...
@@ -40,6 +41,7 @@ This function creates an object of class "Copse".  It has these S3 methods:
 \item childrenWhere(Copse, Twig, expr): Twigs which are children of Twig and satisfy the expression
 \item numChildren(Copse, Twig): number of children of Twig
 \item parent(Copse, Twig): all Twigs which are parents to given Twig(s)
+\item stump(Copse, Twig): Twigs which are ultimate ancestors to given Twig(s)
 \item query(Copse, query): run an arbitrary sql query on the Copse
 
 \item setParent(Copse, Twig1, Twig2): set parent of Twig1 to be Twig2
@@ -65,6 +67,7 @@ Twigs are S3 objects of class "Twig" with these S3 methods:
 \item [[<-(Twig, name, value): set value of name in Twig, with name a quoted character scalar
 \item names(Twig): list names in Twig
 \item parent(Twig): get parent Twig of Twig, or NULL if it has none
+\item stump(Twig): ultimate ancestor of Twig, or NULL if none
 \item parent<-(Twig, Twig): set parent of Twig to Twig with ID TwigID (can pass a Twig instead):
 \item child(Twig, n): get nth child of Twig, or NULL if it doesn't exist
 \item children(Twig): get list of IDs of children of Twig

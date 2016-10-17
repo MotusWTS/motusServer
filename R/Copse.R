@@ -189,6 +189,10 @@ newTwig.Copse = function(C, ..., .parent=NULL) {
     ## instantiate that twig
     T = C[[twigID]]
 
+    ## set the stump to itself, if null
+    if (is.null(stump(T)))
+        C$sql(paste("update", C$table, "set stump=id where id=", twigID))
+
     setData(T, list(...))
     return(T)
 }
@@ -224,10 +228,12 @@ parent.Copse = function(C, t) {
     C[[ ids ]]
 }
 
+#' @export
+
 stump.Copse = function(C, t) {
     if (! inherits(t, "Twig"))
         stop("t must be a Twig")
-    ids = C$sql(paste("select stump from", C$table, "where pid is not null and id in (", paste(t, collapse=","), ")"))[[1]]
+    ids = C$sql(paste("select stump from", C$table, "where id in (", paste(t, collapse=","), ")"))[[1]]
     C[[ ids ]]
 }
 
@@ -492,6 +498,7 @@ parent.Twig = function(T) {
     parent(copse(T), T)
 }
 
+#' @export
 stump.Twig = function(T) {
     stump(copse(T), T)
 }
@@ -622,6 +629,10 @@ children = function(C, ...) UseMethod("children")
 #' @export
 
 parent = function(C, ...) UseMethod("parent")
+
+#' @export
+
+stump = function(C, ...) UseMethod("stump")
 
 #' @export
 
