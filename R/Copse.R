@@ -48,7 +48,8 @@
 #' @return This function creates an object of class "Copse".  It has these S3 methods:
 #' \itemize{
 #' \item newTwig(Copse, ..., .parent=NULL): new twig with the named items in (...), and with parent Twig .parent
-#' \item Copse[TwigID]: twig(s) with given ID(s) or NULL
+#' \item Copse[[TwigID]]: twig(s) with given ID(s) or NULL
+#' \item Copse[query, sort]: twig(s) satisfying query, in order by sort criterion
 #' \item child(Copse, Twig, n): nth child of given twig, or NULL
 #' \item children(Copse, Twig): Twigs which are children of Twig
 #' \item childrenWhere(Copse, Twig, expr): Twigs which are children of Twig and satisfy the expression
@@ -56,16 +57,10 @@
 #' \item parent(Copse, Twig): all Twigs which are parents to given Twig(s)
 #' \item query(Copse, query): run an arbitrary sql query on the Copse
 #'
-#' \item twigsWhere(Copse, expr): list of TwigIDs for which given
-#'       expr is TRUE.  The expression is applied against the data field
-#'       of each row.  The identifier "." stands for the item's top
-#'       level, so the third element of a numeric vector called 'blam'
-#'       would be represented as \code{'.$blam[3]'} in \code{expr}
-#'
 #' \item setParent(Copse, Twig1, Twig2): set parent of Twig1 to be Twig2
 #'
 #' \item with(Copse, expr): evaluate \code{expr} within a transaction
-#'       on the Copse database; this provides atomic get-and-set semantics across
+#'       on the Copse database; this provides atomic get-modify-set semantics across
 #'       processes accessing the same Copse.  If an error occurs while evaluating \code{expr},
 #'       the transaction is rolled back.
 #' }
@@ -113,8 +108,8 @@
 #'
 #' hats = Copse("/home/john/inventory.sqlite", "hats")
 #' b = newTwig(hats, name="bowler", size=22, colour="black")
-#' h = twigsWhere(hats, id < 10 || .$size > 20)  ## query can involve id, pid, mtime, ctime, or data variables selected using .$...$...[]...
-#' h[1]
+#' h = hats[id < 10 || .$size > 20]  ## query can involve id, pid, mtime, ctime, fixed columns, or data variables selected using .$...$...[]...
+#' h[[1]]
 #' @export
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
@@ -187,7 +182,7 @@ newTwig.Copse = function(C, ..., .parent=NULL) {
     twigID = C$sql("select last_insert_rowid()") [[1]]
 
     ## instantiate that twig
-    T = C[twigID]
+    T = C[[twigID]]
 
     setData(T, list(...))
     return(T)
@@ -195,7 +190,84 @@ newTwig.Copse = function(C, ..., .parent=NULL) {
 
 #' @export
 
-`[.Copse` = function(C, twigID) {
+child.Copse = function(C, t, n) {
+    if (! inherits(t, "Twig"))
+        stop("t must be a Twig")
+    C[[C$sql(paste("select id from", C$table, "where pid=", t, "limit 1 offset", n-1))[[1]] ]]
+}
+
+children.Copse = function(C, t) {
+    if (! inherits(t, "Twig"))
+        stop("t must be a Twig")
+    C[[ C$sql(paste("select id from", C$table, "where pid=", t, "order by id"))[[1]] ]]
+}
+
+#' @export
+
+numChildren.Copse = function(C, t) {
+    if (! inherits(t, "Twig"))
+        stop("t must be a Twig")
+    C$sql(paste("select count(*) from", C$table, "where pid=", t))[[1]]
+}
+
+#' @export
+
+parent.Copse = function(C, t) {
+    if (! inherits(t, "Twig"))
+        stop("t must be a Twig")
+    ids = C$sql(paste("select pid from", C$table, "where pid is not null and id in (", paste(t, collapse=","), ")"))[[1]]
+    C[[ ids ]]
+}
+
+#' @export
+
+setParent.Copse = function(C, t1, t2) {
+    if (! all(sapply(list(t1, t2), inherits, "Twig")))
+        stop("t1 and t2 must both be a Twig")
+    if (length(t2) > 1)
+        stop("Can only specify a single twig as parent")
+    C$sql(paste("update", C$table, "set pid=", t2, "where id in (", paste(t1, collapse=","), ")"))
+}
+
+#' @export
+
+`[.Copse` = function(C, expr, sort) {
+    ## expr: expression that uses json1 paths
+    pf = parent.frame()
+    e = deparse(Reval(substitute(expr), pf))
+    if (missing(sort)) {
+        s = ""
+    } else {
+        s = paste("ORDER BY", deparse(Reval(substitute(sort), pf)))
+    }
+    C[[ C$sql(paste("select id from", C$table, "where", rewriteQuery(e), s))[[1]] ]]
+}
+
+#' To support syntactic sugar like Jobs[! done && type=="email"]$done = 1,
+#' create idempotent methods:
+
+#' @export
+
+`[<-.Copse` = function(C, expr, sort, value) {
+    return(C)
+}
+
+#' @export
+
+`[[<-.Copse` = function(C, expr, value) {
+    return(C)
+}
+
+#' @export
+
+`$<-.Copse` = function(C, name, value) {
+    return(C)
+}
+
+
+#' @export
+
+`[[.Copse` = function(C, twigID) {
     if (length(twigID) == 0 || ! isTRUE(all(is.finite(twigID))))
         return(NULL)
 
@@ -213,62 +285,14 @@ newTwig.Copse = function(C, ..., .parent=NULL) {
     return(structure(twigID, class="Twig", Copse=C))
 }
 
-#' @export
-
-child.Copse = function(C, t, n) {
-    if (! inherits(t, "Twig"))
-        stop("t must be a Twig")
-    C[C$sql(paste("select id from", C$table, "where pid=", t, "limit 1 offset", n-1))[[1]]]
-}
-
-children.Copse = function(C, t) {
-    if (! inherits(t, "Twig"))
-        stop("t must be a Twig")
-    C[ C$sql(paste("select id from", C$table, "where pid=", t, "order by id"))[[1]]]
-}
-
-#' @export
-
-numChildren.Copse = function(C, t) {
-    if (! inherits(t, "Twig"))
-        stop("t must be a Twig")
-    C$sql(paste("select count(*) from", C$table, "where pid=", t))[[1]]
-}
-
-#' @export
-
-parent.Copse = function(C, t) {
-    if (! inherits(t, "Twig"))
-        stop("t must be a Twig")
-    ids = C$sql(paste("select pid from", C$table, "where pid is not null and id in (", paste(t, collapse=","), ")"))[[1]]
-    C[ ids]
-}
-
-#' @export
-
-setParent.Copse = function(C, t1, t2) {
-    if (! all(sapply(list(t1, t2), inherits, "Twig")))
-        stop("t1 and t2 must both be a Twig")
-    if (length(t2) > 1)
-        stop("Can only specify a single twig as parent")
-    C$sql(paste("update", C$table, "set pid=", t2, "where id in (", paste(t1, collapse=","), ")"))
-}
-
-#' @export
-
-twigsWhere.Copse = function(C, expr) {
-    ## expr: expression that uses json1 paths
-    e = deparse(Reval(substitute(expr)))
-    C[ C$sql(paste("select id from", C$table, "where", rewriteQuery(e)))[[1]] ]
-}
-
 #' find children of Twig which satisfy a query
 #' @export
 
 childrenWhere.Copse = function(C, T, expr) {
     ## expr: expression that uses json1 paths
-    e = deparse(Reval(substitute(expr)))
-    C[ C$sql(paste("select id from", C$table, "where pid in (", paste(T, collapse=","), ") and (", rewriteQuery(e), ")"))[[1]] ]
+    pf = parent.frame()
+    e = deparse(Reval(substitute(expr), pf))
+    C[[ C$sql(paste("select id from", C$table, "where pid in (", paste(T, collapse=","), ") and (", rewriteQuery(e), ")"))[[1]] ]]
 }
 
 #' evaluate portions of an expression enclosed in \code{R( )},
@@ -280,14 +304,14 @@ childrenWhere.Copse = function(C, T, expr) {
 #'
 #' @param e an expression.
 
-Reval = function(e) {
+Reval = function(e, env) {
     if (! is.call(e))
         return(e)
     if(e[[1]]=="R")
-        return(eval(e[[2]]))
+        return(eval(e[[2]], env))
     if (length(e) > 1)
         for(i in 2:length(e))
-            e[[i]] = Reval(e[[i]])
+            e[[i]] = Reval(e[[i]], env)
     return(e)
 }
 
@@ -330,9 +354,11 @@ rewriteQuery = function(q) {
     subs = c(
         "&&" = " AND ",
         "||" = " OR ",
+        "&"  = " AND ",
+        "|"  = " OR ",
         "!=" = "<>",
         "==" = "=",
-        "!" = " NOT "
+        "!"  = " NOT "
     )
     for (i in seq(along=subs))
         q = gsub(names(subs)[i], subs[i], q, fixed=TRUE)
@@ -462,12 +488,6 @@ parent.Twig = function(T) {
 
 #' @export
 
-parentID.Twig = function(T) {
-    get("pid", envir=parent.env(T))
-}
-
-#' @export
-
 numChildren.Twig = function(T) {
     numChildren(copse(T), T)
 }
@@ -487,7 +507,8 @@ children.Twig = function(T) {
 #' @export
 
 childrenWhere.Twig = function(T, expr) {
-    e = rewriteQuery(deparse(Reval(substitute(expr))))
+    pf = parent.frame()
+    e = rewriteQuery(deparse(Reval(substitute(expr), pf)))
     C = copse(T)
     C$sql(paste("select id from", C$table, "where", paste0('(', e, ') and pid in (', paste(T, collapse=","), ")")))[[1]]
 }
@@ -501,13 +522,15 @@ copse.Twig = function(T) {
 #' @export
 
 mtime.Twig = function(T) {
-    get("mtime", envir=parent.env(T))
+    C = copse(T)
+    C$sql(paste("select mtime from", C$table, "where id in (", paste(T, collapse=","), ")"))[[1]]
 }
 
 #' @export
 
 ctime.Twig = function(T) {
-    get("ctime", envir=parent.env(T))
+    C = copse(T)
+    C$sql(paste("select ctime from", C$table, "where id in (", paste(T, collapse=","), ")"))[[1]]
 }
 
 #' @export
@@ -526,10 +549,6 @@ delete.Twig = function(T) {
 #' @export
 
 parent = function(T, ...) UseMethod("parent")
-
-#' @export
-
-parentID = function(T, ...) UseMethod("parentID")
 
 #' @export
 
@@ -582,10 +601,6 @@ children = function(C, ...) UseMethod("children")
 #' @export
 
 parent = function(C, ...) UseMethod("parent")
-
-#' @export
-
-parentID = function(C, ...) UseMethod("parentID")
 
 #' @export
 

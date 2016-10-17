@@ -33,7 +33,8 @@ structurally varaible part.}
 This function creates an object of class "Copse".  It has these S3 methods:
 \itemize{
 \item newTwig(Copse, ..., .parent=NULL): new twig with the named items in (...), and with parent Twig .parent
-\item Copse[TwigID]: twig(s) with given ID(s) or NULL
+\item Copse[[TwigID]]: twig(s) with given ID(s) or NULL
+\item Copse[query, sort]: twig(s) satisfying query, in order by sort criterion
 \item child(Copse, Twig, n): nth child of given twig, or NULL
 \item children(Copse, Twig): Twigs which are children of Twig
 \item childrenWhere(Copse, Twig, expr): Twigs which are children of Twig and satisfy the expression
@@ -41,16 +42,10 @@ This function creates an object of class "Copse".  It has these S3 methods:
 \item parent(Copse, Twig): all Twigs which are parents to given Twig(s)
 \item query(Copse, query): run an arbitrary sql query on the Copse
 
-\item twigsWhere(Copse, expr): list of TwigIDs for which given
-      expr is TRUE.  The expression is applied against the data field
-      of each row.  The identifier "." stands for the item's top
-      level, so the third element of a numeric vector called 'blam'
-      would be represented as \code{'.$blam[3]'} in \code{expr}
-
 \item setParent(Copse, Twig1, Twig2): set parent of Twig1 to be Twig2
 
 \item with(Copse, expr): evaluate \code{expr} within a transaction
-      on the Copse database; this provides atomic get-and-set semantics across
+      on the Copse database; this provides atomic get-modify-set semantics across
       processes accessing the same Copse.  If an error occurs while evaluating \code{expr},
       the transaction is rolled back.
 }
@@ -122,8 +117,8 @@ The copse manages these functions:
 
 hats = Copse("/home/john/inventory.sqlite", "hats")
 b = newTwig(hats, name="bowler", size=22, colour="black")
-h = twigsWhere(hats, id < 10 || .$size > 20)  ## query can involve id, pid, mtime, ctime, or data variables selected using .$...$...[]...
-h[1]
+h = hats[id < 10 || .$size > 20]  ## query can involve id, pid, mtime, ctime, fixed columns, or data variables selected using .$...$...[]...
+h[[1]]
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}

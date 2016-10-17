@@ -5,7 +5,7 @@
 \title{evaluate portions of an expression enclosed in \code{R( )},
 returning the reduced expression.}
 \usage{
-Reval(e)
+Reval(e, env)
 }
 \arguments{
 \item{e}{an expression.}
