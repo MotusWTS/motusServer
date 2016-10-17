@@ -33,6 +33,7 @@
 #'    CREATE TABLE <table> (
 #'       id    INTEGER UNIQUE PRIMARY KEY,
 #'       pid   INTEGER REFERENCES <table> (id), -- ID of parent twig, if any
+#'       stump INTEGER REFERENCES <table> (id), -- ID of ultimate ancestor, if any
 #'       ctime FLOAT(53),                       -- twig creation time, unix timestamp
 #'       mtime FLOAT(53),                       -- twig modification time, unix timestamp
 #'       ...
@@ -55,6 +56,7 @@
 #' \item childrenWhere(Copse, Twig, expr): Twigs which are children of Twig and satisfy the expression
 #' \item numChildren(Copse, Twig): number of children of Twig
 #' \item parent(Copse, Twig): all Twigs which are parents to given Twig(s)
+#' \item stump(Copse, Twig): Twigs which are ultimate ancestors to given Twig(s)
 #' \item query(Copse, query): run an arbitrary sql query on the Copse
 #'
 #' \item setParent(Copse, Twig1, Twig2): set parent of Twig1 to be Twig2
@@ -81,6 +83,7 @@
 #' \item [[<-(Twig, name, value): set value of name in Twig, with name a quoted character scalar
 #' \item names(Twig): list names in Twig
 #' \item parent(Twig): get parent Twig of Twig, or NULL if it has none
+#' \item stump(Twig): ultimate ancestor of Twig, or NULL if none
 #' \item parent<-(Twig, Twig): set parent of Twig to Twig with ID TwigID (can pass a Twig instead):
 #' \item child(Twig, n): get nth child of Twig, or NULL if it doesn't exist
 #' \item children(Twig): get list of IDs of children of Twig
@@ -134,7 +137,7 @@ Copse = function(db, table, ...) {
     have = dbExistsTable(environment(sql)$con, table)
     if (have) {
         haveTypes = sql(paste("pragma table_info(", table, ")"))
-        haveTypes = subset(haveTypes, ! name %in% c("id", "pid", "mtime", "ctime", "data"))
+        haveTypes = subset(haveTypes, ! name %in% c("id", "pid", "stump", "mtime", "ctime", "data"))
         if (length(fixed) > 0 && ! identical(sort(haveTypes$name), sort(names(fixed))))
             stop("table exists but its column names\n   (", paste(sort(haveTypes$name), collapse=","), ")\ndon't match those specified:\n   (", paste(sort(names(fixed)), collapse=","), ")")
         fixed = structure(haveTypes$type, names=haveTypes$name)
@@ -143,11 +146,13 @@ Copse = function(db, table, ...) {
 CREATE TABLE IF NOT EXISTS", table, "(
  id INTEGER UNIQUE PRIMARY KEY NOT NULL,
  pid INTEGER REFERENCES", table, "(id),
+ stump INTEGER REFERENCES", table, "(id),
  ctime FLOAT(53),
  mtime FLOAT(53),",
 extraCols,"
  data JSON)"))
     sql(paste("CREATE INDEX IF NOT EXISTS", paste0(table,"_pid"), "ON", table, "(pid)"))
+    sql(paste("CREATE INDEX IF NOT EXISTS", paste0(table,"_stump"), "ON", table, "(stump)"))
     for (i in seq(along=extraIndex))
         sql(extraIndex[i])
     rv = new.env(parent=emptyenv())
@@ -173,7 +178,7 @@ newTwig.Copse = function(C, ..., .parent=NULL) {
     now = as.numeric(Sys.time())
 
     ## create the empty twig
-    C$sql(paste("insert into", C$table, "(pid, ctime, mtime) values (:pid, :ctime, :mtime)"),
+    C$sql(paste("insert into", C$table, "(pid, stump, ctime, mtime) values (:pid, (select ifnull(stump, id) from", C$table, "where id=:pid), :ctime, :mtime)"),
             pid = if (is.null(.parent)) NA else .parent[1], ## subscript to drop class
             ctime = now,
             mtime = now
@@ -219,6 +224,14 @@ parent.Copse = function(C, t) {
     C[[ ids ]]
 }
 
+stump.Copse = function(C, t) {
+    if (! inherits(t, "Twig"))
+        stop("t must be a Twig")
+    ids = C$sql(paste("select stump from", C$table, "where pid is not null and id in (", paste(t, collapse=","), ")"))[[1]]
+    C[[ ids ]]
+}
+
+#' set the parent (and stump) of Twig(s)
 #' @export
 
 setParent.Copse = function(C, t1, t2) {
@@ -226,7 +239,7 @@ setParent.Copse = function(C, t1, t2) {
         stop("t1 and t2 must both be a Twig")
     if (length(t2) > 1)
         stop("Can only specify a single twig as parent")
-    C$sql(paste("update", C$table, "set pid=", t2, "where id in (", paste(t1, collapse=","), ")"))
+    C$sql(paste("update", C$table, "set pid=", t2, ", stump=(select ifnull(stump, id) from", C$table, "where id=", t2, ") where id in (", paste(t1, collapse=","), ")"))
 }
 
 #' @export
@@ -479,6 +492,10 @@ parent.Twig = function(T) {
     parent(copse(T), T)
 }
 
+stump.Twig = function(T) {
+    stump(copse(T), T)
+}
+
 #' @export
 
 `parent<-.Twig` = function(T, value) {
@@ -549,6 +566,10 @@ delete.Twig = function(T) {
 #' @export
 
 parent = function(T, ...) UseMethod("parent")
+
+#' @export
+
+stump = function(T, ...) UseMethod("stump")
 
 #' @export
 
