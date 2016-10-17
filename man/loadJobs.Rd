@@ -4,7 +4,10 @@
 \alias{loadJobs}
 \title{load existing jobs from server database}
 \usage{
-loadJobs()
+loadJobs(stumpType)
+}
+\arguments{
+\item{stumpType}{only examine jobs whose stump is of the specified type.}
 }
 \value{
 no return value.
@@ -12,6 +15,11 @@ no return value.
 \description{
 A global object \code{Jobs} is created, which manages jobs.
 It is populated from the "jobs" table in the server database.
+}
+\details{
+For any jobs which are not done and which are of the specified
+type, we verify that the "path" field is correct, in case the
+server was interrupted while moving a job.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}

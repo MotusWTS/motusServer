@@ -7,7 +7,7 @@
 newJob(type, path, ..., .parent = NULL)
 }
 \arguments{
-\item{type}{character scalar name of job handler}
+\item{type}{character scalar name of job type}
 
 \item{path}{to the folder in which to create the new job's folder; 
 if omitted and if .parent is specified, create the folder in the parent's

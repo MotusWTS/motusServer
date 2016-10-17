@@ -10,7 +10,7 @@
 #' maintained in persistent storage in the Copse's SQLite database.
 #' Jobs can have subjobs via the Twig's parent() relationship.
 #'
-#' @param type character scalar name of job handler
+#' @param type character scalar name of job type
 #'
 #' @param path to the folder in which to create the new job's folder; 
 #' if omitted and if .parent is specified, create the folder in the parent's
