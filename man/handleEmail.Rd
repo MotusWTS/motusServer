@@ -2,18 +2,21 @@
 % Please edit documentation in R/handleEmail.R
 \name{handleEmail}
 \alias{handleEmail}
-\title{handler for incoming email}
+\title{handler for new incoming email}
 \usage{
-handleEmail(msg)
+handleEmail(j)
 }
 \arguments{
-\item{msg}{the full path to the new message}
+\item{j}{the job; it has this field:
+\itemize{
+\item msgFile: full path to message file
+}}
 }
 \value{
-TRUE if the file is a valid email; FALSE otherwise
+TRUE if the email message was successfully handled
 }
 \description{
-called by \code{\link{emailServer}} for emails.
+called by \code{\link{emailServer}} for new messages
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}

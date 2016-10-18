@@ -61,7 +61,7 @@ MOTUS_QUEUEFILE_REGEX = paste0(MOTUS_LEADING_TIMESTAMP_REGEX, MOTUS_QUEUE_SEP, "
 
 ## "From" address for outgoing emails
 
-MOTUS_OUTGOING_EMAIL_ADDRESS = "info@sensorgnome.org"
+MOTUS_OUTGOING_EMAIL_ADDRESS = "no-reply@sensorgnome.org"
 
 ## filesystem layout; dirs end in "/"
 
@@ -69,13 +69,14 @@ MOTUS_PATH = list(
     ROOT     = "/sgm",
     BIN      = "/sgm/bin",             ## executable scripts
     CACHE    = "/sgm/cache",           ## recent results of large queries from motus.org
-    DONE     = "/sgm/done",            ## files we (probably) no longer need
-    EMAILS   = "/sgm/emails",          ## saved copies of valid data-transfer emails
+    DONE     = "/sgm/done",            ## folders for completed jobs
+    EMBARGOED_EMAILS = "/sgm/embargoed_inbox", ## emails under embargo
     ERRORS   = "/sgm/errors",          ## save dumped call stacks of server errors
     INBOX    = "/sgm/inbox",           ## emails go here, unless /sgm/EMBARGO exists
     INCOMING = "/sgm/incoming",        ## files / dirs moved here are processed by server(); this is the external / asynchronous
                                        ## access point to the processing queue
     LOGS     = "/sgm/logs",            ## processing logs
+    MAIL_QUEUE = "/sgm/email_queue",   ## queue for processing emails by emailServer()
     MANUAL   = "/sgm/manual",          ## folders needing manual attention
     MOTR     = "/sgm/motr",            ## links to receiver DBs by motus ID
     OLDROOT  = "/SG",                  ## root of old-style folder hierarchy
@@ -83,7 +84,7 @@ MOTUS_PATH = list(
     PLOTS    = "/sgm/plots",           ## generated plots
     PUB      = "/sgm/pub",             ## web-visible public content
     QUEUES   = "/sgm/queue",           ## queues for processing items
-    QUEUE0   = "/sgm/queue/0",         ##  queue 0 is for processing incoming emails
+    QUEUE0   = "/sgm/queue/0",         ##  queue 0 is watched for new entries
     QUEUE1   = "/sgm/queue/1",         ##  queue 1..8 for processServers
     QUEUE2   = "/sgm/queue/2",
     QUEUE3   = "/sgm/queue/3",
@@ -97,7 +98,7 @@ MOTUS_PATH = list(
     REFS     = "/sgm/refs",            ## links to receiver DBs by year, projCode, siteCode
     SPAM     = "/sgm/spam",            ## saved invalid emails
     TAGS     = "/sgm/tags",            ## ??
-    TMP      = "/sgm/tmp"              ## temporary storage persistent across reboots
+    TMP      = "/sgm/tmp"              ## intermediate storage; persistent across reboots
 )
 
 ## main logfile name

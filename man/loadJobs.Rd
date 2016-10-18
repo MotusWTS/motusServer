@@ -17,6 +17,24 @@ A global object \code{Jobs} is created, which manages jobs.
 It is populated from the "jobs" table in the server database.
 }
 \details{
+It has these fixed fields:
+\itemize{
+
+\item type: character; type of job
+
+\item done: integer; 0 if not attempted; negative for errors; +1
+for successfully finished
+
+\item path: full path to folder for job
+
+\item oldpath: full path to previous folder for job (permits
+recovery from server failure during job move)
+
+}
+
+Other job items are stored in a JSON-encodded text field called
+\code{data}.
+
 For any jobs which are not done and which are of the specified
 type, we verify that the "path" field is correct, in case the
 server was interrupted while moving a job.

@@ -9,38 +9,36 @@
 #' \code{dowload.TYPE} is defined, and \code{URL} is the location
 #' of the item.
 #'
-#' @param path the full path to the file with the download link
+#' @param j the download job; it has these fields:
+#' \itemize{
+#' \item url: download URL
+#' \item type: download type
+#' }
 #'
-#' @param isdir boolean; TRUE iff the path is a directory
+#' If \code{type="xxx"}, there must exist a handler called \code{downloadXxx};
+#' i.e. the first letter in the type gets capitalized.
 #'
-#' @param params character vector; not used.
+#' @return TRUE if the download was successfully handled
 #'
-#' @return TRUE if the link was successfully downloaded.
-#'
-#' @note If the download was successful, the file/folder is enqueued.
-#'
-#' @seealso \link{\code{server}}
+#' @seealso \link{\code{emailServer}}
 #'
 #' @export
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-handleDownloadableLink = function(path, isdir, params) {
-
-    if (isdir)
-        return (FALSE)
-
-    s = (readLines(path, n=1) %>% strsplit(., " ", fixed=TRUE))[[1]]
+handleDownload = function(j) {
 
     ## try call a function called 'download.TYPE'
+    type = j$type
+    url = j$url
+    path = j$path
 
-    getter = get0(paste0("download.", s[1]), mode="function")
-    if (is.null(getter))
+    getter = get0(paste0("download", toupper(substring(type, 1, 1)), substring(type, 2)), mode="function")
+    if (is.null(getter)) {
+        motusLog("Download failed; unknown type '%s' for URL '%s'", type, url)
         return (FALSE)
-
-    tmpdir = makeQueuePath()
-    motusLog("Downloading to %s type=%s url=%s", tmpdir, s[1], s[2])
-    motusLog(paste0(getter(s[2], tmpdir), collapse="\n   "))
-    enqueue(tmpdir)
+    }
+    motusLog("Downloading to %s type=%s url=%s", path, type, url)
+    j$message = getter(url, path)
     return(TRUE)
 }

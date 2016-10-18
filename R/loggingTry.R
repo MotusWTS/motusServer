@@ -4,6 +4,7 @@
 #' an error occurs, the timestamped stack dump is saved in
 #' \code{MOTUS_PATH$errors}
 #'
+#' @param job, to which any error message will be looged
 #' @param expr expression to evaluate
 #' 
 #' @return value of \code{expr}
@@ -14,7 +15,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-loggingTry = function (expr) 
+loggingTry = function (j, expr) 
 {
     tryCatch(
         withRestarts(
@@ -28,9 +29,9 @@ loggingTry = function (expr)
                 frames = rev(frames)[-c(1L, 2L)]
                 attr(frames, "error.message") = e
                 class(frames) = "dump.frames"
-                out = paste0(makeQueuePath("dump", isdir=FALSE, dir=MOTUS_PATH$ERRORS, create=FALSE), ".rds")
+                out = file.path(MOTUS_PATH$ERRORS, paste0(j, ".rds"))
                 saveRDS(frames, out)
-                motusLog("Error with call stack saved to %s:\n   %s", out, e)
+                jobLog(c(paste0("Error with call stack saved to ", out), e, names(frames)))
            }),
         error = identity
     )

@@ -1,62 +1,80 @@
-#' handler for incoming email
+#' handler for new incoming email
 #'
-#' called by \code{\link{server}} for emails.
+#' called by \code{\link{emailServer}} for new messages
 #'
-#' @param path the full path to the new file or directory
+#' @param j the job; it has this field:
+#' \itemize{
+#' \item msgFile: full path to message file
+#' }
 #'
-#' @param isdir boolean; TRUE iff the path is a directory
+#' @return TRUE if the email message was successfully handled
 #'
-#' @param params not used
-#'
-#' @return TRUE if the file is an email; FALSE otherwise
-#'
-#' @seealso \code{\link{server}}
+#' @seealso \code{\link{emailServer}}
 #'
 #' @export
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-handleEmail = function(path, isdir, params) {
-    ## an email must be a single file, not a dir, and match the
-    ## pattern for email message files
+handleEmail = function(j) {
+    txt = textFileContents(j$msgFile)
 
-    if (isdir)
-        return (FALSE)
+    auth = j$auth = validateEmail(txt)
 
-    ## validate
-    ue = validateEmail(paste(readLines(path), collapse="\n"))
+    ## for now, be strict about token expiry
+    valid = j$valid = ! (is.null(auth) || auth$expired)
+
+    if (! valid) {
+        email(MOTUS_ADMIN_EMAIL, "Missing or expired token in email",
+              paste0("The message below was received by data@sensorgnome.org,
+but lacks a valid authorization token.
+
+If this is a valid data email, you can paste your own authorization token
+into the subject or body, then forward it to data@sensorgnome.org
+
+You can also forward it to the original sender with the above instructions.
+
+Whoever sends the new copy (with token) to data@sensorgnome.org will receive
+the status messages.
+
+----------------------------------------------------------------------------
+", txt))
+        jobFail(j, "Missing or expired token in email")
+
+        return(TRUE)
+    }
+
+    ## get address(es) of people to reply to; we only send replies for valid emails
+
+    replyTo = unique(regexPieces("(?m)(?:^From: )(?<from>.*$)|(?:^Reply-To: )(?<reply_to>.*$)", txt) [[1]])
+    replyTo = grep("@dropbox.com|@wetransfer.com|@google.com", replyTo, invert=TRUE, value=TRUE, perl=TRUE)
+    j$replyTo = replyTo
+
+    path = j$path
+    newmsg = file.path(path, basename(msg))
+    file.rename(msg, newmsg)
 
     ## unpack the email
-    msg = unpackEmail(path)
+    msg = unpackEmail(newmsg, path)
+
+    ## compress the original
+    safeSys("bzip2", newmsg)
 
     ## remove "quoted block" formatting (e.g. "> > > ") which might
-    ## word-wrapped the original text and broken up URLs in forwarded
-    ## messages (looking at you, fastmail.fm!)
+    ## result in word-wrapped original text and broken up URLs in
+    ## forwarded messages (looking at you, fastmail.fm!)
 
     msg = gsub("\n(> )+", "", msg, perl=TRUE)
 
-    ## for now, be strict about token expiry
-    valid = ! (is.null(ue) || ue$expired)
+    ## parse out and enqueue links to remote data storage
+    queueDownloads(j, msg)
 
-    ## archive message
-    archiveMessage(path, valid)
-
-    if (valid) {
-        ## parse out and enqueue links to remote data storage
-        queueDownloadableLinks(msg)
-
-        ## drop text parts with names like "partN"
-        tmpdir = attr(msg, "tmpdir")
-        file.remove (
-            dir(tmpdir,
-                pattern    = "^part[0-9]+$",
-                recursive  = TRUE,
-                full.names = TRUE
-                )
-        )
-        
-        ## deal with any remaining attached files of known type
-        queueKnownFiles(tmpdir)
-    }
+    ## drop text parts with names like "partN"
+    file.remove (
+        dir(tmpdir,
+            pattern    = "^part[0-9]+$",
+            recursive  = TRUE,
+            full.names = TRUE
+            )
+    )
     return (TRUE)
 }

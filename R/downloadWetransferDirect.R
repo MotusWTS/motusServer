@@ -23,7 +23,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-download.wetransferDirect = function(link, dir) {
+downloadWetransferDirect = function(link, dir) {
 
     ## URL from email looks like
     ## e.g. "https://www.wetransfer.com/downloads/cd322a32324cb041abb0968a3d4de0da20160104173429/f501a0c6e883c472e550f8cba4bbadcb20160104173429/7de1e5

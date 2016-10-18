@@ -4,7 +4,11 @@
 \alias{emailServer}
 \title{process incoming emails}
 \usage{
-emailServer()
+emailServer(tracing = FALSE)
+}
+\arguments{
+\item{tracing;}{default FALSE.  If TRUE, enter debug browser before
+calling each handler.}
 }
 \value{
 This function does not return; it is meant for use in an R
@@ -16,17 +20,14 @@ Watch for new messages in \code{MOTUS_PATH$INBOX}.
 \details{
 When a new message is found:
 \itemize{
-\item create a new job folder in /sgm/queue/0
+\item create a new job folder in /sgm/email_queue
 \item unpack its parts
 \item validate by looking for an authorization token
 \item save attachments
 \item download files from any links
-\item enqueue a new job with all files
 \item email the sender with an acknowledgement and pointer to a status page.
+\item enqueue a new job with all files
 }
-}
-\note{
-each of the above steps is encoded as a jobStep
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}

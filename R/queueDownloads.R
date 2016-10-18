@@ -11,6 +11,8 @@
 #' and \code{URL} is its location.  The file is then passed to \link{\code{enqueue()}}
 #' with parameters \code{pattern='url_', fileext='.txt'}
 #'
+#' @param j job for which downloads will be subjobs
+#'
 #' @param msg character scalar; the message text.
 #'
 #' @return no return value.
@@ -19,15 +21,12 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-queueDownloadableLinks = function(msg) {
+queueDownloads = function(j, msg) {
 
     links = regexPieces(dataTransferRegex, msg)[[1]]
 
     ## queue any links
 
-    for (i in seq(along=links)) {
-        tmpf = makeQueuePath("url", isdir=FALSE)
-        cat(sprintf("%s %s\n", names(links)[i], links[i]), file=tmpf)
-        enqueue(tmpf)
-    }
+    for (i in seq(along=links))
+        queueJob(newSubJob(j, "download", url=links[i], type=names(links)[i]))
 }

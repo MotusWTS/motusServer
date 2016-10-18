@@ -18,24 +18,24 @@
 #'
 #' @seealso \link{\code{download.wetransferDirect}} for downloading using
 #' the link in an email to the file recipient.
-#' 
+#'
 #' @export
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-download.wetransferConf = function(link, dir) {
+downloadWetransferConf = function(link, dir) {
 
     ## URL from email looks like
     ## e.g. https://we.tl/6gFmMXFkXP
 
     x = GET(link) ## from package:httr
-    
+
     ## reformat the returned URL:
     ## e.g.
     ## "https://www.wetransfer.com/downloads/f577d5d876d271e0228ac28e2cfd502f20160420213117/6acdc8"
     ## ->
     ## "https://api.wetransfer.com/api/v1/transfers/f577d5d876d271e0228ac28e2cfd502f20160420213117/download?recipient_id=&security_hash=6acdc8&password=&ie=false&ts=1461204325054"
-    
+
     parts = strsplit(x$url, "/", fixed=TRUE)[[1]]
     options(digits=14) ## for getting timestamp as integer
     newURL = sprintf("https://api.wetransfer.com/api/v1/transfers/%s/download?recipient_id=&security_hash=%s&password&ie=false&ts=%.0f",

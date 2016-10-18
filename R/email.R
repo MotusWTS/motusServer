@@ -27,20 +27,21 @@
 email = function(to, subj, msg, ...) {
     if (length(list(...)) > 0)
         msg = sprintf(msg, ...)
+    date = format(Sys.time(), MOTUS_TIMESTAMP_FORMAT)
     sendmail(MOTUS_OUTGOING_EMAIL_ADDRESS, to, subj, msg)
-    saveMsg = makeQueuePath("out.bz2", isdir=FALSE, dir=MOTUS_PATH$OUTBOX, create=FALSE)
-    f = bzfile(saveMsg, "wb")
+    msgFile = file.path(MOTUS_PATH$OUTBOX, paste0(date, ".txt.bz2"))
+    f = bzfile(msgFile, "wb")
     writeLines(
         sprintf(
             "From: %s\nTo: %s\nSubject: %s\nDate: %s",
             MOTUS_OUTGOING_EMAIL_ADDRESS,
             to,
             subj,
-            format(Sys.time(), MOTUS_TIMESTAMP_FORMAT)
+            date
         ),
         f)
     writeLines(msg, f)
     close(f)
-    motusLog("Emailed %s subj: \"%s\" body: %s", to, subj, saveMsg)
+    motusLog("Emailed %s subj: \"%s\" body: %s", to, subj, msgFile)
     invisible(NULL)
 }

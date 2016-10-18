@@ -1,29 +1,29 @@
 #' Unpack an email message, returning the text portion.
 #'
 #' Unpacks a raw RFC-822 style email message, possibly with
-#' attachments, into a temporary directory, and return the
+#' attachments, into the "attachments" subdirectory, and return the
 #' concatenation of all text parts, possibly preceded by some headers.
 #'
-#' @param path path to the raw email message
+#' @param msg path to the raw email message
+#'
+#' @param dir path to folder where message parts should be unpacked
 #'
 #' @param headers character vector of message header lines to include at the
-#' start of the returned message.  Defaults to \code{c("Subject", "Reply-To")}.
+#' start of the returned message.  Defaults to \code{"Subject"}.
 #'
 #' @param maxHeaderLines maximum number of lines assumed to be headers in
 #' the message.
 #'
 #' @return a character scalar consisting of any selected headers
-#'     followed by the texts part of the message.  This has a
-#'     single attribute named "tmpdir", which is the full path to the
-#'     temporary directory where the message parts have been unpacked.
-#'     All text parts are returned so that messages forwarded as attachments
-#'     can be blessed with a token. e.g. if I receive an email without
-#'     a token, but trust the sender and content, I can forward the message
-#'     as an attachment to data@sensorgnome.org with my own token in the
-#'     body of a new email.
+#'     followed by the texts part of the message.  All text parts are
+#'     returned so that messages forwarded as attachments can be
+#'     blessed with a token. e.g. if I receive an email without a
+#'     token, but trust the sender and content, I can forward the
+#'     message as an attachment to data@sensorgnome.org with my own
+#'     token in the subject or body of a new email.
 #'
-#' If the messages is not a multi-part mime message, the full text of
-#' the messages is returned instead of the first text part.
+#' If the message is not a multi-part mime message, the full text of
+#' the message is returned instead.
 #'
 #' @note  Trailing DOS-style newlines are translated into unix-style newlines
 #' before unpacking the message, since \code{munpack} can't handle this.
@@ -32,7 +32,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-unpackEmail = function(path, headers=c("Subject", "Reply-To:"), maxHeaderLines=500) {
+unpackEmail = function(msg, dir, headers=c("Subject"), maxHeaderLines=500) {
 
     ## grab any requested header lines
     if (length(headers) > 0) {
@@ -45,14 +45,12 @@ unpackEmail = function(path, headers=c("Subject", "Reply-To:"), maxHeaderLines=5
         h = character(0)
     }
 
-    tmpdir = makeQueuePath("msgparts")
-
     ## because the incoming email might (incorrectly) use \r\n end of lines,
     ## convert these to \n
-    res = safeSys(sprintf("cat %s | sed -e 's/\\r$//' | munpack -C %s -q -t", path, tmpdir), quote=FALSE)
+    res = safeSys(sprintf("cat %s | sed -e 's/\\r$//' | munpack -C %s -q -t", msg, dir), quote=FALSE)
     res = read.csv(textConnection(res), sep=" ", header=FALSE, as.is=TRUE)
     names(res) = c("name", "mime")
-    textParts = file.path(tmpdir, subset(res, mime=="(text/plain)")$name)
+    textParts = file.path(dir, subset(res, mime=="(text/plain)")$name)
 
     if (length(textParts) == 0){
         ## nothing unpacked, so just use original message
@@ -61,5 +59,5 @@ unpackEmail = function(path, headers=c("Subject", "Reply-To:"), maxHeaderLines=5
         ## paste the subject line and text parts of the message (if any)
         msg = paste0(paste0(c(h, unlist(lapply(textParts, readLines))), collapse="\n"), "\n")
     }
-    return(structure(msg, tmpdir=tmpdir))
+    return(msg)
 }

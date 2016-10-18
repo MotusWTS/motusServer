@@ -2,7 +2,7 @@
 #'
 #' Download the file or folder (recursively) from a URL pointing to
 #' shared content on dropbox.com into the specified directory.
-#' 
+#'
 #' @param link URL of file or folder on dropbox.com, from the email
 #' sent to the file or folder recipient.
 #'
@@ -22,7 +22,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-download.dropbox = function(link, dir) {
+downloadDropbox = function(link, dir) {
 
     ## URL from email looks like
     ## e.g. https://www.dropbox.com/sh?/biie8sdq0oc5jm6/testfile.txt?dl=0
@@ -43,7 +43,7 @@ download.dropbox = function(link, dir) {
 
     ## as per dropbox docs, change dl parameter to 1 (doesn't seem to be required)
     url = sub("dl=0$", "dl=1", link, perl=TRUE)
-    
+
     curlPerform(url=url, followLocation = TRUE, writedata=f@ref)
 
     RCurl::close(f)

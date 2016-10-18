@@ -5,8 +5,7 @@
 #' \link{\code{getUploadToken}}) and if found, the username and email
 #' address are returned.
 #'
-#' @param msg the text of the email.  This is the results of running
-#'     the linux utility \code{munpack} on the message.
+#' @param msg the full text of the email.
 #'
 #' @return if the message contains a valid token, returns a 3-element
 #'     list with these items:
@@ -43,7 +42,9 @@ validateEmail = function(msg) {
     ##  x = tbl(openMotusDB(), "upload_tokens") %>% filter_(~token==tok) %>% collect
     ## the translated query is: SELECT * FROM `upload_tokens` WHERE (`token` = 'XXXXXXX' AS "token")
 
-    x = dbGetQuery(openMotusDB()$con, sprintf("select * from upload_tokens where token='%s'", tok))
+    con = openMotusDB()$con
+    x = dbGetQuery(con, sprintf("select * from upload_tokens where token='%s'", tok))
+    dbDisconnect(con)
 
     if(nrow(x) == 0)
         return(NULL)

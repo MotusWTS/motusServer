@@ -14,18 +14,18 @@
 #'
 #' @param maxDepth maximum depth of nested folders to download, starting
 #' at \code{URL}.  Default: 5.
-#' 
+#'
 #' @return returns invisible(NULL)
 #'
 #' @examples
 #'
-#' ## download.FTP("ftp://USER:PASSWD@ftp.depot.qc.ec.gc.ca/depot/SG/Mai2016/BBBK0489_Estimauville")
+#' ## downloadFTP("ftp://USER:PASSWD@ftp.depot.qc.ec.gc.ca/depot/SG/Mai2016/BBBK0489_Estimauville" "/tmp")
 #'
 #' @export
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-download.FTP = function(link, dir, suffixes=c(".gz", ".txt", ".zip", ".7z", ".rar", ".ZIP", ".7Z", ".TXT", ".RAR", ".GZ"), maxDepth=5) {
+downloadFTP = function(link, dir, suffixes=c(".gz", ".txt", ".zip", ".7z", ".rar", ".ZIP", ".7Z", ".TXT", ".RAR", ".GZ"), maxDepth=5) {
 
     safeSys("wget",
             "--quiet",

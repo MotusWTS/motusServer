@@ -4,31 +4,30 @@
 \alias{unpackEmail}
 \title{Unpack an email message, returning the text portion.}
 \usage{
-unpackEmail(path, headers = c("Subject", "Reply-To:"), maxHeaderLines = 500)
+unpackEmail(msg, dir, headers = c("Subject"), maxHeaderLines = 500)
 }
 \arguments{
-\item{path}{path to the raw email message; its parent folder must
-also contain a folder called "attachments"}
+\item{msg}{path to the raw email message}
+
+\item{dir}{path to folder where message parts should be unpacked}
 
 \item{headers}{character vector of message header lines to include at the
-start of the returned message.  Defaults to \code{c("Subject", "Reply-To")}.}
+start of the returned message.  Defaults to \code{"Subject"}.}
 
 \item{maxHeaderLines}{maximum number of lines assumed to be headers in
 the message.}
 }
 \value{
 a character scalar consisting of any selected headers
-    followed by the texts part of the message.  This has a
-    single attribute named "tmpdir", which is the full path to the
-    temporary directory where the message parts have been unpacked.
-    All text parts are returned so that messages forwarded as attachments
-    can be blessed with a token. e.g. if I receive an email without
-    a token, but trust the sender and content, I can forward the message
-    as an attachment to data@sensorgnome.org with my own token in the
-    body of a new email.
+    followed by the texts part of the message.  All text parts are
+    returned so that messages forwarded as attachments can be
+    blessed with a token. e.g. if I receive an email without a
+    token, but trust the sender and content, I can forward the
+    message as an attachment to data@sensorgnome.org with my own
+    token in the subject or body of a new email.
 
-If the messages is not a multi-part mime message, the full text of
-the messages is returned instead of the first text part.
+If the message is not a multi-part mime message, the full text of
+the message is returned instead.
 }
 \description{
 Unpacks a raw RFC-822 style email message, possibly with

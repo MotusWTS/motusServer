@@ -1,4 +1,4 @@
-#' return the contents of a text file as a character vector, or the
+#' return the contents of a text file as a character scalar, or the
 #' empty string if the file doesn't exist.
 #'
 #' @param f full path to the file

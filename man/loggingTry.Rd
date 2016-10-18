@@ -4,10 +4,12 @@
 \alias{loggingTry}
 \title{Try evaluate expression, logging the call stack in case of an error.}
 \usage{
-loggingTry(expr)
+loggingTry(j, expr)
 }
 \arguments{
 \item{expr}{expression to evaluate}
+
+\item{job, }{to which any error message will be looged}
 }
 \value{
 value of \code{expr}

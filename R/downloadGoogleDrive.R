@@ -19,7 +19,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-download.googleDrive = function(link, dir) {
+downloadGoogleDrive = function(link, dir) {
 
     ## URL from email looks like
     ## e.g. https://drive.google.com/folderview?id=0B483BNeq2WIsdXZDde78dDA
