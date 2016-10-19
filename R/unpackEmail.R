@@ -36,7 +36,7 @@ unpackEmail = function(msg, dir, headers=c("Subject"), maxHeaderLines=500) {
 
     ## grab any requested header lines
     if (length(headers) > 0) {
-        h = readLines(path, n=maxHeaderLines) %>%
+        h = readLines(msg, n=maxHeaderLines) %>%
             grep (paste0("^(", paste0(headers, collapse="|"), "):"),
                   .,
                   perl=TRUE,
@@ -54,7 +54,7 @@ unpackEmail = function(msg, dir, headers=c("Subject"), maxHeaderLines=500) {
 
     if (length(textParts) == 0){
         ## nothing unpacked, so just use original message
-        msg = paste0(paste0(readLines(path), collapse="\n"), "\n")
+        msg = paste0(paste0(readLines(msg), collapse="\n"), "\n")
     } else {
         ## paste the subject line and text parts of the message (if any)
         msg = paste0(paste0(c(h, unlist(lapply(textParts, readLines))), collapse="\n"), "\n")
