@@ -10,7 +10,7 @@ handleDownload(j)
 \item{j}{the download job; it has these fields:
 \itemize{
 \item url: download URL
-\item type: download type
+\item method: download method; e.g. googleDrive, wetransferDirect, ...
 }
 
 If \code{type="xxx"}, there must exist a handler called \code{downloadXxx};

@@ -28,7 +28,7 @@ where \code{...} represents additional user-specified columns present in all twi
 
 The \code{...} columns can be considered the structurally constant
 part of a Copse, while the \code{data} column holds the
-structurally varaible part.}
+structurally variable part.}
 }
 \value{
 This function creates an object of class "Copse".  It has these S3 methods:
@@ -122,6 +122,7 @@ hats = Copse("/home/john/inventory.sqlite", "hats")
 b = newTwig(hats, name="bowler", size=22, colour="black")
 h = hats[id < 10 || .$size > 20]  ## query can involve id, pid, mtime, ctime, fixed columns, or data variables selected using .$...$...[]...
 h[[1]]
+
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}

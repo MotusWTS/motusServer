@@ -17,15 +17,7 @@ no return value.
 }
 \description{
 The links must be of the forms specified in \link{\code{dataTransferRegex}}
-Each link is written to a temporary file in this format:
-}
-\details{
-\code{
-  TYPE URL
-}
-where \code{TYPE} is the kind of download link, e.g. 'dropbox' or 'googleDrive'
-and \code{URL} is its location.  The file is then passed to \link{\code{enqueue()}}
-with parameters \code{pattern='url_', fileext='.txt'}
+We queue a download subjob for each link.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
