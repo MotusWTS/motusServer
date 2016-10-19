@@ -24,6 +24,9 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 emailServer = function(tracing = FALSE) {
+    if(tracing)
+        options(error=recover)
+
     ensureServerDirs()
     loadJobs("email")
     motusLog("EmailServer started")
@@ -58,12 +61,15 @@ emailServer = function(tracing = FALSE) {
             next
         }
 
-        if (tracing)
-            browser()
-
         handled = FALSE
-        loggingTry(j, handled <<- h(j))
-        
+
+        if (tracing) {
+            browser()
+            handled <- h(j)
+        } else {
+            loggingTry(j, handled <<- h(j))
+        }
+
         if (isTRUE(handled)) {
             j$done = 1
         } else {
@@ -75,8 +81,8 @@ emailServer = function(tracing = FALSE) {
             ## if this email had valid authorization
             if (tj$valid) {
                 email(tj$replyTo[1], "motus: data transfer email received",
-                      paste0("Thank-you for the data transfer.  We tried to download your
-transferred files, shared links, and attachments.  Results:
+                      paste0("Thank-you for the data transfer.  We have tried to download your
+transferred files, shared links, and/or attachments.  Results:
 
 ",
 tj$log,
@@ -86,12 +92,13 @@ Status of the queue can be seen here:
 
    https://sensorgnome.org/Motus_Processing_Status
 
-if you are logged in with your sensorgnome.org credentials.
+if you are logged-in with your sensorgnome.org credentials.
 
 When your job is complete, we'll send another email to let you know where
 to find the results.
 
-Please don't reply to this email.  If you have any questions, contact:",
+Please don't reply to this email.
+If you have any questions, contact mailto:",
 
 MOTUS_ADMIN_EMAIL
 ))
