@@ -2,14 +2,7 @@
 #' them for download.
 #'
 #' The links must be of the forms specified in \link{\code{dataTransferRegex}}
-#' Each link is written to a temporary file in this format:
-#'
-#' \code{
-#'   TYPE URL
-#' }
-#' where \code{TYPE} is the kind of download link, e.g. 'dropbox' or 'googleDrive'
-#' and \code{URL} is its location.  The file is then passed to \link{\code{enqueue()}}
-#' with parameters \code{pattern='url_', fileext='.txt'}
+#' We queue a download subjob for each link.
 #'
 #' @param j job for which downloads will be subjobs
 #'
@@ -28,5 +21,5 @@ queueDownloads = function(j, msg) {
     ## queue any links
 
     for (i in seq(along=links))
-        queueJob(newSubJob(j, "download", url=links[i], type=names(links)[i]))
+        queueJob(newSubJob(j, "download", url=links[i], method=names(links)[i]))
 }
