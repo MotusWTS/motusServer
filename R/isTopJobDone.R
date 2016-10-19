@@ -12,5 +12,6 @@
 isTopJobDone = function(j) {
     if (!inherits(j, "Twig"))
         j = Jobs[[j]]
-    return (length(Jobs[stump==R(stump(j)) && done == 0]) == 0)
+    s = stump(j)[1]
+    return (length(Jobs[stump==R(s) && done == 0]) == 0)
 }
