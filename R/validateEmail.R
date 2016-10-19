@@ -42,9 +42,7 @@ validateEmail = function(msg) {
     ##  x = tbl(openMotusDB(), "upload_tokens") %>% filter_(~token==tok) %>% collect
     ## the translated query is: SELECT * FROM `upload_tokens` WHERE (`token` = 'XXXXXXX' AS "token")
 
-    con = openMotusDB()$con
-    x = dbGetQuery(con, sprintf("select * from upload_tokens where token='%s'", tok))
-    dbDisconnect(con)
+    x = dbGetQuery(openMotusDB()$con, sprintf("select * from upload_tokens where token='%s'", tok))
 
     if(nrow(x) == 0)
         return(NULL)
