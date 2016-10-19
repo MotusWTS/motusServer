@@ -14,8 +14,8 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 queueJob = function(j) {
-    if (j %in% QUEUE || isTRUE(j$done))
+    if (j %in% MOTUS_QUEUE || isTRUE(j$done))
         return()
 
-    QUEUE <<- c(QUEUE, j)
+    MOTUS_QUEUE <<- c(MOTUS_QUEUE, j)
 }
