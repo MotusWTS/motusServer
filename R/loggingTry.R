@@ -29,7 +29,7 @@ loggingTry = function (j, expr)
                 frames = rev(frames)[-c(1L, 2L)]
                 attr(frames, "error.message") = e
                 class(frames) = "dump.frames"
-                out = file.path(MOTUS_PATH$ERRORS, paste0(j, ".rds"))
+                out = file.path(MOTUS_PATH$ERRORS, sprintf("%08d.rds", j))
                 saveRDS(frames, out)
                 jobLog(c(paste0("Error with call stack saved to ", out), e, names(frames)))
            }),
