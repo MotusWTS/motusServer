@@ -24,7 +24,7 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 openMotusDB = function(dbname="motus", host="localhost", user="motus") {
-    if (exists("MOTUS_DB") && inherits(MOTUS_DB, "src_mysql")))
+    if (exists("MOTUS_DB") && inherits(MOTUS_DB, "src_mysql"))
         return(MOTUS_DB)
     return (MOTUS_DB <<- src_mysql(dbname=dbname, host=host, user=user, password=MOTUS_SECRETS$dbPasswd))
 }

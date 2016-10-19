@@ -23,6 +23,12 @@ the mysql motus database on the local server, and whose password to
 that database is stored in the file ~/.secrets/motusSecrets as
 element "dbPasswd".
 }
+\note{
+The src_mysql is stored in the global variable MOTUS_DB, and
+    if that variable already exists, the connection it holds is
+    used.  This means the DB connection is normally opened at most
+    once per session.
+}
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
