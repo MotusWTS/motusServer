@@ -16,7 +16,8 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 handleEmail = function(j) {
-    txt = textFileContents(j$msgFile)
+    msg = j$msgFile
+    txt = textFileContents(msg)
 
     auth = j$auth = validateEmail(txt)
 
@@ -70,7 +71,7 @@ the status messages.
 
     ## drop text parts with names like "partN"
     file.remove (
-        dir(tmpdir,
+        dir(path,
             pattern    = "^part[0-9]+$",
             recursive  = TRUE,
             full.names = TRUE
