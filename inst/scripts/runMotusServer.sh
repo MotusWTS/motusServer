@@ -2,25 +2,15 @@
 
 if [[ "$1" == "-h" ]]; then cat <<EOF
 
-Usage: runMotusServer.sh [-h] [-e]
+Usage: runMotusServer.sh [-h]
 
 Run the motus server which handles incoming data emails and other
 moves of data to /sgm/incoming
 
 -h : show usage
--e : embargo; do not process new emails.  Normally, emails are
-moved to /sgm/inbox as received.  With this option, emails are
-written to /sgm/embargoed_inbox instead, which prevents them
-from being processed.
 
 EOF
     exit 1;
-fi
-
-if [[ "$1" == "-e" ]]; then
-    printf "Presence of this file prevents new emails from being processed,\ndiverting them to /sgm/embargoed_inbox instead.\n" > /sgm/EMBARGO
-else
-    rm -f /sgm/EMBARGO
 fi
 
 ## restart the process whenever it dies, allowing a
