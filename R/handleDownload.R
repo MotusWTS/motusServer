@@ -12,7 +12,7 @@
 #' @param j the download job; it has these fields:
 #' \itemize{
 #' \item url: download URL
-#' \item type: download type
+#' \item method: download method; e.g. googleDrive, wetransferDirect, ...
 #' }
 #'
 #' If \code{type="xxx"}, there must exist a handler called \code{downloadXxx};
@@ -28,17 +28,18 @@
 
 handleDownload = function(j) {
 
-    ## try call a function called 'download.TYPE'
-    type = j$type
+    method = j$method
     url = j$url
     path = j$path
 
-    getter = get0(paste0("download", toupper(substring(type, 1, 1)), substring(type, 2)), mode="function")
+    sanURL = sanitizeURL(url, method)
+
+    getter = get0(paste0("download", toupper(substring(method, 1, 1)), substring(method, 2)), mode="function")
     if (is.null(getter)) {
-        motusLog("Download failed; unknown type '%s' for URL '%s'", type, url)
+        jobLog(j, paste0("Download not tried:  unknown method '", method, "' for ", sanURL))
         return (FALSE)
     }
-    motusLog("Downloading to %s type=%s url=%s", path, type, url)
-    j$message = getter(url, path)
+    jobLog(j, paste0("Downloading using method '", method, "' for:\n   ", sanURL))
+    jobLog(j, getter(url, path))
     return(TRUE)
 }
