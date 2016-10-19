@@ -14,10 +14,17 @@
 #'
 #' @return object of class dplyr::src_mysql
 #'
+#' @note The src_mysql is stored in the global variable MOTUS_DB, and
+#'     if that variable already exists, the connection it holds is
+#'     used.  This means the DB connection is normally opened at most
+#'     once per session.
+#'
 #' @export
-#' 
+#'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 openMotusDB = function(dbname="motus", host="localhost", user="motus") {
-    return (src_mysql(dbname=dbname, host=host, user=user, password=MOTUS_SECRETS$dbPasswd))
+    if (exists("MOTUS_DB") && inherits(MOTUS_DB, "src_mysql")))
+        return(MOTUS_DB)
+    return (MOTUS_DB <<- src_mysql(dbname=dbname, host=host, user=user, password=MOTUS_SECRETS$dbPasswd))
 }
