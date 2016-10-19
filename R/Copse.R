@@ -44,7 +44,7 @@
 #'
 #' The \code{...} columns can be considered the structurally constant
 #' part of a Copse, while the \code{data} column holds the
-#' structurally varaible part.
+#' structurally variable part.
 #'
 #' @return This function creates an object of class "Copse".  It has these S3 methods:
 #' \itemize{
@@ -113,6 +113,7 @@
 #' b = newTwig(hats, name="bowler", size=22, colour="black")
 #' h = hats[id < 10 || .$size > 20]  ## query can involve id, pid, mtime, ctime, fixed columns, or data variables selected using .$...$...[]...
 #' h[[1]]
+#'
 #' @export
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
@@ -253,11 +254,11 @@ setParent.Copse = function(C, t1, t2) {
 `[.Copse` = function(C, expr, sort) {
     ## expr: expression that uses json1 paths
     pf = parent.frame()
-    e = deparse(Reval(substitute(expr), pf))
+    e = deparse(Reval(substitute(expr), pf), control=c())
     if (missing(sort)) {
         s = ""
     } else {
-        s = paste("ORDER BY", deparse(Reval(substitute(sort), pf)))
+        s = paste("ORDER BY", deparse(Reval(substitute(sort), pf), control=c()))
     }
     C[[ C$sql(paste("select id from", C$table, "where", rewriteQuery(e), s))[[1]] ]]
 }
@@ -310,7 +311,7 @@ setParent.Copse = function(C, t1, t2) {
 childrenWhere.Copse = function(C, T, expr) {
     ## expr: expression that uses json1 paths
     pf = parent.frame()
-    e = deparse(Reval(substitute(expr), pf))
+    e = deparse(Reval(substitute(expr), pf), control=c())
     C[[ C$sql(paste("select id from", C$table, "where pid in (", paste(T, collapse=","), ") and (", rewriteQuery(e), ")"))[[1]] ]]
 }
 
@@ -532,7 +533,7 @@ children.Twig = function(T) {
 
 childrenWhere.Twig = function(T, expr) {
     pf = parent.frame()
-    e = rewriteQuery(deparse(Reval(substitute(expr), pf)))
+    e = rewriteQuery(deparse(Reval(substitute(expr), pf), control=c()))
     C = copse(T)
     C$sql(paste("select id from", C$table, "where", paste0('(', e, ') and pid in (', paste(T, collapse=","), ")")))[[1]]
 }
