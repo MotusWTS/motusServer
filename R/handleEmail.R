@@ -16,8 +16,16 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 handleEmail = function(j) {
-    msg = j$msgFile
-    txt = textFileContents(msg)
+    msgFile = j$msgFile
+    path = j$path
+    newmsg = file.path(path, basename(msgFile))
+    file.rename(msgFile, newmsg)
+
+    ## unpack the email, and get the message text (including some headers)
+    txt = unpackEmail(newmsg, path)
+
+    ## compress the original
+    safeSys("bzip2", newmsg)
 
     auth = j$auth = validateEmail(txt)
 
@@ -48,13 +56,9 @@ the status messages.
 
     replyTo = unique(regexPieces("(?m)(?:^From: )(?<from>.*$)|(?:^Reply-To: )(?<reply_to>.*$)", txt) [[1]])
     replyTo = grep("@dropbox.com|@wetransfer.com|@google.com", replyTo, invert=TRUE, value=TRUE, perl=TRUE)
-    j$replyTo = replyTo
 
     ## If no useable From or Reply-To header found, use the email
     ## associated with the authorization token
-    path = j$path
-    newmsg = file.path(path, basename(msg))
-    file.rename(msg, newmsg)
 
     if (length(replyTo) == 0)
         replyTo = auth$email
@@ -65,10 +69,21 @@ the status messages.
     ## result in word-wrapped original text and broken up URLs in
     ## forwarded messages (looking at you, fastmail.fm!)
 
-    msg = gsub("\n(> )+", "", msg, perl=TRUE)
+    txt = gsub("\n(> )+", "", txt, perl=TRUE)
+
+    ## queue a job to sanity check files; e.g. check for files that have
+    ## the correct size but are all zeroes, because the user didn't wait
+    ## for a sync to finish before sending the link.
+    ## This lets us provide a better error message than if we just
+    ## capture the error message from trying to decompress an all-zero
+    ## archive, e.g.
+    queueJob(newSubJob(j, "sanityCheck", dir=j$path))
+
+    ## queue a job to unpack archives
+    queueJob(newSubJob(j, "queueArchives", dir=j$path))
 
     ## parse out and enqueue links to remote data storage
-    queueDownloads(j, msg)
+    queueDownloads(j, txt)
 
     ## drop text parts with names like "partN"
     file.remove (
