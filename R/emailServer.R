@@ -53,7 +53,7 @@ emailServer = function(tracing = FALSE) {
         j = Jobs[[MOTUS_QUEUE[1]]]   ## get the first job from the queue
         MOTUS_QUEUE <<- MOTUS_QUEUE[-1] ## drop the item from the queue
 
-        h = get0(paste0("handle", toupper(substring(j$type, 1, 1)), tolower(substring(j$type, 2))),
+        h = get0(paste0("handle", toupper(substring(j$type, 1, 1)), substring(j$type, 2)),
                  as.environment("package:motus"), mode="function")
 
         if (is.null(h)) {
