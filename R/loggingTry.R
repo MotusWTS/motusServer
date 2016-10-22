@@ -6,7 +6,7 @@
 #'
 #' @param job, to which any error message will be looged
 #' @param expr expression to evaluate
-#' 
+#'
 #' @return value of \code{expr}
 #'
 #' @export
@@ -15,7 +15,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-loggingTry = function (j, expr) 
+loggingTry = function (j, expr)
 {
     tryCatch(
         withRestarts(
@@ -31,7 +31,8 @@ loggingTry = function (j, expr)
                 class(frames) = "dump.frames"
                 out = file.path(MOTUS_PATH$ERRORS, sprintf("%08d.rds", j))
                 saveRDS(frames, out)
-                jobLog(c(paste0("Error with call stack saved to ", out), e, names(frames)))
+                motusLog(c(paste0("Error with call stack saved to ", out), e, names(frames)))
+                jobLog(j, paste0("Error: ", e))
            }),
         error = identity
     )
