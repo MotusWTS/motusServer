@@ -28,8 +28,23 @@ emailServer = function(tracing = FALSE) {
         options(error=recover)
 
     ensureServerDirs()
-    loadJobs("email")
     motusLog("EmailServer started")
+
+    ## The queue is a vector of job IDs, maintained in execution order.
+    ## Execution order is depth-first, sorting by job ID within a parent
+    ## job.  So if a job enqueues two sub jobs X and Y, and X when run
+    ## enqueues new subjobs X1, X2, and X3, then the order of execution is:
+
+    ##    X, X1, X2, X3, Y
+
+    ## even though Y was enqueued before X1, ..., X3.
+
+    ## The queue is kept sorted by item names, which are the zero-padded
+    ## paths in the job tree starting from the top job.
+    ## This sorting occurs when new jobs are enqueued.  Removing
+    ## a job preserves order and requires no additional care.
+
+    MOTUS_QUEUE <<- loadJobs("email")
 
     ## get a feed of email messages
 
@@ -38,8 +53,6 @@ emailServer = function(tracing = FALSE) {
     ## kill off the inotifywait process when we exit this function
     on.exit(feed(TRUE), add=TRUE)
 
-    ## the queue is a vector of job IDs, in the order they need to be completed
-    MOTUS_QUEUE <<- Jobs[! done && type=="email", sort=id]
 
     repeat {
 
