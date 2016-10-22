@@ -50,15 +50,16 @@ the status messages.
     replyTo = grep("@dropbox.com|@wetransfer.com|@google.com", replyTo, invert=TRUE, value=TRUE, perl=TRUE)
     j$replyTo = replyTo
 
+    ## If no useable From or Reply-To header found, use the email
+    ## associated with the authorization token
     path = j$path
     newmsg = file.path(path, basename(msg))
     file.rename(msg, newmsg)
 
-    ## unpack the email
-    msg = unpackEmail(newmsg, path)
+    if (length(replyTo) == 0)
+        replyTo = auth$email
 
-    ## compress the original
-    safeSys("bzip2", newmsg)
+    j$replyTo = replyTo
 
     ## remove "quoted block" formatting (e.g. "> > > ") which might
     ## result in word-wrapped original text and broken up URLs in
