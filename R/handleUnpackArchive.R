@@ -38,6 +38,7 @@ handleUnpackArchive = function(j) {
     jobLog(j, paste0("Unpacking file ", bn, " with ", cmd))
     res = safeSys("cd", dir, ";", cmd, file, shell=TRUE, splitOutput=TRUE)
     jobLog(j, c(head(res, 3), "...", tail(res, 3)))
+    file.remove(file)
 
     queueJob(newSubJob(j, "sanityCheck", dir=dir))
     queueJob(newSubJob(j, "queueArchives", dir=dir))
