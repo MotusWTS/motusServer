@@ -1,4 +1,4 @@
-#' load existing jobs from server database
+#' Load unfinished jobs from server database and enqueue them
 #'
 #' A global object \code{Jobs} is created, which manages jobs.
 #' It is populated from the "jobs" table in the server database.
@@ -21,25 +21,28 @@
 #' Other job items are stored in a JSON-encodded text field called
 #' \code{data}.
 #'
-#' For any jobs which are not done and which are of the specified
+#' For any jobs which are not done and whose head job is of the specified
 #' type, we verify that the "path" field is correct, in case the
 #' server was interrupted while moving a job.
 #'
-#' @param stumpType only examine jobs whose stump is of the specified type.
+#' @param headType only examine jobs whose head job is of this type.
 #'
-#' @return no return value.
+#' @return no return value.  Jobs are enqueued in the global \code{MOTUS_QUEUE}.
 #'
 #' @export
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-loadJobs = function(stumpType) {
+loadJobs = function(headType) {
     Jobs <<- Copse(MOTUS_SERVER_DB, "jobs", type=character(), done=integer(), path=character(), oldpath=character())
 
+    ## get IDs of jobs with possibly incorrect paths.
+
     j = query(Jobs,
-              paste0("select t1.id from jobs as t1 left join jobs as t2 on t1.stump=t2.id where (not t1.done) and ((t2.id is NULL and t1.type=='", stumpType,"') or t2.type=='", stumpType, "')"))[[1]]
+              paste0("select t1.id from jobs as t1 left join jobs as t2 on t1.stump=t2.id where (t1.path is not null and t1.oldpath is not null) and (t1.done == 0) and ((t2.id is NULL and t1.type=='", headType,"') or t2.type=='", headType, "') order by t1.id"))[[1]]
     for (i in j) {
         if (! file.exists(Jobs[[i]]$path) && file.exists(Jobs[[i]]$oldpath))
             Jobs[[i]]$path = Jobs[[i]]$oldpath
+        queueJob(Jobs[[i]])
     }
 }

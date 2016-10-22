@@ -2,15 +2,15 @@
 % Please edit documentation in R/loadJobs.R
 \name{loadJobs}
 \alias{loadJobs}
-\title{load existing jobs from server database}
+\title{Load unfinished jobs from server database and enqueue them}
 \usage{
-loadJobs(stumpType)
+loadJobs(headType)
 }
 \arguments{
-\item{stumpType}{only examine jobs whose stump is of the specified type.}
+\item{headType}{only examine jobs whose head job is of this type.}
 }
 \value{
-no return value.
+no return value.  Jobs are enqueued in the global \code{MOTUS_QUEUE}.
 }
 \description{
 A global object \code{Jobs} is created, which manages jobs.
@@ -35,7 +35,7 @@ recovery from server failure during job move)
 Other job items are stored in a JSON-encodded text field called
 \code{data}.
 
-For any jobs which are not done and which are of the specified
+For any jobs which are not done and whose head job is of the specified
 type, we verify that the "path" field is correct, in case the
 server was interrupted while moving a job.
 }
