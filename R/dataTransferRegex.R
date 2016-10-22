@@ -1,7 +1,7 @@
 #' A PCRE-style regular expression for matching URLs in an email
 #' message sent to share data.
 
-dataTransferRegex = 
+dataTransferRegex =
 "(?sx)
 
 # A link from https://wetransfer.com from the sender's confirmation email
@@ -25,11 +25,11 @@ dataTransferRegex =
 # or   https://drive.google.com/file/d/0Bx3KaXOwqMcBU1NfMTlOSHFUVm8/view?usp=drive_web
 # or   https://drive.google.com/drive/folders/0B-bl0wW8KbDxb2FQc3kwLU5YQnc?usp=sharing
 |
-(?:(?<googleDrive>https://drive\\.google\\.com/
-  (?:([^[:space:]]*id=[-[:alnum:]]*[^[:space:]]*)[[:space:]])
- |(?:file/[[:alnum:]]++/[-[:alnum:]]++)
- |(?:drive/folders/[-[:alnum:]]++)
-))
+(?:(?<googleDrive>https://drive\\.google\\.com/(?:
+ (?:([^[:space:]]*id=[-_[:alnum:]]*[^[:space:]]*)[[:space:]])
+ |(?:file/[[:alnum:]]++/[-_[:alnum:]]++)
+ |(?:drive/folders/[-_[:alnum:]]++)
+)))
 
 #or
 #
