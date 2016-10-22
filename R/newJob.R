@@ -3,7 +3,7 @@
 #' @details
 #'
 #' A job is a Twig object from the Copse created by
-#' \link{\code{loadJobs}}, and an associated folder named NNNNNNNN,
+#' \link{\code{loadJobs}}, and possibly an associated folder named NNNNNNNN,
 #' where N is the job number padded on the left with zeroes to a
 #' length of 8 digits.  Files associated with the job are stored in
 #' the folder, while metadata are stored in the Twig object, which is
@@ -12,9 +12,9 @@
 #'
 #' @param type character scalar name of job type
 #'
-#' @param path to the folder in which to create the new job's folder; 
-#' if omitted and if .parent is specified, create the folder in the parent's
-#' folder.  If neither, create the path in MOTUS_PATH$TMP
+#' @param path to the folder in which to create the new job's folder.
+#' If omitted, no path is created for this job, and the job's \code{$path}
+#' item is set to the \code{.parent$path}, if \code{.parent} is not null.
 #'
 #' @param ...  additional named metadata for this job
 #'
@@ -30,16 +30,13 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 newJob = function(type, path, ..., .parent=NULL) {
-    if (missing(path)) {
-        if (is.null(.parent)) {
-            path = MOTUS_PATH$QUEUE0
-        } else {
-            path = .parent$path
-        }
-    }
     rv = newTwig(Jobs, type=type, done=FALSE, ..., .parent=.parent)
-    np = file.path(path, sprintf("%08d", rv))
-    rv$path = np
-    dir.create(np, recursive=TRUE, mode=MOTUS_DEFAULT_FILEMODE)
+    if (! missing(path)) {
+        np = file.path(path, sprintf("%08d", rv))
+        rv$path = np
+        dir.create(np, recursive=TRUE, mode=MOTUS_DEFAULT_FILEMODE)
+    } else if (!is.null(.parent)) {
+        rv$path = .parent$path
+    }
     return(rv)
 }

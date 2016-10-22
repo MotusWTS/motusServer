@@ -9,9 +9,9 @@ newJob(type, path, ..., .parent = NULL)
 \arguments{
 \item{type}{character scalar name of job type}
 
-\item{path}{to the folder in which to create the new job's folder; 
-if omitted and if .parent is specified, create the folder in the parent's
-folder.  If neither, create the path in MOTUS_PATH$TMP}
+\item{path}{to the folder in which to create the new job's folder.
+If omitted, no path is created for this job, and the job's \code{$path}
+item is set to the \code{.parent$path}, if \code{.parent} is not null.}
 
 \item{...}{additional named metadata for this job}
 
@@ -26,7 +26,7 @@ create a new job
 }
 \details{
 A job is a Twig object from the Copse created by
-\link{\code{loadJobs}}, and an associated folder named NNNNNNNN,
+\link{\code{loadJobs}}, and possibly an associated folder named NNNNNNNN,
 where N is the job number padded on the left with zeroes to a
 length of 8 digits.  Files associated with the job are stored in
 the folder, while metadata are stored in the Twig object, which is
