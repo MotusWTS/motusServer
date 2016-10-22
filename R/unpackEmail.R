@@ -32,7 +32,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-unpackEmail = function(msg, dir, headers=c("Subject"), maxHeaderLines=500) {
+unpackEmail = function(msg, dir, headers=c("From", "Reply-To", "Subject"), maxHeaderLines=500) {
 
     ## grab any requested header lines
     if (length(headers) > 0) {

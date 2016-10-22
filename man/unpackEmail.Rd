@@ -4,7 +4,8 @@
 \alias{unpackEmail}
 \title{Unpack an email message, returning the text portion.}
 \usage{
-unpackEmail(msg, dir, headers = c("Subject"), maxHeaderLines = 500)
+unpackEmail(msg, dir, headers = c("From", "Reply-To", "Subject"),
+  maxHeaderLines = 500)
 }
 \arguments{
 \item{msg}{path to the raw email message}
