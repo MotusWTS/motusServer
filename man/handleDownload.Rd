@@ -30,6 +30,10 @@ where TYPE is the name of a handler, e.g. dropbox for which a function
 \code{dowload.TYPE} is defined, and \code{URL} is the location
 of the item.
 }
+\note{
+if successful, subjobs to run sanity checks and unpack archives
+are enqueued.
+}
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }

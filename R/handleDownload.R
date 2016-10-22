@@ -20,6 +20,9 @@
 #'
 #' @return TRUE if the download was successfully handled
 #'
+#' @note if successful, subjobs to run sanity checks and unpack archives
+#' are enqueued.
+#'
 #' @seealso \link{\code{emailServer}}
 #'
 #' @export
@@ -41,5 +44,9 @@ handleDownload = function(j) {
     }
     jobLog(j, paste0("Downloading using method '", method, "' for:\n   ", sanURL))
     jobLog(j, getter(url, path))
+
+    queueJob(newSubJob(j, "sanityCheck", dir=path))
+    queueJob(newSubJob(j, "queueArchives", dir=path))
+
     return(TRUE)
 }
