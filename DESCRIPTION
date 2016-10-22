@@ -10,7 +10,6 @@ Maintainer: John Brzustowski <jbrzusto@fastmail.fm>
 Depends:
     R (>= 3.1.0),
     digest,
-    digest,
     dplyr,
     httr,
     jsonlite,
@@ -25,4 +24,3 @@ License: GPL-2+
 Date: 2016-09-01
 RoxygenNote: 5.0.1
 LazyData: true
-
