@@ -43,7 +43,7 @@ done
 ## restart the process whenever it dies, allowing a
 ## short interval to prevent thrashing
 
-echo $$ > /sgm/emailserver.pid
+echo $$ > /sgm/emailServer.pid
 
 if [[ $TRACE == 0 ]]; then
     while (( 1 )); do
@@ -58,4 +58,3 @@ else
     echo "library(motus); options(error=recover); emailServer(tracing=TRUE)" > .Rprofile
     R
 fi
-
