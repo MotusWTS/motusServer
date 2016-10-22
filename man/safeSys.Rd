@@ -5,7 +5,8 @@
 \title{Call an external program safely, return its output and
 propagate any error into R.}
 \usage{
-safeSys(cmd, ..., shell = TRUE, quote = TRUE, minErrorCode = 1)
+safeSys(cmd, ..., shell = TRUE, quote = TRUE, minErrorCode = 1,
+  splitOutput = FALSE)
 }
 \arguments{
 \item{cmd}{full path to the executable file (can be a shell script,
@@ -28,10 +29,14 @@ otherwise, invoke cmd directly.}
 indicates an error.  Some programs (e.g. 'grep') violate the
 usual convention that 0 = no error, and > 0 indicates an error.
 Default: 1}
+
+\item{splitOutput}{logical; if TRUE, output is returned as a vector
+with one item per line.  Otherwise, the default, output is
+returned as a character scalar with embedded newlines.}
 }
 \value{
-character vector of the stdout streams from running
-    \code{cmd}, one line per item.  This will have attribute "exitCode"
+character vector of the stdout stream from running
+    \code{cmd}, as one long item.  This will have attribute "exitCode"
     giving the exit code of the command, which will be in the range
     \code{0: (minErrorCode - 1)}
 }

@@ -16,7 +16,7 @@
 #' intermediate files and record a full stack dump.  Otherwise, the
 #' server might delete downloaded files, thinking (incorrectly) that
 #' it has processed them successfully.
-#' 
+#'
 #' @param cmd full path to the executable file (can be a shell script,
 #'     for example)
 #'
@@ -37,9 +37,13 @@
 #'     indicates an error.  Some programs (e.g. 'grep') violate the
 #'     usual convention that 0 = no error, and > 0 indicates an error.
 #'     Default: 1
-#' 
-#' @return character vector of the stdout streams from running
-#'     \code{cmd}, one line per item.  This will have attribute "exitCode"
+#'
+#' @param splitOutput logical; if TRUE, output is returned as a vector
+#'     with one item per line.  Otherwise, the default, output is
+#'     returned as a character scalar with embedded newlines.
+#'
+#' @return character vector of the stdout stream from running
+#'     \code{cmd}, as one long item.  This will have attribute "exitCode"
 #'     giving the exit code of the command, which will be in the range
 #'     \code{0: (minErrorCode - 1)}
 #'
@@ -50,7 +54,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-safeSys = function(cmd, ..., shell=TRUE, quote=TRUE, minErrorCode=1) {
+safeSys = function(cmd, ..., shell=TRUE, quote=TRUE, minErrorCode=1, splitOutput=FALSE) {
     ## redirect stdout, stderr to temporary files
     errFile = tempfile()
     outFile = tempfile()
@@ -77,5 +81,5 @@ safeSys = function(cmd, ..., shell=TRUE, quote=TRUE, minErrorCode=1) {
                       )
         stop(err)
     }
-    return (structure(textFileContents(outFile), exitCode=rv))
+    return (structure((if (splitOutput) readLines else textFileContents)(outFile), exitCode=rv))
 }
