@@ -36,17 +36,21 @@ downloadGoogleDrive = function(link, dir) {
 
     if (is.null(ID)) {
         ## or it might be in the path
-        ID = regexPieces("(?:(?:file/[[:alnum:]]+)|(?:drive/folders))/(?<id>[-[:alnum:]]+)", x$path)[[1]]["id"][1]
+        ID = regexPieces("(?:(?:file/[[:alnum:]]+)|(?:drive/folders))/(?<id>[^?&\\\\]+)", x$path)[[1]]["id"][1]
         if (is.na(ID))
             return(invisible(NULL))
     }
 
-    info = readLines(pipe(paste("gdrive", "info", ID)))
+    info = safeSys("gdrive", "info", ID, splitOutput=TRUE)
+
+    ## gdrive sends errors to stdout, not stderr
+    if (grepl("error", info[1], ignore.case=TRUE, fixed=TRUE))
+        stop("Unable to download file.\nAttempt to get metadata failed with: ", info[1])
 
     ## see whether it's a folder
     isdir = any(info == "Mime: application/vnd.google-apps.folder")
 
-    if (isdir) {
+    rv = if (isdir) {
         safeSys("gdrive",
                 "download",
                 "query",
@@ -64,4 +68,7 @@ downloadGoogleDrive = function(link, dir) {
                 ID
                 )
     }
+    ## sanitize download message
+    rv = sub("Downloaded ([^ ]{6})[^ ]+ ", "Downloaded \\1... ", rv, fixed=TRUE)
+    return(rv)
 }
