@@ -38,7 +38,7 @@ Storing state:
 
 - allocServer: watch for jobs added to /sgm/incoming; choose a running server
   N and move the job to /sgm/queueN
-  
+
 - job folder; A job is a run of a set of files.  e.g. the email server
   generates a job for each valid email, consisting of all attached, downloaded
   and unpacked files from that email, maintaining folder structure so that
@@ -74,8 +74,8 @@ Step information:
 Job type "email"
 - parameters:
    - msgfile: name of message file (without bz2 extension); e.g. YYYY-MM-DDTHH-MM-SS.NNNNNNNNN
-   - headers: array of name:value pairs for retained headers (Reply-To, From, Subject)
-   - text: message text
+?   - headers: array of name:value pairs for retained headers (Reply-To, From, Subject)
+?)   - text: message text
 
 Job steps for job "email"
   - one step for each attached file, to run sanity check
@@ -101,15 +101,10 @@ jobStep: name="download"
  parameters:
   URL: full URL
   type: "googleDrive", "dropbox", "wetransferDirect", "wetransferConf", "FTP"
- 
 
- 
 
-    
-    
+
+
+
+
     /msgparts: folder
-  
-
-
-
-
