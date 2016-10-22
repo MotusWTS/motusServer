@@ -395,9 +395,9 @@ query.Copse = function(C, ...) {
 #' @export
 
 with.Copse = function(C, expr, ...) {
-    C$sql("begin transaction")
+    C$sql("savepoint copse")
     .rollback = TRUE
-    on.exit(C$sql(if (.rollback) "rollback" else "commit"))
+    on.exit(C$sql(if (.rollback) "rollback to copse" else "release copse"))
     ## any access to Twigs in C in expr are now within a transaction
     eval(substitute(expr), parent.frame(2))
     .rollback = FALSE
@@ -419,9 +419,9 @@ names.Twig = function(T) {
 
 `[[.Twig` = function(T, name) {
     C = copse(T)
-    C$sql("begin transaction")
+    C$sql("savepoint copse")
     .rollback = TRUE
-    on.exit(C$sql(if(.rollback) "rollback" else "commit"))
+    on.exit(C$sql(if(.rollback) "rollback to copse" else "release copse"))
     fr = paste0("from ", C$table, " where id in (", paste(T, collapse=","), ")")
     if (name %in% names(C$fixed)) {
         rv = C$sql(paste("select", name, fr))[[1]]
@@ -460,9 +460,9 @@ names.Twig = function(T) {
 
 setData.Twig = function(T, names, values, clearOld=FALSE) {
     C = copse(T)
-    C$sql("begin transaction")
+    C$sql("savepoint copse")
     .rollback = TRUE
-    on.exit(C$sql(if(.rollback) "rollback" else "commit"))
+    on.exit(C$sql(if(.rollback) "rollback to copse" else "release copse"))
 
     if (missing(values)) {
         values = names
