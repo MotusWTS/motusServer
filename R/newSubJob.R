@@ -20,5 +20,5 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 newSubJob = function(j, type, ...) {
-    newJob(type=type, path=j$path, ..., .parent=j)
+    newJob(type=type, ..., .parent=j)
 }
