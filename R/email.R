@@ -28,8 +28,10 @@ email = function(to, subj, msg, ...) {
     if (length(list(...)) > 0)
         msg = sprintf(msg, ...)
     date = format(Sys.time(), MOTUS_TIMESTAMP_FORMAT)
-    sendmail(MOTUS_OUTGOING_EMAIL_ADDRESS, to, subj, msg)
-    msgFile = file.path(MOTUS_PATH$OUTBOX, paste0(date, ".txt.bz2"))
+    embargo = file.exists("/sgm/EMBARGO_OUT")
+    if (! embargo)
+        sendmail(MOTUS_OUTGOING_EMAIL_ADDRESS, to, subj, msg)
+    msgFile = file.path(if (embargo) MOTUS_PATH$OUTBOX_EMBARGOED else MOTUS_PATH$OUTBOX, paste0(date, ".txt.bz2"))
     f = bzfile(msgFile, "wb")
     writeLines(
         sprintf(
