@@ -18,6 +18,102 @@ Add a job to the global MOTUS_QUEUE.
 \note{
 If the job is already in the queue, this function does nothing.
 If the job is marked "done", it is not added to the queue.
+
+The global queue holds a named vector of job IDs, sorted in order of
+those names.
+
+The name of each job is the paste of its ancestors' zero-padded job IDs,
+starting with the stump, ending at the job.  This provides a lexical
+ordering that reflects depth-first ordering of jobs in the queue.
+
+Essentially, this permits unrolling nested processing calls into a flattened
+job structure.
+
+Example:
+
+  Job 15 is an email with 3 downloadable links to archives AR1.ZIP, AR2.ZIP,
+  and AR3.ZIP, as well as an attached file ARA.ZIP
+
+Here's how the queue evolves (not showing zeropadding to 8 digits, for clarity):
+
+  el't name                          job ID     type
+
+  "15"                                 15        process email
+
+job 15 runs and enqueues subjobs
+
+  "15/16"                              16        file sanity tests (attached files)
+  "15/17"                              17        enqueue any archives (attached files)
+  "15/18"                              18        enqueue links
+
+job 16 runs (files are okay)
+
+  "15/17"                              17        enqueue any archives (attached files)
+  "15/18"                              18        enqueue links
+
+job 17 runs; enqueuing ARA.ZIP
+
+  "15/17/19"                           19        unpack ARA.ZIP
+  "15/18"                              18        enqueue links
+
+job 19 runs, unpacking ARA.ZIP and enqueuing jobs for sanity checking and archives (in case ARA.ZIP has nested archives)
+  "15/17/19/20"                        20        file sanity tests (contents of ARA.ZIP)
+  "15/17/19/21"                        21        enqueue any archives (from contents of ARA.ZIP)
+  "15/18"                              18        enqueue links
+
+job 20 runs (files are okay)
+
+  "15/17/19/21"                        21        enqueue any archives (from contents of ARA.ZIP)
+  "15/18"                              18        enqueue links
+
+job 21 runs (no further archives found)
+
+  "15/18"                              18        enqueue links
+
+job 18 runs, enqueing download jobs
+
+  "15/18/22"                           22        download AR1.ZIP
+  "15/18/23"                           23        download AR2.ZIP
+  "15/18/24"                           24        download AR3.ZIP
+
+job 22 runs, downloading AR1.ZIP and enqueuing file sanity checks and archive checks
+
+  "15/18/22/25"                        25        sanity check on AR1.ZIP
+  "15/18/22/26"                        26        unpack AR1.ZIP
+  "15/18/22"                           23        download AR2.ZIP
+  "15/18/24"                           24        download AR3.ZIP
+
+job 25 runs (files okay)
+
+  "15/18/22/26"                        26        unpack AR1.ZIP
+  "15/18/22"                           23        download AR2.ZIP
+  "15/18/24"                           24        download AR3.ZIP
+
+job 26 runs, unpacking archive, and queing sanity checks and archive checks
+
+  "15/18/22/26/27"                     27        sanity check (files from AR1.ZIP)
+  "15/18/22/26/28"                     28        enqueue archives (from inside AR1.ZIP)
+  "15/18/22"                           23        download AR2.ZIP
+  "15/18/24"                           24        download AR3.ZIP
+
+job 27 runs (files okay)
+
+  "15/18/22/26/28"                     28        enqueue archives (from inside AR1.ZIP)
+  "15/18/22"                           23        download AR2.ZIP
+  "15/18/24"                           24        download AR3.ZIP
+
+job 28 runs (no further archives)
+
+  "15/18/22"                           23        download AR2.ZIP
+  "15/18/24"                           24        download AR3.ZIP
+
+job 23 runs downloading AR2.ZIP and enqueuing file sanity checks and archive checks
+
+  "15/18/22/29"                        29        sanity check (files from AR2.ZIP)
+  "15/18/22/30"                        30        enqueue archives (from inside AR2.ZIP)
+  "15/18/24"                           24        download AR3.ZIP
+
+and so on...
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
