@@ -13,11 +13,11 @@
 #'
 #' @param quiet if TRUE, return silently on failure; otherwise,
 #' report errors.
-#' 
+#'
 #' @return TRUE if secrets were successfully loaded.
-#' 
+#'
 #' @export
-#' 
+#'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 motusLoadSecrets = function(f = system.file("motusSecrets.json", package="motus"), quiet=FALSE) {
@@ -32,6 +32,7 @@ After receiving the file, use the function motusLoadSecrets(f) to load
 the secrets for a session, and saveSecrets() to store them permanently.")
     }
     MOTUS_SECRETS <<- f %>% readLines %>% paste(collapse="\n") %>% fromJSON
+    MOTUS_SECRETS <<- fromJSON(textFileContents(f))
+
     return (TRUE)
 }
-
