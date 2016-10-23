@@ -35,7 +35,7 @@ handleSanityCheck = function(j) {
                     "(perhaps your folder has not finished syncing?)", paste0("   ", basename(ch3))))
     }
     if (any(chk == 0)) {
-        jobLog(j, paste("Processing will continue with the remaining", sum(chk==0), "files.")
+        jobLog(j, paste("Processing will continue with the remaining", sum(chk==0), "files."))
     }
     ## write names of bad files to a temporary location so we can tar them;
     ## to prevent collisions from different archives with same-named files,
