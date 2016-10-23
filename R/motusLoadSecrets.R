@@ -18,6 +18,8 @@
 #'
 #' @export
 #'
+#' @importFrom jsonlite fromJSON
+#'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 motusLoadSecrets = function(f = system.file("motusSecrets.json", package="motus"), quiet=FALSE) {
