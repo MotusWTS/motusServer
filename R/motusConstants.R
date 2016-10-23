@@ -81,6 +81,7 @@ MOTUS_PATH = list(
     INBOX_EMBARGOED  = "/sgm/inbox_embargoed", ## incoming emails under embargo (not processed)
     INCOMING         = "/sgm/incoming",        ## files / dirs moved here are processed by server(); this is the external / asynchronous
                                                ## access point to the processing queue
+    LOCKS            = "/sgm/locks",           ## locks for process queues and receiver DBs
     LOGS             = "/sgm/logs",            ## processing logs
     MAIL_QUEUE       = "/sgm/email_queue",     ## queue for processing emails by emailServer()
     MANUAL           = "/sgm/manual",          ## folders needing manual attention
