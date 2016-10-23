@@ -23,15 +23,15 @@ Usage: runMotusEmailServer.sh [-h] [-e] [-t]
 
 Run the motus email server which processes incoming data emails.
 
-   -h : show usage
+   -h  show usage
 
-   -e : embargo; do not process new emails.  Normally, emails are
-        moved to /sgm/inbox as received.  With this option, emails are
-        written to /sgm/embargoed_inbox instead, which prevents them
-        from being processed.
+   -e  embargo; do not process new emails.  Normally, emails are moved
+       to /sgm/inbox as received.  With this option, emails are
+       written to /sgm/embargoed_inbox instead, which prevents them
+       from being processed.
 
-   -t enable tracing, so run in foreground.  Program will enter the
-      debugger before each job step.
+   -t  enable tracing, so run in foreground.  Program will enter the
+       debugger before each job step.
 
 EOF
             exit 1;
@@ -40,21 +40,52 @@ EOF
     shift
 done
 
+PIDFILE=/sgm/emailServer.pid
+if [[ -s $PIDFILE ]]; then
+    OLDPID=`cat $PIDFILE`
+    if [[ -d /proc/$OLDPID ]]; then
+        cat <<EOF
+
+There is already a motus email server running, so I won't start
+another.  In the current design, the email server is a singleton, on
+the assumption that network bandwidth on our end is the limiting
+factor when the server is busy.
+
+EOF
+        exit 1;
+    fi
+    echo $SPID > $PIDFILE
+fi
+
 ## restart the process whenever it dies, allowing a
 ## short interval to prevent thrashing
 
-echo $$ > /sgm/emailServer.pid
+function onExit {
+## cleanup the pid file, and possibly the temporary R file
+    rm -f $PIDFILE
+    if [[ $TRACE != 0 && "$MYTMPDIR" =~ /tmp/tmp* ]]; then
+        rm -rf "$MYTMPDIR"
+    fi
+}
+
+## call the cleanup handler on exit
+
+trap onExit EXIT
+
+echo $$ > $PIDFILE
 
 if [[ $TRACE == 0 ]]; then
     while (( 1 )); do
         nohup Rscript -e 'library(motus);emailServer(tracing=FALSE)'
-        ## kill off the inotifywait process; it's in our process group
-        ## this should happen internally, but might not
+        ## Kill off the inotifywait process; it's in our process group.
+        ## This should happen internally, but might not.
         pkill -g $$ inotifywait
         sleep 15
     done
 else
-    cd `mktemp -d`
+    MYTMPDIR=`mktemp -d`
+    cd $MYTMPDIR
     echo "library(motus); options(error=recover); emailServer(tracing=TRUE)" > .Rprofile
     R
+    pkill -g $$ inotifywait
 fi
