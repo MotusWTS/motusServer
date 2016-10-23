@@ -31,7 +31,6 @@ provided in this file.
 After receiving the file, use the function motusLoadSecrets(f) to load
 the secrets for a session, and saveSecrets() to store them permanently.")
     }
-    MOTUS_SECRETS <<- f %>% readLines %>% paste(collapse="\n") %>% fromJSON
     MOTUS_SECRETS <<- fromJSON(textFileContents(f))
 
     return (TRUE)
