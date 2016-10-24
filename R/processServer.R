@@ -40,8 +40,7 @@ processServer = function(N, tracing=FALSE) {
     ## kill off the inotifywait process when we exit this function
     on.exit(feed(TRUE), add=TRUE)
 
-    ## process the next item from the queue.  If the queue is empty,
-    ## wait for an item from the feed.
+    pkgEnv = as.environment("package:motus")
 
     repeat {
 
@@ -68,7 +67,7 @@ processServer = function(N, tracing=FALSE) {
         }
 
         h = get0(paste0("handle", toupper(substring(j$type, 1, 1)), substring(j$type, 2)),
-                 as.environment("package:motus"), mode="function")
+                 pkgEnv, mode="function")
 
         if (is.null(h)) {
             motusLog("Ignoring job %d with unknown type '%s'", j, j$type)

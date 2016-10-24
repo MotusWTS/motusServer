@@ -55,6 +55,7 @@ emailServer = function(tracing = FALSE) {
     ## kill off the inotifywait process when we exit this function
     on.exit(feed(TRUE), add=TRUE)
 
+    pkgEnv = as.environment("package:motus")
 
     repeat {
 
@@ -72,7 +73,7 @@ emailServer = function(tracing = FALSE) {
         MOTUS_QUEUE <<- MOTUS_QUEUE[-1] ## drop the item from the queue
 
         h = get0(paste0("handle", toupper(substring(j$type, 1, 1)), substring(j$type, 2)),
-                 as.environment("package:motus"), mode="function")
+                 pkgEnv, mode="function")
 
         if (is.null(h)) {
             motusLog("Ignoring job %d with unknown type '%s'", j, j$type)
