@@ -86,11 +86,13 @@ emailServer = function(tracing = FALSE) {
             loggingTry(j, handled <<- h(j))
         }
 
-        if (isTRUE(handled)) {
-            j$done = 1
-        } else {
-            j$done = -1
-        }
+        ## If job handler hasn't already marked a status code in the "$done"
+        ## field, do so now.
+        if (j$done == 0) {
+            if (isTRUE(handled)) {
+                j$done = 1
+            } else {
+                j$done = -1
         ## see whether this job completes the top-level job
         if (isTopJobDone(j)) {
             tj = topJob(j)
@@ -119,7 +121,6 @@ If you have any questions, contact mailto:",
 MOTUS_ADMIN_EMAIL
 ))
             }
-            moveJob(tj, MOTUS_PATH$QUEUE0)
         }
     }
 }
