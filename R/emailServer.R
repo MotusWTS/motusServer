@@ -48,7 +48,7 @@ emailServer = function(tracing = FALSE) {
 
     ## get a feed of email messages
 
-    feed = getFeeder(MOTUS_PATH$INBOX)
+    feed = getFeeder(MOTUS_PATH$INBOX, tracing=tracing)
 
     ## kill off the inotifywait process when we exit this function
     on.exit(feed(TRUE), add=TRUE)
