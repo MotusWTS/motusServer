@@ -34,7 +34,7 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 loadJobs = function(headType) {
-    Jobs <<- Copse(MOTUS_SERVER_DB, "jobs", type=character(), done=integer(), path=character(), oldpath=character())
+    Jobs <<- Copse(MOTUS_SERVER_DB, "jobs", type=character(), done=integer(), queue=integer(), path=character(), oldpath=character())
 
     ## get IDs of jobs with possibly incorrect paths.
 
