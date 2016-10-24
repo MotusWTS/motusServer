@@ -127,4 +127,5 @@ queueJob = function(j) {
     jname = paste(sprintf("%08d", path), collapse="/")
 
     MOTUS_QUEUE <<- sort(structure(c(MOTUS_QUEUE, j), names=c(names(MOTUS_QUEUE), jname)))
+    return(j)
 }

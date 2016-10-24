@@ -2,7 +2,7 @@
 % Please edit documentation in R/newJob.R
 \name{newJob}
 \alias{newJob}
-\title{create a new job}
+\title{create and enqueue a new job}
 \usage{
 newJob(type, path, ..., .parent = NULL)
 }
@@ -22,7 +22,7 @@ A Twig (see \link{\code{Copse}}) object \code{j} representing the job.
     The path to the job folder is accessible as \code{j$dir}.
 }
 \description{
-create a new job
+create and enqueue a new job
 }
 \details{
 A job is a Twig object from the Copse created by

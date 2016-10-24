@@ -20,6 +20,7 @@ queueDownloads = function(j, msg) {
 
     ## queue any links
 
-    for (i in seq(along=links))
-        queueJob(newSubJob(j, "download", path=j$path, url=links[i], method=names(links)[i]))
+    for (i in seq(along=links)) {
+        newSubJob(j, "download", path=j$path, url=links[i], method=names(links)[i])
+    }
 }

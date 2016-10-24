@@ -40,8 +40,8 @@ handleUnpackArchive = function(j) {
     jobLog(j, c(head(res, 3), "...", tail(res, 3)))
     file.remove(file)
 
-    queueJob(newSubJob(j, "sanityCheck", dir=dir))
-    queueJob(newSubJob(j, "queueArchives", dir=dir))
+    newSubJob(j, "sanityCheck", dir=dir)
+    newSubJob(j, "queueArchives", dir=dir)
 
     return (TRUE)
 }

@@ -45,8 +45,8 @@ handleDownload = function(j) {
     jobLog(j, paste0("Downloading using method '", method, "' for:\n   ", sanURL))
     jobLog(j, getter(url, path))
 
-    queueJob(newSubJob(j, "sanityCheck", dir=path))
-    queueJob(newSubJob(j, "queueArchives", dir=path))
+    newSubJob(j, "sanityCheck", dir=path)
+    newSubJob(j, "queueArchives", dir=path)
 
     return(TRUE)
 }

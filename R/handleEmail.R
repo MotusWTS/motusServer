@@ -77,12 +77,13 @@ the status messages.
     ## This lets us provide a better error message than if we just
     ## capture the error message from trying to decompress an all-zero
     ## archive, e.g.
-    queueJob(newSubJob(j, "sanityCheck", dir=j$path))
+    newSubJob(j, "sanityCheck", dir=j$path)
 
     ## queue a job to unpack archives
-    queueJob(newSubJob(j, "queueArchives", dir=j$path))
+    newSubJob(j, "queueArchives", dir=j$path)
 
-    ## parse out and enqueue links to remote data storage
+    ## parse out and links to remote data storage
+    ## and enqueue jobs to download them
     queueDownloads(j, txt)
 
     ## drop text parts with names like "partN"

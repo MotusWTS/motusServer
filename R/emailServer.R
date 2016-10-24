@@ -58,9 +58,12 @@ emailServer = function(tracing = FALSE) {
 
         if (length(MOTUS_QUEUE) == 0) {
             msg <- feed()    ## this might might wait a long time
-            j <- newJob("email", path=MOTUS_PATH$MAIL_QUEUE, msgFile=msg)
+            msg = feed()    ## this might might wait a long time
+            ## create and enqueue a new email job
+            j = newJob("email", path=MOTUS_PATH$MAIL_QUEUE, msgFile=msg)
+
+            ## record receipt within the job's log
             jobLog(j, paste("Received message at", basename(msg)))
-            MOTUS_QUEUE <<- j
             next
         }
         j = Jobs[[MOTUS_QUEUE[1]]]   ## get the first job from the queue

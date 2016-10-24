@@ -1,4 +1,4 @@
-#' create a new subjob of an existing job
+#' create and enqueue a new subjob of an existing job
 #'
 #' The subjob gets the existing job as parent, and will be of
 #' the same type.  The subjob's folder is created inside the

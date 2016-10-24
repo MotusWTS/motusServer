@@ -1,4 +1,4 @@
-#' create a new job
+#' create and enqueue a new job
 #'
 #' @details
 #'
@@ -30,13 +30,13 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 newJob = function(type, path, ..., .parent=NULL) {
-    rv = newTwig(Jobs, type=type, done=FALSE, ..., .parent=.parent)
+    j = newTwig(Jobs, type=type, done=FALSE, ..., .parent=.parent)
     if (! missing(path)) {
-        np = file.path(path, sprintf("%08d", rv))
-        rv$path = np
+        np = file.path(path, sprintf("%08d", j))
+        j$path = np
         dir.create(np, recursive=TRUE, mode=MOTUS_DEFAULT_FILEMODE)
     } else if (!is.null(.parent)) {
-        rv$path = .parent$path
+        j$path = .parent$path
     }
-    return(rv)
+    queueJob(j)
 }

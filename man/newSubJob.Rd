@@ -2,7 +2,7 @@
 % Please edit documentation in R/newSubJob.R
 \name{newSubJob}
 \alias{newSubJob}
-\title{create a new subjob of an existing job}
+\title{create and enqueue a new subjob of an existing job}
 \usage{
 newSubJob(j, type, ...)
 }
