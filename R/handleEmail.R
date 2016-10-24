@@ -26,6 +26,7 @@ handleEmail = function(j) {
 
     ## compress the original
     safeSys("bzip2", newmsg)
+    j$msgFile = paste0(newmsg, ".bz2")
 
     auth = j$auth = validateEmail(txt)
 
