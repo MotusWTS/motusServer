@@ -33,22 +33,7 @@ handleEmail = function(j) {
     valid = j$valid = ! (is.null(auth) || auth$expired)
 
     if (! valid) {
-        email(MOTUS_ADMIN_EMAIL, "Missing or expired token in email",
-              paste0("The message below was received by data@sensorgnome.org,
-but lacks a valid authorization token.
-
-If this is a valid data email, you can paste your own authorization token
-into the subject or body, then forward it to data@sensorgnome.org
-
-You can also forward it to the original sender with the above instructions.
-
-Whoever sends the new copy (with token) to data@sensorgnome.org will receive
-the status messages.
-
-----------------------------------------------------------------------------
-", txt))
-        jobFail(j, "Missing or expired token in email")
-
+        newSubJob(j, "unvalidatedEmail")
         return(TRUE)
     }
 
