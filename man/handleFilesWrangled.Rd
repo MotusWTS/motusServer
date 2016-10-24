@@ -16,7 +16,7 @@ TRUE if the job was successfully moved to the processing queue
 Sends reply to sender giving status of file wrangling, and moves
 the job to the top-level motus processing queue, from which one of
 the processServer() processes will claim it and process the files
-transferred by the email.
+transferred by the email.  The job type is changed to "newFiles".
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
