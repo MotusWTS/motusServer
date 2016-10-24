@@ -71,6 +71,10 @@ handleEmail = function(j) {
     ## and enqueue jobs to download them
     queueDownloads(j, txt)
 
+    ## queue a job that runs when all file-wrangling related to the
+    ## email is complete and it's time to process the data
+    newSubJob(j, "filesWrangled")
+
     ## drop text parts with names like "partN"
     file.remove (
         dir(path,

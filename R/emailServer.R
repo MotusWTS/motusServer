@@ -5,10 +5,12 @@
 #' When a new message is found:
 #' \itemize{
 #' \item create a new job folder in /sgm/email_queue
-#' \item unpack its parts
+#' \item unpack the email's parts (e.g. attachments, or enclosed forwarded messages)
 #' \item validate by looking for an authorization token
 #' \item save attachments
 #' \item download files from any links
+#' \item run basic sanity checks on files
+#' \item unpack archives
 #' \item email the sender with an acknowledgement and pointer to a status page.
 #' \item enqueue a new job with all files
 #' }
@@ -57,15 +59,15 @@ emailServer = function(tracing = FALSE) {
     repeat {
 
         if (length(MOTUS_QUEUE) == 0) {
-            msg <- feed()    ## this might might wait a long time
             msg = feed()    ## this might might wait a long time
+
             ## create and enqueue a new email job
             j = newJob("email", path=MOTUS_PATH$MAIL_QUEUE, msgFile=msg)
 
             ## record receipt within the job's log
             jobLog(j, paste("Received message at", basename(msg)))
-            next
         }
+
         j = Jobs[[MOTUS_QUEUE[1]]]   ## get the first job from the queue
         MOTUS_QUEUE <<- MOTUS_QUEUE[-1] ## drop the item from the queue
 
@@ -74,6 +76,9 @@ emailServer = function(tracing = FALSE) {
 
         if (is.null(h)) {
             motusLog("Ignoring job %d with unknown type '%s'", j, j$type)
+            ## we don't mark the job as done, in case a new version of
+            ## this server, which implements a handler for this type,
+            ## is run later
             next
         }
 
@@ -81,7 +86,7 @@ emailServer = function(tracing = FALSE) {
 
         if (tracing) {
             browser()
-            handled <- h(j)
+            handled = h(j)
         } else {
             loggingTry(j, handled <<- h(j))
         }
@@ -93,33 +98,6 @@ emailServer = function(tracing = FALSE) {
                 j$done = 1
             } else {
                 j$done = -1
-        ## see whether this job completes the top-level job
-        if (isTopJobDone(j)) {
-            tj = topJob(j)
-            ## if this email had valid authorization
-            if (tj$valid) {
-                email(tj$replyTo[1], "motus: data transfer email received",
-                      paste0("Thank-you for the data transfer.  We have tried to download your
-transferred files, shared links, and/or attachments.  Results:
-
-",
-tj$log,
-"
-If any data were transferred, they will now enter the processing queue.
-Status of the queue can be seen here:
-
-   https://sensorgnome.org/Motus_Processing_Status
-
-if you are logged-in with your sensorgnome.org credentials.
-
-When your job is complete, we'll send another email to let you know where
-to find the results.
-
-Please don't reply to this email.
-If you have any questions, contact mailto:",
-
-MOTUS_ADMIN_EMAIL
-))
             }
         }
     }

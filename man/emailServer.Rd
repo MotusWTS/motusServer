@@ -21,10 +21,12 @@ Watch for new messages in \code{MOTUS_PATH$INBOX}.
 When a new message is found:
 \itemize{
 \item create a new job folder in /sgm/email_queue
-\item unpack its parts
+\item unpack the email's parts (e.g. attachments, or enclosed forwarded messages)
 \item validate by looking for an authorization token
 \item save attachments
 \item download files from any links
+\item run basic sanity checks on files
+\item unpack archives
 \item email the sender with an acknowledgement and pointer to a status page.
 \item enqueue a new job with all files
 }
