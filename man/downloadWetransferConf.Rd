@@ -13,7 +13,15 @@ sent to file sender.}
 \item{dir}{directory into which the file(s) will be downloaded}
 }
 \value{
-a messages saying how many bytes were downloaded.
+character scalar saying how many bytes were downloaded.  It has
+these attributes:
+\itemize{
+\item \code{fileName} name of the downloaded file
+\item \code{hashName} security-hash version of the downloaded file's
+name, e.g. "wetransfer-ab2de9.zip"  When multiple files are sent in
+a single transfer, \code{fileName==hashName}.  The hashName is
+convenient for recording which downloads have been made.
+}
 }
 \description{
 The confirmation email sent from wetransfer.com to a file sender

@@ -71,11 +71,14 @@ MOTUS_BADFILE_ARCHIVE = "bad_files.zip.NOAUTO"
 
 ## filesystem layout; dirs end in "/"
 
+#'@export
+
 MOTUS_PATH = list(
     ROOT             = "/sgm",
     BIN              = "/sgm/bin",             ## executable scripts
     CACHE            = "/sgm/cache",           ## recent results of large queries from motus.org
     DONE             = "/sgm/done",            ## folders for completed jobs
+    DOWNLOADS        = "/sgm/downloads",       ## manually-downloaded files; downloadXXX() checks here before (re) grabbing file
     ERRORS           = "/sgm/errors",          ## save dumped call stacks of server errors
     INBOX            = "/sgm/inbox",           ## emails go here, unless /sgm/EMBARGO exists
     INBOX_EMBARGOED  = "/sgm/inbox_embargoed", ## incoming emails under embargo (not processed)

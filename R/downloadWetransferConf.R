@@ -9,7 +9,15 @@
 #'
 #' @param dir directory into which the file(s) will be downloaded
 #'
-#' @return a messages saying how many bytes were downloaded.
+#' @return character scalar saying how many bytes were downloaded.  It has
+#' these attributes:
+#' \itemize{
+#' \item \code{fileName} name of the downloaded file
+#' \item \code{hashName} security-hash version of the downloaded file's
+#' name, e.g. "wetransfer-ab2de9.zip"  When multiple files are sent in
+#' a single transfer, \code{fileName==hashName}.  The hashName is
+#' convenient for recording which downloads have been made.
+#' }
 #'
 #' @note wetransfer.com does not have a published download API, so we
 #'     do this the tedious way, by parsing responses from their
@@ -43,6 +51,26 @@ downloadWetransferConf = function(link, dir) {
                      parts[6],
                      round(as.numeric(Sys.time()) * 1000)
                      )
+
+    ## check whether file has already been manually downloaded using the security hash
+    hashName = paste0("wetransfer-", parts[6])
+    dl = file.path(MOTUS_PATH$DOWNLOADS, hashName)
+    oldf = dir(dl, full.names=TRUE)
+    if (length(oldf) > 0) {
+        inf = file.info(oldf)
+        if (inf$size > 0) {
+            if (dir != MOTUS_PATH$DOWNLOADS) {
+                file.rename(oldf, file.path(dir, basename(oldf)))
+                unlink(dl) ## remove the cache
+            }
+            return(structure(paste("Used file with size", inf$size, "bytes already downloaded on ", inf$ctime),
+                             fileName = oldf,
+                             hashName = hashName))
+        }
+        ## drop empty bogus previous download
+        unlink(dl, recursive=TRUE)
+    }
+
     y = GET(newURL, set_cookies(unlist(x$cookies[2])))
     directLink = fromJSON(rawToChar(y$content))$direct_link
     file = basename(parse_url(directLink)$path)
@@ -50,5 +78,8 @@ downloadWetransferConf = function(link, dir) {
     f = CFILE(file, "wb")
     curlPerform(url=directLink, writedata=f@ref)
     RCurl::close(f)
-    return(paste("Downloaded", file.info(file)$size, "bytes"))
+    return(structure(paste("Downloaded", file.info(file)$size, "bytes"),
+                     fileName = file,
+                     hashName = hashName
+                     ))
 }

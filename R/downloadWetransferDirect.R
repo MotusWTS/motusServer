@@ -9,7 +9,15 @@
 #'
 #' @param dir directory into which the file(s) will be downloaded
 #'
-#' @return a messages saying how many bytes were downloaded.
+#' @return character scalar saying how many bytes were downloaded.  It has
+#' these attributes:
+#' \itemize{
+#' \item \code{fileName} name of the downloaded file
+#' \item \code{hashName} security-hash version of the downloaded file's
+#' name, e.g. "wetransfer-ab2de9.zip"  When multiple files are sent in
+#' a single transfer, \code{fileName==hashName}.  The hashName is
+#' convenient for recording which downloads have been made.
+#' }
 #'
 #' @note wetransfer.com does not have a published download API, so we
 #'     do this the tedious way, by parsing responses from their
@@ -32,6 +40,25 @@ downloadWetransferDirect = function(link, dir) {
 
     url = sprintf("https://www.wetransfer.com/api/v1/transfers/%s/download?recipient_id=%s&security_hash=%s&password=&ie=false",
                   parts[5], parts[6], parts[7])
+
+    ## check whether file has already been manually downloaded using the security hash
+    hashName = paste0("wetransfer-", parts[7])
+    dl = file.path(MOTUS_PATH$DOWNLOADS, hashName)
+    oldf = dir(dl, full.names=TRUE)
+    if (length(oldf) > 0) {
+        inf = file.info(oldf)
+        if (inf$size > 0) {
+            if (dir != MOTUS_PATH$DOWNLOADS) {
+                file.rename(oldf, file.path(dir, basename(oldf)))
+                unlink(dl) ## remove the cache
+            }
+            return(structure(paste("Used file with size", inf$size, "bytes already downloaded on ", inf$ctime),
+                             fileName = oldf,
+                             hashName = hashName))
+        }
+        ## drop empty bogus previous download
+        unlink(dl, recursive=TRUE)
+    }
 
     ## get rewritten URL from wetransfer.com
     resp = fromJSON(getURLContent(url, followlocation=TRUE))
@@ -69,5 +96,8 @@ downloadWetransferDirect = function(link, dir) {
         curlPerform(url=paste0(resp$formdata$action,'?', paste0(names(resp$fields), '=', curlEscape(resp$fields), collapse="&")), writedata=f@ref)
         RCurl::close(f)
     }
-    return(paste("Downloaded", file.info(file)$size, "bytes"))
+    return(structure(paste("Downloaded", file.info(file)$size, "bytes"),
+                     fileName = file,
+                     hashName = hashName
+                     ))
 }
