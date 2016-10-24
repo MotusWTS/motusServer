@@ -2,12 +2,14 @@
 % Please edit documentation in R/loadJobs.R
 \name{loadJobs}
 \alias{loadJobs}
-\title{Load unfinished jobs from server database and enqueue them}
+\title{Load unfinished jobs from server database and enqueue them.}
 \usage{
-loadJobs(headType)
+loadJobs(which)
 }
 \arguments{
-\item{headType}{only examine jobs whose head job is of this type.}
+\item{which}{character scalar or integer scalar.  If character, only
+load jobs whose head job is of this type.  If integer, only
+load jobs from that queue.}
 }
 \value{
 no return value.  Jobs are enqueued in the global \code{MOTUS_QUEUE}.
@@ -25,6 +27,11 @@ It has these fixed fields:
 \item done: integer; 0 if not attempted; negative for errors; +1
 for successfully finished
 
+\item queue: integer; the queue to which a job belongs; there is one queue
+per running processServer().  If queue==0, the job has been enqueued
+for processing but not yet claimed by one of the processServers().
+If queue is null, it is being handled by emailServer() or pathServer()
+
 \item path: full path to folder for job
 
 \item oldpath: full path to previous folder for job (permits
@@ -32,12 +39,11 @@ recovery from server failure during job move)
 
 }
 
-Other job items are stored in a JSON-encodded text field called
+Other job items are stored in a JSON-encoded text field called
 \code{data}.
 
-For any jobs which are not done and whose head job is of the specified
-type, we verify that the "path" field is correct, in case the
-server was interrupted while moving a job.
+For any jobs to be loaded we verify that the "path" field is
+correct, in case the server was interrupted while moving a job.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
