@@ -13,6 +13,9 @@
 #' @param s sqlite_src database where tables "tags" and "events" will
 #'     be created.
 #'
+#' @param cleanBI logical; if TRUE, attempt to clean the burst interval;
+#' otherwise, leave it as-is.  Default: FALSE.
+#'
 #' @return returns modified m; side effect: creates or overwrite the table "tags"
 #' in \code{s}, which will contain cleaned tag registrations.  Also
 #' creates or overwrites table "events", giving activation / deactivation
@@ -108,7 +111,7 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 #'
 
-cleanTagRegistrations = function(m, s) {
+cleanTagRegistrations = function(m, s, cleanBI = FALSE) {
 
     m = subset(m, projectID != 76 & projectID != 0)
 
@@ -141,31 +144,42 @@ cleanTagRegistrations = function(m, s) {
                 )
     }
 
-    ## generate a best estimate of precise BI for each rounded (to 0.1s) value
+    if (cleanBI) {
+        ## generate a best estimate of precise BI for each rounded (to 0.1s) value
 
-    bi = clean %>% select(bi, period) %>%
-        group_by(bi) %>%
-        summarise(avgPer=mean(period))
+        bi = clean %>% select(bi, period) %>%
+            group_by(bi) %>%
+            summarise(avgPer=mean(period))
 
-    clean = clean %>% left_join(bi, by="bi")
+        clean = clean %>% left_join(bi, by="bi")
 
-    badBI = clean %>% filter(abs(avgPer-period) > 0.08) %>% collect
-    if ( badBI %>% nrow > 0) {
-        cat("Problem; these tags have bad looking BI:\n")
-        print(badBI)
-        badBI <<- badBI
-        stop("go back and revisit tag burst interval cleanup")
+        badBI = clean %>% filter(abs(avgPer-period) > 0.08) %>% collect
+        if ( badBI %>% nrow > 0) {
+            cat("Problem; these tags have bad looking BI:\n")
+            print(badBI)
+            badBI <<- badBI
+            stop("go back and revisit tag burst interval cleanup")
+        }
+        ## copy over better gaps, but not BI for the "uncleaned" database
+        unclean = clean %>%
+            mutate(param1 = g1, param2 = g2, param3 = g3) %>%
+            select(-id, -bi, -g1, -g2, -g3, -avgPer) %>%
+            bind_rows(other)
+
+        clean = clean %>%
+            mutate(param1 = g1, param2 = g2, param3 = g3, period = avgPer) %>%
+            select(-id, -bi, -g1, -g2, -g3, -avgPer) %>%
+            bind_rows(other)
+
+    } else {
+
+        ## just rename g1->param1, g2->param2, g3->param3
+
+        clean = clean %>%
+            mutate(param1 = g1, param2 = g2, param3 = g3) %>%
+            select(-id, -bi, -g1, -g2, -g3) %>%
+            bind_rows(other)
     }
-    ## copy over better gaps, but not BI for the "uncleaned" database
-    unclean = clean %>%
-        mutate(param1 = g1, param2 = g2, param3 = g3) %>%
-        select(-id, -bi, -g1, -g2, -g3, -avgPer) %>%
-        bind_rows(other)
-
-    clean = clean %>%
-        mutate(param1 = g1, param2 = g2, param3 = g3, period = avgPer) %>%
-        select(-id, -bi, -g1, -g2, -g3, -avgPer) %>%
-        bind_rows(other)
 
     ## sanity check on deployment times.  If tsStart and tsEnd are both
     ## specified in the database, make sure tsStart <= tsEnd
