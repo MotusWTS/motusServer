@@ -8,7 +8,7 @@ processServer(N, tracing = FALSE)
 }
 \arguments{
 \item{N}{integer queue number in the range 1..8, this process
-will perform its operations in the folder \code{MOTUS_PATH$QUEUE\em{N}}}
+will perform its operations in the folder \code{MOTUS_PATH$QUEUE\emph{N}}}
 
 \item{tracing}{boolean scalar; if TRUE, enter the debugger before
 each handler is called}
@@ -18,21 +18,17 @@ This function does not return; it is meant for use in an R
     script run in the background.
 }
 \description{
-The queue consists of items in the \code{MOTUS_PATH$QUEUE/N}
+The queue consists of items in the \code{MOTUS_PATH$QUEUE<N>}
 folder.  When the queue is empty, it is fed an item from the
 \code{MOTUS_PATH$QUEUE0} folder, which receives processed email messages
 and directly moved folders.
 }
 \details{
 Processing an item in the queue usually leads to more items being
-added to the queue, and these are processed in depth-first order.
-}
-\note{
-If a directory is added by creating a symlink to it in the
-    \code{incoming} directory, ownership of files in the directory
-    remains with the files' creator, and this function will not
-    delete them.  Otherwise, ownership is assumed by this function,
-    and files are deleted if any handler returns TRUE.
+added to the queue, and these are processed in depth-first order;
+i.e. if X1 is a subjob of X and Y1 is a subjob of Y, and X was
+created before Y, and X1 and Y1 are both in the queue, then X1 will
+be processed before Y1, regardless of which was enqueued first.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}

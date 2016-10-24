@@ -1,15 +1,18 @@
 #' process batches of files from the queue
 #'
-#' The queue consists of items in the \code{MOTUS_PATH$QUEUE/N}
+#' The queue consists of items in the \code{MOTUS_PATH$QUEUE<N>}
 #' folder.  When the queue is empty, it is fed an item from the
 #' \code{MOTUS_PATH$QUEUE0} folder, which receives processed email messages
 #' and directly moved folders.
 #'
 #' Processing an item in the queue usually leads to more items being
-#' added to the queue, and these are processed in depth-first order.
+#' added to the queue, and these are processed in depth-first order;
+#' i.e. if X1 is a subjob of X and Y1 is a subjob of Y, and X was
+#' created before Y, and X1 and Y1 are both in the queue, then X1 will
+#' be processed before Y1, regardless of which was enqueued first.
 #'
 #' @param N integer queue number in the range 1..8, this process
-#' will perform its operations in the folder \code{MOTUS_PATH$QUEUE\em{N}}
+#' will perform its operations in the folder \code{MOTUS_PATH$QUEUE\emph{N}}
 #'
 #' @param tracing boolean scalar; if TRUE, enter the debugger before
 #' each handler is called
@@ -17,132 +20,81 @@
 #' @return This function does not return; it is meant for use in an R
 #'     script run in the background.
 #'
-#' @note If a directory is added by creating a symlink to it in the
-#'     \code{incoming} directory, ownership of files in the directory
-#'     remains with the files' creator, and this function will not
-#'     delete them.  Otherwise, ownership is assumed by this function,
-#'     and files are deleted if any handler returns TRUE.
-#'
 #' @export
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 processServer = function(N, tracing=FALSE) {
-
-    if (missing(typedHandlers)) {
-        typedHandlers = list (
-         msg      = handleEmail,
-         url      = handleDownloadableLink,
-         log      = handleLog,
-         dta      = handleDTA,
-         dtaold   = handleDTAold,
-         sg       = handleSG,
-         sgnew    = handleSGnew,
-         sgold    = handleSGold
-        )
-    }
-    if (missing(freeHandlers)) {
-        freeHandlers = list (
-            archive = handleArchive,
-            path    = handlePath
-        )
-    }
-
-    ## sanity checks for handlers
-    lapply(typedHandlers,
-           function(h) {
-               if (! is.function(h) || ! identical(names(formals(h)), c("path", "isdir", "params")))
-                   stop("Typed handler must be a function with formals 'path', 'isdir', and 'params'")
-               }
-           )
-
-    lapply(freeHandlers,
-           function(h) {
-               if (! is.function(h) || ! identical(names(formals(h)), c("path", "isdir")))
-                   stop("Free handler must be a function with formals 'path' and 'isdir'")
-               }
-           )
+    if(tracing)
+        options(error=recover)
 
     ensureServerDirs()
+    motusLog("ProcessServer started for queue %d", N)
 
-    motusLog("Server started")
+    MOTUS_QUEUE <<- loadJobs(N)
 
-    ## get a feed of items from external (asynchronous) sources
-    ## this feed is only checked when the internal queue is empty
+    ## get a feed of email messages
 
-    feed = getFeeder(MOTUS_PATH$INCOMING, tracing)
+    feed = getFeeder(MOTUS_PATH$QUEUE0, tracing=tracing)
 
     ## kill off the inotifywait process when we exit this function
     on.exit(feed(TRUE), add=TRUE)
 
-    ## Create a global variable to hold the queue of paths to process.
-    ## This is initialized with the set of items already in
-    ## MOTUS_PATH$QUEUE, sorted by mtime.
-
-    MOTUS_QUEUE <<- dirSortedBy(MOTUS_PATH$QUEUE, "mtime")
-
-    ## process the next item to process from the queue.  If the queue is empty,
-    ## wait for an item from the feed.  Note global assignments for MOTUS_QUEUE
+    ## process the next item from the queue.  If the queue is empty,
+    ## wait for an item from the feed.
 
     repeat {
 
-        if (length(MOTUS_QUEUE) == 0)
-            MOTUS_QUEUE <<- feed()  ## this might might wait a long time
+        if (length(MOTUS_QUEUE) == 0) {
+            jobPath = feed()    ## this might might wait a long time
 
-        p = MOTUS_QUEUE[1]
-        MOTUS_QUEUE <<- MOTUS_QUEUE[-1] ## drop the item from the queue
+            ## try to claim the given job; the jobPath looks like /sgm/queue/0/00000123
+            j = Jobs[[as.integer(basename(jobPath))]]
 
-        motusLog("Handling item %s", p)
-        isdir = file.info(p)$isdir
+            if (! claimJob(j, N)) {
+                ## another process presumably claimed the job before us
+                next
+            }
 
-        ## parse item name to see if it requires a typed handler
-        pieces = regexPieces(MOTUS_QUEUEFILE_REGEX, basename(p))[[1]]
-        if (isTRUE(is.character(pieces["params"]))) {
-            params = strsplit(pieces["params"], MOTUS_QUEUE_SEP, fixed=TRUE)[[1]]
-            hname = params[1]
-            params = params[-1]
-            h = typedHandlers[[hname]]
+            ## log this enqueuing in job and globally
+            msg = sprintf("Job %d entered processing queue #%d", j, N)
+            motusLog(msg)
+            jobLog(j, msg)
+
         } else {
-            h = NULL
+
+            j = Jobs[[MOTUS_QUEUE[1]]]   ## get the first job from the queue
+            MOTUS_QUEUE <<- MOTUS_QUEUE[-1] ## drop the item from the queue
+        }
+
+        h = get0(paste0("handle", toupper(substring(j$type, 1, 1)), substring(j$type, 2)),
+                 as.environment("package:motus"), mode="function")
+
+        if (is.null(h)) {
+            motusLog("Ignoring job %d with unknown type '%s'", j, j$type)
+            ## we don't mark the job as done, in case a new version of
+            ## this server, which implements a handler for this type,
+            ## is run later
+            next
         }
 
         handled = FALSE
 
-        if (isTRUE(is.function(h))) {
-            ## try the appropriate typed handler:
-            if (tracing)
-                browser()
-            loggingTry(
-                handled <- h(path=p, isdir=isdir, params = params)
-            )
+        if (tracing) {
+            browser()
+            handled = h(j)
         } else {
-            ## try free handlers until one succeeds
-            for (i in seq(along = freeHandlers)) {
-                hname <- names(freeHandlers)[[i]]
-                if (tracing)
-                    browser()
-                loggingTry(
-                    handled <- freeHandlers[[i]](path=p, isdir=isdir)
-                )
-                if (isTRUE(handled)) {
-                    break
-                }
-            }
+            loggingTry(j, handled <<- h(j))
         }
-        if (isTRUE(handled)) {
-            ## once we're confident enough, do this:
-            ##            unlink(p, recursive=TRUE)
 
-            ## If debugging, do this:
-            ##
-            try(
-                file.rename(p, file.path(MOTUS_PATH$DONE, basename(p))),
-                silent=TRUE
-            )
-
-            motusLog("Handled by %s", hname)
-        } else {
-            embroilHuman(p, "No handlers worked for this item.")
+        ## If job handler hasn't already marked a status code in the "$done"
+        ## field, do so now.
+        if (j$done == 0) {
+            if (isTRUE(handled)) {
+                j$done = 1
+            } else {
+                j$done = -1
+            }
         }
     }
 }
