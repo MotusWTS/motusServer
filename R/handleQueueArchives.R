@@ -8,7 +8,7 @@
 #' \item dir directory in which to search (recursively) for archives
 #' }
 #'
-#' @return no return value
+#' @return TRUE
 #'
 #' @export
 #'
@@ -20,4 +20,5 @@ handleQueueArchives = function(j) {
     for (a in archs) {
         newSubJob(j, "unpackArchive", path=j$path, file=a)
     }
+    return(TRUE)
 }
