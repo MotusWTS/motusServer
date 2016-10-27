@@ -25,7 +25,7 @@
 #' }
 #'
 #' @export
-#' 
+#'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 plotTagTimeline = function(sort = c("projCode", "dateBin", "sort", "nomFreq", "iMfgID"), filename="/sgm/pub/motus_tag_timeline.html") {
@@ -38,7 +38,7 @@ plotTagTimeline = function(sort = c("projCode", "dateBin", "sort", "nomFreq", "i
     hist = hist %>%
         left_join (sp, by=c(speciesID="id"), copy=TRUE) %>%
         left_join (proj, by=c(projectID="id"), copy=TRUE) %>%
-        mutate_ (fullID = ~sprintf("%s#%s@%g:%.1f", projCode, mfgID, nomFreq, period),
+        mutate_ (fullID = ~sprintf("%s:%.1f#%s@%g", mfgID, period, projCode, nomFreq),
                  iMfgID = ~as.integer(mfgID)) %>%
         collect %>% as.data.frame
     hist$english[is.na(hist$english)] = " ? "
@@ -84,7 +84,7 @@ where X and Y are indicated in the list below.<br><br>
 Start dates are selected using these items from the <a href="http://motus.org">motus</a> database,<br>
 in order of preference (i.e. the first available  item is used):<br>
 <ul>
- 
+
  <li> tsStart - the starting date for a tag deployment record; spanCode X=1
  <li> dateBin - the start of the quarter year in which the tag was expected to be deployed; spanCode X=2
 <li> ts - the date the tag was registered; spanCode X=3
@@ -129,4 +129,3 @@ where we have reason to believe that model is the one most commonly used for it.
     close(f)
     return(invisible(hist))
 }
-
