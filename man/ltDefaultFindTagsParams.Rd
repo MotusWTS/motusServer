@@ -11,11 +11,13 @@ ltDefaultFindTagsParams
 \description{
 These are:
 \itemize{
-\item   pulses_to_confirm = 8       number of pulses required from a tag before its identity is treated as confirmed
-\item   clock_fuzz        = 30      parts per million; maximum discrepancy between tag and receiver clock
-\item   use_events                  use the events table in the tag database, so that tags are only sought while alive
-\item   max_skipped_time  = 200     seconds; maximum amount of time between detections in a tag run
-\item   default_freq      = 166.38  MHz, default antenna frequency, when not provided in input
+\item   pulses_to_confirm      number of pulses required from a tag before its identity is treated as confirmed
+\item   pulse_slop             ms; maximum allowed slop in pulse timing within a burst
+\item   burst_slop             ms; maximum allowed slop for a burst interval
+\item   burst_slop_expansion   ms; amount by which burst slop is allowed to grow per missed burst
+\item   use_events             use the events table in the tag database, so that tags are only sought while alive
+\item   max_skipped_bursts     seconds; maximum amount of time between detections in a tag run
+\item   default_freq           MHz; default antenna frequency, when not provided in input
 }
 }
 \author{
