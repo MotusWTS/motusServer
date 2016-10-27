@@ -126,6 +126,10 @@ queueJob = function(j) {
 
     jname = paste(sprintf("%08d", path), collapse="/")
 
-    MOTUS_QUEUE <<- sort(structure(c(MOTUS_QUEUE, j), names=c(names(MOTUS_QUEUE), jname)))
+    MOTUS_QUEUE <<- c(MOTUS_QUEUE, structure(j, names=jname))
+
+    ## sort by names to obtain depth-first order
+    MOTUS_QUEUE <<- MOTUS_QUEUE[order(names(MOTUS_QUEUE))]
+
     return(j)
 }
