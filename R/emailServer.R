@@ -83,19 +83,21 @@ emailServer = function(tracing = FALSE) {
             next
         }
 
-        handled = FALSE
+        ## use a global to record success in call to loggingTry() below
+
+        motusHandled <<- FALSE
 
         if (tracing) {
             browser()
-            handled = h(j)
+            motusHandled <<- h(j)
         } else {
-            loggingTry(j, handled <<- h(j))
+            loggingTry(j, motusHandled <<- h(j))
         }
 
         ## If job handler hasn't already marked a status code in the "$done"
         ## field, do so now.
         if (j$done == 0) {
-            if (isTRUE(handled)) {
+            if (isTRUE(motusHandled)) {
                 j$done = 1
             } else {
                 j$done = -1
