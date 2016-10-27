@@ -1,12 +1,14 @@
 #!/usr/bin/Rscript
 
+suppressMessages(suppressWarnings(library(motus)))
+
 ## parameters for the tag finder
 ## Note the use of the '-e' parameter, to force tag deployment events to be
 ## used (i.e. start looking for a tag on the date it's deployed; stop looking
 ## after its expected or known lifetime).
 
-PARS =      "-c 8 -s 0.5 -m 0 -M 12 -C 30 -e -S 200 -f 166.38"
-LOTEKPARS = "-c 8                   -C 30 -e -S 200 -f 166.38"
+PARS = sgDefaultFindTagsParams
+LOTEKPARS = ltDefaultFindTagsParams
 
 ._(` (
    runReceiver.R [--vacuum] [--no-motus] RECVDB [ PARS ]
@@ -20,9 +22,7 @@ If --vacuum is specified, re-compress the full database before running the tag f
 If --motus is specified, send results to the motus transfer table.
 
 PARS is an optional set of command-line parameters for the find_tags_motus program,
-which override the defaults:  
-
-      -c 8 -s 0.5 -m 0 -M 12 -C 30 -e -S 200 -f 166.38
+which override the defaults.
 
 ._(` )
 
@@ -55,8 +55,6 @@ if (! file.exists(RECVDB))
 ## paste any additional parameters to allow overriding defaults
 PARS = paste(PARS, paste(ARGS[-1], collapse=" "))
 LOTEKPARS = paste(LOTEKPARS, paste(ARGS[-1], collapse=" "))
-
-suppressMessages(suppressWarnings(library(motus)))
 
 realReceiver = basename(system(paste("readlink", RECVDB), intern=TRUE))
 recvPageName = sub(".motus$", "", realReceiver)
