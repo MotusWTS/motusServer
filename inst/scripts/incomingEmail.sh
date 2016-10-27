@@ -14,7 +14,7 @@ umask 0007
 ##
 
 if [[ -f /sgm/EMBARGO ]]; then
-    INCOMING=/sgm/embargoed_inbox
+    INCOMING=/sgm/inbox_embargoed
 else
     INCOMING=/sgm/inbox
 fi
