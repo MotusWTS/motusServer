@@ -4,7 +4,7 @@
 \alias{cleanTagRegistrations}
 \title{Fix systematic problems with the tag registration database.}
 \usage{
-cleanTagRegistrations(m, s)
+cleanTagRegistrations(m, s, cleanBI = FALSE)
 }
 \arguments{
 \item{m}{tbl with full tag info from motus, as returned by
@@ -12,6 +12,9 @@ motusSearchTags()}
 
 \item{s}{sqlite_src database where tables "tags" and "events" will
 be created.}
+
+\item{cleanBI}{logical; if TRUE, attempt to clean the burst interval;
+otherwise, leave it as-is.  Default: FALSE.}
 }
 \value{
 returns modified m; side effect: creates or overwrite the table "tags"

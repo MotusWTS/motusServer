@@ -13,7 +13,7 @@ handleQueueArchives(j)
 }}
 }
 \value{
-no return value
+TRUE
 }
 \description{
 For each .7z, .zip, and .rar file, a subjob is queued which

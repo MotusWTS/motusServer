@@ -47,7 +47,10 @@ export SPID=$$;
 
 if [[ $N == 0 ]]; then
     ## find an unused queue
+
     for i in `seq 1 8`; do
+        ## We use a lock onn /sgm/locks/queueN to atomically test
+        ## existence of and create /sgm/processServerN.pid
         export i=$i
         (
             flock -n 9 || exit 1
