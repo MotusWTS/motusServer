@@ -35,7 +35,7 @@ handleUnpackArchive = function(j) {
                "Must be .zip, .7z, or .rar"))
         return (FALSE)
     }
-    jobLog(j, paste0("Unpacking file ", bn, " with ", cmd))
+    jobLog(j, paste0("Unpacking file ", bn, " with ", paste(cmd, collapse=" ")))
     res = safeSys("cd", dir, ";", cmd, file, shell=TRUE, splitOutput=TRUE)
     jobLog(j, c(head(res, 3), "...", tail(res, 3)))
     file.remove(file)
