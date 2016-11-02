@@ -119,7 +119,9 @@ att = logfilename
 parts = strsplit(basename(RECVDB), "_")[[1]]
 if (length(parts) >= 3) {
     cat("Plotting comparison between old and new results.\n")
-    att = c(att, compareOldNew(year=as.integer(parts[1]), proj=parts[2], site=paste0(parts[-(1:2)], collapse="_")))
+    site = paste0(parts[-(1:2)], collapse="_")
+    site = sub("-[0-9]+$", "", site, perl=TRUE)
+    att = c(att, compareOldNew(year=as.integer(parts[1]), proj=parts[2], site=site))
 }
 
 cat(format(Sys.time()), "------ END   runReceiver.R ------------------\n")
