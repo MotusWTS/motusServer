@@ -24,7 +24,13 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 openMotusDB = function(dbname="motus", host="localhost", user="motus") {
-    if (exists("MOTUS_DB") && inherits(MOTUS_DB, "src_mysql"))
-        return(MOTUS_DB)
-    return (MOTUS_DB <<- src_mysql(dbname=dbname, host=host, user=user, password=MOTUS_SECRETS$dbPasswd))
+    tryCatch(
+        ## sanity check on connection
+        dbGetQuery(MOTUS_DB$con, "select 1"),
+        error = function(e) {
+            ## either MOTUS_DB doesn't exist, or connection has expired
+            MOTUS_DB <<- src_mysql(dbname=dbname, host=host, user=user, password=MOTUS_SECRETS$dbPasswd)
+        }
+    )
+    return (MOTUS_DB)
 }
