@@ -5,20 +5,7 @@
 
 # assume no tracing
 
-TRACE=0
-N=0
-
-while [[ "$1" != "" ]]; do
-    case "$1" in
-        -t)
-            TRACE=1
-            ;;
-
-        [1-8])
-            N=$1
-            ;;
-
-        -h|*)
+function show_usage {
             cat <<EOF
 
 Usage: runMotusProcessServer.sh [-h] [-t] [N]
@@ -36,6 +23,23 @@ Run a motus process server that deals with batches of files.
 
 EOF
             exit 1;
+}
+
+TRACE=0
+N=0
+
+while [[ "$1" != "" ]]; do
+    case "$1" in
+        -t)
+            TRACE=1
+            ;;
+
+        [1-8])
+            N=$1
+            ;;
+
+        -h|*)
+            show_usage
             ;;
         esac
     shift
@@ -49,7 +53,7 @@ if [[ $N == 0 ]]; then
     ## find an unused queue
 
     for i in `seq 1 8`; do
-        ## We use a lock onn /sgm/locks/queueN to atomically test
+        ## We use a lock on /sgm/locks/queueN to atomically test
         ## existence of and create /sgm/processServerN.pid
         export i=$i
         (
@@ -118,10 +122,10 @@ if [[ $TRACE == 0 ]]; then
         sleep 15
     done
 else
-##    MYTMPDIR=`mktemp -d`
-##    cd $MYTMPDIR
-##    echo "library(motus); options(error=recover); processServer($N, tracing=TRUE)" > .Rprofile
-##    R
+    MYTMPDIR=`mktemp -d`
+    cd $MYTMPDIR
+    echo "library(motus); options(error=recover); processServer($N, tracing=TRUE)" > .Rprofile
+    R
     echo running tracing server for queue $N
-##    pkill -g $$ inotifywait
+    pkill -g $$ inotifywait
 fi
