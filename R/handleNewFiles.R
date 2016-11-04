@@ -66,7 +66,7 @@ handleNewFiles = function(j) {
     unknown = grep("(\\.txt(\\.gz)?$)|~", all, perl=TRUE, invert=TRUE)
     if (length(unknown)) {
         sj = newSubJob(j, "unknownFiles", .makeFolder=TRUE)
-        moveFilesUniquely(all[unknown], sj$path)
+        moveDirContents(all[unknown], sj$path)
         queueJob(sj)
         all = all[ - unknown ]
     }
