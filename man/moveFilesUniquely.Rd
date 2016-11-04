@@ -5,7 +5,7 @@
 \title{Move files to a single folder, renaming new files in cases
 of conflict.}
 \usage{
-moveFilesUniquely(src, dst, ...)
+moveFilesUniquely(src, dst)
 }
 \arguments{
 \item{src}{character vector of full paths of files to move}
