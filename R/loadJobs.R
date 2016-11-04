@@ -40,7 +40,7 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 loadJobs = function(which) {
-    if (missing(which) || length(which) != 1 || ! (is.integer(which) || is.character(which)))
+    if (missing(which) || length(which) != 1 || ! (is.numeric(which) || is.character(which)))
         stop("Must specify 'which' as an integer queue number or character scalar job type")
 
     ## connect the global Jobs object to the MOTUS_SERVER_DB's jobs table
@@ -51,8 +51,8 @@ loadJobs = function(which) {
     if (is.character(which)) {
         j = query(Jobs,
                   paste0("select t1.id from jobs as t1 left join jobs as t2 on t1.stump=t2.id where (t1.path is not null and t1.oldpath is not null) and (t1.done == 0) and ((t2.id is NULL and t1.type=='", which,"') or t2.type=='", which, "') order by t1.id"))[[1]]
-    } else if (is.integer(which)) {
-        j = query(Jobs, paste0("select id from jobs where done=0 and queue=", which))
+    } else if (is.numeric(which)) {
+        j = query(Jobs, paste0("select id from jobs where done=0 and queue=", round(which)))[[1]]
     }
     ## correct paths in case server was interrupted after recording new path but before moving job,
     ## and enqueue jobs
