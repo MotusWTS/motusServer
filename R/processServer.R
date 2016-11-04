@@ -50,8 +50,9 @@ processServer = function(N, tracing=FALSE) {
             ## try to claim the given job; the jobPath looks like /sgm/queue/0/00000123
             j = Jobs[[as.integer(basename(jobPath))]]
 
-            if (! claimJob(j, N)) {
-                ## another process presumably claimed the job before us
+            if (is.null(j) || ! claimJob(j, N)) {
+                ## another process presumably claimed the job before us, or the job
+                ## was deleted
                 next
             }
 
