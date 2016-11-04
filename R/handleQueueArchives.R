@@ -18,7 +18,7 @@ handleQueueArchives = function(j) {
     archs = dir(j$dir, recursive=TRUE, pattern=".*zip|.*7z|.*rar", ignore.case=TRUE,
                 full.names=TRUE)
     for (a in archs) {
-        newSubJob(j, "unpackArchive", path=j$path, file=a)
+        newSubJob(j, "unpackArchive", .makeFolder=TRUE, file=a)
     }
     return(TRUE)
 }

@@ -4,18 +4,18 @@
 \alias{newJob}
 \title{create and enqueue a new job}
 \usage{
-newJob(type, path, ..., .parent = NULL)
+newJob(.type, .parentPath, ..., .parent = NULL)
 }
 \arguments{
-\item{type}{character scalar name of job type}
+\item{.type}{character scalar name of job type}
 
-\item{path}{to the folder in which to create the new job's folder.
-If omitted, no path is created for this job, and the job's \code{$path}
+\item{.parentPath}{the folder in which to create the new job's folder.
+If omitted, no folder is created for this job, and the job's \code{$path}
 item is set to the \code{.parent$path}, if \code{.parent} is not null.}
 
 \item{...}{additional named metadata for this job}
 
-\item{parent}{.parent job, if any}
+\item{.parent}{.parent job, if any}
 }
 \value{
 A Twig (see \link{\code{Copse}}) object \code{j} representing the job.

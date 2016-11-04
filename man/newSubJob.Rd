@@ -4,12 +4,17 @@
 \alias{newSubJob}
 \title{create and enqueue a new subjob of an existing job}
 \usage{
-newSubJob(j, type, ...)
+newSubJob(.j, .type, .makeFolder = FALSE, ...)
 }
 \arguments{
-\item{j}{existing job}
+\item{.j}{existing job}
 
-\item{type}{character scalar of type of subjob}
+\item{.type}{character scalar of type of subjob}
+
+\item{.makeFolder}{should a folder be created for this job?  If TRUE,
+a folder is created inside \code{.j$path}, and the new sub job's
+path is set to that.  Default: FALSE, meaning the new sub job's
+path is set to \code{.j$path}.}
 
 \item{...}{additional named metadata for this job}
 }

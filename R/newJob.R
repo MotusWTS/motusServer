@@ -10,15 +10,15 @@
 #' maintained in persistent storage in the Copse's SQLite database.
 #' Jobs can have subjobs via the Twig's parent() relationship.
 #'
-#' @param type character scalar name of job type
+#' @param .type character scalar name of job type
 #'
-#' @param path to the folder in which to create the new job's folder.
-#' If omitted, no path is created for this job, and the job's \code{$path}
+#' @param .parentPath the folder in which to create the new job's folder.
+#' If omitted, no folder is created for this job, and the job's \code{$path}
 #' item is set to the \code{.parent$path}, if \code{.parent} is not null.
 #'
 #' @param ...  additional named metadata for this job
 #'
-#' @param parent .parent job, if any
+#' @param .parent .parent job, if any
 #'
 #' @return A Twig (see \link{\code{Copse}}) object \code{j} representing the job.
 #'     The path to the job folder is accessible as \code{j$dir}.
@@ -29,10 +29,10 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-newJob = function(type, path, ..., .parent=NULL) {
-    j = newTwig(Jobs, type=type, done=FALSE, ..., .parent=.parent)
-    if (! missing(path)) {
-        np = file.path(path, sprintf("%08d", j))
+newJob = function(.type, .parentPath, ..., .parent=NULL) {
+    j = newTwig(Jobs, type=.type, done=FALSE, ..., .parent=.parent)
+    if (! missing(.parentPath)) {
+        np = file.path(.parentPath, sprintf("%08d", j))
         j$path = np
         dir.create(np, recursive=TRUE, mode=MOTUS_DEFAULT_FILEMODE)
     } else if (!is.null(.parent)) {

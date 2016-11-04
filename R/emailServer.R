@@ -63,7 +63,7 @@ emailServer = function(tracing = FALSE) {
             msg = feed()    ## this might might wait a long time
 
             ## create and enqueue a new email job
-            j = newJob("email", path=MOTUS_PATH$MAIL_QUEUE, msgFile=msg)
+            j = newJob("email", .parentPath=MOTUS_PATH$MAIL_QUEUE, msgFile=msg)
 
             ## record receipt within the job's log
             jobLog(j, paste("Received message at", basename(msg)))
