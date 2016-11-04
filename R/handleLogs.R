@@ -1,17 +1,11 @@
 #' Save a folder of linux system log files from a sensorgnome.
 #'
-#' Called by \code{\link{server}} for a file or folder added
-#' to the queue.
+#' Called by \code{\link{processServer}} for a folder containing
+#' a file called syslog
 #'
-#' @param path the full path to the file or directory.  It is only
-#'     treated as a log file folder if it is a directory whose name
-#'     begins with "log_"
+#' @param j the job
 #'
-#' @param isdir boolean; TRUE iff the path is a directory
-#'
-#' @param params not used
-#'
-#' @return TRUE iff the folder could be archived; i.e. iff a valid
+#' @return TRUE iff all files in the folder could be archived; i.e. iff a valid
 #'     sensorgnome serial number was found in at least one of the log
 #'     files
 #' @note
@@ -22,24 +16,23 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-handleLog = function(path, isdir, params) {
-    if (! isdir)
-        return (FALSE)
+handleLogs = function(j) {
 
     ## use zgrep to look for receiver serial number strings in
     ## possibly gz-compressed logfiles; note that grep returns 1 to indicate
     ## "match found", rather than an error.  So we specify minErrorCode=2
 
-    res = safeSys('zgrep -P -h', paste0('"', MOTUS_SG_SERNO_REGEX, '"'), paste0(path, "/*"), "| head -1l", shell=TRUE, quote=FALSE, minErrorCode=2)
+    res = safeSys('zgrep -P -h --binary-files=text', paste0('"', MOTUS_SG_SERNO_REGEX, '"'), paste0(j$path, '/*'), '2>/dev/null | head -1l', shell=TRUE, quote=FALSE, minErrorCode=2)
 
     if (length(res) == 0)
         return (FALSE)   ## no serial number found
 
     ## split out the serial number
-    x = regexPieces(MOTUS_SG_SERNO_REGEX, res)
+    serno = regexPieces(MOTUS_SG_SERNO_REGEX, res)[[1]]["serno"][1]
 
     ## archive the folder
-    archivePath(path, file.path(MOTUS_PATH$RECVLOG, x[[1]]["serno"][1]))
+    newdir = file.path(MOTUS_PATH$RECVLOG, serno, format(file.mtime(j$path), "%Y-%m-%dT%H-%M-%S"))
+    dir.create(newdir, recursive=TRUE, showWarnings=FALSE)
 
-    return(TRUE)
+    all(moveDirContents(j$path, newdir))
 }
