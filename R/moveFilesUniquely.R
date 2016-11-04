@@ -1,9 +1,10 @@
-#' Move files from one folder to another, renaming new files in cases
+#' Move files to a single folder, renaming new files in cases
 #' of conflict.
 #'
 #' @details
-#' Filenames that conflict with those already in \code{dest} are changed
-#' like so:
+#'
+#' Filenames that conflict with each other or those already in
+#' \code{dst} are changed like so:
 #'
 #' \enumerate{
 #' \item if the filename does not end in \code{-NNN.EXT}  where \code{NNN} is an
@@ -19,48 +20,50 @@
 #'
 #' }
 #'
-#' @param src path to source folder
+#' @param src character vector of full paths of files to move
 #'
-#' @param dest path to target folder
+#' @param dst path to target folder
 #'
-#' @return a boolean vector of the same length as \code{dir(src)}, with TRUE 
+#' @return a boolean vector of the same length as \code{src}, with TRUE
 #' entries corresponding to files moved successfully.
-#'
-#' @note Why not just use \code{"/bin/cp --backup"}?  Because we want
-#'     stability in filenames in the receiver DB, earlier files with a
-#'     given name should take precendence.  Standard linux tools
-#'     (e.g. \code{rsync, cp, mv, install}) all seem to give precedence
-#'     to new files, renaming existing ones of the same name.
 #'
 #' @export
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-moveFilesUniquely = function(src, dest) {
-    fs = fd = dir(src)
-    conflict = fs %in% dir(dest)
-    if (sum(conflict) > 0) {
+moveFilesUniquely = function(src, dst, ...) {
+    fd = basename(src)
+    existing = dir(dst)
 
-        ## match portions of conflicting filenames
-        parts = regexPieces("(?sx)
+    ## regex to match file extensions, including added "-NNN"
+    nameRegex = "(?sx)
             ^
             (?:(?<base>.*)-(?<number>[0-9]+)(?<ext>\\.[^.]*))
               |
             (?:(?<base2>.*)(?<ext2>\\.[^.]*))
-            $",
-            fs[conflict])
+            $"
+
+    ## function to increment the -NNN extension (if any) on a file
+    bumpSuffix = function(p) {
+        if ("ext2" %in% names(p)) {
+            paste0(p["base2"], "-1", p["ext2"])
+        } else {
+            paste0(p["base"], "-", as.integer(p["number"]) + 1, p["ext"])
+        }
+    }
+
+    ## loop until no filename conflicts
+    repeat {
+        conflict = fd %in% existing | duplicated(fd)
+        if (! any(conflict))
+            break
+
+        ## match portions of conflicting filenames
+        parts = regexPieces(nameRegex, fd[conflict])
 
         ## rename according to rules
 
-        fd[conflict] = lapply(parts,
-                      function(p) {
-                          if ("ext2" %in% names(p)) {
-                              paste0(p["base2"], "-1", p["ext2"])
-                          } else {
-                              paste0(p["base"], "-", as.integer(p["number"]) + 1, p["ext"])
-                          }
-                      }
-                      )
+        fd[conflict] = lapply(parts, bumpSuffix)
     }
-    file.rename(file.path(src, fs), file.path(dest, fd))
+    file.rename(src, file.path(dst, fd))
 }

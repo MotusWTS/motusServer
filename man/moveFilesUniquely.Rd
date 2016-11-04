@@ -2,27 +2,27 @@
 % Please edit documentation in R/moveFilesUniquely.R
 \name{moveFilesUniquely}
 \alias{moveFilesUniquely}
-\title{Move files from one folder to another, renaming new files in cases
+\title{Move files to a single folder, renaming new files in cases
 of conflict.}
 \usage{
-moveFilesUniquely(src, dest)
+moveFilesUniquely(src, dst, ...)
 }
 \arguments{
-\item{src}{path to source folder}
+\item{src}{character vector of full paths of files to move}
 
-\item{dest}{path to target folder}
+\item{dst}{path to target folder}
 }
 \value{
-a boolean vector of the same length as \code{dir(src)}, with TRUE 
+a boolean vector of the same length as \code{src}, with TRUE
 entries corresponding to files moved successfully.
 }
 \description{
-Move files from one folder to another, renaming new files in cases
+Move files to a single folder, renaming new files in cases
 of conflict.
 }
 \details{
-Filenames that conflict with those already in \code{dest} are changed
-like so:
+Filenames that conflict with each other or those already in
+\code{dst} are changed like so:
 
 \enumerate{
 \item if the filename does not end in \code{-NNN.EXT}  where \code{NNN} is an
@@ -37,13 +37,6 @@ increment \code{NNN}; e.g.
   \code{myfile-3.txt -> myfile-4.txt}
 
 }
-}
-\note{
-Why not just use \code{"/bin/cp --backup"}?  Because we want
-    stability in filenames in the receiver DB, earlier files with a
-    given name should take precendence.  Standard linux tools
-    (e.g. \code{rsync, cp, mv, install}) all seem to give precedence
-    to new files, renaming existing ones of the same name.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
