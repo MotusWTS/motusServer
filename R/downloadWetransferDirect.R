@@ -49,7 +49,7 @@ downloadWetransferDirect = function(link, dir) {
         inf = file.info(oldf)
         if (inf$size > 0) {
             if (dir != MOTUS_PATH$DOWNLOADS) {
-                file.rename(oldf, file.path(dir, basename(oldf)))
+                moveFiles(oldf, dir)
                 unlink(dl) ## remove the cache
             }
             return(structure(paste("Used file with size", inf$size, "bytes already downloaded on ", inf$ctime),

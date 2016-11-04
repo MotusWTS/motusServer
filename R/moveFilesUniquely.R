@@ -31,7 +31,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-moveFilesUniquely = function(src, dst, ...) {
+moveFilesUniquely = function(src, dst) {
     fd = basename(src)
     existing = dir(dst)
 

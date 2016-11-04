@@ -53,7 +53,7 @@ handleNewFiles = function(j) {
     if (length(syslog)) {
         for (d in unique(dirname(all[syslog]))) {
             sj = newSubJob(j, "logs", .makeFolder=TRUE)
-            moveFilesUniquely(dir(d, full.names=TRUE, recursive=TRUE), sj$path)
+            moveDirContents(d, j$path)
             queueJob(sj)
         }
         all = all[ - syslog ]

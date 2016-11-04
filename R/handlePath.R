@@ -56,7 +56,7 @@ handlePath = function(path, isdir) {
     dta = grep("(?i)\\.DTA$", all, perl=TRUE)
     if (length(dta)) {
         newdir = makeQueuePath("dta")
-        file.rename(all[dta], file.path(newdir, basename(all[dta])))
+        moveFiles(all[dta], newdir)
         enqueue(newdir)
         all = all[ - dta]
     }
@@ -77,7 +77,7 @@ handlePath = function(path, isdir) {
     sg = grep("(\\.txt(\\.gz)?$)|~", all, perl=TRUE)
     if (length(sg)) {
         newdir = makeQueuePath("sg")
-        file.rename(all[sg], file.path(newdir, basename(all[sg])))
+        moveFiles(all[sg], newdir)
         enqueue(newdir)
         all = all[ - sg ]
     }

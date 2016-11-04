@@ -4,7 +4,7 @@
 #'
 #' After this call, the file or directory will no longer exist at the
 #' same location, but will be moved into the server's incoming
-#' directory. 
+#' directory.
 #'
 #' @return TRUE on success; FALSE otherwise
 #'
@@ -19,5 +19,5 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 toIncoming = function(path) {
-    file.rename(path, file.path(MOTUS_PATH$INCOMING, basename(path)))
+    moveFiles(path, MOTUS_PATH$INCOMING)
 }

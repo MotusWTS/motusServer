@@ -25,5 +25,5 @@ enqueueCommand = function( name, ...) {
                      )
     f = file(path, "wb")
     close(f)
-    file.rename(path, file.path(MOTUS_PATH$QUEUE, basename(path)))
+    moveFiles(path, MOTUS_PATH$QUEUE)
 }

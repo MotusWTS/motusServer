@@ -17,9 +17,9 @@
 #'   mydir/* -> newdir/YYYY-MM-DDTHH-MM-SS.SSSSSS,mydir/*     ## when \code{path} is a folder
 #'
 #' or, when \code{path} is a folder whose name begins with a timestamp:
-#' 
+#'
 #'   2016-07-30T02-12-23.123455,mystuff/* -> newdir/2016-07-30T02-12-23.123455,mystuff/*
-#' 
+#'
 #' This means the basename of \code{path} is preserved, either as the
 #' destination filename, or as part of the destination folder name.
 #' This makes it easier to trace the origin of the folder from the
@@ -39,7 +39,7 @@ archivePath = function(path, newdir) {
     if (length(path) == 1 && file.info(path)$isdir) {
         if (grepl(MOTUS_LEADING_TIMESTAMP_REGEX, basename(path), perl=TRUE)) {
             dir.create(newdir, recursive=TRUE) ## ensure parent dirs exist
-            file.rename(path, file.path(newdir, basename(path)))
+            moveFiles(path, newdir)
             return (TRUE)
         }
         recvdir = paste0(recvdir, MOTUS_QUEUE_SEP, basename(path))
@@ -47,7 +47,7 @@ archivePath = function(path, newdir) {
         file.rename(path, recvdir)
     } else {
         dir.create(dirname(recvdir), recursive=TRUE) ## create new dir
-        file.rename(path, file.path(recvdir, basename(path)))  ## move file(s)
+        moveFiles(path, recvdir)
     }
     TRUE
 }
