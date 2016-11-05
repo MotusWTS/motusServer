@@ -34,5 +34,9 @@ handleLogs = function(j) {
     newdir = file.path(MOTUS_PATH$RECVLOG, serno, format(file.mtime(j$path), "%Y-%m-%dT%H-%M-%S"))
     dir.create(newdir, recursive=TRUE, showWarnings=FALSE)
 
-    all(moveDirContents(j$path, newdir))
+    rv = all(moveDirContents(j$path, newdir))
+
+    jobLog(j, paste0("Saved SG log files to ", newdir))
+
+    return(rv)
 }
