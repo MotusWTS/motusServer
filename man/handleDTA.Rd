@@ -4,28 +4,23 @@
 \alias{handleDTA}
 \title{handle a folder of .DTA files}
 \usage{
-handleDTA(path, isdir, params)
+handleDTA(j)
 }
 \arguments{
-\item{path}{the full path to the file or directory.  It is only
-treated as a file of DTA files if it is a directory whose name
-begins with "dta_"}
-
-\item{isdir}{boolean; TRUE iff the path is a directory}
-
-\item{params}{not used}
+\item{j, }{the job.}
 }
 \value{
-TRUE iff the .DTA files were successfully handled.
+TRUE after queueing jobs
 }
 \description{
-Called by \code{\link{server}} for a file or folder added
-to the queue.
+Called by \code{\link{processServer}} for a file or folder added
+to the queue.  Merges files into receiver DBs, then queues
+a job to run the tag finder on each of these.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
 \seealso{
-\link{\code{server}}
+\link{\code{processServer}}
 }
 
