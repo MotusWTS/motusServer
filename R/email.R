@@ -35,8 +35,9 @@ email = function(to, subj, msg, ...) {
     f = bzfile(msgFile, "wb")
     writeLines(
         sprintf(
-            "From: %s\nTo: %s\nSubject: %s\nDate: %s",
+            "From: %s\nReply-To: %s\nTo: %s\nSubject: %s\nDate: %s",
             MOTUS_OUTGOING_EMAIL_ADDRESS,
+            MOTUS_ADMIN_EMAIL,
             to,
             subj,
             date
