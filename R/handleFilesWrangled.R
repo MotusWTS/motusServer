@@ -20,7 +20,7 @@ handleFilesWrangled = function(j) {
 
     ## if this email had valid authorization
     if (tj$valid) {
-        email(tj$replyTo[1], "motus: data transfer email received",
+        email(tj$replyTo[1], paste0("motus job ", tj, ": data transfer email received"),
               paste0("Thank-you for the data transfer.  We have tried to download your
 transferred files, shared links, and/or attachments.  Results:
 
