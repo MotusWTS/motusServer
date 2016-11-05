@@ -35,12 +35,7 @@ Status of the queue can be seen here:
 if you are logged-in with your sensorgnome.org credentials.
 
 When your job is complete, we'll send another email to let you know where
-to find the results.
-
-Please don't reply to this email.
-If you have any questions, contact mailto:",
-
-MOTUS_ADMIN_EMAIL
+to find the results."
 ))
     }
 
