@@ -37,6 +37,13 @@ handleNewFiles = function(j) {
 
     all = dir(list.dirs(j$path, recursive=FALSE), recursive=TRUE, full.names=TRUE)
 
+    ## delete junk files
+    junk = grep(MOTUS_JUNKFILE_REGEX, all, perl=TRUE)
+    if (length(junk)) {
+        file.remove(all[junk])
+        all = all[ - junk]
+    }
+
     ## look for .DTAs
 
     dta = grep("(?i)\\.DTA$", all, perl=TRUE)

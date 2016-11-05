@@ -173,3 +173,9 @@ MOTUS_ADMIN_USERNAME = "john"
 
 ## the database used to record server activity
 MOTUS_SERVER_DB = "/sgm/server.sqlite"
+
+## regex for files we want to delete.
+## Just about every OS these days writes indexing info to
+## flash drives, and we often get these files in a transfer.
+
+MOTUS_JUNKFILE_REGEX = "(__MACOSX/|System Volume Information/|._.DS_Store)"
