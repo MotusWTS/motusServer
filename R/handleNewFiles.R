@@ -41,7 +41,9 @@ handleNewFiles = function(j) {
     junk = grep(MOTUS_JUNKFILE_REGEX, all, perl=TRUE)
     if (length(junk)) {
         file.remove(all[junk])
+        eg = all[junk[1]]
         all = all[ - junk]
+        jobLog(j, paste0("Deleted ", length(junk), " junk files with names like\n   ", eg))
     }
 
     ## look for .DTAs
