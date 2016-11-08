@@ -189,7 +189,17 @@ cleanTagRegistrations = function(m, s, cleanBI = FALSE) {
             clean$tsStart > clean$tsEnd)
 
     if (length(insane) > 0) {
-        stop("One or more tag deployments have tsEnd < tsStart; these tags are involved:\n ", paste(clean$tagID[insane], collapse=", "))
+        warning("One or more tag deployments have tsEnd < tsStart; these tags are involved:\n ",
+             paste(clean$tagID[insane], collapse=", "),
+             "\nFor these tags, these corrections are applied:\n
+ - if the start and end times are on the same day, tsEnd will be\n
+   set to tsStart + 24 hours\n
+ - otherwise, tsEnd will be calculated based on tag lifespan, as if it had not been provided\n")
+        sameDay = trunc(clean$tsStart[insane], "day") == trunc(clean$tsEnd[insane], "day")
+        if (any(sameDay))
+            clean$tsEnd[insane[sameDay]] = clean$tsStart[insane[sameDay]] + 24*3600
+        if (!all(sameDay))
+            clean$tsEnd[insane[! sameDay]] = NA
     }
 
     ##-------------------- tsStart --------------------
