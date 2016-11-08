@@ -89,7 +89,7 @@ processServer = function(N, tracing=FALSE) {
 
         ## If job handler hasn't already marked a status code in the "$done"
         ## field, do so now.
-        if (j$done == 0) {
+        if (j$done == 0 && ! is.na(handled)) {
             if (isTRUE(handled)) {
                 j$done = 1
             } else {
