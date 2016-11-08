@@ -46,9 +46,12 @@ MOTUS_UPLOAD_TOKEN_REGEX = paste0(MOTUS_UPLOAD_TOKEN_PREFIX, "(?<token>[A-Za-z0-
 
 MOTUS_LOG_TIME_FORMAT = "%Y-%m-%dT%H-%M-%OS6"
 
-## format of date/time in queue entires (file or folder names)
+## format of date/time in queue entries (file or folder names)
 
 MOTUS_TIMESTAMP_FORMAT = "%Y-%m-%dT%H-%M-%OS6"
+
+## format of date/time in SG filenames
+MOTUS_SG_TIMESTAMP_FORMAT = "%Y-%m-%dT%H-%M-%OS4"
 
 ## regex to match a leading timestamp
 MOTUS_LEADING_TIMESTAMP_REGEX = "^(?<timestamp>[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}\\.[0-9]{6})"
