@@ -8,8 +8,8 @@ loadJobs(which)
 }
 \arguments{
 \item{which}{character scalar or integer scalar.  If character, only
-load jobs whose head job is of this type.  If integer, only
-load jobs from that queue.}
+load jobs whose top job is of this type.  If integer, only
+load jobs whose top job is in that queue.}
 }
 \value{
 no return value.  Jobs are enqueued in the global \code{MOTUS_QUEUE}.
