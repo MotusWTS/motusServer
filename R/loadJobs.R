@@ -50,10 +50,10 @@ loadJobs = function(which) {
 
     if (is.character(which)) {
         j = query(Jobs,
-                  paste0("select t1.id from jobs as t1 left join jobs as t2 on t1.stump=t2.id where (t1.path is not null and t1.oldpath is not null) and (t1.done == 0) and ((t2.id is NULL and t1.type=='", which,"') or t2.type=='", which, "') order by t1.id"))[[1]]
+                  paste0("select t1.id from jobs as t1 left join jobs as t2 on t1.stump=t2.id where (t1.path is not null and t1.oldpath is not null) and (t1.done = 0) and ((t2.id is NULL and t1.type = '", which,"') or t2.type ='", which, "') order by t1.id"))[[1]]
     } else if (is.numeric(which)) {
         j = query(Jobs,
-                  paste0("select t1.id from jobs as t1 left join jobs as t2 on t1.stump=t2.id where t1.done == 0w and t2.queue= order by t1.id", round(which)))[[1]]
+                  paste0("select t1.id from jobs as t1 left join jobs as t2 on t1.stump=t2.id where t1.done = 0 and t2.queue=",  round(which), " order by t1.id"))[[1]]
     }
     ## correct paths in case server was interrupted after recording new path but before moving job,
     ## and enqueue jobs
