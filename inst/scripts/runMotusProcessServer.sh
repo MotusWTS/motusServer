@@ -114,7 +114,7 @@ echo $$ > /sgm/processServer$N.pid
 
 if [[ $TRACE == 0 ]]; then
     while (( 1 )); do
-        nohup Rscript -e "library(motus);processServer($N, tracing=FALSE)"
+        nohup Rscript -e "library(motus);processServer($N, tracing=FALSE)" >> /sgm/logs/process$N.txt 2>&1
         echo running server for queue $N
         ## Kill off the inotifywait process; it's in our process group.
         ## This should happen internally, but might not.
