@@ -40,7 +40,7 @@ handleSGfindtags = function(j) {
 
     rv = sgFindTags(sgRecvSrc(serno), getMotusMetaDB(), resume=j$canResume, mbn=j$monoBN)
 
-    jobLog(j, sprintf("Ran TagFinder on %s, boot session %d%s; %d detections", serno, j$monoBN, if (j$canResume) " (resumed)" else "", rv[2]))
+    jobLog(j, sprintf("Ran TagFinder on %s, boot session %d%s; %d detections", serno, j$monoBN, if (j$canResume) " (resumed)" else "", rv$numHits))
 
     return(TRUE)
 }
