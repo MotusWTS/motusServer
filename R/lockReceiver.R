@@ -20,16 +20,16 @@ lockReceiver = function(serno, lock=TRUE) {
 
     if (lock) {
         ## try to lock this serial number to our process number
-        MOTUS_SERVER_DB(sprintf("INSERT INTO %s VALUES(:serno, :N)", MOTUS_RECEIVER_LOCK_TABLE),
+        MOTUS_SERVER_DB_SQL(sprintf("INSERT INTO %s VALUES(:serno, :N)", MOTUS_RECEIVER_LOCK_TABLE),
                         serno = serno,
                         N = MOTUS_PROCESS_NUM)
 
         ## return logical indicating whether locking succeeded
 
-        return (isTRUE(MOTUS_PROCESS_NUM == MOTUS_SERVER_DB(sprintf("SELECT procNum from %s where serno=:serno", MOTUS_RECEIVER_LOCK_TABLE),
+        return (isTRUE(MOTUS_PROCESS_NUM == MOTUS_SERVER_DB_SQL(sprintf("SELECT procNum from %s where serno=:serno", MOTUS_RECEIVER_LOCK_TABLE),
                                                             serno = serno)[[1]]))
     }
-    MOTUS_SERVER_DB(sprintf("DELETE FROM %s where serno=:serno and procNum = :N", MOTUS_RECEIVER_LOCK_TABLE),
+    MOTUS_SERVER_DB_SQL(sprintf("DELETE FROM %s where serno=:serno and procNum = :N", MOTUS_RECEIVER_LOCK_TABLE),
                     serno = serno,
                     N = MOTUS_PROCESS_NUM)
     return (TRUE)

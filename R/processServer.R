@@ -32,7 +32,7 @@ processServer = function(N, tracing=FALSE) {
 
     ensureServerDirs()
 
-    MOTUS_SERVER_DB <<- ensureServerDB()
+    MOTUS_SERVER_DB_SQL <<- ensureServerDB()
 
     motusLog("ProcessServer started for queue %d", N)
 
