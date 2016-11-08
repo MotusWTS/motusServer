@@ -28,6 +28,8 @@ processServer = function(N, tracing=FALSE) {
     if(tracing)
         options(error=recover)
 
+    MOTUS_PROCESS_NUM <<- N
+
     ensureServerDirs()
 
     MOTUS_SERVER_DB <<- ensureServerDB()

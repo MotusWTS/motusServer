@@ -114,11 +114,15 @@ echo $$ > /sgm/processServer$N.pid
 
 if [[ $TRACE == 0 ]]; then
     while (( 1 )); do
-  ##      nohup Rscript -e "library(motus);processServer($N, tracing=FALSE)"
+        nohup Rscript -e "library(motus);processServer($N, tracing=FALSE)"
         echo running server for queue $N
         ## Kill off the inotifywait process; it's in our process group.
         ## This should happen internally, but might not.
         pkill -g $$ inotifywait
+
+        ## delete receiver locks held by this process
+        sqlite3 /sgm/server.sqlite "pragma busy_timeout=10000; delete from recvLocks where procNum=$N"
+
         sleep 15
     done
 else
@@ -128,4 +132,7 @@ else
     R
     echo running tracing server for queue $N
     pkill -g $$ inotifywait
+
+    ## delete receiver locks held by this process
+    sqlite3 /sgm/server.sqlite "pragma busy_timeout=10000; delete from recvLocks where procNum=$N"
 fi

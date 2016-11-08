@@ -177,6 +177,9 @@ MOTUS_ADMIN_USERNAME = "john"
 ## the database used to record server activity
 MOTUS_SERVER_DB = "/sgm/server.sqlite"
 
+## the table used to record locks on receivers
+MOTUS_RECEIVER_LOCK_TABLE = "recvLocks"
+
 ## regex for files we want to delete.
 ## Just about every OS these days writes indexing info to
 ## flash drives, and we often get these files in a transfer.
