@@ -119,7 +119,26 @@ sgMergeFiles = function(files, dbdir = MOTUS_PATH$RECV) {
     for (recv in recvs) {
         if (is.na(recv))
             next
+
+        ## try to lock the receiver, waiting 10 seconds each time we fail
+        lockSerno = paste0("SG-", recv)
+
+        while(! lockReceiver(lockSerno)) {
+            ## FIXME: we should probably return NA immediately, and have processServer re-queue the job at the end of the queue
+            Sys.sleep(10)
+        }
+
+        ## make sure we unlock the receiver DB when this function exits, even on error
+        ## NB: the runMotusProcessServer script also drops any locks held by a given
+        ## processServer after the latter exits.
+
+        on.exit(lockReceiver(lockSerno, FALSE))
+
+        ## get the row indexes of files from this receiver among the full set of files
+
         ri = allf %>% filter_(~Fserno==recv) %>% select_("ID") %>% `[[` (1)
+
+        ## subset the files from this receiver
         newf = allf %>% filter_(~Fserno==recv)
 
         ## dplyr::src for receiver database
@@ -269,6 +288,7 @@ sgMergeFiles = function(files, dbdir = MOTUS_PATH$RECV) {
 
             resumable = c(resumable, structure(is.na(compare$maxOldTS) | compare$minNewTS >= compare$maxOldTS, names = paste(compare$recv, compare$Fbootnum)))
         }
+        lockReceiver(lockSerno, FALSE)
     }
     return (list(
         info = structure(allf %>%
