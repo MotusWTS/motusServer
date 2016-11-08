@@ -30,7 +30,7 @@ handleDTA = function(j) {
             jobLog(paste0("Receiver ", f$serno[1], ":  the .DTA files have no new data, so the tagfinder will not be run"))
             return(0)
         }
-        queueJob(newSubJob(j, "findtagsLt", serno=f$serno[1], tsStart=min(f$ts[f$dataNew])))
+        newSubJob(j, "findtagsLt", serno=f$serno[1], tsStart=min(f$ts[f$dataNew]))
     }
 
     info %>% do (ignore = runReceiver(.))

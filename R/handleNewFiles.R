@@ -52,7 +52,6 @@ handleNewFiles = function(j) {
     if (length(dta)) {
         sj = newSubJob(j, "DTA", .makeFolder=TRUE)
         moveFilesUniquely(all[dta], sj$path)
-        queueJob(sj)
         all = all[ - dta]
     }
 
@@ -63,7 +62,6 @@ handleNewFiles = function(j) {
         for (d in unique(dirname(all[syslog]))) {
             sj = newSubJob(j, "logs", .makeFolder=TRUE)
             moveDirContents(d, j$path)
-            queueJob(sj)
         }
         all = all[ - syslog ]
     }
@@ -76,13 +74,12 @@ handleNewFiles = function(j) {
     if (length(unknown)) {
         sj = newSubJob(j, "unknownFiles", .makeFolder=TRUE)
         moveDirContents(all[unknown], sj$path)
-        queueJob(sj)
         all = all[ - unknown ]
     }
 
     ## treat all remaining files as sensorgnome data files
     if (length(all))
-        queueJob(newSubJob(j, "SGfiles"))
+        newSubJob(j, "SGfiles")
 
     return(TRUE)
 }

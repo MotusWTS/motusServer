@@ -48,11 +48,11 @@ handleSGfiles = function(j) {
         if (! any(f$use))
             return(0)
 
-        queueJob(newSubJob(j, "SGfindtags",
-                           recv = f$serno[1],
-                           monoBN = f$monoBN[1],
-                           canResume = isTRUE(r$resumable[paste(f$serno[1], f$monoBN[1])])
-                           ))
+        newSubJob(j, "SGfindtags",
+                  recv = f$serno[1],
+                  monoBN = f$monoBN[1],
+                  canResume = isTRUE(r$resumable[paste(f$serno[1], f$monoBN[1])])
+                  )
     }
 
     ## queue runs of all receiver boot sessions with new data

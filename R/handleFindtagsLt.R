@@ -24,7 +24,7 @@ handleFindtagsLt = function(j) {
     rv = ltFindTags(sgRecvSrc(j$serno), getMotusMetaDB())
     jobLog(paste0("Got ", rv, " tag detections."))
 
-    queueJob(newSubJob(topJob(j), "exportData", serno=j$serno, tsStart=j$tsStart))
+    newSubJob(topJob(j), "exportData", serno=j$serno, tsStart=j$tsStart)
 
     return(TRUE)
 }
