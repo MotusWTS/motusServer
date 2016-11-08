@@ -2,8 +2,7 @@
 % Please edit documentation in R/fixDOSfilenames.R
 \name{fixDOSfilenames}
 \alias{fixDOSfilenames}
-\title{Correct DOS-style 8.3 filenames into their original long filenames.
-Any files needing renaming are renamed on disk.}
+\title{Correct DOS-style 8.3 filenames into (almost) their original full filenames.}
 \usage{
 fixDOSfilenames(f, info)
 }
@@ -14,41 +13,50 @@ fixDOSfilenames(f, info)
 named capture groups in \link{\code{sgFilenameRegex}}}
 }
 \value{
-info
+info, with corrections to those rows representing DOS-style
+    filenames whose receiver can be deduced.
 }
 \description{
-Some users move SG data files along a route that fails to preserve
-their long filenames, forcing them into a DOS-style 8.3 filename.
-Typically, this only happens to a few files per batch, for some reason.
-Perhaps they are storing raw files in the top level folder of a VFAT
-filesystem, which limits the total length of filenames in a folder.
+Any files needing renaming are renamed on disk. The corrected
+filename will have the receiver serial number, the first timestamp
+from the file, and a boot number of 0.  This flags the requirement
+to correct the boot number after other files have been merged into
+their receiver databases.
 }
 \details{
+Some users move SG data files along a route that fails to
+    preserve their long filenames, forcing them into a DOS-style
+    8.3 filename.  Typically, this only happens to a few files per
+    batch, for some reason.  Perhaps they are storing raw files in
+    the top level folder of a VFAT filesystem, which limits the
+    total length of filenames in a folder.
+
 In any case, these can be recognized by a tilde \code{~} in the
 filename, and the first two letters of the shortened name will
 match (case insensitively) the first two letters of the original
-name.
+full name.
 }
 \note{
-Corrections are performed as so:
+this function should be made trivial in the future by writing
+    the bootnum and serial number at the start of each file.
+
+Corrections require inferring the serial number and boot
+    count for any 8.3 filename, and then using the timestamp from
+    the first record in the file as the file timestamp.
 
 \itemize{
+\item for each 8.3 filename, we use as context the file's folder
 
-\item if there are files with unaltered long names from exactly one
-sensorgnome in \code{f}, then the shortened files are assumed to
-have come from that receiver, and their names are corrected
-post-hoc using content timestamps.
+\item if the first two characters of the
+shortened name match (case insensitively) the
+first two characters of any file with unshortened name in the context.
+If so, and if the matching full-named files all have the same serial
+number, correct appropriately.
 
-\item otherwise, take the the first two characters of each
-shortened name and see whether they match (case insensitively) the
-first two characters of unshortened names of a single receiver.
-Any shortened names for which that is true are corrected.
-
-\item otherwise, for any remaining shortened filenames, we can't
-tell which receiver(s) the misnamed files belong to, so they are
-saved in a subfolder of "/sgm/manual" with a "README.TXT" giving
-details.  FIXME: get first and last timestamps in shortened files
-and compare to timestamps parsed from full names.
+\item otherwise, we can't tell what receiver the file belongs to,
+and we leave its receiver column as NA. FIXME: get first and last
+timestamps in shortened files and compare to timestamps parsed from
+full names.
 
 }
 }
