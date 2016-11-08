@@ -18,7 +18,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-handleFindtagsLt = function(j) {
+handleLtFindtags = function(j) {
 
     jobLog(paste0("Running tag finder on receiver ", j$serno))
     rv = ltFindTags(sgRecvSrc(j$serno), getMotusMetaDB())
