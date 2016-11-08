@@ -29,6 +29,9 @@ processServer = function(N, tracing=FALSE) {
         options(error=recover)
 
     ensureServerDirs()
+
+    MOTUS_SERVER_DB <<- ensureServerDB()
+
     motusLog("ProcessServer started for queue %d", N)
 
     MOTUS_QUEUE <<- loadJobs(N)
