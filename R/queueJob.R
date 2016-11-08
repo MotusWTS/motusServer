@@ -112,7 +112,7 @@
 
 queueJob = function(j) {
     if (j %in% MOTUS_QUEUE || j$done != 0)
-        return()
+        return(j)
 
     ## build up the path for j by prepending parents
     path = c()
