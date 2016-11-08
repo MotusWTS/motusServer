@@ -18,7 +18,7 @@ a dataframe of components, with one row per filename and these columns:
 
 \enumerate{
  \item "prefix":  human readable short site name
- \item "serno":  receiver serial number; 12 alphanumeric characters e.g. 1315BBBK2156, or possibly with an appended "_N" where N is 1, 2, ...
+ \item "serno":  receiver serial number; "SG-" followed by 12 alphanumeric characters e.g. 1315BBBK2156, or possibly with an appended "_N" where N is 1, 2, ...
  for disentangling serial number collisions.
  \item "bootnum":  boot count (integer)
  \item "ts":  timestamp embedded in name (double, with class \code{c("POSIXt", "POSIXct")} )

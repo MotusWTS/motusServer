@@ -126,9 +126,8 @@ sgMergeFiles = function(files, dbdir = MOTUS_PATH$RECV) {
             next
 
         ## try to lock the receiver, waiting 10 seconds each time we fail
-        lockSerno = paste0("SG-", recv)
 
-        while(! lockReceiver(lockSerno)) {
+        while(! lockReceiver(recv)) {
             ## FIXME: we should probably return NA immediately, and have processServer re-queue the job at the end of the queue
             Sys.sleep(10)
         }
@@ -137,7 +136,7 @@ sgMergeFiles = function(files, dbdir = MOTUS_PATH$RECV) {
         ## NB: the runMotusProcessServer script also drops any locks held by a given
         ## processServer after the latter exits.
 
-        on.exit(lockReceiver(lockSerno, FALSE))
+        on.exit(lockReceiver(recv, FALSE))
 
         ## get the row indexes of files from this receiver among the full set of files
 
@@ -148,7 +147,7 @@ sgMergeFiles = function(files, dbdir = MOTUS_PATH$RECV) {
 
         ## dplyr::src for receiver database
 
-        src = sgRecvSrc(paste0("SG-", recv), dbdir)
+        src = sgRecvSrc(recv, dbdir)
 
         ## sqlite connection
 
@@ -202,7 +201,7 @@ sgMergeFiles = function(files, dbdir = MOTUS_PATH$RECV) {
 
         meta = getMap(src, "meta")
 
-        meta$recvSerno = paste0("SG-", recv)
+        meta$recvSerno = recv
         meta$recvType = "SG"
         meta$recvModel = if (grepl("BBBK", newf$Fserno[1])) "BBBK" else if (grepl("RPi2", newf$Fserno[1])) "RPi2" else "BBW"
 
@@ -293,7 +292,7 @@ sgMergeFiles = function(files, dbdir = MOTUS_PATH$RECV) {
 
             resumable = c(resumable, structure(is.na(compare$maxOldTS) | compare$minNewTS >= compare$maxOldTS, names = paste(compare$recv, compare$Fbootnum)))
         }
-        lockReceiver(lockSerno, FALSE)
+        lockReceiver(recv, FALSE)
     }
     return (list(
         info = structure(allf %>%
@@ -305,7 +304,7 @@ sgMergeFiles = function(files, dbdir = MOTUS_PATH$RECV) {
                              corrupt = corrupt,
                              small = small,
                              partial = partial,
-                             serno = recv,
+                             serno = Fserno,
                              monoBN = Fbootnum,
                              ts = Fts
                          ), nbadfiles=nbadfiles),

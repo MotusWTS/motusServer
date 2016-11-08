@@ -10,7 +10,7 @@
 #'
 #' \enumerate{
 #'  \item "prefix":  human readable short site name
-#'  \item "serno":  receiver serial number; 12 alphanumeric characters e.g. 1315BBBK2156, or possibly with an appended "_N" where N is 1, 2, ...
+#'  \item "serno":  receiver serial number; "SG-" followed by 12 alphanumeric characters e.g. 1315BBBK2156, or possibly with an appended "_N" where N is 1, 2, ...
 #'  for disentangling serial number collisions.
 #'  \item "bootnum":  boot count (integer)
 #'  \item "ts":  timestamp embedded in name (double, with class \code{c("POSIXt", "POSIXct")} )
@@ -34,6 +34,10 @@ parseFilenames = function(f, base=basename(f)) {
     if (is.null(rv))
         return(rv)
 
+    ## add the "SG-" prefix; everywhere else in this package, serial numbers of SGs start with "SG-".
+
+    rv$serno = paste0("SG-", rv$serno)
+
     ## check and correct 8.3 DOS filenames, which are shortened SG filenames
 
     rv = fixDOSfilenames(f, rv)
@@ -42,9 +46,9 @@ parseFilenames = function(f, base=basename(f)) {
 
     ## fix only known (as of Sept. 2016) serial number collision
 
-    fix = which(rv$serno == "1614BBBK1911" & rv$prefix != "Lepreau")
+    fix = which(rv$serno == "SG-1614BBBK1911" & rv$prefix != "Lepreau")
     if (length(fix) > 0) {
-        rv$serno[fix] = "1614BBBK1911_1"
+        rv$serno[fix] = "SG-1614BBBK1911_1"
         file.rename(f[fix], sub("1614BBBK1911", "1614BBBK1911_1", f[fix], fixed=TRUE))
     }
     return(rv)
