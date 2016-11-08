@@ -4,36 +4,43 @@
 #' to the queue.
 #'
 #' @details For each unique SG serial number found among the names of
-#'     the incoming files, a temporary folder is created, and
-#'     corresponding files are moved there.  That folder is then enqueued
-#'     with a name beggining with "sgsingle_" (see \link{\code{server}})
+#'     the incoming files, queue a subjob for each boot session having
+#'     data files.
 #'
-#' @param path the full path to the file or directory.  It is only
-#'     treated as a file of sensorgnome files if it is a directory
-#'     whose name ends with "_sg_PATH".
+#' @param j the job
 #'
-#' @param isdir boolean; TRUE iff the path is a directory
+#' @return TRUE
 #'
-#' @param params not used
-#'
-#' @return TRUE iff the sensornome files were successfully handled.
-#'
-#' @seealso \link{\code{server}}
+#' @seealso \link{\code{processServer}}
 #'
 #' @export
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-handleSG = function(path, isdir, params) {
-    if (! isdir)
-        return (FALSE)
+handleSGfiles = function(j) {
 
-    handled = TRUE
-
-    r = sgMergeFiles(path)
+    r = sgMergeFiles(j$path)
     info = r$info
 
-    ## function to queue a run of files the new way
+    ## TODO: (perhaps) if there were any files for which we were able to
+    ## determine serial number but not boot session, fix those if possible
+
+    ## log any uncorrected 8.3 names
+    bad = which(is.na(info$serno))
+
+    if (length(bad)) {
+        jobLog(j, paste0("Ignoring files for which I can't determine the receiver:\n",
+                         paste("   ", basename(info$name[bad]), "\n", collapse="")))
+    }
+
+    bad = which(info$monoBN == 0)
+
+    if (length(bad)) {
+        jobLog(j, paste0("Ignoring files for which I can't determine the boot session:\n",
+                         paste("   ", basename(info$name[bad]), "\n", collapse="")))
+    }
+
+    ## function to queue a run of a receiver boot session
 
     queueNewSession = function(f) {
         ## nothing to do if no files to use
@@ -41,12 +48,11 @@ handleSG = function(path, isdir, params) {
         if (! any(f$use))
             return(0)
 
-        bn = f$monoBN[1]
-        recv = f$serno[1]
-
-        canResume = isTRUE(r$resumable[paste(recv, bn)])
-
-        enqueueCommand("sgnew", recv, bn, canResume)
+        queueJob(newSubJob(j, "SGfindtags",
+                           recv = f$serno[1],
+                           monoBN = f$monoBN[1],
+                           canResume = isTRUE(r$resumable[paste(recv, bn)])
+                           ))
     }
 
     ## queue runs of all receiver boot sessions with new data
@@ -56,24 +62,5 @@ handleSG = function(path, isdir, params) {
         group_by(serno, monoBN) %>%
         do (ignore=queueNewSession(.))
 
-    info = cbind(info, getYearProjSite(paste0("SG-", info$serno), info$ts))
-
-    ## deal with any files where we were unable to get the project or site
-    unknown = with(info, is.na(proj) | is.na(site))
-    embroilHuman(info$name[unknown], "Unable to determine the project and/or site for these files")
-
-    info = subset(info, ! unknown)
-    ## queue a reprocessing of each old site with the new files
-
-    ## function to handle files from one old site
-    queueOldSite = function(files) {
-        ## move files for this receiver to a new temp folder
-        tmpdir = makeQueuePath("sgold", gsub('/', '%', fixed=TRUE, oldSitePath(files$year[1], files$proj[1], files$site[1])))
-        moveFiles(files$name, tmpdir)
-        enqueue(tmpdir)
-    }
-
-    info %>% group_by(year, proj, site) %>% do(ignore = queueOldSite(.))
-
-    return(handled)
+    return(TRUE)
 }
