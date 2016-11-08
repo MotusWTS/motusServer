@@ -6,41 +6,41 @@
 #' The files for that boot session have already been merged into
 #' the DB for that receiver.
 #'
-#' @param path ignored
-#'
-#' @param isdir boolean; TRUE iff the path is a directory; must be FALSE
-#'
-#' @param params character vector of parameters:
+#' @param j the job, with these properties:
 #' \itemize{
 #' \item serno serial number of receiver (including leading 'SG-')
-#' \item monoBN monotonic boot session number; if missing, run all boot sessions
-#' for this receiver.
+#' \item monoBN monotonic boot session number
 #' \item boolean TRUE or FALSE; can the tag finder be run with \code{--resume}?
-#' If monoBN is omitted, this parameter must also be.
 #' }
 #'
 #' @return TRUE
-#' 
+#'
 #' @seealso \code{\link{server}}
 #'
 #' @export
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-handleSGnew = function(path, isdir, params) {
-    if (isdir || ! (length(params) %in% c(1, 3))) return (FALSE)
+handleSGfindtags = function(j) {
 
-    serno = params[1]
-    ## FIXME: at some point, all sernos in this package should include the 'SG-' prefix
+    serno = j$serno
 
-    if (substr(serno, 1, 3) != "SG-")
-        serno = paste0("SG-", serno)
-    if (length(params) == 3) {
-        monoBN = as.integer(params[2])
-        canResume = as.logical(params[3])
-        sgFindTags(sgRecvSrc(serno), getMotusMetaDB(), resume=canResume, mbn=monoBN)
-    } else {
-        sgFindTags(sgRecvSrc(serno), getMotusMetaDB())
+    ## lock this receiver's DB.  If we can't, then sleep for 10 seconds and try again.
+
+    while(! lockReceiver(serno)) {
+        ## FIXME: we should probably return NA immediately, and have processServer re-queue the job at the end of the queue
+        Sys.sleep(10)
     }
+
+    ## make sure we unlock the receiver DB when this function exits, even on error
+    ## NB: the runMotusProcessServer script also drops any locks held by a given
+    ## processServer after the latter exits.
+
+    on.exit(lockReceiver(serno, FALSE))
+
+    rv = sgFindTags(sgRecvSrc(serno), getMotusMetaDB(), resume=j$canResume, mbn=j$monoBN)
+
+    jobLog(j, sprintf("Ran TagFinder on %s, boot session %d%s; %d detections", serno, j$monoBN, if (j$canResume) " (resumed)" else "", rv[2]))
+
     return(TRUE)
 }
