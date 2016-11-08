@@ -43,6 +43,8 @@ loadJobs = function(which) {
     if (missing(which) || length(which) != 1 || ! (is.numeric(which) || is.character(which)))
         stop("Must specify 'which' as an integer queue number or character scalar job type")
 
+    MOTUS_QUEUE <<- NULL
+
     ## connect the global Jobs object to the MOTUS_SERVER_DB's jobs table
     Jobs <<- Copse(MOTUS_SERVER_DB, "jobs", type=character(), done=integer(), queue=integer(), path=character(), oldpath=character())
 

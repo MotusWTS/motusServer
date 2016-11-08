@@ -36,7 +36,7 @@ processServer = function(N, tracing=FALSE) {
 
     motusLog("ProcessServer started for queue %d", N)
 
-    MOTUS_QUEUE <<- loadJobs(N)
+    loadJobs(N)
 
     ## get a feed of email messages
 

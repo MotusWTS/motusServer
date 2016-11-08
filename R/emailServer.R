@@ -46,7 +46,7 @@ emailServer = function(tracing = FALSE) {
     ## This sorting occurs when new jobs are enqueued.  Removing
     ## a job preserves order and requires no additional care.
 
-    MOTUS_QUEUE <<- loadJobs("email")
+    loadJobs("email")
 
     ## get a feed of email messages
 
