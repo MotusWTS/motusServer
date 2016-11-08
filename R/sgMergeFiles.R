@@ -49,11 +49,16 @@ sgMergeFiles = function(files, dbdir = MOTUS_PATH$RECV) {
         ff = sort(files)
     }
 
+    ## remove entry corresponding to the compressed email message, if any
+    ff = ff[grep(MOTUS_COMPRESSED_EMAIL_REGEX, basename(ff), perl=TRUE, invert=TRUE)]
+
+    if (length(ff) == 0)
+        return(NULL)
+
     ## clean up the basename, in case there are wonky characters; we
     ## don't do this to "fullname", to maintain our ability to refer
     ## to the files from the filesystem.
-    if (length(ff) == 0)
-        return(NULL)
+
     allf = data_frame(
         ID       = 1:length(ff),
         fullname = ff,
