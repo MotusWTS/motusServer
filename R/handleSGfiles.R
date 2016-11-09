@@ -31,6 +31,7 @@ handleSGfiles = function(j) {
     if (length(bad)) {
         jobLog(j, paste0("Ignoring files for which I can't determine the receiver:\n",
                          paste("   ", basename(info$name[bad]), "\n", collapse="")))
+        info = info[- bad, ]
     }
 
     bad = which(info$monoBN == 0)
@@ -38,6 +39,7 @@ handleSGfiles = function(j) {
     if (length(bad)) {
         jobLog(j, paste0("Ignoring files for which I can't determine the boot session:\n",
                          paste("   ", basename(info$name[bad]), "\n", collapse="")))
+        info = info[- bad, ]
     }
 
     ## function to queue a run of a receiver boot session
