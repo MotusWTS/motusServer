@@ -39,7 +39,11 @@ handleDownload = function(j) {
 
     getter = get0(paste0("download", toupper(substring(method, 1, 1)), substring(method, 2)), mode="function")
     if (is.null(getter)) {
-        jobLog(j, paste0("Download not tried:  unknown method '", method, "' for ", sanURL))
+        jobLog(j, paste0("Download not tried:  unknown method '", method, "' for \n   ", sanURL,
+                         "\n  This is probably an unsupported form of Dropbox link; please re-send by
+following the instructions here:\n
+   https://sensorgnome.org/index.php?title=Sending_Data_for_Automatic_Processing/Sending_Data_for_Automatic_Processing_from_Dropbox&bc=1
+"))
         return (FALSE)
     }
     jobLog(j, paste0("Downloading using method '", method, "' for:\n   ", sanURL))

@@ -39,6 +39,14 @@ dataTransferRegex =
 |
 (?:(?<dropbox>https://www\\.dropbox\\.com/sh?/[^[:space:]]++))
 
+# or
+#
+# A link from dropbox that we can't currently support
+# e.g. https://www.dropbox.com/l/scl/AAA4OKJMBDMtf2NSC7yWd1R76invc_-Ylo8
+
+|
+(?:(?<dropboxUnsupported>https://www\\.dropbox\\.com/l/scl/[^[:space:]]++))
+
 #or
 #
 # An FTP URL:
