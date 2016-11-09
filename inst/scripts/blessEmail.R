@@ -43,5 +43,4 @@ x[subj] = paste(x[subj], tok$token)
 
 writeLines(x, MSG)
 
-toIncoming(MSG)
-
+toInbox(MSG)
