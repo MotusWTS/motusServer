@@ -298,11 +298,10 @@ setParent.Copse = function(C, t1, t2) {
                            paste(twigID, collapse=","),
                            ")"))[[1]]
 
-    if (length(existing) != sum(!is.na(twigID)))
-        stop("These IDs don't correspond to existing twigs: ",
-             paste(twigID[is.na(match(twigID[!is.na(twigID)], existing))], collapse=","))
-
-    return(structure(twigID, class="Twig", Copse=C))
+    if (length(existing) > 0)
+        return(structure(existing, class="Twig", Copse=C))
+    else
+        return(NULL)
 }
 
 #' find children of Twig which satisfy a query
