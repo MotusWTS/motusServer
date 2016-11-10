@@ -13,5 +13,5 @@ jobLog = function(j, msg) {
         stop("jobLog: j must have class 'Twig'")
     C = copse(j)
     C$sql(paste0("update ", C$table, " set data=json_set(data, '$.log', ifnull(json_extract(data, '$.log'), '') || :msg) where id=", stump(j)),
-          msg = paste(msg, "\n", collapse=""))
+          msg = paste(msg, "\n", collapse="", sep=""))
 }
