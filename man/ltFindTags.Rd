@@ -4,8 +4,7 @@
 \alias{ltFindTags}
 \title{find tags in a Lotek receiver dataset}
 \usage{
-ltFindTags(src, tagDB, par = ltDefaultFindTagsParams, toFile = NULL,
-  keepOld = 0)
+ltFindTags(src, tagDB, par = ltDefaultFindTagsParams)
 }
 \arguments{
 \item{src}{dplyr src_sqlite to (lotek) receiver database}
@@ -14,14 +13,6 @@ ltFindTags(src, tagDB, par = ltDefaultFindTagsParams, toFile = NULL,
 
 \item{par}{list of parameters to the filtertags code.  Defaults
 to \link{\code{ltDefaultFindTagsParams}}}
-
-\item{toFile}{if not NULL (the default), write lotek output lines
-to the this file, rather than passing them to the tag finder.
-No tag finding is performed in this case.}
-
-\item{keepOld}{the maximum number of batches of output from previous
-runs to keep in the database.  Oldest are deleted first.
-If < 0, do note delete any previous runs.}
 }
 \value{
 the number of tag detections in the stream.
