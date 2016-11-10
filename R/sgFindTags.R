@@ -46,20 +46,10 @@ sgFindTags = function(src, tagDB, resume=TRUE, par = sgDefaultFindTagsParams, mb
     else
         pars = paste(par, collapse=" ")
 
-    saveTZ = Sys.getenv("TZ")
-    Sys.setenv(TZ="GMT")
-    tStart = as.numeric(Sys.time())
-    Sys.setenv(TZ=saveTZ)
-
     sql = function(...) dbGetQuery(src$con, sprintf(...))
 
     if (is.null(mbn))
         mbn = sql("select distinct monoBN from files order by monoBN") [[1]]
-
-    ## enable write-ahead-log mode so we can be reading from files table
-    ## while tag finder writes to other tables
-
-##    dbGetQuery(src$con, "pragma journal_mode=wal")
 
     for (bn in sort(mbn)) {
 
@@ -79,9 +69,6 @@ sgFindTags = function(src, tagDB, resume=TRUE, par = sgDefaultFindTagsParams, mb
             motusLog("sgFindTags failed with %s", paste(as.character(e), collapse="   \n"))
         })
     }
-    ## revert to journal mode delete, so we keep everything in a single file
-
-##    dbGetQuery(src$con, "pragma journal_mode=delete")
 
     ## get ID and stats for new batch of tag detections
     rv = dbGetQuery(src$con, "select batchID, numHits from batches order by batchID desc limit 1")
