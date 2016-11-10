@@ -1,5 +1,15 @@
+-- This is the schema for the tables used to transfer output from the tagfinder to motus.
+--
+-- NOTE: individual SQL statements in this file are delimited by ';----', so that R code
+-- can submit each statement to dbGetQuery() individually (dbGetQuery doesn't support
+-- compound statements)
+
+-----------------------------------------------------------------------------------------
+
 -- A batch is the result of processing one set of raw data files from
--- a single receiver.
+-- a single receiver.  Batches are an artefact of how data is
+-- received, and distribution of files among batches should not affect
+-- the final output.
 
 CREATE DATABASE motus;
 USE motus;
@@ -18,7 +28,7 @@ CREATE TABLE IF NOT EXISTS batches (
     ts FLOAT(53) NOT NULL,                               -- timestamp this batch record added
     tsMotus FLOAT(53) NOT NULL DEFAULT -1                -- timestamp this record received by motus
 
-);----  the four dashes after the semicolon delimits individual SQL statements for R code
+);----
 
 -- GPS fixes are recorded separately from tag detections.
 
@@ -38,7 +48,7 @@ CREATE TABLE IF NOT EXISTS gps (
 -- end in another, later batch.  The separation of detections into
 -- batches does not affect the assignment of detections to runs.
 -- Two fields in "runs" can need updating when subsequent batches
--- are processed: batchIDend, and len; 
+-- are processed: batchIDend, and len;
 
 CREATE TABLE IF NOT EXISTS runs (
     runID BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT, -- identifier of run; unique for this receiver
@@ -51,9 +61,10 @@ CREATE TABLE IF NOT EXISTS runs (
     ant TINYINT NOT NULL,                             -- antenna number (USB Hub port # for SG; antenna port
                                                       -- # for Lotek)
     len BIGINT NOT NULL                               -- number of detections in run ( so far ); this number
-                                                      -- can increase 
+                                                      -- can increase
 );----
 
+CREATE INDEX runs_motusTagID ON runs(motusTagID);----
 
 -- Because runs can span multiple batches, we need a way to
 -- update some of their fields:
@@ -61,8 +72,8 @@ CREATE TABLE IF NOT EXISTS runs (
 --         will add its detections of to this field
 --    batchIDend: when a run has finally ended in a batch,
 --         this field will be updated with a non-null batchID
---         
--- Records in the runUpdates table refer to runs begun in 
+--
+-- Records in the runUpdates table refer to runs begun in
 -- previous batches, and indicate how to update their fields.
 
 CREATE TABLE IF NOT EXISTS runUpdates (
@@ -77,7 +88,7 @@ CREATE TABLE IF NOT EXISTS runUpdates (
 -- Hits are detections of tags.  They are grouped in two ways:
 -- by runs (consecutive detections of a single tag by a single antenna)
 -- by batches (all detections of all tags from a set of raw input files)
--- Runs can span across batches.  
+-- Runs can span across batches.
 
 CREATE TABLE IF NOT EXISTS hits (
     hitID BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT, -- unique ID of this hit
@@ -101,6 +112,7 @@ CREATE TABLE IF NOT EXISTS hits (
 );----
 
 CREATE INDEX hits_batchID ON hits(batchID);----
+CREATE INDEX hits_runID ON hits(runID);----
 
 -- Table tagAmbig records sets of physically identical tags which have
 -- overlapping deployment periods.  When the motusTagID field in a row
@@ -157,7 +169,7 @@ CREATE TABLE IF NOT EXISTS batchParams (
     PRIMARY KEY (batchID, progName, paramName) -- only one value of a given parameter per program per batch
 );----
 
--- Sometimes we will want to entirely replace a bunch of batches with 
+-- Sometimes we will want to entirely replace a bunch of batches with
 -- new ones.  Really, we just delete the old batches, and insert
 -- new ones (or not).  This table records deletions.  We will guarantee
 -- that no runs cross in or out of the range of batches specified by a single
@@ -174,7 +186,7 @@ CREATE TABLE IF NOT EXISTS batchDelete (
 );----
 
 CREATE TABLE IF NOT EXISTS sg_import_log (
-    batchID INT PRIMARY KEY UNIQUE NOT NULL REFERENCES batches, 
+    batchID INT PRIMARY KEY UNIQUE NOT NULL REFERENCES batches,
     transfer_dt FLOAT(53) NOT NULL,
     success INT,
     msg TEXT
@@ -196,7 +208,7 @@ GRANT SELECT, UPDATE (tsMotus)  ON motus.tagAmbig       TO 'denis'@'%';
 
 -- Table history records all processing done on sensorgnome.org
 
-CREATE TABLE IF NOT EXISTS history ( 
+CREATE TABLE IF NOT EXISTS history (
        histID INT PRIMARY KEY UNIQUE NOT NULL AUTO_INCREMENT,
        event CHAR(8) NOT NULL,    -- event type: "CLEAR", "MERGE", "FIND"
        origin CHAR(128) NOT NULL, -- origin of event: "data email from xxx@yyy.zz", "command-line @ sensorgnome.org"
