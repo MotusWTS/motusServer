@@ -4,12 +4,12 @@
 \alias{getMap}
 \title{Access (maybe after creating) a persistent named list in a database.}
 \usage{
-getMap(src, name)
+getMap(src, name = "meta")
 }
 \arguments{
 \item{src}{dplyr src_sqlite to a database}
 
-\item{name}{name of table in database.}
+\item{name}{name of table in database; default: "meta"}
 }
 \value{
 an object of class "motusMap".

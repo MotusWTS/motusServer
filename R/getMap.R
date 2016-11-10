@@ -9,12 +9,12 @@
 #'
 #' @param src dplyr src_sqlite to a database
 #'
-#' @param name name of table in database.
+#' @param name name of table in database; default: "meta"
 #'
 #' @return an object of class "motusMap".
 #'
 #' @export
-#' 
+#'
 #' @examples
 #'
 #' x = getMap(src_sqlite("SG-1234BBBK5678.motus"), "meta")
@@ -23,10 +23,9 @@
 #' x$recvSerno <- NULL
 #' x[["MACAddr"]]
 
-getMap = function(src, name) {
+getMap = function(src, name="meta") {
     con = src$con
     if (! dbExistsTable(con, name))
         dbGetQuery(con, sprintf("create table '%s' (key text primary key, val text);", name))
     return(structure(paste("Map", name), name=name, con=con, class="motusMap"))
 }
-

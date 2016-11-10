@@ -10,14 +10,14 @@
 #'
 #' @note As a side-effect, the motus device ID is also stored in the
 #' receiver database "meta" table, with key "deviceID"
-#' 
+#'
 #' @export
-#' 
+#'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 getMotusDeviceID = function(src, useFirst=TRUE) {
     ## try get this information from the receiver database.
-    m = getMap(src, "meta")
+    m = getMap(src)
     deviceID = m$deviceID
     if (length(deviceID) > 0 && ! is.na(deviceID))
         return(as.integer(deviceID))
@@ -42,7 +42,7 @@ getMotusDeviceID = function(src, useFirst=TRUE) {
 
     ## try register this receiver
     motusRegisterReceiver(m$recvSerno, macAddr)
-    
+
     ## read back the ID of the newly-registered receiver
     ## (the API call above doesn't return the ID)
 

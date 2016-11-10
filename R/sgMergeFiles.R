@@ -199,7 +199,7 @@ sgMergeFiles = function(files, dbdir = MOTUS_PATH$RECV) {
 
         ## FIXME? is there a cleaner way to do '%>% collect %>% as.XXX' to get a scalar entry from a tbl?
 
-        meta = getMap(src, "meta")
+        meta = getMap(src)
 
         meta$recvSerno = recv
         meta$recvType = "SG"
