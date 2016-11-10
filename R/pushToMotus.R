@@ -1,20 +1,15 @@
 #' Push any new tag detections to the motus master database.
 #'
 #' For now, this pushes into the transfer tables in the MySQL "motus"
-#' database on discovery.acadiau.ca, from where the Motus server pulls
-#' data periodically.  If this batch is a re-run, an entry is added
-#' to the batchDelete table to indicate we're replacing the previous version.
+#' database on the local host, from where the Motus server pulls
+#' data periodically.
 #'
 #' Any batch whose ID is not in the receiver's motusTX table is sent
-#' to the transfer tables.  For these batches, if the monoBN is the
-#' same as that for an existing batch, a record to delete the existing
-#' batch is added to the batchDelete motus transfer table, and the batchID
-#' in the receiver's motusTX table is negated, so that subsequent re-runs
-#' don't try to delete it from motus again.
+#' to the transfer tables.
 #'
 #' @param src dplyr src_sqlite to receiver database
 #'
-#' @return the batch number and the number of tag detections in the stream.
+#' @return no return value
 #'
 #' @export
 #'
@@ -34,12 +29,6 @@ pushToMotus = function(src) {
 
     if (nrow(newBatches) == 0)
         return()
-
-    ## find which existing batches are being superseded by new ones,
-    ## based on them having the same monoBN field
-
-    toDelete = motusTX %>% left_join (batches, by="batchID") %>%
-        left_join (newBatches, by="monoBN", copy=TRUE) %>% collect
 
     deviceID = getMotusDeviceID(src)
 
@@ -224,8 +213,8 @@ pushToMotus = function(src) {
             if (nrow(runUpd) == 0)
                 break
 
-            runUpd$runID        = runUpd$runID        + runUpd$offsetRunID  ## offsetRunID depends on batchID via the join above
-            runUpd$batchID      = b$batchID + offsetBatchID  ## this is just the current batchID, so we want the current offset
+            runUpd$runID        = runUpd$runID      + runUpd$offsetRunID    ## offsetRunID depends on batchID via the join above
+            runUpd$batchID      = b$batchID         + offsetBatchID         ## this is just the current batchID, so we want the current offset
             runUpd$batchIDend   = runUpd$batchIDend + runUpd$offsetBatchID  ## offsetBatchID depends on batchID via the join above
             dbInsertOrReplace(mtcon, "runUpdates", runUpd[,c("batchID", "runID", "len", "batchIDend")])
         }
@@ -250,16 +239,5 @@ pushToMotus = function(src) {
           offsetBatchID + newBatches$batchID[1],
           offsetBatchID + tail(newBatches$batchID, 1))
 
-    ## For any batches being supersedes, add a record to batchDelete in the motus tables,
-    ## and negate the batchID in the receiver motusTX table
-
-    for (i in seq(along = toDelete$batchID.x)) {
-        ## get ID of batch in master table
-        bid = toDelete$batchID.x[i] + toDelete$offsetBatchID[i]
-
-        mtsql("insert into batchDelete (batchIDbegin, batchIDend, ts, reason, tsMotus) values (%d, %d, %f, 're-ran site', 0))",
-              bid, bid, as.numeric(Sys.time()))
-        sql("update motusTX set batchID=-batchID where batchID=%d", toDelete$batchID.x[i])
-    }
     dbDisconnect(mtcon)
 }

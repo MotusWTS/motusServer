@@ -10,21 +10,16 @@ pushToMotus(src)
 \item{src}{dplyr src_sqlite to receiver database}
 }
 \value{
-the batch number and the number of tag detections in the stream.
+no return value
 }
 \description{
 For now, this pushes into the transfer tables in the MySQL "motus"
-database on discovery.acadiau.ca, from where the Motus server pulls
-data periodically.  If this batch is a re-run, an entry is added
-to the batchDelete table to indicate we're replacing the previous version.
+database on the local host, from where the Motus server pulls
+data periodically.
 }
 \details{
 Any batch whose ID is not in the receiver's motusTX table is sent
-to the transfer tables.  For these batches, if the monoBN is the
-same as that for an existing batch, a record to delete the existing
-batch is added to the batchDelete motus transfer table, and the batchID
-in the receiver's motusTX table is negated, so that subsequent re-runs
-don't try to delete it from motus again.
+to the transfer tables.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
