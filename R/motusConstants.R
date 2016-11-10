@@ -54,7 +54,7 @@ MOTUS_TIMESTAMP_FORMAT = "%Y-%m-%dT%H-%M-%OS6"
 MOTUS_SG_TIMESTAMP_FORMAT = "%Y-%m-%dT%H-%M-%OS4"
 
 ## regex to match a leading timestamp
-MOTUS_LEADING_TIMESTAMP_REGEX = "^(?<timestamp>[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}\\.[0-9]{6})"
+MOTUS_LEADING_TIMESTAMP_REGEX = "^(?<timestamp>[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}-[0-9]{2}-[0-9]{2}\\.[0-9]{1-9})"
 
 ## regex to match a full filename for a compressed message
 MOTUS_COMPRESSED_EMAIL_REGEX = paste0(MOTUS_LEADING_TIMESTAMP_REGEX, "\\.bz2$")
