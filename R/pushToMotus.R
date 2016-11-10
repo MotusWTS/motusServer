@@ -238,6 +238,4 @@ pushToMotus = function(src) {
     mtsql("update batches set tsMotus = 0 where tsMotus = -1 and batchID >= %d and batchID <= %d",
           offsetBatchID + newBatches$batchID[1],
           offsetBatchID + tail(newBatches$batchID, 1))
-
-    dbDisconnect(mtcon)
 }
