@@ -64,5 +64,17 @@ handleSGfiles = function(j) {
         group_by(serno, monoBN) %>%
         do (ignore=queueNewSession(.))
 
+    ## queue export jobs for all (receiver, monoBN) pairs with new data.
+
+    queueExportSession = function(f) {
+        newSubJob(j, "exportData", serno = f$serno[1], monoBN = f$monoBN[1], tsStart=f$ts[1])
+    }
+
+    info %>%
+        filter(use > 0) %>%
+        arrange(serno, monoBN, ts) %>%
+        group_by(serno, monoBN) %>%
+        do (ignore=queueExportSession(.))
+
     return(TRUE)
 }
