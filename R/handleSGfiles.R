@@ -42,13 +42,9 @@ handleSGfiles = function(j) {
         info = info[- bad, ]
     }
 
-    ## function to queue a run of a receiver boot session
+    ## function to queue a run of a receiver boot session, and export of its data
 
-    queueNewSession = function(f) {
-        ## nothing to do if no files to use
-
-        if (! any(f$use))
-            return(0)
+    queueFindtags = function(f) {
 
         newSubJob(j, "SGfindtags",
                   serno = f$serno[1],
@@ -60,21 +56,29 @@ handleSGfiles = function(j) {
     ## queue runs of all receiver boot sessions with new data
 
     info %>%
-        arrange(serno, monoBN) %>%
-        group_by(serno, monoBN) %>%
-        do (ignore=queueNewSession(.))
-
-    ## queue export jobs for all (receiver, monoBN) pairs with new data.
-
-    queueExportSession = function(f) {
-        newSubJob(j, "exportData", serno = f$serno[1], monoBN = f$monoBN[1], tsStart=f$ts[1])
-    }
-
-    info %>%
         filter(use > 0) %>%
         arrange(serno, monoBN, ts) %>%
         group_by(serno, monoBN) %>%
-        do (ignore=queueExportSession(.))
+        do (ignore=queueFindtags(.))
+
+
+    ## function to queue an export of new data
+
+    queueExport = function(f) {
+        newSubJob(j, "exportData", serno = f$serno[1])
+        newSubJob(j, "oldExport", serno = f$serno[1],
+                  monoBN = range(f$monoBN),
+                  ts = range(f$ts))
+    }
+
+    ## queue export of data from receivers where some are new
+    ## N.B. we do this only once per receiver, since handleExportData()
+    ## looks for and exports all new batches from that receiver.
+
+    info %>%
+        filter(use > 0) %>%
+        arrange(serno) %>%
+        do (ignore=queueExport)
 
     return(TRUE)
 }
