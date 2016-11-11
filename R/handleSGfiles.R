@@ -67,8 +67,7 @@ handleSGfiles = function(j) {
     queueExport = function(f) {
         newSubJob(j, "exportData", serno = f$serno[1])
         newSubJob(j, "oldExport", serno = f$serno[1],
-                  monoBN = range(f$monoBN),
-                  ts = range(f$ts))
+                  monoBN = sort(unique(f$monoBN)))
     }
 
     ## queue export of data from receivers where some are new
