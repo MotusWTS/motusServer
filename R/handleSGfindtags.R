@@ -25,6 +25,8 @@ handleSGfindtags = function(j) {
 
     serno = j$serno
 
+    jobLog(j, paste0("Running tag finder on receiver ", serno, " boot session ", j$monoBN, if (j$canResume) " (resumed)"))
+
     ## lock this receiver's DB.  If we can't, then sleep for 10 seconds and try again.
 
     while(! lockReceiver(serno)) {
@@ -40,7 +42,7 @@ handleSGfindtags = function(j) {
 
     rv = sgFindTags(sgRecvSrc(serno), getMotusMetaDB(), resume=j$canResume, mbn=j$monoBN)
 
-    jobLog(j, sprintf("Ran TagFinder on %s, boot session %d%s; %d detections", serno, j$monoBN, if (j$canResume) " (resumed)" else "", rv$numHits))
+    jobLog(j, paste0("Got ", rv$numHits, " detections."))
 
     return(TRUE)
 }
