@@ -11,7 +11,8 @@ handleLtFindtags(j)
 \enumerate{
 \item serno: serial number of receiver; "Lotek-NNN"
 \item tsStart: earliest timestamp of a detection in a file
-with new data.
+with new data.  Not used at present, but might
+allow for pause/resume later.
 }}
 }
 \value{

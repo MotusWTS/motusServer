@@ -18,7 +18,7 @@ handleDTA = function(j) {
 
     ## merge files into receiver database(s)
 
-    info = ltMergeFiles(j$dir) %>% arrange(serno) %>% group_by(serno)
+    info = ltMergeFiles(j$dir)
 
     ## queue findtags subjobs for each receiver having data files with
     ## new content
@@ -27,13 +27,15 @@ handleDTA = function(j) {
         ## nothing to do if no new files to use
 
         if (! any(f$dataNew)) {
-            jobLog(paste0("Receiver ", f$serno[1], ":  the .DTA files have no new data, so the tagfinder will not be run"))
+            jobLog(paste0("Receiver ", f$serno[1], ":  the .DTA files have no new data, so the tag finder will not be run"))
             return(0)
         }
         newSubJob(j, "LtFindtags", serno=f$serno[1], tsStart=min(f$ts[f$dataNew]))
+        newSubJob(topJob(j), "exportData", serno=f$serno[1])
+        newSubJob(topJob(j), "oldExport", serno=f$serno[1], ts=range(f$ts))
     }
 
-    info %>% do (ignore = runReceiver(.))
+    info %>% group_by(serno) %>% do (ignore = runReceiver(.))
 
     return(TRUE)
 }
