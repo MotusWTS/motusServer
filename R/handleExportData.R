@@ -16,5 +16,6 @@
 
 handleExportData = function(j) {
     pushToMotus(sgRecvSrc(j$serno))
+    jobLog(j, paste("Pushed new batches from", j$serno, "to motus."))
     return (TRUE)
 }
