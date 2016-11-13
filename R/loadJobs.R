@@ -31,22 +31,27 @@
 #'
 #' @param which character scalar or integer scalar.  If character, only
 #'     load jobs whose top job is of this type.  If integer, only
-#'     load jobs whose top job is in that queue.
+#'     load jobs whose top job is in that queue.  If NULL (the default),
+#'     do not actually load or queue any jobs.
 #'
 #' @return no return value.  Jobs are enqueued in the global \code{MOTUS_QUEUE}.
+#' The Jobs are stored in the global \code{Jobs}.
 #'
 #' @export
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-loadJobs = function(which) {
-    if (missing(which) || length(which) != 1 || ! (is.numeric(which) || is.character(which)))
+loadJobs = function(which = NULL) {
+    if (!is.null(which) && ( length(which) != 1 || ! (is.numeric(which) || is.character(which))))
         stop("Must specify 'which' as an integer queue number or character scalar job type")
 
     MOTUS_QUEUE <<- NULL
 
     ## connect the global Jobs object to the MOTUS_SERVER_DB's jobs table
     Jobs <<- Copse(MOTUS_SERVER_DB, "jobs", type=character(), done=integer(), queue=integer(), path=character(), oldpath=character())
+
+    if (is.null(which))
+        return()
 
     ## get IDs of jobs of selected type
 
