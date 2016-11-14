@@ -18,6 +18,9 @@ ARGS = commandArgs(TRUE)
 
 suppressMessages(suppressWarnings(library(motus)))
 
+MOTUS_SERVER_DB_SQL <<- ensureServerDB()
+MOTUS_PROCESS_NUM <<- 100 ## needed by lockReceiver
+
 DIR       = ARGS[1]
 RECVDBDIR = ARGS[2]
 
