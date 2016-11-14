@@ -34,6 +34,11 @@ handleSanityCheck = function(j) {
         jobLog(j, c(paste("Error: these", length(ch3), "archives are corrupt:"),
                     "(perhaps your folder has not finished syncing?)", paste0("   ", basename(ch3))))
     }
+    ch4 = f[chk == 4]; ## empty files
+    if (length(ch4) > 0) {
+        jobLog(j, c(paste("Warning: these", length(ch4), "files are empty:"),
+                    paste0("   ", basename(ch4))))
+    }
     if (any(chk == 0)) {
         jobLog(j, paste("Processing will continue with the remaining", sum(chk==0), "files."))
     }
