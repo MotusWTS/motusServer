@@ -17,8 +17,9 @@ from this list:
 \item 0: the file passes all tests
 \item 1: the file doesn't exist
 \item 2: the file is non-empty but all zeroes
-\item 3: the file has a .gz, .bz2, .7z, .rar, or .zip extension, but fails
+\item 3: the file is non-empty and has a .gz, .bz2, .7z, .rar, or .zip extension, but fails
 the integrity test of the appropriate archiving program
+\item 4: the file is empty.
 }
 }
 \description{
