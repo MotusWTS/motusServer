@@ -28,7 +28,10 @@ handleEmail = function(j) {
     safeSys("bzip2", newmsg)
     j$msgFile = paste0(newmsg, ".bz2")
 
-    auth = j$auth = validateEmail(txt)
+    auth = validateEmail(txt)
+    ## record user in own column; remainder of auth in data field
+    j$user = auth$username
+    j$auth = auth[- match("username", names(auth))]
 
     ## for now, be strict about token expiry
     valid = j$valid = ! (is.null(auth) || auth$expired)

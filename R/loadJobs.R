@@ -48,7 +48,7 @@ loadJobs = function(which = NULL) {
     MOTUS_QUEUE <<- NULL
 
     ## connect the global Jobs object to the MOTUS_SERVER_DB's jobs table
-    Jobs <<- Copse(MOTUS_SERVER_DB, "jobs", type=character(), done=integer(), queue=integer(), path=character(), oldpath=character())
+    Jobs <<- Copse(MOTUS_SERVER_DB, "jobs", type=character(), done=integer(), queue=integer(), path=character(), oldpath=character(), user=character())
 
     if (is.null(which))
         return()
