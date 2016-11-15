@@ -38,114 +38,151 @@ statusServer = function(port, tracing=FALSE) {
 
 ## a string giving the list of apps for this server
 
-allApps = c("latestJobs", "jobStatus", "queueStatus")
-
-## write a string providing a header for navigating among app pages
-
-writeHeader = function(res, which) {
-    which = which(allApps == which)
-    links = sprintf('<a href="/custom/%s">%s</a>', allApps, allApps)
-    ## remove link for current page
-    links[which] = paste0("<b>", allApps[which], "</b>")
-    nav = paste0('<pre>', paste0(links, collapse="   |   "), '\n\n</pre>')
-    res$write(nav)
-}
+allApps = c("latestJobs", "queueStatus")
 
 latestJobs = function(env) {
 
-    ## return summary of latest top jobs
+    ## return summary table of latest top jobs, with clickable expansion for details
     ## parameters:
     ##   - n:  number of jobs to show
     ##   - k:  max jobID to show (0 means unknown); if negative, - min jobID to show.
-    ##
+    ##   - user: if specified, all jobs belonging to user are shown
 
-    req <- Rook::Request$new(env)
-    res <- Rook::Response$new()
+    ## Note: the web page displaying this content needs to inlude this javascript, if
+    ## the javascript written by this function is filtered out:
+
+    ## --js--  var numJobs = $(".jobDetails").length;
+    ## --js--
+    ## --js--  function toggleJobExpand(n) {
+    ## --js--     var jdn = ".jobDetails" + n;
+    ## --js--     var jsn = ".jobSummary" + n;
+    ## --js--     var vis = $(jdn).is(":visible");
+    ## --js--     if (vis) {
+    ## --js--           $(jdn).hide();
+    ## --js--           $(jsn).css({"color": "black"});
+    ## --js--           $(".jobSummary").show();
+    ## --js--     } else {
+    ## --js--           $(".jobDetails").hide();
+    ## --js--           $(".jobSummary").css({"color": "black"});
+    ## --js--           $(".jobSummary").show();
+    ## --js--           for (var j=n+3; j <= numJobs; ++j) {
+    ## --js--               $(".jobSummary" + j).hide();
+    ## --js--           }
+    ## --js--           $(jdn).show();
+    ## --js--           $(jsn).css({"color": "green"});
+    ## --js--     }
+    ## --js--  };
+    ## --js--
+    ## --js--  function makeJobToggle(n) {
+    ## --js--      return(function() {toggleJobExpand(n)});
+    ## --js--  };
+    ## --js--
+    ## --js--  for (var j=1; j <= numJobs; ++j) {
+    ## --js--      $(".jobSummary" + j).click(makeJobToggle(j));
+    ## --js--  }
+
+    req = Rook::Request$new(env)
+    res = Rook::Response$new()
 
     res$header("Cache-control", "no-cache")
     res$header("Content-Type", "text/html; charset=utf-8")
 
-    writeHeader(res, "latestJobs")
+    res$write('<script type="text/javascript">
+var numJobs = $(".jobDetails").length;
 
-    n <- as.integer(req$GET()[['n']])[1]
-    if (! isTRUE(n > 0 && n <= 500))
-        n = 20
-    k <- as.integer(req$GET()[['k']])[1]
-    if (! isTRUE(k >= 0))
-        k = 0
+function toggleJobExpand(n) {
+   var jdn = ".jobDetails" + n;
+   var jsn = ".jobSummary" + n;
+   var vis = $(jdn).is(":visible");
+   if (vis) {
+         $(jdn).hide();
+         $(jsn).css({"color": "black"});
+         $(".jobSummary").show();
+   } else {
+         $(".jobDetails").hide();
+         $(".jobSummary").css({"color": "black"});
+         $(".jobSummary").show();
+         for (var j=n+3; j <= numJobs; ++j) {
+             $(".jobSummary" + j).hide();
+         }
+         $(jdn).show();
+         $(jsn).css({"color": "green"});
+   }
+};
 
-    if (k == 0)
-        k = DB("select max (id) from jobs where pid is null")[[1]]
-    if (k > 0) {
-        jj = DB("select id from jobs where pid is null and id <= :k order by id desc limit :n", k=k, n=n)[[1]]
+function toggleJobExpand(n) {
+   var jdn = ".jobDetails" + n;
+   var jsn = ".jobSummary" + n;
+   var vis = $(jdn).is(":visible");
+   if (vis) {
+         $(jdn).hide();
+         $(jsn).css({"color": "black"});
+         $(".jobSummary").show();
+   } else {
+         $(".jobDetails").hide();
+         $(".jobSummary").css({"color": "black"});
+         $(".jobSummary").hide();
+         for (var j=Math.max(1, n-3); j <= Math.min(numJobs, n+3); ++j) {
+             $(".jobSummary" + j).show();
+         }
+         $(jdn).show();
+         $(jsn).css({"color": "green"});
+   }
+};
+
+function makeJobToggle(n) {
+    return(function() {toggleJobExpand(n)});
+};
+
+for (var j=1; j <= numJobs; ++j) {
+    $(".jobSummary" + j).click(makeJobToggle(j));
+}
+</script>');
+
+    user = as.character(req$GET()[['user']])[1]
+    if (! is.na(user) && user != "admin") {
+        jj = DB("select id from jobs where user=:user and pid is null order by id desc", user=user)[[1]]
     } else {
-        jj = DB("select id from jobs where pid is null and id >= :k order by id desc limit :n", k=-k, n=n)[[1]]
+        n = as.integer(req$GET()[['n']])[1]
+        if (! isTRUE(n > 0 && n <= 500))
+            n = 20
+        k = as.integer(req$GET()[['k']])[1]
+        if (! isTRUE(k >= 0))
+            k = 0
+        if (k == 0)
+            k = DB("select max (id) from jobs where pid is null")[[1]]
+        if (k > 0) {
+            jj = DB("select id from jobs where pid is null and id <= :k order by id desc limit :n", k=k, n=n)[[1]]
+        } else {
+            jj = DB("select id from jobs where pid is null and id >= :k order by id desc limit :n", k=-k, n=n)[[1]]
+        }
     }
-
     if (length(jj) == 0) {
         jj = DB(sprintf("select id from jobs where pid is null order by id %s limit :n", if (k > 0) "desc" else ""), n=n) [[1]]
     }
 
-    res$write("<pre>")
-    if (min(jj) > 1)
-        res$write(sprintf('<a href="/custom/latestJobs?n=%d&k=%d">Prev</a>    ', n, min(jj) - 1))
-
-    res$write(sprintf('<a href="/custom/latestJobs?n=%d&k=%d">Next</a>', n, -(max(jj) + 1)))
-
-    info = DB("select id, json_extract(data, '$.auth.username'), ctime, mtime, type, done from jobs where id in (:jj) order by id desc", jj=jj)
+    info = DB("select id, json_extract(data, '$.auth.email'), ctime, mtime, type, done from jobs where id in (:jj) order by id desc", jj=jj)
     class(info$ctime) = class(info$mtime) = c("POSIXt", "POSIXct")
+    info$done = c("Error", "Active", "Done")[2 + info$done]
 
-    res$write("\n\n</pre>")
     ## any expression from here on can't use the original names for the columns of info
-    names(info) = c("ID", "User (sensorgnome.org)", "Created Date/Time", "Last Activity Date/Time", "Job Type", "Done? (0=no, 1=yes, -1=error)")
-    res$write(hwrite(info, border=0, row.style=list('font-weight:bold'), col.link=list(sprintf("/custom/jobStatus?j=%d", jj), NA, NA, NA, NA, NA),
-                     row.bgcolor=rep(c("#ffffff", "#f0f0f0"), length=nrow(info))))
+    names(info) = c("ID", "Sender", "Created", "Last Activity", "Job Type", "Status")
+    res$write(hwrite(info, border=0, row.style=list('font-weight:bold'), row.bgcolor=rep(c("#ffffff", "#f0f0f0"), length=nrow(info)),
+                     row.class=paste0("jobSummary jobSummary", 1:nrow(info))))
+    for (i in seq(along=jj)) {
+        dumpJobDetails(res, jj[i], i)
+    }
     res$finish()
 }
 
-jobStatus = function(env) {
-    ## return summary of a top job
-    ## parameters:
-    ##   - j:  job number; if positive, use the top job with the smallest id >= j;
-    ##  if negative, use the top job with the largest id <= -j;
+#' dump details of job j to res, as ith job listing
+#' @param res Rook::response object
+#' @param j job
+#' @param i integer; index in list of jobs to be displayed
 
-    req <- Rook::Request$new(env)
-    res <- Rook::Response$new()
-
-    res$header("Cache-control", "no-cache")
-    res$header("Content-Type", "text/html; charset=utf-8")
-
-    writeHeader(res, "jobStatus")
-
-    j <- as.integer(req$GET()[['j']])[1]
-
-    if (! isTRUE(abs(j) > 0)) {
-        ## get most recent job
-        j = DB("select max (id) from jobs where pid is null")[[1]]
-    } else if (j > 0) {
-        j = DB("select min (id) from jobs where pid is null and id >= :j", j=j)[[1]]
-        if (is.na(j))
-            j = DB("select max (id) from jobs where pid is null")[[1]]
-    } else {
-        j = DB("select max (id) from jobs where pid is null and id <= :j", j=-j)[[1]]
-        if (is.na(j))
-            j = DB("select min (id) from jobs where pid is null")[[1]]
-    }
-
+dumpJobDetails = function(res, j, i) {
     j = Jobs[[j]]
-
-    if (is.null(j)) {
-        res$write("Error: invalid job number specified")
-        res$finish()
-        return()
-    }
-
-    res$write("<pre>")
-    if (j > 1)
-        res$write(sprintf('<a href="/custom/jobStatus?j=%d">Prev</a>    ', -(j - 1)))
-
-    res$write(sprintf('<a href="/custom/jobStatus?j=%d">Next</a>', j + 1))
-
+    res$write(paste0('<div class="jobDetails jobDetails', i, '" style="display:none">'))
     replyTo = paste(j$replyTo, collapse=", ")
     if (is.null(replyTo))
         replyTo = "none"
@@ -159,7 +196,7 @@ jobStatus = function(env) {
                       paste0("   ", gsub("\n", "\n   ", j$log, fixed=TRUE))
                       )
               )
-    res$finish()
+    res$write("</div>")
 }
 
 queueStatus = function(env) {
@@ -167,60 +204,68 @@ queueStatus = function(env) {
     ## parameters:
     ## - none so far
 
-    req <- Rook::Request$new(env)
-    res <- Rook::Response$new()
+    req = Rook::Request$new(env)
+    res = Rook::Response$new()
 
     res$header("Cache-control", "no-cache")
     res$header("Content-Type", "text/html; charset=utf-8")
 
-    writeHeader(res, "queueStatus")
-
-    ## num jobs waiting to be assigned to a processor
-    q0 = DB("select count(*) from jobs where pid is null and queue=0")[[1]]
-
-    ## ids of next 20 jobs in queue 0
-    q0j = DB("select id from jobs where pid is null and queue=0 order by id desc limit 20")[[1]]
-
-    ## num jobs assigned to each processor
-    qq = DB("select queue as Processor, count(*) as NumJobs from jobs where pid is null and queue > 0 group by queue")
-
-    ## ids of queued jobs for each processor
-    qqj = DB("select queue, id from jobs where pid is null and queue > 0 order by queue, id")
-
-    ## num unfinished tasks per processor
-    qu = DB("select queue as Processor, count(*) as NumTasks from jobs where done == 0 and queue > 0 group by queue")
-
-    ## num jobs in email queue
-    qm = DB("select count(*) from jobs where pid is null and queue is null and type='email'")[[1]]
-
-    ## number of processServers running
-    pids = dir("/sgm", pattern="^processServer[0-9]+.pid$", full.names=TRUE)
-    qr = regexPieces("processServer(?<qn>[0-9]+).pid", pids)["qn"]
+    ## number of embargoed emails awaiting processing
+    emb = length(dir("/sgm/inbox_embargoed"))
 
     ## number of emails in inbox, awaiting processing
     inb = length(dir("/sgm/inbox"))
 
-    ## number of embargoed emails awaiting processing
-    emb = length(dir("/sgm/inbox_embargoed"))
-
     ## is emailServer running?
     es = file.exists("/sgm/emailServer.pid")
 
+    ## num jobs in email queue
+    qm = DB("select count(*) from jobs where pid is null and queue is null and done=0 and type='email'")[[1]]
+
+    ## num jobs waiting to be assigned to a processor
+    q0 = DB("select count(*) from jobs where pid is null and queue=0 and done=0")[[1]]
+
+    ## which processServers, if any, are running
+    pids = dir("/sgm", pattern="^processServer[0-9]+.pid$", full.names=TRUE)
+    if (length(pids) > 0)
+        qr = as.integer(unlist(regexPieces("processServer(?<qn>[0-9]+).pid", pids)))
+    else
+        qr = integer(0)
+
+    ul = "---------------------------------------------\n"
     res$write(paste0(
-        "<h3>Processing Status</h3>",
-        "<h4>Emails</h4><pre>",
-        "<b>Email Server running:</b>  ", if (es) "Yes" else "No", "\n",
-        "<b>Messages embargoed, awaiting manual acceptance:</b>  ", if (length(emb) > 0) emb else "None", "\n",
-        "<b>Messages in inbox, awaiting processing:</b>  ", if (length(inb) > 0) inb else "None", "\n",
-        "<b>Messages being processed:</b>  ", if (length(qm) > 0) qm else "None", "\n",
-        "</pre>",
-        "<h4>Process Servers</h4><pre>",
-        "<b>Servers running:</b>  ", if(length(pids) > 0) paste0(qr, collapse=", ") else "None", "\n",
-        "<b>Jobs in master queue waiting for a processor</b>:  ", q0, "\n",
-        "<b>First jobs in master queue:</b>  ", paste(sprintf('<a href="/custom/jobStatus?j=%d">%d</a>', q0j, q0j), collapse=", &nbsp;&nbsp;"), "\n",
-        if(nrow(qq > 0)) paste0("<b>Jobs assigned to each processor:</b>\n", paste(hwrite(qq, border=0))) else "",
-        "\n</pre>"
+        "<pre>",
+        "<b>Embargoed INBOX</b>\n",
+        emb, " emails awaiting manual intervention\n",
+        ul,
+        "<b>INBOX</b>\n",
+        inb, " emails ready to process,\nwaiting for Email Server\n",
+        ul,
+        "<b>Email Server</b>\n",
+        " - is ", if (! es) "<b>not</b> ", "running\n",
+        " - has ", qm, " emails partially processed\n",
+        ul,
+        "<b>Master Queue</b>\n",
+        q0, " jobs waiting for a Tagfinder Processor\n"
         ))
 
+    ## for each tagfinder process, show its status and queue length
+
+    for (p in 1:8) {
+        running = p %in% qr
+        nj = DB("select count(*) from jobs where pid is null and queue=:p and done=0", p=p)[[1]]
+        res$write(paste0(ul,
+          "<b>Tagfinder Processor #", p, "</b>\n",
+          " - is ", if (! running) "<b>not</b> ", "running\n",
+          " - has ", nj, " jobs partially processed\n"))
+        if (nj > 0) {
+            jj = DB("select id from jobs where pid is null and queue=:p and done=0", p=p)[[1]]
+            info = DB("select id, json_extract(data, '$.auth.email'), ctime, mtime, type, done from jobs where id in (:jj) order by id desc", jj=jj)
+            class(info$ctime) = class(info$mtime) = c("POSIXt", "POSIXct")
+            info$done = c("Error", "Active", "Done")[2 + info$done]
+            names(info) = c("ID", "Sender", "Created", "Last Activity", "Job Type", "Status")
+            res$write(hwrite(info, border=0, row.style=list('font-weight:bold'), row.bgcolor=rep(c("#ffffff", "#f0f0f0"), length=nrow(info))))
+        }
+    }
     res$finish()
 }
