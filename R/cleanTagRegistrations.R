@@ -113,7 +113,7 @@
 
 cleanTagRegistrations = function(m, s, cleanBI = FALSE) {
 
-    m = subset(m, projectID != 76 & projectID != 0)
+    m = subset(m, projectID != 0)
 
     ## add columns we need for lookups
 
