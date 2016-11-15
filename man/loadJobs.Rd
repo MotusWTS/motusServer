@@ -39,6 +39,8 @@ If queue is null, it is being handled by emailServer() or pathServer()
 \item oldpath: full path to previous folder for job (permits
 recovery from server failure during job move)
 
+\item user: username, when job is the top job from an authenticated email
+
 }
 
 Other job items are stored in a JSON-encoded text field called
