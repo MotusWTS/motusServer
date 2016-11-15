@@ -48,44 +48,15 @@ latestJobs = function(env) {
     ##   - k:  max jobID to show (0 means unknown); if negative, - min jobID to show.
     ##   - user: if specified, all jobs belonging to user are shown
 
-    ## Note: the web page displaying this content needs to inlude this javascript, if
-    ## the javascript written by this function is filtered out:
-
-    ## --js--  var numJobs = $(".jobDetails").length;
-    ## --js--
-    ## --js--  function toggleJobExpand(n) {
-    ## --js--     var jdn = ".jobDetails" + n;
-    ## --js--     var jsn = ".jobSummary" + n;
-    ## --js--     var vis = $(jdn).is(":visible");
-    ## --js--     if (vis) {
-    ## --js--           $(jdn).hide();
-    ## --js--           $(jsn).css({"color": "black"});
-    ## --js--           $(".jobSummary").show();
-    ## --js--     } else {
-    ## --js--           $(".jobDetails").hide();
-    ## --js--           $(".jobSummary").css({"color": "black"});
-    ## --js--           $(".jobSummary").show();
-    ## --js--           for (var j=n+3; j <= numJobs; ++j) {
-    ## --js--               $(".jobSummary" + j).hide();
-    ## --js--           }
-    ## --js--           $(jdn).show();
-    ## --js--           $(jsn).css({"color": "green"});
-    ## --js--     }
-    ## --js--  };
-    ## --js--
-    ## --js--  function makeJobToggle(n) {
-    ## --js--      return(function() {toggleJobExpand(n)});
-    ## --js--  };
-    ## --js--
-    ## --js--  for (var j=1; j <= numJobs; ++j) {
-    ## --js--      $(".jobSummary" + j).click(makeJobToggle(j));
-    ## --js--  }
-
     req = Rook::Request$new(env)
     res = Rook::Response$new()
 
     res$header("Cache-control", "no-cache")
     res$header("Content-Type", "text/html; charset=utf-8")
+
+
+    ## Note: the web page displaying this content needs to inlude the following <script> tag and
+    ## contents, if the javascript written by this function is filtered out:
 
     res$write('<script type="text/javascript">
 var numJobs = $(".jobDetails").length;
@@ -118,12 +89,18 @@ function toggleJobExpand(n) {
          $(jdn).hide();
          $(jsn).css({"color": "black"});
          $(".jobSummary").show();
+         $("#jobSummaryEllipsis").hide();
    } else {
          $(".jobDetails").hide();
          $(".jobSummary").css({"color": "black"});
          $(".jobSummary").hide();
-         for (var j=Math.max(1, n-3); j <= Math.min(numJobs, n+3); ++j) {
+         for (var j=1; j <= Math.min(numJobs, n+3); ++j) {
              $(".jobSummary" + j).show();
+         }
+         if (n+3 < numJobs) {
+             $("#jobSummaryEllipsis").show();
+         } else {
+             $("#jobSummaryEllipsis").hide();
          }
          $(jdn).show();
          $(jsn).css({"color": "green"});
@@ -138,9 +115,8 @@ for (var j=1; j <= numJobs; ++j) {
     $(".jobSummary" + j).click(makeJobToggle(j));
 }
 </script>');
-
     user = as.character(req$GET()[['user']])[1]
-    if (! is.na(user) && user != "admin") {
+    if (! is.na(user) && user != "admin" && user != "stuart" && user != "zoe") {
         jj = DB("select id from jobs where user=:user and pid is null order by id desc", user=user)[[1]]
     } else {
         n = as.integer(req$GET()[['n']])[1]
@@ -169,6 +145,7 @@ for (var j=1; j <= numJobs; ++j) {
     names(info) = c("ID", "Sender", "Created", "Last Activity", "Job Type", "Status")
     res$write(hwrite(info, border=0, row.style=list('font-weight:bold'), row.bgcolor=rep(c("#ffffff", "#f0f0f0"), length=nrow(info)),
                      row.class=paste0("jobSummary jobSummary", 1:nrow(info))))
+    res$write('<div id="jobSummaryEllipsis" style="display:none"><b>&nbsp;&nbsp;&nbsp;&nbsp;. . .</b></div>\n')
     for (i in seq(along=jj)) {
         dumpJobDetails(res, jj[i], i)
     }
