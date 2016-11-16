@@ -230,17 +230,16 @@ queueStatus = function(env) {
 
     for (p in 1:8) {
         running = p %in% qr
-        nj = DB("select count(*) from jobs where pid is null and queue=:p and done=0", p=p)[[1]]
+        jj = DB("select distinct t1.id from jobs as t1 join jobs as t2 on t1.id = t2.stump where t1.pid is null and t1.queue=:p and t2.done=0", p=p)[[1]]
         res$write(paste0(ul,
           "<b>Tagfinder Processor #", p, "</b>\n",
           " - is ", if (! running) "<b>not</b> ", "running\n",
-          " - has ", nj, " jobs partially processed\n"))
-        if (nj > 0) {
-            jj = DB("select id from jobs where pid is null and queue=:p and done=0", p=p)[[1]]
-            info = DB("select id, json_extract(data, '$.auth.email'), ctime, mtime, type, done from jobs where id in (:jj) order by id desc", jj=jj)
+          " - has ", length(jj), " jobs partially processed\n"))
+        if (length(jj) > 0) {
+            info = DB("select t1.id, json_extract(t1.data, '$.auth.email'), t1.ctime, t1.mtime, group_concat(t2.type) as sj from jobs as t1 join jobs as t2 on t1.id=t2.stump where t1.id in (:jj) and t2.done == 0 group by t1.id order by t1.id desc", jj=jj)
             class(info$ctime) = class(info$mtime) = c("POSIXt", "POSIXct")
-            info$done = c("Error", "Active", "Done")[2 + info$done]
-            names(info) = c("ID", "Sender", "Created", "Last Activity", "Job Type", "Status")
+            info$sj = sapply(info$sj, function(x) { j = strsplit(x, ",")[[1]]; t = table(j); paste(sprintf("%s(%d)", names(t), t), collapse=", ")})
+            names(info) = c("ID", "Sender", "Created", "Last Activity", "Incomplete SubJobs")
             res$write(hwrite(info, border=0, row.style=list('font-weight:bold'), row.bgcolor=rep(c("#ffffff", "#f0f0f0"), length=nrow(info))))
         }
     }
