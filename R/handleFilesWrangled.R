@@ -22,20 +22,28 @@ handleFilesWrangled = function(j) {
     if (tj$valid) {
         email(tj$replyTo[1], paste0("motus job ", tj, ": data transfer email received"),
               paste0("Thank-you for the data transfer.  We have tried to download your
-transferred files, shared links, and/or attachments.  Results:
+transferred files, shared links, and/or attachments.
 
-",
-tj$log,
-"
 If any data were transferred, they will now enter the processing queue.
-Status of the queue can be seen here:
+You can view the status of this job
+here:
+
+   https://sensorgnome.org/My_Job_Status
+
+and overall data processing status here:
 
    https://sensorgnome.org/Motus_Processing_Status
 
 if you are logged-in with your sensorgnome.org credentials.
 
 When your job is complete, we'll send another email to let you know where
-to find the results."
+to find the results.
+-------------------------------------------------------------------------
+Result of processing email:
+",
+tj$log, "
+-------------------------------------------------------------------------
+"
 ))
     }
 
