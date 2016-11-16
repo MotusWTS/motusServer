@@ -158,10 +158,10 @@ MOTUS_FILE_ATTACHMENT_REGEX = paste0("(?i)\\.(?<suffix>",
 MOTUS_SG_SERNO_REGEX = "(?<serno>SG-[0-9A-Z]{4}(?:RPi2|BBBK|BB)[0-9A-Z]{4,6}(_[0-9])?)"
 
 ## deprecated: path to db for looking up proj, site by serial number
-## this for processing data the old sensorgnome way, not the new
-## motus way.
+## and timestamp or bootnumber. This is for generating output in the
+## old format.
 
-MOTUS_RECV_SERNO_DB = "/SG/receiver_serno.sqlite"
+MOTUS_RECV_MAP_DB = "/SG/receiver_map.sqlite"
 
 ## regex for matching DOS filenames (names of SG data files which have
 ## been shortened to 8.3 form)
