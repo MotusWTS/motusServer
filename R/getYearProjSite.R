@@ -1,19 +1,19 @@
 #' Get the project and site folders, given a year and receiver serial number.
 #'
 #' This is a deprecated function to help process data files in the old
-#' sensorgnome YEAR/PROJECT/SITE hierarchy.  For each \code{(serno,
-#' ts)} pair, it looks up the latest project and site for the receiver
-#' with serial number \code{serno} which is not later than \code{ts}.
-#' If no site is found for the given valid timestamp, boot numbers are
-#' used, if possible.
+#' sensorgnome YEAR/PROJECT/SITE hierarchy.  Sites are looked up
+#' by bootnum for sensorgnomes, and by timestamp for Lotek receivers.
 #'
 #' @param serno character vector of serial numbers
 #'
-#' @param ts timestamp; recycled along \code{serno}
+#' @param ts numeric vector with non-NA entries wherever \code{serno}
+#'     is a Lotek receiver. Can be \code{NULL}, the default, if all
+#'     \code{serno} are SensorGnomes.
 #'
-#' @param bootnum boot session count; default: NULL meaning no bootnums
-#' available.
-#' 
+#' @param bootnum integer vector with non-NA entries wherever
+#'     \code{serno} is a SensorGnome.  Can be \code{NULL}, the
+#'     default, if all \code{serno} are Lotek receivers.
+#'
 #' @return a data.frame with these columns:
 #' \itemize{
 #' \item serno receiver serial number
@@ -22,44 +22,53 @@
 #' \item site site subfolder in /SG/year/proj, or NA if none found
 #' }
 #'
-#' 
+#'
 #' @export
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-getYearProjSite = function(serno, ts, bootnum = NULL) {
+getYearProjSite = function(serno, ts=NA, bootnum=NA) {
     serts = data_frame(serno   = serno,
                        ts      = ts,
-                       bootnum = if (is.null(bootnum)) as.integer(NA) else bootnum,
+                       bootnum = bootnum,
                        year    = as.integer(NA),
                        proj    = as.character(NA),
                        site    = as.character(NA)
                        )
 
+    isLotek = grepl("^Lotek-", serno, perl=TRUE)
+    lotek = subset(serts, isLotek)
+    sg = subset(serts, ! isLotek)
+
     ## use a temporary database to do this as a join query
     con = dbConnect(RSQLite::SQLite(), ":memory:")
     sql = function(...) dbGetQuery(con, sprintf(...))
 
-    sql("attach database '%s' as d", MOTUS_RECV_SERNO_DB)
-    dbWriteTable(con, "serts", serts %>% as.data.frame, row.names=FALSE)
+    sql("attach database '%s' as d", MOTUS_RECV_MAP_DB)
 
-    ## get latest row (largest tsHi) that is still no later than ts for each receiver 
-    sql("create table res as select t1.serno as serno, t1.ts as year, t2.Project as proj, t2.Site as site, t2.tsLo as tsLo, t2.tsHi as tsHi   from serts as t1 left outer join d.map as t2 on t1.serno = t2.Serno and t2.tsLo = (select max(t3.tsLo) from d.map as t3 where t3.Serno=t2.Serno and t3.tsLo <= t1.ts)")
+    ## look up Lotek sites by serial number and timestamp
 
-    res = sql("select * from res")
+    if (nrow(lotek) > 0) {
+        dbWriteTable(con, "lotek", lotek %>% as.data.frame, row.names=FALSE)
 
-    res$year = as.integer(year(structure(res$year, class=class(Sys.time()))))
+        ## get latest row (largest tsHi) that is still no later than ts for each receiver
+        sql("create table reslotek as select t1.serno as serno, t1.ts as year, t2.Project as proj, t2.Site as site from lotek as t1 left outer join d.map as t2 on t1.serno = t2.Serno and t2.tsLo = (select max(t3.tsLo) from d.map as t3 where t3.Serno=t2.Serno and t3.tsLo <= t1.ts)")
 
-    bad = which(is.na(res$site))
-    if (length(bad) > 0 && ! is.null(bootnum)) {
-        ## for each file with no site, use the year/proj/site with the largest bootnum
-        ## that is <= the file's
-        ## do this by a step mapping from bootnum to year/project/site entry
-        goodres = subset(res, !is.na(site))
-        goodres = goodres[order(goodres$bootnum),]
-        map = approxfun(goodres$bootnum, 1:nrow(goodres), method="constant", f=0, rule=2)
-        res[bad, c("year", "proj", "site")] = res[map(res$bootnum[bad]), c("year", "proj", "site")]
+        lotek = sql("select * from reslotek")
+
+        lotek$year = as.integer(year(structure(lotek$year, class=class(Sys.time()))))
+    }
+
+    ## look up sensorgnome sites by serial number and boot number
+
+    if (nrow(sg) > 0) {
+        dbWriteTable(con, "sg", sg %>% as.data.frame, row.names=FALSE)
+
+        ## get latest row (largest boot) that is still no later than ts for each receiver
+        sql("create table ressg as select t1.serno as serno, t2.Year as year, t2.Project as proj, t2.Site as site from sg as t1 left outer join d.bootnumMap as t2 on t1.serno = t2.Serno and t2.BootnumLo = (select max(t3.BootnumLo) from d.bootnumMap as t3 where t3.Serno=t2.Serno and t3.BootnumLo <= t1.bootnum)")
+
+        sg = sql("select * from ressg")
     }
     dbDisconnect(con)
-    return(res)
+    return(rbind(lotek, sg))
 }
