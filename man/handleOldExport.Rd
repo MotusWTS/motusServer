@@ -10,15 +10,12 @@ handleOldExport(j)
 \item{j}{the job, with these fields:
 \itemize{
 \item serno - the receiver serial number
-\item monoBN - the range of receiver bootnums; NULL for Lotek receivers.
-\item ts - the approximate range of timestamps; the first is guaranteed to
-be the minimum ts of any new data, but the last is a lower bound on the
-latest ts; the lower bound is accurate to ~ 1 hour for SGs, but may be
-wildly off for Lotek receivers.
+\item monoBN - the vector of receiver bootnums; NULL for Lotek receivers.
+\item ts - the approximate range of timestamps; NULL for SGs.
 }}
 }
 \value{
-TRUE
+TRUE if the export succeeded
 }
 \description{
 export data the 'old' (pre-motus) way.
