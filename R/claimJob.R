@@ -28,7 +28,6 @@ claimJob = function(j, N) {
     query(Jobs, paste0("update jobs set queue=", N, " where id=", j, " and queue=0"))
     if(isTRUE(N == j$queue)) {
         moveJob(j, MOTUS_PATH[[paste0("QUEUE", N)]])
-        jobLog(j, paste("Moved job to queue for server", N))
         return (TRUE)
     }
     return (FALSE)
