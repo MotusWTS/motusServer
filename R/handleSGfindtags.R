@@ -41,6 +41,8 @@ handleSGfindtags = function(j) {
     on.exit(lockReceiver(serno, FALSE))
 
     rv = sgFindTags(sgRecvSrc(serno), getMotusMetaDB(), resume=j$canResume, mbn=j$monoBN)
+    if (is.null(rv))
+        return(FALSE)
 
     jobLog(j, paste0("Got ", rv$numHits, " detections."))
 

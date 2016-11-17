@@ -66,7 +66,8 @@ sgFindTags = function(src, tagDB, resume=TRUE, par = sgDefaultFindTagsParams, mb
         tryCatch({
             cat(safeSys(bcmd, quote=FALSE))
         }, error = function(e) {
-            motusLog("sgFindTags failed with %s", paste(as.character(e), collapse="   \n"))
+            jobLog(j, "Failed with %s", paste(as.character(e), collapse="   \n"))
+            return(NULL)
         })
     }
 
