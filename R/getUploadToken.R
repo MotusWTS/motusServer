@@ -4,7 +4,7 @@
 #' user, we ask users to fetch a token from
 #'
 #'   https://sensorgnome.org/Sending_Data_for_Automatic_Processing
-#' 
+#'
 #' to include in the subject or body of their transfer email.  Tokens
 #' have a fixed lifespan, defaulting to 2 weeks, and up to two
 #' unexpired tokens per user can exist, so that at least one of them
@@ -15,7 +15,7 @@
 #'
 #' Tokens displayed in a web browser should be selectable by double-clicking
 #' on them, since they use only alphanumeric characters from the ASCII set.
-#' 
+#'
 #' As a side-effect, tokens are stored in the table 'upload_tokens' in
 #' the motus transfer database.  Expired tokens are deleted when new
 #' tokens are generated.
@@ -47,9 +47,7 @@ getUploadToken = function(user=MOTUS_ADMIN_USERNAME, email=MOTUS_ADMIN_EMAIL, li
     if (user=="Anonymous")
         return(list(token="INVALID; YOU MUST BE LOGGED IN", expiry=structure(0, class=c("POSIXt", "POSIXct"))))
 
-    mt = openMotusDB()
-    mtcon = mt$con
-    mtsql = function(...) dbGetQuery(mtcon, sprintf(...))
+    mtsql = safeSQL(openMotusDB()$con)
 
     ## check for existing tokens for this user; if there's one still good
     ## for at least 1/2 a lifetime, return it
