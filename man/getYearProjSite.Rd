@@ -4,7 +4,7 @@
 \alias{getYearProjSite}
 \title{Get the project and site folders, given a year and receiver serial number.}
 \usage{
-getYearProjSite(serno, ts = NA, bootnum = NA)
+getYearProjSite(serno, ts = NULL, bootnum = NULL)
 }
 \arguments{
 \item{serno}{character vector of serial numbers}

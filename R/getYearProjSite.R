@@ -27,7 +27,15 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-getYearProjSite = function(serno, ts=NA, bootnum=NA) {
+getYearProjSite = function(serno, ts=NULL, bootnum=NULL) {
+
+    ## convert NULL to NA for data_frame, which can't handle former
+
+    if (is.null(ts))
+        ts = NA
+    if (is.null(bootnum))
+        bootnum = NA
+
     serts = data_frame(serno   = serno,
                        ts      = ts,
                        bootnum = bootnum,
