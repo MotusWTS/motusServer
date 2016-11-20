@@ -47,9 +47,8 @@ tj$log, "
 ))
     }
 
-    ## change the job's type and move it to the top-level processServer queue
+    ## move the topJob to the top-level processServer queue
 
-    tj$type = "newFiles"
     tj$queue = 0
     moveJob(tj, MOTUS_PATH$QUEUE0)
     return (TRUE)

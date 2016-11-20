@@ -4,16 +4,19 @@
 \alias{loadJobs}
 \title{Load unfinished jobs from server database and enqueue them.}
 \usage{
-loadJobs(which = NULL)
+loadJobs(which = NULL, topJob = NULL)
 }
 \arguments{
 \item{which}{character scalar or integer scalar.  If character, only
 load jobs whose top job is of this type.  If integer, only
 load jobs whose top job is in that queue.  If NULL (the default),
 do not actually load or queue any jobs.}
+
+\item{topJob}{integer; if not NULL, jobs which are not done and whose
+topjob is this are queued.  Default: NULL.}
 }
 \value{
-no return value.  Jobs are enqueued in the global \code{MOTUS_QUEUE}.
+the number of jobs enqueued in the global \code{MOTUS_QUEUE}.
 The Jobs are stored in the global \code{Jobs}.
 }
 \description{

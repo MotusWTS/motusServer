@@ -36,14 +36,17 @@
 #'     load jobs whose top job is in that queue.  If NULL (the default),
 #'     do not actually load or queue any jobs.
 #'
-#' @return no return value.  Jobs are enqueued in the global \code{MOTUS_QUEUE}.
+#' @param topJob integer; if not NULL, jobs which are not done and whose
+#' topjob is this are queued.  Default: NULL.
+#'
+#' @return the number of jobs enqueued in the global \code{MOTUS_QUEUE}.
 #' The Jobs are stored in the global \code{Jobs}.
 #'
 #' @export
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-loadJobs = function(which = NULL) {
+loadJobs = function(which = NULL, topJob=NULL) {
     if (!is.null(which) && ( length(which) != 1 || ! (is.numeric(which) || is.character(which))))
         stop("Must specify 'which' as an integer queue number or character scalar job type")
 
@@ -52,18 +55,32 @@ loadJobs = function(which = NULL) {
     ## connect the global Jobs object to the MOTUS_SERVER_DB's jobs table
     Jobs <<- Copse(MOTUS_SERVER_DB, "jobs", type=character(), done=integer(), queue=integer(), path=character(), oldpath=character(), user=character())
 
-    if (is.null(which))
+    if (is.null(which) && is.null(topJob))
         return()
 
     ## get IDs of jobs of selected type
 
+    j = integer(0)
     if (is.character(which)) {
+        ## by job type
         j = query(Jobs,
-                  paste0("select t1.id from jobs as t1 left join jobs as t2 on t1.stump=t2.id where (t1.path is not null and t1.oldpath is not null) and (t1.done = 0) and ((t2.id is NULL and t1.type = '", which,"') or t2.type ='", which, "') order by t1.id"))[[1]]
+                  paste0("select t1.id from jobs as t1 left join jobs as t2 on t1.stump=t2.id where (t1.path is not null and t1.oldpath is not null) and (t1.done = 0) and ((t2.id is NULL and t1.type = '", which,"') or t2.type ='", which, "')"))[[1]]
     } else if (is.numeric(which)) {
+        ## by queue number
         j = query(Jobs,
-                  paste0("select t1.id from jobs as t1 left join jobs as t2 on t1.stump=t2.id where t1.done = 0 and t2.queue=",  round(which), " order by t1.id"))[[1]]
+                  paste0("select t1.id from jobs as t1 left join jobs as t2 on t1.stump=t2.id where t1.done = 0 and t2.queue=",  round(which)))[[1]]
     }
+
+    if (! is.null(topJob)) {
+        topJob = as.integer(topJob)[1]
+        if (! is.na(topJob)) {
+            ## by id of topJob
+            j = c(j, query(Jobs,
+                           paste0("select t1.id from jobs as t1 where t1.done = 0 and t1.stump=",  topJob))[[1]]
+                  )
+        }
+    }
+
     ## correct paths in case server was interrupted after recording new path but before moving job,
     ## and enqueue jobs
 
@@ -72,4 +89,5 @@ loadJobs = function(which = NULL) {
             Jobs[[i]]$path = Jobs[[i]]$oldpath
         queueJob(Jobs[[i]])
     }
+    return(length(j))
 }

@@ -79,6 +79,9 @@ handleEmail = function(j) {
     ## email is complete and it's time to process the data
     newSubJob(j, "filesWrangled")
 
+    ## queue the job for processing files
+    newSubJob(j, "newFiles")
+
     ## drop text parts with names like "partN"
     file.remove (
         dir(path,
@@ -87,5 +90,7 @@ handleEmail = function(j) {
             full.names = TRUE
             )
     )
+
+    ## top-level processing of the email is complete, although sub-jobs are not.
     return (TRUE)
 }
