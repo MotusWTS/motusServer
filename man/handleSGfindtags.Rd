@@ -15,7 +15,7 @@ handleSGfindtags(j)
 }}
 }
 \value{
-TRUE
+TRUE on success, or FALSE if the tag finder has an error.
 }
 \description{
 Called by \code{\link{server}}.

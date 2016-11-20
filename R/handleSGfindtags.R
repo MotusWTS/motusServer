@@ -13,7 +13,7 @@
 #' \item boolean TRUE or FALSE; can the tag finder be run with \code{--resume}?
 #' }
 #'
-#' @return TRUE
+#' @return TRUE on success, or FALSE if the tag finder has an error.
 #'
 #' @seealso \code{\link{server}}
 #'
@@ -40,11 +40,17 @@ handleSGfindtags = function(j) {
 
     on.exit(lockReceiver(serno, FALSE))
 
-    rv = sgFindTags(sgRecvSrc(serno), getMotusMetaDB(), resume=j$canResume, mbn=j$monoBN)
+    ## run the tag finder
+    tryCatch({
+        rv = sgFindTags(sgRecvSrc(serno), getMotusMetaDB(), resume=j$canResume, mbn=j$monoBN)
+    }, error = function(e) {
+        jobLog(j, paste(as.character(e), collapse="   \n"))
+        rv = NULL
+    })
+
     if (is.null(rv))
         return(FALSE)
 
     jobLog(j, paste0("Got ", rv$numHits, " detections."))
-
     return(TRUE)
 }

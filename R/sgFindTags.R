@@ -60,15 +60,9 @@ sgFindTags = function(src, tagDB, resume=TRUE, par = sgDefaultFindTagsParams, mb
         ## start the child;
         bcmd = paste(cmd, pars, if (resume) "--resume", paste0("--bootnum=", bn), "--src_sqlite", tagDB, src$path, " 2>&1 ")
 
-        cat("  => ", bcmd, "\n")
+        motusLog("Running %s", bcmd)
 
-        ## run the tag finder
-        tryCatch({
-            cat(safeSys(bcmd, quote=FALSE))
-        }, error = function(e) {
-            jobLog(j, "Failed with %s", paste(as.character(e), collapse="   \n"))
-            return(NULL)
-        })
+        safeSys(bcmd, quote=FALSE)
     }
 
     ## get ID and stats for new batch of tag detections
