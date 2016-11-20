@@ -104,6 +104,7 @@ function onExit {
     if [[ $TRACE != 0 && "$MYTMPDIR" =~ /tmp/tmp* ]]; then
         rm -rf "$MYTMPDIR"
     fi
+    echo Process server $N stopped. >> /sgm/logs/mainlog.txt
 }
 
 ## call the cleanup handler on exit
