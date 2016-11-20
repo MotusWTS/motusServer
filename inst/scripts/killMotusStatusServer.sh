@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# kill any currently running motus server(s)
-PIDFILE=/sgm/server.pid
+# kill the motus status server if it is running
+PIDFILE=/sgm/statusServer.pid
 PID=`cat $PIDFILE`
 if [[ "$PID" != "" ]]; then
     pkill -g $PID
