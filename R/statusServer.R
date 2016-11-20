@@ -58,7 +58,8 @@ latestJobs = function(env) {
     ## Note: the web page displaying this content needs to inlude the following <script> tag and
     ## contents, if the javascript written by this function is filtered out:
 
-    res$write('<script type="text/javascript">
+    res$write(paste0("<small>As of ", format(Sys.time(), "%d %b %Y %H:%M:%S (GMT)</small>"), '
+<script type="text/javascript">
 var numJobs = $(".jobDetails").length;
 
 function toggleJobExpand(n) {
@@ -94,7 +95,8 @@ function makeJobToggle(n) {
 for (var j=1; j <= numJobs; ++j) {
     $(".jobSummary" + j).click(makeJobToggle(j));
 }
-</script>');
+</script>
+'));
     user = as.character(req$GET()[['user']])[1]
     if (! is.na(user) && user != "admin" && user != "stuart" && user != "zoe") {
         jj = DB("select id from jobs where user=:user and pid is null order by id desc", user=user)[[1]]
@@ -117,7 +119,7 @@ for (var j=1; j <= numJobs; ++j) {
         jj = DB(sprintf("select id from jobs where pid is null order by id %s limit :n", if (k > 0) "desc" else ""), n=n) [[1]]
     }
 
-    info = DB("select id, coalesce(json_extract(data, '$.replyTo[0]'), json_extract(data, '$.replyTo')), ctime, mtime, type, done from jobs where id in (:jj) order by id desc", jj=jj)
+    info = DB(" select t1.id, coalesce(json_extract(t1.data, '$.replyTo[0]'), json_extract(t1.data, '$.replyTo')), t1.ctime, t1.mtime, t1.type, 0 = count(t2.id) as done from jobs as t1 left outer join jobs as t2 on t1.id=t2.stump and t2.done = 0 where t1.id in (:jj) group by t1.id order by t1.id desc", jj=jj)
     class(info$ctime) = class(info$mtime) = c("POSIXt", "POSIXct")
     info$done = c("Error", "Active", "Done")[2 + info$done]
 
@@ -212,12 +214,19 @@ queueStatus = function(env) {
     for (p in 1:8) {
         running = p %in% qr
         jj = DB("select distinct t1.id from jobs as t1 join jobs as t2 on t1.id = t2.stump where t1.pid is null and t1.queue=:p and t2.done=0", p=p)[[1]]
+        jgood = DB("select count(*) from jobs as t1 where t1.pid is null and t1.queue=:p and t1.done>0", p=p)[[1]]
+        jbad = DB("select count(*) from jobs as t1 where t1.pid is null and t1.queue=:p and t1.done<0", p=p)[[1]]
         res$write(paste0(ul,
           "<b>Tagfinder Processor #", p, "</b>\n",
           " - ", if (! running) "<b>not</b> ", "running\n",
-          " - has ", length(jj), " jobs partially processed\n"))
+          "<b>Jobs:</b>\n",
+          " - successfully completed: ", jgood, "\n",
+          " - completed with error(s): ", jbad, "\n",
+          " - incomplete: ", length(jj), "\n"
+          ))
         if (length(jj) > 0) {
-            info = DB("select t1.id, json_extract(t1.data, '$.auth.email'), t1.ctime, t1.mtime, group_concat(t2.type) as sj from jobs as t1 join jobs as t2 on t1.id=t2.stump where t1.id in (:jj) and t2.done == 0 group by t1.id order by t1.id desc", jj=jj)
+            res$write("<b>Incomplete jobs:</b>")
+            info = DB("select t1.id, coalesce(json_extract(t1.data, '$.replyTo[0]'), json_extract(t1.data, '$.replyTo')), t1.ctime, t1.mtime, group_concat(t2.type) as sj from jobs as t1 join jobs as t2 on t1.id=t2.stump where t1.id in (:jj) and t2.done == 0 group by t1.id order by t1.id desc", jj=jj)
             class(info$ctime) = class(info$mtime) = c("POSIXt", "POSIXct")
             info$sj = sapply(info$sj, function(x) { j = strsplit(x, ",")[[1]]; t = table(j); paste(sprintf("%s(%d)", names(t), t), collapse=", ")})
             names(info) = c("ID", "Sender", "Created", "Last Activity", "Incomplete SubJobs")
