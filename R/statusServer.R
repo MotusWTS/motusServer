@@ -69,26 +69,6 @@ function toggleJobExpand(n) {
          $(jdn).hide();
          $(jsn).css({"color": "black"});
          $(".jobSummary").show();
-   } else {
-         $(".jobDetails").hide();
-         $(".jobSummary").css({"color": "black"});
-         $(".jobSummary").show();
-         for (var j=n+3; j <= numJobs; ++j) {
-             $(".jobSummary" + j).hide();
-         }
-         $(jdn).show();
-         $(jsn).css({"color": "green"});
-   }
-};
-
-function toggleJobExpand(n) {
-   var jdn = ".jobDetails" + n;
-   var jsn = ".jobSummary" + n;
-   var vis = $(jdn).is(":visible");
-   if (vis) {
-         $(jdn).hide();
-         $(jsn).css({"color": "black"});
-         $(".jobSummary").show();
          $("#jobSummaryEllipsis").hide();
    } else {
          $(".jobDetails").hide();
@@ -137,7 +117,7 @@ for (var j=1; j <= numJobs; ++j) {
         jj = DB(sprintf("select id from jobs where pid is null order by id %s limit :n", if (k > 0) "desc" else ""), n=n) [[1]]
     }
 
-    info = DB("select id, json_extract(data, '$.auth.email'), ctime, mtime, type, done from jobs where id in (:jj) order by id desc", jj=jj)
+    info = DB("select id, coalesce(json_extract(data, '$.replyTo[0]'), json_extract(data, '$.replyTo')), ctime, mtime, type, done from jobs where id in (:jj) order by id desc", jj=jj)
     class(info$ctime) = class(info$mtime) = c("POSIXt", "POSIXct")
     info$done = c("Error", "Active", "Done")[2 + info$done]
 
@@ -211,15 +191,16 @@ queueStatus = function(env) {
 
     ul = "---------------------------------------------\n"
     res$write(paste0(
+        "<small>As of ", format(Sys.time(), "%d %b %Y %H:%M:%S (GMT)</small>"),
         "<pre>",
         "<b>Embargoed INBOX</b>\n",
         emb, " emails awaiting manual intervention\n",
         ul,
         "<b>INBOX</b>\n",
-        inb, " emails ready to process,\nwaiting for Email Server\n",
+        inb, " emails awaiting Email Server\n",
         ul,
         "<b>Email Server</b>\n",
-        " - is ", if (! es) "<b>not</b> ", "running\n",
+        " - ", if (! es) "<b>not</b> ", "running\n",
         " - has ", qm, " emails partially processed\n",
         ul,
         "<b>Master Queue</b>\n",
@@ -233,7 +214,7 @@ queueStatus = function(env) {
         jj = DB("select distinct t1.id from jobs as t1 join jobs as t2 on t1.id = t2.stump where t1.pid is null and t1.queue=:p and t2.done=0", p=p)[[1]]
         res$write(paste0(ul,
           "<b>Tagfinder Processor #", p, "</b>\n",
-          " - is ", if (! running) "<b>not</b> ", "running\n",
+          " - ", if (! running) "<b>not</b> ", "running\n",
           " - has ", length(jj), " jobs partially processed\n"))
         if (length(jj) > 0) {
             info = DB("select t1.id, json_extract(t1.data, '$.auth.email'), t1.ctime, t1.mtime, group_concat(t2.type) as sj from jobs as t1 join jobs as t2 on t1.id=t2.stump where t1.id in (:jj) and t2.done == 0 group by t1.id order by t1.id desc", jj=jj)
