@@ -64,22 +64,10 @@ handleOldExport = function(j) {
     tags = tags %>% summarize(ts=min(ts), n=length(ts), freq=avg(freq), sig=max(sig)) %>%
         collect %>% as.data.frame
 
-    ## ## add recv column
-    ## if (tags %>% head(1) %>% collect %>% nrow > 0) {
-    ##     tags$recv = oldrec$recv[i]
-    ##     tags$new = TRUE
-    ## }
-
     ## drop ".0" suffix from Ids, as it is wrong (FIXME: this should be done in getMotusMetaDB())
 
     fixup = which(grepl(".0@", tags$fullID, fixed=TRUE))
     tags$fullID[fixup] = sub(".0@", "@", tags$fullID[fixup], fixed=TRUE)
-
-    ## ## re-arrange components of fullID to: ID:BI#PROJ@FREQ
-    ## tags$physID = stri_replace_all_regex(tags$fullID, "(.*)#(.*):(.*)@(.*)", "$2:$3@$4")
-    ##
-    ## ## re-arrange components of fullID to: ID:BI#PROJ@FREQ
-    ## tags$fullID = stri_replace_all_regex(tags$fullID, "(.*)#(.*):(.*)@(.*)", "$2:$3#$1@$4")
 
     class(tags$ts) = c("POSIXt", "POSIXct")
 
@@ -90,30 +78,30 @@ handleOldExport = function(j) {
 
     ylab = "Full Tag ID"
     numTags = length(unique(tags$fullID))  ## compute separately for each plot
-    plotfilename = sprintf("/SG/contrib/%d/%s/%s/plots/%d_%s_%s_hourly_tags.png", year, proj, site, year, proj, site)
+    plotfilename = sprintf("/SG/contrib/%d/%s/%s/%d_%s_%s_hourly_tags.png", year, proj, site, year, proj, site)
     png(plotfilename, width=1024, height=300 + 20 * numTags, type="cairo-png")
-    rv = c(rv, plotfilename)
     dateLabel = sprintf("Date (%s, GMT)", dateStem(tags$ts[c(1, nrow(tags))]))
-
     print(xyplot(as.factor(fullID)~ts,
-                 groups = new, data = tags,
-                 panel = function(x, y, groups) {
+                 groups = ant, data = tags,
+                 panel = function(x, y, ...) {
                      panel.abline(h=unique(y), lty=2, col="gray")
                      panel.abline(v=dayseq, lty=3, col="gray")
-                     panel.xyplot(x, y, pch = ifelse(groups, newSym, oldSym), col = ifelse(groups, 2, 1), cex=2)
+                     panel.xyplot(x, y, ...)
                  },
                  auto.key = list(
-                     title="Data Source",
-                     col=c(2, 1), points=FALSE, text=c("new: ^", "old: v")
+                     title="Antenna",
+                     cex = 1
                  ),
-                 main = sprintf("%d %s %s Hourly Tags", year, proj, site),
-                 sub = sprintf("Receiver: %s", serno),
-                 ylab = ylab,
-                 xlab = dateLabel
+                 main = list(c(sprintf("%d %s %s Hourly Tags", year, proj, site),sprintf("Receiver: %s", serno)), cex=1.5),
+                 ylab = list(ylab, cex=1.5),
+                 xlab = list(dateLabel, cex=1.5),
+                 cex = 1.5,
+                 scales=list(cex = 1.5),
                  )
           )
     dev.off()
+    jobLog(j, paste0("Exported hourly dataset (and plot) to:  ", basename(datafilename), "(.png)"))
     system(sprintf("cd /SG/contrib/%d/%s/%s; /SG/code/attach_site_files_to_wiki.R", year, proj, site))
-
+    jobLog(j, paste0("Uploaded hourly dataset and plot to sensorgnome.org wiki page"))
     return (TRUE)
 }

@@ -10,7 +10,7 @@ handleOldExport(j)
 \item{j}{the job, with these fields:
 \itemize{
 \item serno - the receiver serial number
-\item monoBN - the vector of receiver bootnums; NULL for Lotek receivers.
+\item monoBN - the range of receiver bootnums; NULL for Lotek receivers.
 \item ts - the approximate range of timestamps; NULL for SGs.
 }}
 }
