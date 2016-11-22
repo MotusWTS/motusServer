@@ -86,7 +86,16 @@ if [[ $TRACE == 0 ]]; then
 else
     MYTMPDIR=`mktemp -d`
     cd $MYTMPDIR
-    echo "library(motus); options(error=recover); emailServer(tracing=TRUE)" > .Rprofile
+    ## set up an .Rprofile; because loading of the usual libraries
+    ## happens after .Rprofile is eval'd, they won't have been loaded
+    ## when processServer is called, so load them manually
+    cat <<EOF > .Rprofile
+    for (l in c("datasets", "utils", "grDevices", "graphics", "stats", "motus"))
+        library(l, character.only=TRUE)
+    rm(l)
+    options(error=recover)
+    emailServer(tracing=TRUE)
+EOF
     R
     pkill -g $$ inotifywait
 fi
