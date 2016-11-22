@@ -80,7 +80,7 @@ handleOldExport = function(j) {
     numTags = length(unique(tags$fullID))  ## compute separately for each plot
     plotfilename = sprintf("/SG/contrib/%d/%s/%s/%d_%s_%s_hourly_tags.png", year, proj, site, year, proj, site)
     png(plotfilename, width=1024, height=300 + 20 * numTags, type="cairo-png")
-    dateLabel = sprintf("Date (%s, GMT)", dateStem(tags$ts[c(1, nrow(tags))]))
+    dateLabel = sprintf("Date (%s, GMT)", paste(format(range(tags$ts), "%Y %b %d %H:%M"), collapse=" to "))
     print(xyplot(as.factor(fullID)~ts,
                  groups = ant, data = tags,
                  panel = function(x, y, ...) {
