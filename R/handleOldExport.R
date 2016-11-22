@@ -64,6 +64,10 @@ handleOldExport = function(j) {
     tags = tags %>% summarize(ts=min(ts), n=length(ts), freq=avg(freq), sig=max(sig)) %>%
         collect %>% as.data.frame
 
+    ## get pulse counts to show as status, and append to the dataset
+    pulses = dbGetQuery(src$con, "select ant, 'z  Antenna ' || ant as fullID, hourBin, hourBin * 3600 as ts, 1 as n, 0 as freq, 0 as sig from pulseCounts")
+    tags = rbind(tags, pulses)
+
     ## drop ".0" suffix from Ids, as it is wrong (FIXME: this should be done in getMotusMetaDB())
 
     fixup = which(grepl(".0@", tags$fullID, fixed=TRUE))
