@@ -116,6 +116,7 @@ MOTUS_PATH = list(
     REFS             = "/sgm/refs",            ## links to receiver DBs by year, projCode, siteCode
     SPAM             = "/sgm/spam",            ## saved invalid emails
     TAGS             = "/sgm/tags",            ## ??
+    TAGREG_CLEANUP   = "/sgm/tagregCleanup.R", ## script to provided tag registration cleanups downstream from motus
     TMP              = "/sgm/tmp"              ## intermediate storage; persistent across reboots
 )
 
