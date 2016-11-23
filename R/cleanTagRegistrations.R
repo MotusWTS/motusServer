@@ -181,6 +181,13 @@ cleanTagRegistrations = function(m, s, cleanBI = FALSE) {
             bind_rows(other)
     }
 
+
+    ## if there's a script for further downstream-from-motus cleanups, source it.
+
+    if (file.exists(MOTUS_PATH$TAGREG_CLEANUP)) {
+        source(MOTUS_PATH$TAGREG_CLEANUP, local=TRUE)
+    }
+
     ## sanity check on deployment times.  If tsStart and tsEnd are both
     ## specified in the database, make sure tsStart <= tsEnd
 
