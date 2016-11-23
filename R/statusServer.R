@@ -98,7 +98,7 @@ for (var j=1; j <= numJobs; ++j) {
 </script>
 '));
     user = as.character(req$GET()[['user']])[1]
-    if (! is.na(user) && user != "admin" && user != "stuart" && user != "zoe") {
+    if (! is.na(user) && user != "admin" && user != "stuart" && user != "zoe" && user != "phil") {
         jj = DB("select id from jobs where user=:user and pid is null order by id desc", user=user)[[1]]
     } else {
         n = as.integer(req$GET()[['n']])[1]
