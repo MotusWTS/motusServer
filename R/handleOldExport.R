@@ -57,7 +57,7 @@ handleOldExport = function(j) {
     plotfilename = sub("\\.rds$", "\\.png", datafilename, perl=TRUE)
 
     ## generate the plot object and condensed dataset
-    rv = makeReceiverPlot(src, mot, title, condense, ts, monoBN)
+    rv = makeReceiverPlot(src, mot, title, condense, ts, range(monoBN))
 
     saveRDS(rv$data, datafilename)
     png(plotfilename, width=rv$width, height=rv$height, type="cairo-png")
