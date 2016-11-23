@@ -13,8 +13,7 @@ handleSGfiles(j)
 TRUE
 }
 \description{
-Called by \code{\link{server}} for a file or folder added
-to the queue.
+Called by \code{\link{processServer}} for files from a sensorgnome
 }
 \details{
 For each unique SG serial number found among the names of
