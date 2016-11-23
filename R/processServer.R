@@ -92,7 +92,7 @@ processServer = function(N, tracing=FALSE) {
             browser()
             handled = h(j)
         } else {
-            loggingTry(j, handled <<- h(j))
+            handled = loggingTry(j, h(j))
         }
 
         ## If job handler hasn't already marked a status code in the "$done"
