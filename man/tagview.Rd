@@ -4,7 +4,7 @@
 \alias{tagview}
 \title{tagview create a view of tag detections linked to all metadata.}
 \usage{
-tagview(db, dbMeta = db, minRunLen = 3, keep = TRUE)
+tagview(db, dbMeta = db, minRunLen = 3, keep = FALSE)
 }
 \arguments{
 \item{db}{dplyr src_sqlite to detections database, or path to
@@ -18,14 +18,12 @@ runs.}
 hits are dropped}
 
 \item{keep}{should temporary tables be saved permanently in the
-    detections database?
-
-Default: FALSE.  See Note below.}
+detections database?  Default: FALSE.  See Note below.}
 }
 \value{
 a read-only data_frame of tag detections.  This data_frame
-    is an SQLite VIEW wrapped in a dplyr tbl(), and "lives" in
- the \code{db} object.
+    is an SQLite VIEW wrapped in a dplyr tbl(), and "lives" in the
+    \code{db} object.
 }
 \description{
 This function returns data_frames of tag detections.  These can

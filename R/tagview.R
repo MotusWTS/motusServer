@@ -15,13 +15,11 @@
 #'     hits are dropped
 #'
 #' @param keep should temporary tables be saved permanently in the
-#'     detections database?
-#'
-#' Default: FALSE.  See Note below.
+#'     detections database?  Default: FALSE.  See Note below.
 #'
 #' @return a read-only data_frame of tag detections.  This data_frame
-#'     is an SQLite VIEW wrapped in a dplyr tbl(), and "lives" in
-#'  the \code{db} object.
+#'     is an SQLite VIEW wrapped in a dplyr tbl(), and "lives" in the
+#'     \code{db} object.
 #'
 #' @export
 #'
@@ -51,7 +49,7 @@
 #' This will yield NA for the 'info' field when there is no tag deployment covering the range.
 #' Running EXPLAIN on this query in sqlite suggests it optimizes well.
 
-tagview = function(db, dbMeta=db, minRunLen=3, keep=TRUE) {
+tagview = function(db, dbMeta=db, minRunLen=3, keep=FALSE) {
 
     ## convert any paths to src_sqlite
 
@@ -127,8 +125,8 @@ tagview = function(db, dbMeta=db, minRunLen=3, keep=TRUE) {
         dbGetQuery(db$con, "drop table _ambigdeps;");
     }
 
-    query = "
-CREATE VIEW allt AS SELECT
+    query = paste0("
+CREATE", if (! keep) " TEMPORARY" else "", " VIEW allt AS SELECT
 t1.*, t2.*, t3.*, t4.*, t5.*, t6.*, t7.*, t8.*, t9.*, t10.* FROM
 hits AS t1
 
@@ -154,7 +152,7 @@ LEFT JOIN antDeps  AS t7  ON t7.deployID   = t6.deployID    AND t7.port = t2.ant
 LEFT JOIN species  AS t8  ON t8.id         = t5.speciesID
 LEFT JOIN projs    AS t9  ON t9.ID         = t5.projectID
 LEFT JOIN projs    AS t10 ON t10.ID        = t6.projectID
-"
+")
     dbGetQuery(db$con, "DROP VIEW IF EXISTS allt")
     dbGetQuery(db$con, query)
     return(tbl(db, "allt"))
