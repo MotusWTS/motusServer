@@ -4,7 +4,7 @@
 \alias{newJob}
 \title{create and enqueue a new job}
 \usage{
-newJob(.type, .parentPath, ..., .parent = NULL)
+newJob(.type, .parentPath, ..., .parent = NULL, .enqueue = TRUE)
 }
 \arguments{
 \item{.type}{character scalar name of job type}
@@ -16,6 +16,10 @@ item is set to the \code{.parent$path}, if \code{.parent} is not null.}
 \item{...}{additional named metadata for this job}
 
 \item{.parent}{.parent job, if any}
+
+\item{.enqueue}{logical scalar; should the job be added to the current queue?
+Default: TRUE, but non-server callers such as scripts should specify
+FALSE.}
 }
 \value{
 A Twig (see \link{\code{Copse}}) object \code{j} representing the job.

@@ -20,6 +20,10 @@
 #'
 #' @param .parent .parent job, if any
 #'
+#' @param .enqueue logical scalar; should the job be added to the current queue?
+#' Default: TRUE, but non-server callers such as scripts should specify
+#' FALSE.
+#'
 #' @return A Twig (see \link{\code{Copse}}) object \code{j} representing the job.
 #'     The path to the job folder is accessible as \code{j$dir}.
 #'
@@ -29,7 +33,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-newJob = function(.type, .parentPath, ..., .parent=NULL) {
+newJob = function(.type, .parentPath, ..., .parent=NULL, .enqueue=TRUE) {
     j = newTwig(Jobs, type=.type, done=FALSE, ..., .parent=.parent)
     if (! missing(.parentPath)) {
         np = file.path(.parentPath, sprintf("%08d", j))
@@ -38,5 +42,7 @@ newJob = function(.type, .parentPath, ..., .parent=NULL) {
     } else if (!is.null(.parent)) {
         j$path = .parent$path
     }
-    queueJob(j)
+    if (.enqueue)
+        queueJob(j)
+    return(j)
 }
