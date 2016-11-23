@@ -115,6 +115,7 @@ tagview = function(db, dbMeta=db, minRunLen=3, keep=FALSE) {
         ## create temporary ambiguity deployment records with a pasted fullID which we fix inside R
 
         ambigdeps = dbGetQuery(db$con, "SELECT ambigID, max(tsStart) as tsStart, group_concat(fullID) as fullID FROM _ambigjoin GROUP BY ambigID;")
+        dbGetQuery(db$con, "DROP VIEW _ambigjoin;")
 
         for (i in 1:nrow(ambigdeps)) {
             parts = unique(strsplit(ambigdeps$fullID[i], ",", fixed=TRUE)[[1]])
