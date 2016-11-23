@@ -56,7 +56,7 @@ handleOldExport = function(j) {
     datafilename = sprintf("/SG/contrib/%d/%s/%s/%d_%s_%s_%s_tags.rds", year, proj, site, year, proj, site, condenseLabel)
     plotfilename = sub("\\.rds$", "\\.png", datafilename, perl=TRUE)
 
-    ##
+    ## generate the plot object and condensed dataset
     rv = makeReceiverPlot(src, mot, title, condense, ts, monoBN)
 
     saveRDS(rv$data, datafilename)
@@ -64,7 +64,13 @@ handleOldExport = function(j) {
     print(rv$plot)
     dev.off()
 
-    jobLog(j, paste0("Exported hourly dataset (and plot) to:  ", basename(datafilename), "(.png)"))
+    ## make a pdf too, assuming a 90 dpi display
+    pdf(sub("\\.png$", ".pdf", plotfilename, perl=TRUE), width=rv$width / 90, height=rv$height / 90)
+    print(rv$plot)
+    dev.off()
+
+
+    jobLog(j, paste0("Exported hourly dataset (and plot) to:  ", basename(datafilename), "(.png/.pdf)"))
 
     system(sprintf("cd /SG/contrib/%d/%s/%s; /SG/code/attach_site_files_to_wiki.R", year, proj, site))
 
