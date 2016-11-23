@@ -1,8 +1,8 @@
 #' export data the 'old' (pre-motus) way.
 #'
-#' @details We generate Year/Proj/Site plots for the receiver, showing tag
-#' detections and receiver status, then upload these to the user's wiki
-#' page at sensorgnome.org
+#' @details We generate Year/Proj/Site plots for the receiver, showing
+#'     hourly tag detections and antenna status, then upload these to
+#'     the user's wiki page at sensorgnome.org
 #'
 #' @param j the job, with these fields:
 #' \itemize{
@@ -46,66 +46,28 @@ handleOldExport = function(j) {
     mot = getMotusMetaDB()
     tags = tagview(src, mot)
 
-    ## group detections by antenna, tag, and hour
-    tags = tags %>% filter_(~(is.na(freqsd) | freqsd < 0.1) & len >= 3) %>% mutate(hourBin = round(ts/3600-0.5, 0)) %>% group_by(ant, fullID, hourBin)
+    ## plot only the first detection of each tag by each antennna in each condensation period
+    ## Condensation periods are in seconds.
 
-    ## filter by monoBN or ts
-    if (isLotek) {
-        ## look at past 8 months for receiver
-        tlo = ts[2] - 24 * 3600 * 240
-        tags = tags %>% filter_ (~ts >= tlo & ts <= ts[2])
-    } else {
-        monoBNlo = min(monoBN)
-        monoBNhi = max(monoBN)
-        tags = tags %>% filter_ (~monoBN >= monoBNlo & monoBN <= monoBNhi)
-    }
+    condense = 3600
+    condenseLabel = "hourly"
 
-    ## summarize detections in group
-    tags = tags %>% summarize(ts=min(ts), n=length(ts), freq=avg(freq), sig=max(sig)) %>%
-        collect %>% as.data.frame
+    title = sprintf("%d %s %s Tags (%s)", year, proj, site, condenseLabel)
+    datafilename = sprintf("/SG/contrib/%d/%s/%s/%d_%s_%s_%s_tags.rds", year, proj, site, year, proj, site, condenseLabel)
+    plotfilename = sub("\\.rds$", "\\.png", datafilename, perl=TRUE)
 
-    ## get pulse counts to show as status, and append to the dataset
-    pulses = dbGetQuery(src$con, "select ant, 'z  Antenna ' || ant as fullID, hourBin, hourBin * 3600 as ts, 1 as n, 0 as freq, 0 as sig from pulseCounts")
-    tags = rbind(tags, pulses)
+    ##
+    rv = makeReceiverPlot(src, mot, title, condense, ts, monoBN)
 
-    ## drop ".0" suffix from Ids, as it is wrong (FIXME: this should be done in getMotusMetaDB())
-
-    fixup = which(grepl(".0@", tags$fullID, fixed=TRUE))
-    tags$fullID[fixup] = sub(".0@", "@", tags$fullID[fixup], fixed=TRUE)
-
-    class(tags$ts) = c("POSIXt", "POSIXct")
-
-    dayseq = seq(from=round(min(tags$ts), "days"), to=round(max(tags$ts),"days"), by=24*3600)
-
-    datafilename = sprintf("/SG/contrib/%d/%s/%s/%d_%s_%s_hourly_tags.rds", year, proj, site, year, proj, site)
-    saveRDS(tags, datafilename)
-
-    ylab = "Full Tag ID"
-    numTags = length(unique(tags$fullID))  ## compute separately for each plot
-    plotfilename = sprintf("/SG/contrib/%d/%s/%s/%d_%s_%s_hourly_tags.png", year, proj, site, year, proj, site)
-    png(plotfilename, width=1024, height=300 + 20 * numTags, type="cairo-png")
-    dateLabel = sprintf("Date (%s, GMT)", paste(format(range(tags$ts), "%Y %b %d %H:%M"), collapse=" to "))
-    print(xyplot(as.factor(fullID)~ts,
-                 groups = ant, data = tags,
-                 panel = function(x, y, ...) {
-                     panel.abline(h=unique(y), lty=2, col="gray")
-                     panel.abline(v=dayseq, lty=3, col="gray")
-                     panel.xyplot(x, y, ...)
-                 },
-                 auto.key = list(
-                     title="Antenna",
-                     cex = 1
-                 ),
-                 main = list(c(sprintf("%d %s %s Hourly Tags", year, proj, site),sprintf("Receiver: %s", serno)), cex=1.5),
-                 ylab = list(ylab, cex=1.5),
-                 xlab = list(dateLabel, cex=1.5),
-                 cex = 1.5,
-                 scales=list(cex = 1.5),
-                 )
-          )
+    saveRDS(rv$data, datafilename)
+    png(plotfilename, width=rv$width, height=rv$height, type="cairo-png")
+    print(rv$plot)
     dev.off()
+
     jobLog(j, paste0("Exported hourly dataset (and plot) to:  ", basename(datafilename), "(.png)"))
+
     system(sprintf("cd /SG/contrib/%d/%s/%s; /SG/code/attach_site_files_to_wiki.R", year, proj, site))
+
     jobLog(j, paste0("Uploaded hourly dataset and plot to sensorgnome.org wiki page"))
     return (TRUE)
 }

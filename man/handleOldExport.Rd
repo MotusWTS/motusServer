@@ -21,9 +21,9 @@ TRUE if the export succeeded
 export data the 'old' (pre-motus) way.
 }
 \details{
-We generate Year/Proj/Site plots for the receiver, showing tag
-detections and receiver status, then upload these to the user's wiki
-page at sensorgnome.org
+We generate Year/Proj/Site plots for the receiver, showing
+    hourly tag detections and antenna status, then upload these to
+    the user's wiki page at sensorgnome.org
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
