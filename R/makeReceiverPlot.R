@@ -139,11 +139,21 @@ makeReceiverPlot = function(recv, meta=NULL, title="", condense=3600, ts = NULL,
     tags$fullID[fixup] = sub(".0@", "@", tags$fullID[fixup], fixed=TRUE)
 
     tags$fullID = as.factor(tags$fullID)
+
     ## get pulse counts to show as status, and append to the dataset
-    ## Fixme: if anyone cares, they can recode this in dplyr form
+    ## FIXME: if anyone cares, they can recode this in dplyr form
 
     if (! isLotek) {
-        pulses = dbGetQuery(recv$con, "select ant, ' Antenna ' || ant as fullID, hourBin as bin, hourBin * 3600 + 1800 as ts, 1 as n, 0 as freq, 0 as sig from pulseCounts")
+        pulses = dbGetQuery(recv$con, sprintf("
+select t1.ant,
+' Antenna ' || t1.ant as fullID,
+t1.hourBin as bin,
+t1.hourBin * 3600 + 1800 as ts,
+1 as n,
+0 as freq,
+0 as sig
+from pulseCounts as t1 join batches as t2 on t1.batchID=t2.batchID where t2.monoBN between %.14g and %.14g group by t1.ant, t1.hourBin",
+monoBN[1], monoBN[2]))
         pulses$fullID = as.factor(pulses$fullID)
         tags = rbind(tags, pulses)
     }
@@ -153,9 +163,9 @@ makeReceiverPlot = function(recv, meta=NULL, title="", condense=3600, ts = NULL,
     dayseq = seq(from=round(min(tags$ts), "days"), to=round(max(tags$ts),"days"), by=24*3600)
 
     ylab = "Full Tag ID"
-    numTags = length(unique(tags$fullID))  ## compute separately for each plot
-    width = 1024
-    height = 300 + 20 * numTags
+    numTags = length(unique(tags$fullID))
+    width = 500 + 7 * length(dayseq)  ## 7 pixels per day plus margins
+    height = 300 + 20 * numTags  ## 20 pixels per tag line plus margins
     dateLabel = sprintf("Date (%s, GMT)", paste(format(range(tags$ts), "%Y %b %d %H:%M"), collapse=" to "))
     plot = xyplot(
         fullID~ts,
@@ -164,7 +174,7 @@ makeReceiverPlot = function(recv, meta=NULL, title="", condense=3600, ts = NULL,
             panel.abline(h=unique(y), lty=2, col="gray")
             panel.abline(v=dayseq, lty=3, col="gray")
             ant = grepl("^ Antenna ", y, perl=TRUE)
-            panel.xyplot(x[ant], y[ant], groups=groups[ant], pch = 15, ...)
+            panel.xyplot(x[ant], y[ant], groups=groups[ant], pch = '|', ...)
             panel.xyplot(x[! ant], y[! ant], groups=groups[! ant], ...)
         },
         main = list(c(title,sprintf("Receiver: %s", serno)), cex=1.5),
