@@ -47,13 +47,13 @@ following the instructions here:\n
         return (FALSE)
     }
     jobLog(j, paste0("Downloading using method '", method, "' for:\n   ", sanURL))
+    rv = NULL
     tryCatch ({
         rv = getter(url, path)
     }, error = function(e) {
         e = paste0(e)
         e = paste("We failed to download the file or folder you sent.\nEither the link is wrong, or the content has expired.\nPlease try resending.\nCurl error message was: ", e)
         jobLog(j, e)
-        rv = NULL
     })
 
     if (is.null(rv))
