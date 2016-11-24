@@ -33,15 +33,6 @@ handleEmail = function(j) {
     ## for now, be strict about token expiry
     valid = j$valid = ! (is.null(auth) || auth$expired)
 
-    if (! valid) {
-        newSubJob(j, "unvalidatedEmail")
-        return(TRUE)
-    }
-
-    ## record user in own column; remainder of auth in data field
-    j$user = auth$username
-    j$auth = auth[- match("username", names(auth))]
-
     ## get address(es) of people to reply to; we only send replies for valid emails
 
     replyTo = unique(regexPieces("(?m)(?:^From: )(?<from>.*$)|(?:^Reply-To: )(?<reply_to>.*$)", txt) [[1]])
@@ -54,6 +45,15 @@ handleEmail = function(j) {
         replyTo = auth$email
 
     j$replyTo = replyTo
+
+    if (! valid) {
+        newSubJob(j, "unvalidatedEmail")
+        return(TRUE)
+    }
+
+    ## record user in own column; remainder of auth in data field
+    j$user = auth$username
+    j$auth = auth[- match("username", names(auth))]
 
     ## remove "quoted block" formatting (e.g. "> > > ") which might
     ## result in word-wrapped original text and broken up URLs in
