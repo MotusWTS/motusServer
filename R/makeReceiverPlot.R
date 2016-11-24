@@ -173,11 +173,11 @@ monoBN[1], monoBN[2]))
         panel = function(x, y, groups, ...) {
             panel.abline(h=unique(y), lty=2, col="gray")
             panel.abline(v=dayseq, lty=3, col="gray")
-            ant = grepl("^ Antenna ", y, perl=TRUE)
+            ant = grepl("^Antenna ", y, perl=TRUE)
             panel.xyplot(x[ant], y[ant], groups=groups[ant], pch = '|', ...)
             panel.xyplot(x[! ant], y[! ant], groups=groups[! ant], ...)
         },
-        main = list(c(title,sprintf("Receiver: %s", serno)), cex=1.5),
+        main = list(paste0(title, "\n", sprintf("Receiver: %s", serno)), cex=1.5),
         ylab = list(ylab, cex=1.5),
         xlab = list(dateLabel, cex=1.5),
         cex = 1.5,
