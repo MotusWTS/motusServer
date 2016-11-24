@@ -110,16 +110,16 @@ for (var j=1; j <= numJobs; ++j) {
         if (k == 0)
             k = DB("select max (id) from jobs where pid is null")[[1]]
         if (k > 0) {
-            jj = DB("select id from jobs where pid is null and id <= :k order by id desc limit :n", k=k, n=n)[[1]]
+            jj = DB("select id from jobs where pid is null and id <= :k order by mtime desc limit :n", k=k, n=n)[[1]]
         } else {
-            jj = DB("select id from jobs where pid is null and id >= :k order by id desc limit :n", k=-k, n=n)[[1]]
+            jj = DB("select id from jobs where pid is null and id >= :k order by mtime desc limit :n", k=-k, n=n)[[1]]
         }
     }
     if (length(jj) == 0) {
-        jj = DB(sprintf("select id from jobs where pid is null order by id %s limit :n", if (k > 0) "desc" else ""), n=n) [[1]]
+        jj = DB(sprintf("select id from jobs where pid is null order by mtime %s limit :n", if (k > 0) "desc" else ""), n=n) [[1]]
     }
 
-    info = DB(" select t1.id, coalesce(json_extract(t1.data, '$.replyTo[0]'), json_extract(t1.data, '$.replyTo')), t1.ctime, t1.mtime, t1.type, min(t2.done) as done from jobs as t1 left outer join jobs as t2 on t1.id=t2.stump where t1.id in (:jj) group by t1.id order by t1.id desc", jj=jj)
+    info = DB(" select t1.id, coalesce(json_extract(t1.data, '$.replyTo[0]'), json_extract(t1.data, '$.replyTo')), t1.ctime, t1.mtime, t1.type, min(t2.done) as done from jobs as t1 left outer join jobs as t2 on t1.id=t2.stump where t1.id in (:jj) group by t1.id order by t1.mtime desc", jj=jj)
     class(info$ctime) = class(info$mtime) = c("POSIXt", "POSIXct")
     info$done = c("Error", "Active", "Done")[2 + info$done]
 
@@ -226,7 +226,7 @@ queueStatus = function(env) {
           ))
         if (length(jj) > 0) {
             res$write("<b>Incomplete jobs:</b>")
-            info = DB("select t1.id, coalesce(json_extract(t1.data, '$.replyTo[0]'), json_extract(t1.data, '$.replyTo')), t1.ctime, t1.mtime, group_concat(t2.type) as sj from jobs as t1 join jobs as t2 on t1.id=t2.stump where t1.id in (:jj) and t2.done == 0 group by t1.id order by t1.id desc", jj=jj)
+            info = DB("select t1.id, coalesce(json_extract(t1.data, '$.replyTo[0]'), json_extract(t1.data, '$.replyTo')), t1.ctime, t1.mtime, group_concat(t2.type) as sj from jobs as t1 join jobs as t2 on t1.id=t2.stump where t1.id in (:jj) and t2.done == 0 group by t1.id order by t1.mtime desc", jj=jj)
             class(info$ctime) = class(info$mtime) = c("POSIXt", "POSIXct")
             info$sj = sapply(info$sj, function(x) { j = strsplit(x, ",")[[1]]; t = table(j); paste(sprintf("%s(%d)", names(t), t), collapse=", ")})
             names(info) = c("ID", "Sender", "Created", "Last Activity", "Incomplete SubJobs")
