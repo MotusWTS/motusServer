@@ -38,13 +38,20 @@ handleOldExport = function(j) {
     year = info$year
     proj = info$proj
     site = info$site
-    if (is.na(site))
+    if (is.na(site)) {
+        msg = paste0("Error: unable to determine Year / Proj / Site for ", serno)
+        if (isLotek) {
+            msg = paste0(msg, " in ts range: ", paste(ts, collapse=", "))
+        } else {
+            msg = paste0(msg, " in monoBN (boot sessions): ", paste(monoBN, collapse=", "))
+        }
+        jobLog(j, msg)
         return(FALSE)
+    }
 
     ## get a tagview for the detections in this receiver (a tagview joins batches/runs/hits with appropriate metadata)
     src = sgRecvSrc(serno)
     mot = getMotusMetaDB()
-    tags = tagview(src, mot)
 
     ## plot only the first detection of each tag by each antennna in each condensation period
     ## Condensation periods are in seconds.
