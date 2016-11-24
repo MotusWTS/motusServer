@@ -119,7 +119,7 @@ for (var j=1; j <= numJobs; ++j) {
         jj = DB(sprintf("select id from jobs where pid is null order by id %s limit :n", if (k > 0) "desc" else ""), n=n) [[1]]
     }
 
-    info = DB(" select t1.id, coalesce(json_extract(t1.data, '$.replyTo[0]'), json_extract(t1.data, '$.replyTo')), t1.ctime, t1.mtime, t1.type, 0 = count(t2.id) as done from jobs as t1 left outer join jobs as t2 on t1.id=t2.stump and t2.done = 0 where t1.id in (:jj) group by t1.id order by t1.id desc", jj=jj)
+    info = DB(" select t1.id, coalesce(json_extract(t1.data, '$.replyTo[0]'), json_extract(t1.data, '$.replyTo')), t1.ctime, t1.mtime, t1.type, min(t2.done) as done from jobs as t1 left outer join jobs as t2 on t1.id=t2.stump where t1.id in (:jj) group by t1.id order by t1.id desc", jj=jj)
     class(info$ctime) = class(info$mtime) = c("POSIXt", "POSIXct")
     info$done = c("Error", "Active", "Done")[2 + info$done]
 
