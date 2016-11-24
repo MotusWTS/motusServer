@@ -81,6 +81,12 @@ handleOldExport = function(j) {
 
     system(sprintf("cd /SG/contrib/%d/%s/%s; /SG/code/attach_site_files_to_wiki.R", year, proj, site))
 
-    jobLog(j, paste0("Uploaded hourly dataset and plot to sensorgnome.org wiki page"))
+    ## get the wiki user for this site
+    con = dbConnect(SQLite(), "/SG/motus_sg.sqlite")
+    user = dbGetQuery(con, paste0("select SGwikiUser from projectMap where year=", year, " and ProjCode='", proj, "'"))[[1]]
+    dbDisconnect(con)
+
+    wikiLink = sprintf('https://sensorgnome.org/User:%s/%s', user, site)
+    jobLog(j, paste0('Uploaded data and plot to wiki page here: <a href="', wikiLink, '">', wikiLink, '</a>'))
     return (TRUE)
 }
