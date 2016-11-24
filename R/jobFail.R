@@ -5,10 +5,10 @@
 #'
 #' @param j the job
 #'
+#' @param msg message to add to job's log
+#'
 #' @param code; the value to store in "done"; should be non-zero
 #' and defaults to -1.
-#'
-#' @param ... character vector of messages to add to job's log
 #'
 #' @return no return value
 #'
@@ -16,8 +16,8 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-jobFail = function(j, code=-1, ...) {
+jobFail = function(j, msg, code=-1) {
     j$done = code
-    jobLog(j, c(...))
+    jobLog(j, msg)
     moveJob(j, MOTUS_PATH$ERRORS)
 }

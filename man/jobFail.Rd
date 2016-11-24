@@ -4,12 +4,12 @@
 \alias{jobFail}
 \title{mark a job as failed}
 \usage{
-jobFail(j, code = -1, ...)
+jobFail(j, msg, code = -1)
 }
 \arguments{
 \item{j}{the job}
 
-\item{...}{character vector of messages to add to job's log}
+\item{msg}{message to add to job's log}
 
 \item{code;}{the value to store in "done"; should be non-zero
 and defaults to -1.}
