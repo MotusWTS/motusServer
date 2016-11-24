@@ -34,7 +34,7 @@ the status messages.
 
 ----------------------------------------------------------------------------
 ", txt))
-    jobFail(j, "Missing or expired token in email")
+    jobFail(tj, "Missing or expired token in email")
 
     return(TRUE)
 }
