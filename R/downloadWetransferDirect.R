@@ -63,8 +63,11 @@ downloadWetransferDirect = function(link, dir) {
     ## get rewritten URL from wetransfer.com
     resp = fromJSON(getURLContent(url, followlocation=TRUE))
 
-    ## might or might not contain a direct_link field; process appropriately
-    if ("direct_link" %in% names(resp)) {
+    ## might or might not contain a direct_link field; process appropriately\
+    if ("error" %in% names(resp)) {
+        stop(paste("Unable to download link - maybe it has expired?\nError was: ", resp$error))
+
+    } else if ("direct_link" %in% names(resp)) {
         p = parse_url(resp$direct_link)
         file = p$query$filename
         if (is.null(file))
