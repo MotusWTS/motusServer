@@ -57,7 +57,7 @@ height
 
 \item ant: antenna number
 
-\item fullID full tag ID, or " Antenna N "; the latter 'detections'
+\item fullID full tag ID, or " Antenna N Status"; the latter 'detections'
 just indicate the antenna was functioning in the hour centred on
 the timestamp
 

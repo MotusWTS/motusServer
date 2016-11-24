@@ -54,7 +54,7 @@
 #'
 #' \item ant: antenna number
 #'
-#' \item fullID full tag ID, or " Antenna N "; the latter 'detections'
+#' \item fullID full tag ID, or " Antenna N Status"; the latter 'detections'
 #' just indicate the antenna was functioning in the hour centred on
 #' the timestamp
 #'
@@ -146,7 +146,7 @@ makeReceiverPlot = function(recv, meta=NULL, title="", condense=3600, ts = NULL,
     if (! isLotek) {
         pulses = dbGetQuery(recv$con, sprintf("
 select t1.ant,
-' Antenna ' || t1.ant as fullID,
+'Antenna ' || t1.ant || ' Status' as fullID,
 t1.hourBin as bin,
 t1.hourBin * 3600 + 1800 as ts,
 1 as n,
