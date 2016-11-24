@@ -80,9 +80,6 @@ handleEmail = function(j) {
     ## email is complete and it's time to process the data
     newSubJob(j, "filesWrangled")
 
-    ## queue the job for processing files
-    newSubJob(j, "newFiles")
-
     ## drop text parts with names like "partN"
     file.remove (
         dir(path,

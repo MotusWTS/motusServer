@@ -16,7 +16,9 @@ TRUE if the job was successfully moved to the processing queue
 Sends reply to sender giving status of file wrangling, and moves
 the job to the top-level motus processing queue, from which one of
 the processServer() processes will claim it and process the files
-transferred by the email.  The job type is changed to "newFiles".
+transferred by the email.  Just before moving the job, a new subjob
+of type "newFiles" is created, but not enqueued.  Whichever
+processServer claims the job will end up enqueuing the "newFiles" subjob.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}

@@ -3,7 +3,9 @@
 #' Sends reply to sender giving status of file wrangling, and moves
 #' the job to the top-level motus processing queue, from which one of
 #' the processServer() processes will claim it and process the files
-#' transferred by the email.  The job type is changed to "newFiles".
+#' transferred by the email.  Just before moving the job, a new subjob
+#' of type "newFiles" is created, but not enqueued.  Whichever
+#' processServer claims the job will end up enqueuing the "newFiles" subjob.
 #'
 #' @param j the job
 #'
@@ -46,6 +48,11 @@ tj$log, "
 "
 ))
     }
+
+    ## Create but don't enqueue the job for processing files.
+    ## The job will be enqueued by the processServer that claims
+    ## this from queue 0.
+    newSubJob(tj, "newFiles", .enqueue=FALSE)
 
     ## move the topJob to the top-level processServer queue
 
