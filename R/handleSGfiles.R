@@ -76,7 +76,7 @@ handleSGfiles = function(j) {
     info %>%
         filter(use > 0) %>%
         arrange(serno) %>%
-        do (ignore=queueExport)
+        do (ignore=queueExport(.))
 
     return(TRUE)
 }
