@@ -29,9 +29,6 @@ handleEmail = function(j) {
     j$msgFile = paste0(newmsg, ".bz2")
 
     auth = validateEmail(txt)
-    ## record user in own column; remainder of auth in data field
-    j$user = auth$username
-    j$auth = auth[- match("username", names(auth))]
 
     ## for now, be strict about token expiry
     valid = j$valid = ! (is.null(auth) || auth$expired)
@@ -40,6 +37,10 @@ handleEmail = function(j) {
         newSubJob(j, "unvalidatedEmail")
         return(TRUE)
     }
+
+    ## record user in own column; remainder of auth in data field
+    j$user = auth$username
+    j$auth = auth[- match("username", names(auth))]
 
     ## get address(es) of people to reply to; we only send replies for valid emails
 
