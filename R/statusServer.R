@@ -179,7 +179,7 @@ queueStatus = function(env) {
     es = file.exists("/sgm/emailServer.pid")
 
     ## num jobs in email queue
-    qm = DB("select count(*) from jobs where pid is null and queue is null and done=0 and type='email'")[[1]]
+    qm = DB("select count(distinct t1.id) from jobs as t1 join jobs as t2 on t1.id=t2.stump where t1.pid is null and t1.queue is null and t2.done=0 and t1.type='email'")[[1]]
 
     ## num jobs waiting to be assigned to a processor
     q0 = DB("select count(*) from jobs where pid is null and queue=0 and done=0")[[1]]
@@ -214,13 +214,13 @@ queueStatus = function(env) {
     for (p in 1:8) {
         running = p %in% qr
         jj = DB("select distinct t1.id from jobs as t1 join jobs as t2 on t1.id = t2.stump where t1.pid is null and t1.queue=:p and t2.done=0", p=p)[[1]]
-        jgood = DB("select count(*) from jobs as t1 where t1.pid is null and t1.queue=:p and t1.done>0", p=p)[[1]]
-        jbad = DB("select count(*) from jobs as t1 where t1.pid is null and t1.queue=:p and t1.done<0", p=p)[[1]]
+        jdone = DB("select count(*) from jobs as t1 where t1.pid is null and t1.queue=:p and t1.done!=0", p=p)[[1]]
+        jbad = DB("select count(distinct t1.id) from jobs as t1 join jobs as t2 on t1.id = t2.stump where t1.pid is null and t1.queue=:p and t2.done<0", p=p)[[1]]
         res$write(paste0(ul,
           "<b>Tagfinder Processor #", p, "</b>\n",
           " - ", if (! running) "<b>not</b> ", "running\n",
           "<b>Jobs:</b>\n",
-          " - successfully completed: ", jgood, "\n",
+          " - successfully completed: ", jdone - jbad, "\n",
           " - completed with error(s): ", jbad, "\n",
           " - incomplete: ", length(jj), "\n"
           ))
