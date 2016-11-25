@@ -58,5 +58,4 @@ tj$log, "
 
     tj$queue = 0
     moveJob(tj, MOTUS_PATH$QUEUE0)
-    return (TRUE)
 }
