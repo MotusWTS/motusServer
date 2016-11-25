@@ -40,7 +40,7 @@ testFile = function(files) {
             next
         }
         if (grepl("\\.(bz2|gz|zip|7z)$", files[i], ignore.case=TRUE)) {
-            ec = attr(safeSys("7z", "t", files[i], minErrorCode=255), "exitCode")
+            ec = attr(safeSys("7z", "l", files[i], minErrorCode=255), "exitCode")
             if (ec != 0) {
                 ## a .gz archive can be corrupt because the SG hasn't finished writing it out
                 ## yet; the evidence for this will be existince of a file with the same name but
