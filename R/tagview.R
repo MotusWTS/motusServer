@@ -1,8 +1,10 @@
-#' tagview create a view of tag detections linked to all metadata.
+#' create a tbl of tag detections with all metadata.
 #'
-#' This function returns data_frames of tag detections.  These can
-#' come from receiver databases or tag databases.  Metadata for projects,
-#' tag, and receiver deployments are linked when available.
+#' Creates a view (aka 'Big Fat Join') of tag detections from a motus
+#' database and associated metadata for projects, tags and receivers,
+#' where available.  The view is wrapped in a dplyr::tbl to ease use
+#' with the dplyr package, but the view is also available directly
+#' from the underlying SQLite connection.
 #'
 #' @param db dplyr src_sqlite to detections database, or path to
 #'     .sqlite file.  The database must have tables batches, hits,
@@ -15,26 +17,32 @@
 #'     hits are dropped
 #'
 #' @param keep should temporary tables be saved permanently in the
-#'     detections database?  Default: FALSE.  See Note below.
+#'     detections database?  Default: FALSE.  If true, subsequent
+#' calls to this function for the same detection database won't need
+#' the \code{dbMeta} database, because all metadata will have been
+#' copied to \code{db}.
 #'
-#' @return a read-only data_frame of tag detections.  This data_frame
-#'     is an SQLite VIEW wrapped in a dplyr tbl(), and "lives" in the
+#' @return a read-only dplyr::tbl of tag detections.  This tbl
+#'     is an SQLite VIEW wrapped in a dplyr::tbl(), and "lives" in the
 #'     \code{db} object.
 #'
 #' @export
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
-
+#'
 #' Implementation details:
 #'
-#' For both tags and receivers, deployment meta-data has to be looked up by hit timestamp;
-#' i.e. we need the latest deployment record which is earlier than the hit timestamp.
-#' i.e. we are joining the hit table to the tag deployment table by a timestamp on the hit
-#' and a greatest lower bound for that timestamp in the deployment table.
-#' It would be nice if there were an SQL "LOWER JOIN" operator, which instead of joining
-#' on exact key value, would join a key on the left to its greatest lower bound on the right.
-#' (and similary, an "UPPER JOIN" operator to bind to the least upper bound on the right.)
-#' For keys with B-tree indexes, this would be as fast as an exact join.
+#' For both tags and receivers, deployment meta-data has to be looked
+#' up by detection ("hit") timestamp; i.e. we need the latest
+#' deployment record which is still before the hit timestamp.  So we
+#' are joining the hit table to the deployment table by a timestamp on
+#' the hit and a greatest lower bound for that timestamp in the
+#' deployment table.  It would be nice if there were an SQL
+#' "LOWER JOIN" operator, which instead of joining on exact key value,
+#' would join a key on the left to its greatest lower bound on the
+#' right.  (and similary, an "UPPER JOIN" operator to bind to the
+#' least upper bound on the right.)  For keys with B-tree indexes,
+#' this would be as fast as an exact join.
 #'
 #' We can instead code this as a subquery like so:
 #'
@@ -58,6 +66,8 @@ tagview = function(db, dbMeta=db, minRunLen=3, keep=FALSE) {
             assign(n, src_sqlite(get(n)))
 
     ## copy needed tables from dbMeta to temporary db on same connection as db
+    ## FIXME: copy only those records needed for the tags
+
     n = src_tbls(db)
 
     for (t in c("tags", "tagDeps", "recvDeps", "antDeps", "species", "projs")) {
