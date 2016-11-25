@@ -56,7 +56,7 @@ if (is.na(serno)) stop("You must specify a receiver serial number.")
 ARGS = ARGS[-1]
 
 if (length(ARGS) > 0) {
-    monoBN = range(as.integer(ARGS[-1]))
+    monoBN = range(as.integer(ARGS))
 }
 
 suppressMessages(suppressWarnings(library(motus)))
