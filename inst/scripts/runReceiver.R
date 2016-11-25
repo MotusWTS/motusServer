@@ -1,6 +1,6 @@
 #!/usr/bin/Rscript
 
-suppressMessages(suppressWarnings(library(motus)))
+suppressMessages(suppressWarnings(library(motusServer)))
 
 ## parameters for the tag finder
 ## Note the use of the '-e' parameter, to force tag deployment events to be

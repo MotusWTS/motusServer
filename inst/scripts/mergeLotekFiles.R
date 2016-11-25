@@ -15,7 +15,7 @@ A summary data.frame of file properties is written to an rds file in DIR
 
 ARGS = commandArgs(TRUE)
 
-suppressMessages(suppressWarnings(library(motus)))
+suppressMessages(suppressWarnings(library(motusServer)))
 
 DIR       = ARGS[1]
 RECVDBDIR = ARGS[2]

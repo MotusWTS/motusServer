@@ -26,7 +26,7 @@ while (length(ARGS) > 0) {
     ARGS = ARGS[-1]
 }
 
-suppressWarnings(suppressMessages(library(motus)))
+suppressWarnings(suppressMessages(library(motusServer)))
 
 errors = dir(motus:::MOTUS_PATH$ERRORS, full.names=TRUE)
 

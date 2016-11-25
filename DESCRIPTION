@@ -1,9 +1,9 @@
-Package: motus
-Version: 0.1.4
-Title: Operate the sensorgnome.org side of the sensorgnome/motus data link.
+Package: motusServer
+Version: 0.2.0
+Title: Operate a server to process data for http://motus.org
 Description: Process raw data from receivers and store results in
-    transfer tables for motus-wts.org Results use native motus-wts
-    database keys, which are obtained by querying motus-wts.org for
+    transfer tables polled by http://motus.org . Results use native motus
+    database keys, which are obtained by querying motus.org for
     metadata on tags and receivers.
 Author: John Brzustowski <jbrzusto@fastmail.fm>
 Maintainer: John Brzustowski <jbrzusto@fastmail.fm>
@@ -18,10 +18,9 @@ Depends:
     RCurl,
     RMySQL,
     sendmailR,
-    sensorgnome,
     stringi
 License: GPL-2+
-Date: 2016-09-01
+Date: 2016-11-25
 RoxygenNote: 5.0.1
 LazyData: true
 Suggests: testthat

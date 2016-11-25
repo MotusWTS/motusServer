@@ -77,7 +77,7 @@ echo $$ > $PIDFILE
 
 if [[ $TRACE == 0 ]]; then
     while (( 1 )); do
-        nohup Rscript -e 'library(motus);emailServer(tracing=FALSE)'
+        nohup Rscript -e 'library(motusServer);emailServer(tracing=FALSE)'
         ## Kill off the inotifywait process; it's in our process group.
         ## This should happen internally, but might not.
         pkill -g $$ inotifywait

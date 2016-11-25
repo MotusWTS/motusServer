@@ -15,7 +15,7 @@ USER is the sg.org wiki username; if not specified, defaults to 'admin'
 
 ARGS = commandArgs(TRUE)
 
-suppressMessages(suppressWarnings(library(motus)))
+suppressMessages(suppressWarnings(library(motusServer)))
 
 MSG       = ARGS[1]
 USER      = ARGS[2]

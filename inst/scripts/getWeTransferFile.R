@@ -20,7 +20,7 @@ if (length(ARGS) != 1) {
   quit(save="no")
 }
 
-suppressWarnings(suppressMessages(require(motus)))
+suppressWarnings(suppressMessages(require(motusServer)))
 EMAILURL = ARGS[1]
 
 cat("Grabbing: ", EMAILURL, "\n")

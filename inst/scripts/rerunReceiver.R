@@ -59,7 +59,7 @@ if (length(ARGS) > 0) {
     monoBN = range(as.integer(ARGS))
 }
 
-suppressMessages(suppressWarnings(library(motus)))
+suppressMessages(suppressWarnings(library(motusServer)))
 
 ## set up the jobs structure
 
