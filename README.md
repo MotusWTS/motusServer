@@ -1,6 +1,6 @@
 # motusServer
 
-Operate a server to process data for http://motus.org
+R package to operate a server to process data for http://motus.org
 
 **Motus users**: you don't want this package.  You want
 the "motus" package available here:  https://github.com/jbrzusto/motus
