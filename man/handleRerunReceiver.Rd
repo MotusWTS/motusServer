@@ -2,7 +2,7 @@
 % Please edit documentation in R/handleRerunReceiver.R
 \name{handleRerunReceiver}
 \alias{handleRerunReceiver}
-\title{rerun data from a receiver}
+\title{re-run data from a receiver}
 \usage{
 handleRerunReceiver(j)
 }
@@ -14,8 +14,15 @@ handleRerunReceiver(j)
 \item serno character scalar; the receiver serial number
 
 \item monoBN integer vector of length 2; the range of receiver boot
-sessions to run; NULL for Lotek receivers.  If not specified for an
-SG receiver, then all boot sessions are rerun.
+sessions to run; If not specified, then for an SG receiver, all
+boot sessions are rerun.  Ignored for Lotek receivers.
+
+\item exportOnly logical scalar; if TRUE, skip running the tagfinder
+
+\item cleanup logical scalar; if TRUE, delete all hits, runs,
+batches before re-running.  Ignored (and treated as FALSE) if
+monoBN is specified.  i.e. cleanup can only be specified for a
+full re-run.
 
 }}
 }
@@ -26,7 +33,7 @@ TRUE
 Called by \code{\link{processServer}}
 }
 \details{
-reruns the tagfinder for a receiver, possibly limiting the
+re-runs the tagfinder for a receiver, possibly limiting the
 re-run to one or more boot sessions (for SGs).
 }
 \author{
