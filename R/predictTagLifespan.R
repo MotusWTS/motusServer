@@ -5,7 +5,7 @@
 #' The model is lifeSpan = D / (1 + rt * dutyCycle / BI),
 #' where D and rt are fitted parameters, dutyCycle is in [0, 1],
 #' and BI is the burst interval, in seconds.
-#' 
+#'
 #' @param model character vector of tag models
 #'
 #' @param bi burst interval, in seconds
@@ -22,7 +22,6 @@
 
 predictTagLifespan = function(model, bi, dutyCycle = 1.0) {
     if (! exists("tagLifespanPars"))
-        tagLifespanPars <<- readRDS(system.file("tagLifespanPars.rds", package="motus"))
+        tagLifespanPars <<- readRDS(system.file("tagLifespanPars.rds", package="motusServer"))
     return(as.numeric(tagLifespanPars[model, 1] / (1 + tagLifespanPars[model, 2] * dutyCycle / bi)))
 }
-

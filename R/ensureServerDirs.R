@@ -78,7 +78,7 @@ ensureServerDirs = function() {
 
     ## create symlinks to package scripts
 
-    instDir = system.file("scripts", package="motus")
+    instDir = system.file("scripts", package="motusServer")
     suppressWarnings(file.symlink(dir(instDir, full.names=TRUE), file.path(MOTUS_PATH$BIN, dir(instDir))))
 
     return(rv)

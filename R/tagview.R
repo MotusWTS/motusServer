@@ -1,10 +1,11 @@
 #' create a tbl of tag detections with all metadata.
 #'
-#' Creates a view (aka 'Big Fat Join') of tag detections from a motus
-#' database and associated metadata for projects, tags and receivers,
-#' where available.  The view is wrapped in a dplyr::tbl to ease use
-#' with the dplyr package, but the view is also available directly
-#' from the underlying SQLite connection.
+#' Creates a view (called 'bfj' for 'Big Fat Join') of tag detections
+#' from a motus database and associated metadata for projects, tags
+#' and receivers, where available.  The view is wrapped in a
+#' dplyr::tbl to ease use with the dplyr package, but is also
+#' available directly from the underlying SQLite connection, where
+#' it can appear in sql statements such as \code{select * from bfj}.
 #'
 #' @param db dplyr src_sqlite to detections database, or path to
 #'     .sqlite file.  The database must have tables batches, hits,
@@ -54,8 +55,20 @@
 #'    tagDeps as t3 where t3.tagID=t2.tagID and t3.tsStart <= t1.ts and
 #'    t3.tsEnd >= t1.ts)
 #'
-#' This will yield NA for the 'info' field when there is no tag deployment covering the range.
-#' Running EXPLAIN on this query in sqlite suggests it optimizes well.
+#' This will yield NA for the 'info' field when there is no tag
+#' deployment covering the range.  Running EXPLAIN on this query in
+#' sqlite suggests it optimizes well.
+#'
+#' GPS fixes
+#'
+#' If this is a receiver database (with detections from a single receiver),
+#' it will contain a table called \code{GPS} with receiver GPS fixes, and these
+#' are used in the view to provide lat/lon/elevation.
+#'
+#' Otherwise, lat/lon/elevation come from the recvGPS table.  For most receiver
+#' deployments, that table will contain only one fix, but for mobile deployments,
+#' the table will contain a time series of fixes.  The view will use this table
+#' to provide lat/lon/elevation.
 
 tagview = function(db, dbMeta=db, minRunLen=3, keep=FALSE) {
 
@@ -115,7 +128,7 @@ tagview = function(db, dbMeta=db, minRunLen=3, keep=FALSE) {
     ##
     ## - tsStart: maximum start time of any of the ambiguous tags
 
-    if (dbExistsTable(db$con, "tagAmbig") && dbGetQuery(db$con, "select count(*) from tagAmbig") %>% as.numeric > 0) {
+    if (dbExistsTable(db$con, "tagAmbig") && dbGetQuery(db$con, "select count(*) from tagAmbig") [[1]] > 0) {
         ## join all tag deployment records for the ambiguity
         dbGetQuery(db$con, "CREATE TEMPORARY VIEW _ambigjoin AS SELECT t1.ambigID, t2.tagID, t2.tsStart, t2.fullID FROM tagAmbig AS t1 JOIN tagDeps AS t2 ON t2.tagID IN (t1.motusTagID1, t1.motusTagID2, t1.motusTagID3, t1.motusTagID4, t1.motusTagID5, t1.motusTagID6) ORDER BY t1.ambigID, t2.tsStart;")
 
@@ -137,7 +150,7 @@ tagview = function(db, dbMeta=db, minRunLen=3, keep=FALSE) {
     }
 
     query = paste0("
-CREATE", if (! keep) " TEMPORARY" else "", " VIEW allt AS SELECT
+CREATE", if (! keep) " TEMPORARY" else "", " VIEW bfj AS SELECT
 t1.*, t2.*, t3.*, t4.*, t5.*, t6.*, t7.*, t8.*, t9.*, t10.* FROM
 hits AS t1
 
@@ -164,7 +177,7 @@ LEFT JOIN species  AS t8  ON t8.id         = t5.speciesID
 LEFT JOIN projs    AS t9  ON t9.ID         = t5.projectID
 LEFT JOIN projs    AS t10 ON t10.ID        = t6.projectID
 ")
-    dbGetQuery(db$con, "DROP VIEW IF EXISTS allt")
+    dbGetQuery(db$con, "DROP VIEW IF EXISTS bfj")
     dbGetQuery(db$con, query)
-    return(tbl(db, "allt"))
+    return(tbl(db, "bfj"))
 }

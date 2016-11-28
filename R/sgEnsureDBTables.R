@@ -30,7 +30,7 @@ sgEnsureDBTables = function(src, recreate=c()) {
         recreate = sgTableNames
 
     ## load custom extensions
-    sql("select load_extension('%s')",  system.file(paste0("libs/Sqlite_Compression_Extension", .Platform$dynlib.ext),package="motus"))
+    sql("select load_extension('%s')",  system.file(paste0("libs/Sqlite_Compression_Extension", .Platform$dynlib.ext), package="motusServer"))
 
     for (t in recreate)
         sql("drop table %s", t)

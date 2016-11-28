@@ -4,8 +4,8 @@
 \alias{RL}
 \title{reload a function in this package from its source folder}
 \usage{
-RL(X, path = file.path("/home/john/proj/motus-R-package/R",
-  paste0(substitute(X), ".R")))
+RL(X, path = file.path("/home/john/proj/motusServer/R", paste0(substitute(X),
+  ".R")))
 }
 \arguments{
 \item{f}{unquoted name of function}

@@ -88,6 +88,23 @@
 #' \item tsEnd
 #' }
 #'
+#' \strong{recvGPS:}
+#' This table is used to look up GPS fixes for a detection.  For a stationary receiver deployment,
+#' lat, lon, and elev are the same values as in the recvDeps record.
+#' For a mobile receiver deployment, the full set of GPS records for the receiver are given.
+#'
+#' \itemize{
+#' \item deviceID motus device ID
+#' \item ts timestamp for fix
+#' \item lat
+#' \item lon
+#' \item elev
+#' }
+#'
+#' FIXME: for now, mobile receivers are any with the word "mobile" in
+#' the name (ignoring case), or for which isMobile is TRUE, or for
+#' which the fixtureType is "Ship".
+#'
 #' \strong{antDeps:}
 #' \itemize{
 #' \item deployID receiver deployment ID
@@ -127,7 +144,7 @@ getMotusMetaDB = function() {
     s = src_sqlite(cachedDB, TRUE)
 
     ## if all tables are already present; save this as the older version
-    if (all(c("tags", "tagDeps", "events", "species", "projs", "recvDeps", "antDeps") %in% src_tbls(s))) {
+    if (all(c("tags", "tagDeps", "events", "species", "projs", "recvDeps", "antDeps", "recvGPS") %in% src_tbls(s))) {
         dbDisconnect(s$con)
         file.rename(cachedDB, oldCachedDB) ## overwrites any existing old copy
         s = src_sqlite(cachedDB, TRUE)
@@ -186,6 +203,18 @@ getMotusMetaDB = function() {
     recv$serno = sub("(SRX600|SRX800|SRX-DL)", "Lotek", perl=TRUE, recv$serno)
     dbWriteTable(s$con, "recvDeps", recv, overwrite=TRUE)
     dbWriteTable(s$con, "antDeps", ant %>% as.data.frame, overwrite=TRUE)
+    ## GPS table; initially, this contains only a single fix for each receiver deployment
+    ## but the tagview() function will be responsible for filling in additional fixes
+    ## for mobile receivers.
+
+    dbWriteTable(s$con, "recvGPS",
+                 recv %>% transmute (
+                              deviceID=deviceID,
+                              ts = tsStart,
+                              lat = latitude,
+                              lon = longitude,
+                              elev = 0 ),
+                 overwrite=TRUE)
 
     dbDisconnect(s$con)
     return (cachedDB)

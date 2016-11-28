@@ -95,6 +95,23 @@ It will have these tables:
 \item tsEnd
 }
 
+\strong{recvGPS:}
+This table is used to look up GPS fixes for a detection.  For a stationary receiver deployment,
+lat, lon, and elev are the same values as in the recvDeps record.
+For a mobile receiver deployment, the full set of GPS records for the receiver are given.
+
+\itemize{
+\item deviceID motus device ID
+\item ts timestamp for fix
+\item lat
+\item lon
+\item elev
+}
+
+FIXME: for now, mobile receivers are any with the word "mobile" in
+the name (ignoring case), or for which isMobile is TRUE, or for
+which the fixtureType is "Ship".
+
 \strong{antDeps:}
 \itemize{
 \item deployID receiver deployment ID

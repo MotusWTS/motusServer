@@ -6,14 +6,13 @@
 #' loaded.
 #'
 #' @export
-#' 
+#'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 motusSaveSecrets = function() {
     if (is.null(MOTUS_SECRETS))
         stop("No Motus API secrets have been loaded.\nUse motusLoadSecrets(FILE)")
 
-    f = file.path(system.file(package="motus"), "motusSecrets.json")
+    f = file.path(system.file(package="motusServer"), "motusSecrets.json")
     MOTUS_SECRETS %>% toJSON %>% writeLines(f)
 }
-

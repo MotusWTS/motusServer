@@ -4,8 +4,8 @@
 \alias{motusLoadSecrets}
 \title{load secrets for motus web API}
 \usage{
-motusLoadSecrets(f = system.file("motusSecrets.json", package = "motus"),
-  quiet = FALSE)
+motusLoadSecrets(f = system.file("motusSecrets.json", package =
+  "motusServer"), quiet = FALSE)
 }
 \arguments{
 \item{f}{filename: path to json-formatted file of secrets,

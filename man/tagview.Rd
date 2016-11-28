@@ -29,11 +29,12 @@ a read-only dplyr::tbl of tag detections.  This tbl
     \code{db} object.
 }
 \description{
-Creates a view (aka 'Big Fat Join') of tag detections from a motus
-database and associated metadata for projects, tags and receivers,
-where available.  The view is wrapped in a dplyr::tbl to ease use
-with the dplyr package, but the view is also available directly
-from the underlying SQLite connection.
+Creates a view (called 'bfj' for 'Big Fat Join') of tag detections
+from a motus database and associated metadata for projects, tags
+and receivers, where available.  The view is wrapped in a
+dplyr::tbl to ease use with the dplyr package, but is also
+available directly from the underlying SQLite connection, where
+it can appear in sql statements such as \code{select * from bfj}.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
@@ -62,7 +63,19 @@ CREATE TABLE tagDeps (tsStart double, tsEnd double, tagID integer, info char);
    tagDeps as t3 where t3.tagID=t2.tagID and t3.tsStart <= t1.ts and
    t3.tsEnd >= t1.ts)
 
-This will yield NA for the 'info' field when there is no tag deployment covering the range.
-Running EXPLAIN on this query in sqlite suggests it optimizes well.
+This will yield NA for the 'info' field when there is no tag
+deployment covering the range.  Running EXPLAIN on this query in
+sqlite suggests it optimizes well.
+
+GPS fixes
+
+If this is a receiver database (with detections from a single receiver),
+it will contain a table called \code{GPS} with receiver GPS fixes, and these
+are used in the view to provide lat/lon/elevation.
+
+Otherwise, lat/lon/elevation come from the recvGPS table.  For most receiver
+deployments, that table will contain only one fix, but for mobile deployments,
+the table will contain a time series of fixes.  The view will use this table
+to provide lat/lon/elevation.
 }
 

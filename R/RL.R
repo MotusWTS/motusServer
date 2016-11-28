@@ -33,12 +33,12 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 
-RL = function(X, path=file.path("/home/john/proj/motus-R-package/R", paste0(substitute(X), ".R"))) {
+RL = function(X, path=file.path("/home/john/proj/motusServer/R", paste0(substitute(X), ".R"))) {
    e = new.env(emptyenv())
    source(path, local=e, verbose=FALSE)
    nn = names(e)
-   nmotus = getNamespace("motus")
-   pmotus = as.environment("package:motus")
+   nmotus = getNamespace("motusServer")
+   pmotus = as.environment("package:motusServer")
    for (n in nn) {
        if (is.function(e[[n]]))
            environment(e[[n]]) = nmotus

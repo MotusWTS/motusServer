@@ -1,4 +1,4 @@
 library(testthat)
-library(motus)
+library(motusServer)
 
-test_check("motus")
+test_check("motusServer")
