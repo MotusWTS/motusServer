@@ -86,11 +86,35 @@ ltMergeFiles = function(files, dbdir=MOTUS_PATH$RECV) {
 
         ## write meta data
 
-        meta = data_frame(
-            key = c("recvSerno", "recvType", "recvModel"),
-            val = c(x$recv, "Lotek", sub("-[0-9]+$", "", x$recv))
-            )
-        dbWriteTable(src$con, "meta", meta %>% as.data.frame, overwrite=TRUE)
+        meta = getMap(src)
+
+        meta$dbType = "receiver" ## indicate this is a receiver database (vs. a tagProject database)
+        meta$recvSerno = recv
+        meta$recvType = "Lotek"
+
+        ## get bare serial number by dropping "Lotek-"
+        bareno = sub("Lotek-", "", recv, fixed=TRUE)
+
+        ## map to serial number, as per info from Lotek:
+
+        ## > Yes, serial number uniquely identifies receiver.  All the SRX600
+        ## > receiver serial numbers are 6###.  The SRX800 serial numbers start at 1.
+        ## > It will be a long time before we get to 6000.  The old SRX400A models
+        ## > were 9###A and up.
+        ## ---
+        ## > SRX-DL receivers have serial numbers 8###.
+
+        if (bareno >= "9000A") {
+            model = "SRX400A"
+        } else if (bareno >= "8000") {
+            model = "SRX-DL"
+        } else if (bareno >= "6000") {
+            model = "SRX600"
+        } else {
+            model = "SRX800"
+        }
+
+        meta$recvModel = model
 
         ## write file record
         dbGetPreparedQuery(
