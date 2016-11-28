@@ -92,9 +92,6 @@ Internally, a Twig is a numeric vector of class "Twig" with attribute Copse
 being the Twig's Copse.
 }
 \description{
-Manage collections of persistent objects.
-}
-\details{
 This function is a factory for an S3 class ("Copse") that uses an
 SQLite database to store R objects of class ("Twig") which are
 related as one or more trees.  Each Twig holds a named set of
@@ -107,6 +104,20 @@ Twigs are recorded atomically to the SQLite database, so that other
 processes also have access to them.  An atomic get/modify/set
 operation can be performed on a Twig by using the \code{with()}
 method.
+}
+\details{
+The Copse implements concept of "job" for this package.  Job state
+is stored persistently, and a job should be resumable if the server
+dies due to power outage, bugs, or fixable errors in the data
+submitted as a job.
+
+The JSON fields are not indexed, so for fast lookup of simple
+datatypes, the latter should be provided in the \code{...}  at
+Copse creation time.  The JSON fields allow structured datatypes,
+and allow new records to include data fields not specified when the
+Copse was created.  So if new types of Jobs are implemented as the
+motusServer package evolves, we don't need to modify the existing
+jobs database.
 
 The copse manages these functions:
 \itemize{
