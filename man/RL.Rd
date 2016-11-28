@@ -25,15 +25,15 @@ Here's what \code{RL(X)} does:
 an empty environment \code{E}
 \item for each symbol \code{S} in \code{E}:
 \itemize{
-\item if \code{S} is a function, set its binding environment to \code{namespace:motus}
-\item unlock the binding for \code{S} in \code{namespace:motus}
-\item bind \code{S} to \code{E$S} in \code{namespace:motus}
-\item lock the binding for \code{S} in \code{namespace:motus}
-\item if \code{S} is bound in \code{package:motus}:
+\item if \code{S} is a function, set its binding environment to \code{namespace:motusServer}
+\item unlock the binding for \code{S} in \code{namespace:motusServer}
+\item bind \code{S} to \code{E$S} in \code{namespace:motusServer}
+\item lock the binding for \code{S} in \code{namespace:motusServer}
+\item if \code{S} is bound in \code{package:motusServer}:
 \itemize{
-\item unlock the binding for \code{S} in \code{package:motus}
-\item bind \code{S} to \code{E$S} in \code{package:motus}
-\item lock the binding for \code{S} in \code{package:motus}
+\item unlock the binding for \code{S} in \code{package:motusServer}
+\item bind \code{S} to \code{E$S} in \code{package:motusServer}
+\item lock the binding for \code{S} in \code{package:motusServer}
 }
 }
 }

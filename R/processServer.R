@@ -45,7 +45,7 @@ processServer = function(N, tracing=FALSE) {
     ## kill off the inotifywait process when we exit this function
     on.exit(feed(TRUE), add=TRUE)
 
-    pkgEnv = as.environment("package:motus")
+    pkgEnv = as.environment("package:motusServer")
 
     repeat {
 

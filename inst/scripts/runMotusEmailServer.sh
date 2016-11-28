@@ -90,7 +90,7 @@ else
     ## happens after .Rprofile is eval'd, they won't have been loaded
     ## when processServer is called, so load them manually
     cat <<EOF > .Rprofile
-    for (l in c("datasets", "utils", "grDevices", "graphics", "stats", "motus"))
+    for (l in c("datasets", "utils", "grDevices", "graphics", "stats", "motusServer"))
         library(l, character.only=TRUE)
     rm(l)
     options(error=recover)
