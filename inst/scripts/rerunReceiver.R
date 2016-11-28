@@ -9,7 +9,7 @@ ARGS = commandArgs(TRUE)
 if (length(ARGS) == 0) {
     cat("
 
-Usage: rerunReceiver.R [-d] [-e] SERNO [BLO BHI]
+Usage: rerunReceiver.R [-c] [-e] SERNO [BLO BHI]
 
 where:
 
@@ -21,7 +21,7 @@ where:
 
  -e: don't re-run the tag finder; just re-export data
 
- -d: before running the tag finder, delete existing batches, runs, hits for
+ -c: cleanup: before running the tag finder, delete existing batches, runs, hits for
      the specified boot sessions
 
 A new job will be created and placed into the master queue (queue 0),
