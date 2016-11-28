@@ -201,6 +201,7 @@ sgMergeFiles = function(files, dbdir = MOTUS_PATH$RECV) {
 
         meta = getMap(src)
 
+        meta$dbType = "receiver" ## indicate this is a receiver database (vs. a tagProject database)
         meta$recvSerno = recv
         meta$recvType = "SG"
         meta$recvModel = if (grepl("BBBK", newf$Fserno[1])) "BBBK" else if (grepl("RPi2", newf$Fserno[1])) "RPi2" else "BBW"
