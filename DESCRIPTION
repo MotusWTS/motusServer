@@ -14,11 +14,15 @@ Depends:
     httr,
     jsonlite,
     lattice,
+    lubridate,
     openssl,
+    proto,
     RCurl,
     RMySQL,
+    RSQLite,
     sendmailR,
-    stringi
+    stringi,
+    XML
 License: GPL-2+
 Date: 2016-11-25
 RoxygenNote: 5.0.1
