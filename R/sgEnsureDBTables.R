@@ -155,6 +155,7 @@ alt     double                               -- altitude, metres
 )");
 
         sql("create index gps_batchID on gps ( batchID )")
+        sql("create index gps_ts on gps ( ts )")
 
     }
 
