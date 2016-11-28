@@ -17,6 +17,29 @@
 #' @param minRunLen minimum number of hits in a run; runs with fewer
 #'     hits are dropped
 #'
+#' @param mobile logical or NULL (the default); determines the source
+#'     of GPS fixes for tag detections.  Possible values are:
+#'
+#' \itemize{
+#'
+#' \item NULL: use whatever GPS records are available in the recvGPS
+#'     meta-data table.  For tagProject databases, this will be a
+#'     nominal lat/lon for fixed deployments, and a time series of GPS
+#'     fixes for mobile deployments.  This is usually what you want.
+#'
+#' \item FALSE: use only the nominal deployment lat/lon.  This runs
+#'     faster, but will give incorrect lat/lon for mobile deployments.
+#'
+#' \item TRUE: if this is a receiver motus database, as opposed to a
+#'     tagProject database, then use the most recent fix table from
+#'     the receiver's GPS table, regardless of whether the receiver
+#'     deployment is considered "mobile".  Use this if you are looking
+#'     at data from a single receiver and you want to treat it as
+#'     mobile, even if motus.org does not think it was "mobile".  For
+#'     a tagProject database, this values is treated the same as NULL.
+#'
+#' }
+#'
 #' @param keep should temporary tables be saved permanently in the
 #'     detections database?  Default: FALSE.  If true, subsequent
 #' calls to this function for the same detection database won't need
@@ -70,7 +93,7 @@
 #' the table will contain a time series of fixes.  The view will use this table
 #' to provide lat/lon/elevation.
 
-tagview = function(db, dbMeta=db, minRunLen=3, keep=FALSE) {
+tagview = function(db, dbMeta=db, minRunLen=3, mobile=NULL, keep=FALSE) {
 
     ## convert any paths to src_sqlite
 
@@ -83,7 +106,7 @@ tagview = function(db, dbMeta=db, minRunLen=3, keep=FALSE) {
 
     n = src_tbls(db)
 
-    for (t in c("tags", "tagDeps", "recvDeps", "antDeps", "species", "projs")) {
+    for (t in c("tags", "tagDeps", "recvDeps", "recvGPS", "antDeps", "species", "projs")) {
         if (t %in% n)
             dbGetQuery(db$con, paste("drop table", t))
         copy_to(db, tbl(dbMeta,t) %>% collect, t, temporary= ! keep)
@@ -149,9 +172,11 @@ tagview = function(db, dbMeta=db, minRunLen=3, keep=FALSE) {
         dbGetQuery(db$con, "drop table _ambigdeps;");
     }
 
+    map = getMap(db)
     query = paste0("
 CREATE", if (! keep) " TEMPORARY" else "", " VIEW bfj AS SELECT
-t1.*, t2.*, t3.*, t4.*, t5.*, t6.*, t7.*, t8.*, t9.*, t10.* FROM
+t1.*, t2.*, t3.*, t4.*, t5.*, t6.*, t7.*, t8.*, t9.*, t10.*, t11.* FROM
+
 hits AS t1
 
 LEFT JOIN runs     AS t2  ON t1.runID      = t2.runID
@@ -175,8 +200,20 @@ LEFT JOIN recvDeps AS t6  ON t6.deviceID   = t3.motusDeviceID AND
 LEFT JOIN antDeps  AS t7  ON t7.deployID   = t6.deployID    AND t7.port = t2.ant
 LEFT JOIN species  AS t8  ON t8.id         = t5.speciesID
 LEFT JOIN projs    AS t9  ON t9.ID         = t5.projectID
-LEFT JOIN projs    AS t10 ON t10.ID        = t6.projectID
-")
+LEFT JOIN projs    AS t10 ON t10.ID        = t6.projectID ",
+
+if (isTRUE(mobile) && map$dbType == "receiver") {
+"LEFT JOIN gps AS t11  ON t11.ts = (SELECT max(t11b.ts) FROM gps AS t11b
+                                              where t11b.ts <= t1.ts)
+"
+} else {
+"LEFT JOIN recvGPS AS t11  ON t11.deviceID   = t3.motusDeviceID AND
+                              t11.ts         = (SELECT max(t11b.ts) FROM recvGPS AS t11b
+                                               WHERE t11b.deviceID=t3.motusDeviceID
+                                               AND t11b.ts <= t1.ts)
+"
+}
+)
     dbGetQuery(db$con, "DROP VIEW IF EXISTS bfj")
     dbGetQuery(db$con, query)
     return(tbl(db, "bfj"))

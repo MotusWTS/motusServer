@@ -4,7 +4,7 @@
 \alias{tagview}
 \title{create a tbl of tag detections with all metadata.}
 \usage{
-tagview(db, dbMeta = db, minRunLen = 3, keep = FALSE)
+tagview(db, dbMeta = db, minRunLen = 3, mobile = NULL, keep = FALSE)
 }
 \arguments{
 \item{db}{dplyr src_sqlite to detections database, or path to
@@ -16,6 +16,29 @@ runs.}
 
 \item{minRunLen}{minimum number of hits in a run; runs with fewer
 hits are dropped}
+
+\item{mobile}{logical or NULL (the default); determines the source
+    of GPS fixes for tag detections.  Possible values are:
+
+\itemize{
+
+\item NULL: use whatever GPS records are available in the recvGPS
+    meta-data table.  For tagProject databases, this will be a
+    nominal lat/lon for fixed deployments, and a time series of GPS
+    fixes for mobile deployments.  This is usually what you want.
+
+\item FALSE: use only the nominal deployment lat/lon.  This runs
+    faster, but will give incorrect lat/lon for mobile deployments.
+
+\item TRUE: if this is a receiver motus database, as opposed to a
+    tagProject database, then use the most recent fix table from
+    the receiver's GPS table, regardless of whether the receiver
+    deployment is considered "mobile".  Use this if you are looking
+    at data from a single receiver and you want to treat it as
+    mobile, even if motus.org does not think it was "mobile".  For
+    a tagProject database, this values is treated the same as NULL.
+
+}}
 
 \item{keep}{should temporary tables be saved permanently in the
     detections database?  Default: FALSE.  If true, subsequent
