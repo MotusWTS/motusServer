@@ -15,7 +15,7 @@ getMap(src, name = "meta")
 an object of class "motusMap".
 }
 \description{
-This function creates an object of class motusMap, which behaves
+This function creates an object of S3 class "motusMap", which behaves
 like a named list, allowing access via the \code{$} and \code{[[
 ]]} operators.  Elements assigned to the list are immediately
 stored in table \code{name} in the database pointed to by
