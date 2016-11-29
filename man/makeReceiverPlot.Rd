@@ -57,9 +57,13 @@ height
 
 \item ant: antenna number
 
-\item fullID full tag ID, or " Antenna N Status"; the latter 'detections'
-just indicate the antenna was functioning in the hour centred on
-the timestamp
+\item fullID full tag ID, or " Antenna N Status"; the latter
+'detections' just indicate the antenna was functioning in the hour
+centred on the timestamp.  Also, a fullID of
+" Reboot Odometer" indicate the approximate timestamps at
+which the receiver rebooted, and the \code{ant} field for these
+records is the last digit of the boot session count.
+
 
 \item bin: the bin number for condensation
 

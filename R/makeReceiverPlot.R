@@ -54,9 +54,13 @@
 #'
 #' \item ant: antenna number
 #'
-#' \item fullID full tag ID, or " Antenna N Status"; the latter 'detections'
-#' just indicate the antenna was functioning in the hour centred on
-#' the timestamp
+#' \item fullID full tag ID, or " Antenna N Status"; the latter
+#' 'detections' just indicate the antenna was functioning in the hour
+#' centred on the timestamp.  Also, a fullID of
+#' " Reboot Odometer" indicate the approximate timestamps at
+#' which the receiver rebooted, and the \code{ant} field for these
+#' records is the last digit of the boot session count.
+#'
 #'
 #' \item bin: the bin number for condensation
 #'
@@ -140,13 +144,15 @@ makeReceiverPlot = function(recv, meta=NULL, title="", condense=3600, ts = NULL,
 
     tags$fullID = as.factor(tags$fullID)
 
-    ## get pulse counts to show as status, and append to the dataset
-    ## FIXME: if anyone cares, they can recode this in dplyr form
 
     if (! isLotek) {
+        ## get pulse counts to show as status, and append to the dataset
+        ## FIXME: if anyone cares, they can recode this in dplyr form
+        ## Note that the fullID column must match that used in grepl() in the panel.xyplot function below.
+
         pulses = dbGetQuery(recv$con, sprintf("
 select t1.ant,
-'Antenna ' || t1.ant || ' Status' as fullID,
+' Antenna ' || t1.ant || ' Status' as fullID,
 t1.hourBin as bin,
 t1.hourBin * 3600 + 1800 as ts,
 1 as n,
@@ -154,8 +160,24 @@ t1.hourBin * 3600 + 1800 as ts,
 0 as sig
 from pulseCounts as t1 join batches as t2 on t1.batchID=t2.batchID where t2.monoBN between %.14g and %.14g group by t1.ant, t1.hourBin",
 monoBN[1], monoBN[2]))
+
         pulses$fullID = as.factor(pulses$fullID)
-        tags = rbind(tags, pulses)
+
+        ## get the time of each reboot, again as bogus tags records
+        ## Note that the fullID column must match that used in grepl() in the panel.xyplot function below.
+
+        reboots = dbGetQuery(recv$con, sprintf("
+select monoBN%%10 as ant,
+' Reboot Odometer' as fullID,
+round(min(tsBegin) / 3600) as bin,
+min(tsBegin) as ts,
+1 as n,
+0 as freq,
+0 as sig
+from batches where monoBN >= %d and tsBegin >= 1262304000 group by monoBN",
+monoBN[1]))
+        reboots$fullID = as.factor(reboots$fullID)
+        tags = rbind(tags, pulses, reboots)
     }
 
     class(tags$ts) = c("POSIXt", "POSIXct")
@@ -166,16 +188,22 @@ monoBN[1], monoBN[2]))
     numTags = length(unique(tags$fullID))
     width = 500 + 7 * length(dayseq)  ## 7 pixels per day plus margins
     height = 300 + 20 * numTags  ## 20 pixels per tag line plus margins
-    dateLabel = sprintf("Date (%s, GMT)", paste(format(range(tags$ts), "%Y %b %d %H:%M"), collapse=" to "))
+    dateLabel = sprintf("Date (GMT)\n%s", paste(format(range(tags$ts), "%Y-%b-%d %H:%M"), collapse=" to "))
     plot = xyplot(
         fullID~ts,
         groups = ant, data = tags,
         panel = function(x, y, groups, ...) {
             panel.abline(h=unique(y), lty=2, col="gray")
             panel.abline(v=dayseq, lty=3, col="gray")
-            ant = grepl("^Antenna ", y, perl=TRUE)
+            ant = grepl("^ Antenna", y, perl=TRUE)    ## must match fullID formatting from dbGetQuery above
+            boot = grepl("^ Reboot", y, perl=TRUE)  ## must match fullID formatting from dbGetQuery above
+            tag = ! (ant | boot)
+            ## plot reboots
+            panel.xyplot(x[boot], y[boot], groups=groups[boot], pch = as.character(groups[boot]), col="black", ...)
+            ## plot antennas
             panel.xyplot(x[ant], y[ant], groups=groups[ant], pch = '|', ...)
-            panel.xyplot(x[! ant], y[! ant], groups=groups[! ant], ...)
+            ## plot tags
+            panel.xyplot(x[tag], y[tag], groups=groups[tag], ...)
         },
         main = list(paste0(title, "\n", sprintf("Receiver: %s", serno)), cex=1.5),
         ylab = list(ylab, cex=1.5),
