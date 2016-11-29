@@ -49,7 +49,7 @@ suppressMessages(suppressWarnings(library(motusServer)))
 
 loadJobs()
 
-j = newJob("newFiles", .parentPath=MOTUS_PATH$INCOMING, replyTo=MOTUS_ADMIN_EMAIL, .enqueue=FALSE)
+j = newJob("newFiles", .parentPath=MOTUS_PATH$INCOMING, replyTo=MOTUS_ADMIN_EMAIL, valid=TRUE, .enqueue=FALSE)
 
 ## move, hardlink, or copy files to the job's dir
 
