@@ -83,6 +83,7 @@ MOTUS_PATH = list(
     ROOT             = "/sgm",
     BIN              = "/sgm/bin",             ## executable scripts
     CACHE            = "/sgm/cache",           ## recent results of large queries from motus.org
+    CRYPTO           = "/sgm/crypto",          ## public/private keypairs for ssh etc. by receivers
     DONE             = "/sgm/done",            ## folders for completed jobs
     DOWNLOADS        = "/sgm/downloads",       ## manually-downloaded files; downloadXXX() checks here before (re) grabbing file
     ERRORS           = "/sgm/errors",          ## save dumped call stacks of server errors

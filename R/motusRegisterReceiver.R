@@ -23,24 +23,22 @@ motusRegisterReceiver = function(serno, macAddr = NULL, secretKey = NULL) {
         newserno = sub("^SG-", "sg_", serno, perl=TRUE)
         ## receiver is a sensorgnome
         ## see whether the receiver already has a private key
-        privKeyFile = paste0("/home/sg_remote/.ssh/id_dsa_", newserno)
-        privKey = readChar(pipe(paste("sudo cat", privKeyFile), "rb"), 1e5, useBytes=TRUE)
+        privKeyFile = file.path(MOTUS_PATH$CRYPTO, paste0("id_dsa_", newserno))
+        privKey = readChar(privKeyFile, 1e5, useBytes=TRUE)
         if (! isTRUE(length(privKey) == 1)) {
             ## generate a public/private key pair for this receiver
             ## NOTE: if the receiver ever connects via ssh to our server,
             ## it will still have a new keypair generated.
 
-            privKeyFile = paste0("/home/sg_remote/.ssh/generated_by_server/id_dsa_", newserno)
-            safeSys(printf("sudo rm -f %s %s.pub", privKeyFile, privKeyFile), quote=FALSE)
-            safeSys(sprintf("sudo su -c 'ssh-keygen -q -t dsa -f %s -N \"\"' sg_remote", privKeyFile), quote=FALSE)
-            privKey = readChar(pipe(paste("sudo cat", privKeyFile), "rb"), 1e5, useBytes=TRUE)
+            privKeyFile = file.path(MOTUS_PATH$CRYPTO, paste0("id_dsa_", newserno))
+            file.remove(privKeyFile, paste0(privKeyFile, ".pub"))
+            safeSys("ssh-keygen", "-q", "-t", "dsa", "-f", privKeyFile, "-N", "")
+            privKey = readChar(privKeyFile, 1e5, useBytes=TRUE)
         }
         ## now calculate the SHA1 sum of the private key file, which is what
         ## we use as the receiver's secret key for the motus API
-        ## the 'sudo cat' is to switch to root user to read the secret private key file
-        ## which belongs to user sg_remote
 
-        secretKey = digest(readChar(pipe(paste("sudo cat", privKeyFile), "rb"), 1e5, useBytes=TRUE), "sha1", serialize=FALSE)
+        secretKey = digest(privKey, "sha1", serialize=FALSE)
     }
 
     masterKey = "~/.secrets/motus_secret_key.txt"

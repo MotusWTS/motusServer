@@ -20,7 +20,8 @@
 #'     their ID code database.  At server boot time, a user with sudo
 #'     privileges must run a script to decrypt the database into
 #'     locked system memory, from where it can only be accessed by
-#'     users with sudo privileges.  The decrypted version resides in
+#'     user "sg" (or, of course, those with sudo privileges).  The
+#'     decrypted versions reside in
 #'
 #'     /home/sg/ramfs/Lotek4.sqlite and
 #'     /home/sg/ramfs/Lotek3.sqlite
@@ -38,13 +39,12 @@ ltGetCodeset = function(codeSet = c("Lotek4", "Lotek3")) {
 
     fn = sprintf("/home/sg/ramfs/%s.sqlite", codeSet)
 
-    db = safeSys(
-        sprintf("sudo su -c 'sqlite3 -header -separator , %s \"select id, g1, g2, g3 from tags order by id\"' sg",
-                fn
-                ),
-        shell=TRUE,
-        quote=FALSE
-    )
-
-    return(read.csv(textConnection(db), as.is=TRUE))
+    if (Sys.getenv("USER") == "sg" && file.exists(fn)) {
+        con = dbConnect(SQLite(), fn)
+        rv = dbGetQuery(con, "select id, g1, g2, g3 from tags order by id")
+        dbDisconnect(con)
+    } else {
+        stop("Attempt to access Lotek database by non-sg user, or database doesn't exist")
+    }
+    return(rv)
 }

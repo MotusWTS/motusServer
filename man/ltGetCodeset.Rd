@@ -30,7 +30,8 @@ This function will only work on the sensorgnome.org server,
     their ID code database.  At server boot time, a user with sudo
     privileges must run a script to decrypt the database into
     locked system memory, from where it can only be accessed by
-    users with sudo privileges.  The decrypted version resides in
+    user "sg" (or, of course, those with sudo privileges).  The
+    decrypted versions reside in
 
     /home/sg/ramfs/Lotek4.sqlite and
     /home/sg/ramfs/Lotek3.sqlite
