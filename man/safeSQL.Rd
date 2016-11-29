@@ -12,7 +12,7 @@ dbConnect(SQLite(), ...), or character scalar giving path
 to SQLite database, or MySQLConnection.}
 
 \item{busyTimeout}{how many total seconds to wait while retrying a
-locked database.  Default: 10.  Uses \code{pragma busy_timeout}
+locked database.  Default: 30.  Uses \code{pragma busy_timeout}
 to allow for inter-process DB locking.  Only implemented for
 SQLite connections.}
 }
