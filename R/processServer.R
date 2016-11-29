@@ -18,7 +18,10 @@
 #' each handler is called
 #'
 #' @return This function does not return; it is meant for use in an R
-#'     script run in the background.
+#'     script run in the background.  After each subjob is handled,
+#'     the function checks for the existence of a file called
+#'     \code{MOTUS_PATH$ROOT/kill\emph{N}}.  If that file is found,
+#'     the function calls quit(save="no")
 #'
 #' @export
 #'
@@ -46,6 +49,9 @@ processServer = function(N, tracing=FALSE) {
     on.exit(feed(TRUE), add=TRUE)
 
     pkgEnv = as.environment("package:motusServer")
+
+    ## the kill file:
+    killFile = file.path(MOTUS_PATH$ROOT, paste0("kill", N))
 
     repeat {
 
@@ -104,5 +110,9 @@ processServer = function(N, tracing=FALSE) {
                 j$done = -1
             }
         }
+
+        ## check for a killN file
+        if (file.exists(killFile))
+            quit(save="no")
     }
 }

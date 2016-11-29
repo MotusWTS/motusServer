@@ -61,21 +61,25 @@ handleRerunReceiver = function(j) {
         cleanup(sgRecvSrc(serno), TRUE)
     }
 
+    ## for an SG, get all boot sessions within the range, or all if null
+    if (! isLotek) {
+        src = sgRecvSrc(serno)
+        allBN = dbGetQuery(src$con, "select distinct monoBN from files order by monoBN")[[1]]
+        if (length(monoBN) == 0) {
+            monoBN = allBN
+        } else {
+            ## subset of the sequence monoBN[1]:monoBN[2] for which we have files
+            monoBN = allBN[allBN >= monoBN[1] & allBN <= monoBN[2]]
+        }
+        dbDisconnect(src$con)
+    }
+
     ## queue runs of a receiver (or some boot session(s), for SGs)
 
     if (! exportOnly) {
         if (isLotek) {
             newSubJob(j, "LtFindtags", serno=serno)
         } else {
-            ## get all boot sessions within the range, or all if null
-            src = sgRecvSrc(serno)
-            allBN = dbGetQuery(src$con, "select distinct monoBN from files order by monoBN")[[1]]
-            if (length(monoBN) == 0) {
-                monoBN = allBN
-            } else {
-                ## subset of the sequence monoBN[1]:monoBN[2] for which we have files
-                monoBN = allBN[allBN >= monoBN[1] & allBN <= monoBN[2]]
-            }
             for (mbn in monoBN) {
                 newSubJob(j, "SGfindtags",
                           serno = serno,

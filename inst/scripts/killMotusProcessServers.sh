@@ -5,26 +5,41 @@
 
 if [[ "$*" == "" ]]; then
     cat <<EOF
-Usage:  killMotusProcessServers.sh [-a] [ID] [ID] ...
+Usage:  killMotusProcessServers.sh [-a] [-g] [ID] [ID] ...
 Kill motusProcessServer processes.  Specify the processes
 to kill by one or more integer ID numbers, or specify "-a"
 to kill all of them.
 
 EOF
     exit 1;
-elif [[ "$*" == "-a" ]]; then
-    PIDFILES=`ls -1 /sgm/processServer*.pid`
-else
-    PIDFILES=""
-    for i in $*; do
-        PIDFILES="$PIDFILES `ls -1 /sgm/processServer$i.pid`"
-    done
 fi
 
-for f in $PIDFILES; do
-    PID=`cat $f`
-    if [[ "$PID" != "" ]]; then
-        pkill -g $PID
-        rm -f $f
+PNUMS=""
+MAXPNUM=8
+
+if [[ "$1" == "-a" ]]; then
+    shift
+    for i in `seq 1 $MAXPNUM`; do
+        if [[ -f /sgm/processServer$i.pid ]]; then
+            PNUMS="$PNUMS $i"
+        fi
+    done
+fi
+GRACEFUL=""
+
+if [[ "$1" == "-g" ]]; then
+    GRACEFUL="y"
+    shift
+fi
+
+for i in $PNUMS; do
+    if [[ $GRACEFUL ]]; then
+        touch /sgm/kill$i;
+    else
+        PID=`cat /sgm/processServer$i.pid`
+        if [[ "$PID" != "" ]]; then
+            pkill -g $PID
+            rm -f /sgm/processServer$i.pid
+        fi
     fi
 done

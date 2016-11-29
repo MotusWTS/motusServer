@@ -15,7 +15,10 @@ each handler is called}
 }
 \value{
 This function does not return; it is meant for use in an R
-    script run in the background.
+    script run in the background.  After each subjob is handled,
+    the function checks for the existence of a file called
+    \code{MOTUS_PATH$ROOT/kill\emph{N}}.  If that file is found,
+    the function calls quit(save="no")
 }
 \description{
 The queue consists of items in the \code{MOTUS_PATH$QUEUE<N>}

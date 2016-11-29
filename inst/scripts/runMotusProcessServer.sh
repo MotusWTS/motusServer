@@ -95,8 +95,7 @@ EOF
     exit 1
 fi
 
-## restart the process whenever it dies, allowing a
-## short interval to prevent thrashing
+## cleanup handler
 
 function onExit {
 ## cleanup the pid file, and possibly the temporary directory
@@ -105,6 +104,10 @@ function onExit {
         rm -rf "$MYTMPDIR"
     fi
     echo Process server $N stopped. >> /sgm/logs/mainlog.txt
+
+    ## delete receiver locks held by this process
+    sqlite3 /sgm/server.sqlite "pragma busy_timeout=10000; delete from recvLocks where procNum=$N"
+
 }
 
 ## call the cleanup handler on exit
@@ -112,6 +115,12 @@ function onExit {
 trap onExit EXIT
 
 echo $$ > /sgm/processServer$N.pid
+
+killFile=/sgm/kill$N
+rm -f $killFile
+
+## restart the process whenever it dies, allowing a
+## short interval to prevent thrashing
 
 if [[ $TRACE == 0 ]]; then
     while (( 1 )); do
@@ -124,6 +133,12 @@ if [[ $TRACE == 0 ]]; then
         ## delete receiver locks held by this process
         sqlite3 /sgm/server.sqlite "pragma busy_timeout=10000; delete from recvLocks where procNum=$N"
 
+        ## check for a file called $killFile, and if it exists, delete it and quit
+        if [[ -f $killFile ]]; then
+            echo Process server $N detected file $killFile. >> /sgm/logs/mainlog.txt
+            rm -f $killFile
+            exit 0
+        fi
         sleep 15
     done
 else
@@ -142,7 +157,4 @@ EOF
     R
     echo running tracing server for queue $N
     pkill -g $$ inotifywait
-
-    ## delete receiver locks held by this process
-    sqlite3 /sgm/server.sqlite "pragma busy_timeout=10000; delete from recvLocks where procNum=$N"
 fi

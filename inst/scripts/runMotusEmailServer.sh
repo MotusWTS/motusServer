@@ -81,6 +81,13 @@ if [[ $TRACE == 0 ]]; then
         ## Kill off the inotifywait process; it's in our process group.
         ## This should happen internally, but might not.
         pkill -g $$ inotifywait
+
+        ## check for a file called $killFile, and if it exists, delete it and quit
+        if [[ -f $killFile ]]; then
+            echo Email server detected file $killFile. >> /sgm/logs/mainlog.txt
+            rm -f $killFile
+            exit 0
+        fi
         sleep 15
     done
 else
