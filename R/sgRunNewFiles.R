@@ -48,7 +48,9 @@ sgRunNewFiles = function(files, dbdir = MOTUS_PATH$RECV, ...) {
 
         canResume = r$resumable[paste(recv, bn)]
 
-        sgFindTags(sgRecvSrc(recv, dbdir), getMotusMetaDB(), resume=canResume, mbn=bn, ...)
+        src = getRecvSrc(recv, dbdir)
+        sgFindTags(src, getMotusMetaDB(), resume=canResume, mbn=bn, ...)
+        closeRecvSrc(src)
     }
 
     r$info %>%

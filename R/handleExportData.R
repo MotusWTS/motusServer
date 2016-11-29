@@ -15,7 +15,9 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 handleExportData = function(j) {
-    pushToMotus(sgRecvSrc(j$serno))
+    src = getRecvSrc(j$serno)
+    pushToMotus(src)
+    closeRecvSrc(src)
     jobLog(j, paste("Pushed new batches from", j$serno, "to motus."))
     return (TRUE)
 }

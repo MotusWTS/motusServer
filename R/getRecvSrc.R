@@ -15,7 +15,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-sgRecvSrc = function(serno, dbdir = MOTUS_PATH$RECV) {
+getRecvSrc = function(serno, dbdir = MOTUS_PATH$RECV) {
     src = src_sqlite(file.path(dbdir, paste0(serno, ".motus")), TRUE)
     sgEnsureDBTables(src)
     return(src)

@@ -32,7 +32,9 @@ ltRunNewFiles = function(files, dbdir = MOTUS_PATH$RECV, ...) {
         if (! any(f$dataNew))
             return(0)
 
-        ltFindTags(sgRecvSrc(f$serno[1], dbdir), getMotusMetaDB(), ...)
+        src = getRecvSrc(f$serno[1], dbdir)
+        ltFindTags(src, getMotusMetaDB(), ...)
+        closeRecvSrc(src)
     }
 
     info %>% do (ignore = runReceiver(.))

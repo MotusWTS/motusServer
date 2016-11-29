@@ -58,7 +58,9 @@ handleRerunReceiver = function(j) {
     on.exit(lockReceiver(serno, FALSE))
 
     if (cleanup) {
-        cleanup(sgRecvSrc(serno), TRUE)
+        src = getRecvSrc(serno)
+        cleanup(src, TRUE)
+        closeRecvSrc(src)
     }
 
     ## for an SG, get all boot sessions within the range, or all if null
@@ -71,7 +73,7 @@ handleRerunReceiver = function(j) {
             ## subset of the sequence monoBN[1]:monoBN[2] for which we have files
             monoBN = allBN[allBN >= monoBN[1] & allBN <= monoBN[2]]
         }
-        dbDisconnect(src$con)
+        closeRecvSrc(src)
     }
 
     ## queue runs of a receiver (or some boot session(s), for SGs)

@@ -40,13 +40,17 @@ handleSGfindtags = function(j) {
 
     on.exit(lockReceiver(serno, FALSE))
 
+    src = getRecvSrc(serno)
+
     ## run the tag finder
     tryCatch({
-        rv = sgFindTags(sgRecvSrc(serno), getMotusMetaDB(), resume=j$canResume, mbn=j$monoBN)
+        rv = sgFindTags(src, getMotusMetaDB(), resume=j$canResume, mbn=j$monoBN)
     }, error = function(e) {
         jobLog(j, paste(as.character(e), collapse="   \n"))
         rv = NULL
     })
+
+    closeRecvSrc(src)
 
     if (is.null(rv))
         return(FALSE)

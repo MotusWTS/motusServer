@@ -57,7 +57,7 @@ handleOldExport = function(j) {
     }
 
     ## get a tagview for the detections in this receiver (a tagview joins batches/runs/hits with appropriate metadata)
-    src = sgRecvSrc(serno)
+    src = getRecvSrc(serno)
     mot = getMotusMetaDB()
 
     ## plot only the first detection of each tag by each antennna in each condensation period
@@ -72,6 +72,8 @@ handleOldExport = function(j) {
 
     ## generate the plot object and condensed dataset
     rv = makeReceiverPlot(src, mot, title, condense, ts, range(monoBN))
+
+    closeRecvSrc(src)
 
     saveRDS(rv$data, datafilename)
     png(plotfilename, width=rv$width, height=rv$height, type="cairo-png")

@@ -147,7 +147,7 @@ sgMergeFiles = function(files, dbdir = MOTUS_PATH$RECV) {
 
         ## dplyr::src for receiver database
 
-        src = sgRecvSrc(recv, dbdir)
+        src = getRecvSrc(recv, dbdir)
 
         ## sqlite connection
 
@@ -278,7 +278,8 @@ sgMergeFiles = function(files, dbdir = MOTUS_PATH$RECV) {
         }
         ## shut down this sqlite connection
         dbGetQuery(con, "pragma journal_mode=delete")
-        rm(src)
+        closeRecvSrc(src)
+        rm(src, meta)
 
         ## record results
 
