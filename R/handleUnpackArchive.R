@@ -36,7 +36,7 @@ handleUnpackArchive = function(j) {
         return (FALSE)
     }
     jobLog(j, paste0("Unpacking file ", bn, " with ", paste(cmd, collapse=" ")))
-    res = safeSys("cd", dir, ";", cmd, file, shell=TRUE, splitOutput=TRUE)
+    res = safeSys("cd", dir, nq=";", cmd, file, shell=TRUE, splitOutput=TRUE)
     jobLog(j, c(head(res, 3), "...", tail(res, 3)))
     file.remove(file)
 

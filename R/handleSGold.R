@@ -37,7 +37,7 @@ handleSGold = function(path, isdir, params) {
 
     motusLog("Running %s old style with files here: %s", sitePath, path)
 
-    safeSys("cd", sitePath, ";", "/SG/code/update_site.R", "-f", "-i", path)
+    safeSys("cd", sitePath, nq=";", "/SG/code/update_site.R", "-f", "-i", path)
 
     return(TRUE)
 }

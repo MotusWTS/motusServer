@@ -12,12 +12,11 @@ safeSys(cmd, ..., shell = TRUE, quote = TRUE, minErrorCode = 1,
 \item{cmd}{full path to the executable file (can be a shell script,
 for example)}
 
-\item{...}{list of un-named parameters to the command; if
-\code{shell == TRUE}, these are quoted as appropriate for
-bash-type shell.  Otherwise, they are passed as-is.
-Note that any args consisting of a single semicolon (';') will
-not be quoted, since they are presumably intended to delimit
-commands.}
+\item{...}{list of named or unnamed parameters to the command; if
+\code{shell == TRUE}, the unnamed parameters are quoted as appropriate for
+a bash-type shell.  Otherwise, they are passed as-is.
+Named parameters are always left unquoted, on the assumption that
+the caller has verified they are already safe.}
 
 \item{shell}{logical scalar; if TRUE, invoke command using a shell;
 otherwise, invoke cmd directly.}
