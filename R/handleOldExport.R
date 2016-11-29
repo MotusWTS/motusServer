@@ -38,6 +38,13 @@ handleOldExport = function(j) {
     year = info$year
     proj = info$proj
     site = info$site
+    tsStart = info$tsStart
+    monoBNStart = info$bootnumStart
+
+    ## adjust minimum ts and monoBN to match deployment; i.e. drop data from previous deployments
+    ts = pmax(ts, tsStart)
+    monoBN = pmax(monoBN, monoBNStart)
+
     if (is.na(site)) {
         msg = paste0("Error: unable to determine Year / Proj / Site for ", serno)
         if (isLotek) {

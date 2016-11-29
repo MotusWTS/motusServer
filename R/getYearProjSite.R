@@ -20,6 +20,8 @@
 #' \item year integer
 #' \item proj project folder in /SG/year, or NA if none found
 #' \item site site subfolder in /SG/year/proj, or NA if none found
+#' \item tsStart timestamp at which this year/proj/site begins (or NA if SG)
+#' \item bootnumStart boot session at which this year/proj/site begins (or NA if Lotek)
 #' }
 #'
 #'
@@ -41,7 +43,9 @@ getYearProjSite = function(serno, ts=NULL, bootnum=NULL) {
                        bootnum = bootnum,
                        year    = as.integer(NA),
                        proj    = as.character(NA),
-                       site    = as.character(NA)
+                       site    = as.character(NA),
+                       tsStart = NA,
+                       bootnumStart = NA
                        )
 
     isLotek = grepl("^Lotek-", serno, perl=TRUE)
@@ -60,11 +64,11 @@ getYearProjSite = function(serno, ts=NULL, bootnum=NULL) {
         dbWriteTable(con, "lotek", lotek %>% as.data.frame, row.names=FALSE)
 
         ## get latest row (largest tsHi) that is still no later than ts for each receiver
-        sql("create table reslotek as select t1.serno as serno, t1.ts as year, t2.Project as proj, t2.Site as site from lotek as t1 left outer join d.map as t2 on t1.serno = t2.Serno and t2.tsLo = (select max(t3.tsLo) from d.map as t3 where t3.Serno=t2.Serno and t3.tsLo <= t1.ts)")
+        sql("create table reslotek as select t1.serno as serno, 0 as year, t2.Project as proj, t2.Site as site, t2.tsLo as tsStart, null as bootnumStart from lotek as t1 left outer join d.map as t2 on t1.serno = t2.Serno and t2.tsLo = (select max(t3.tsLo) from d.map as t3 where t3.Serno=t2.Serno and t3.tsLo <= t1.ts)")
 
         lotek = sql("select * from reslotek")
 
-        lotek$year = as.integer(year(structure(lotek$year, class=class(Sys.time()))))
+        lotek$year = as.integer(year(structure(lotek$tsStart, class=class(Sys.time()))))
     }
 
     ## look up sensorgnome sites by serial number and boot number
@@ -73,7 +77,7 @@ getYearProjSite = function(serno, ts=NULL, bootnum=NULL) {
         dbWriteTable(con, "sg", sg %>% as.data.frame, row.names=FALSE)
 
         ## get latest row (largest boot) that is still no later than ts for each receiver
-        sql("create table ressg as select t1.serno as serno, t2.Year as year, t2.Project as proj, t2.Site as site from sg as t1 left outer join d.bootnumMap as t2 on t1.serno = t2.Serno and t2.BootnumLo = (select max(t3.BootnumLo) from d.bootnumMap as t3 where t3.Serno=t2.Serno and t3.BootnumLo <= t1.bootnum)")
+        sql("create table ressg as select t1.serno as serno, t2.Year as year, t2.Project as proj, t2.Site as site, null as tsStart, t2.BootnumLo as bootnumStart from sg as t1 left outer join d.bootnumMap as t2 on t1.serno = t2.Serno and t2.BootnumLo = (select max(t3.BootnumLo) from d.bootnumMap as t3 where t3.Serno=t2.Serno and t3.BootnumLo <= t1.bootnum)")
 
         sg = sql("select * from ressg")
     }

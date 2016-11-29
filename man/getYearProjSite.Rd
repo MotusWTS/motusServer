@@ -24,6 +24,8 @@ a data.frame with these columns:
 \item year integer
 \item proj project folder in /SG/year, or NA if none found
 \item site site subfolder in /SG/year/proj, or NA if none found
+\item tsStart timestamp at which this year/proj/site begins (or NA if SG)
+\item bootnumStart boot session at which this year/proj/site begins (or NA if Lotek)
 }
 }
 \description{
