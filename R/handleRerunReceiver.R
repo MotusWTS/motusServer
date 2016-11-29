@@ -65,7 +65,7 @@ handleRerunReceiver = function(j) {
 
     ## for an SG, get all boot sessions within the range, or all if null
     if (! isLotek) {
-        src = sgRecvSrc(serno)
+        src = getRecvSrc(serno)
         allBN = dbGetQuery(src$con, "select distinct monoBN from files order by monoBN")[[1]]
         if (length(monoBN) == 0) {
             monoBN = allBN
