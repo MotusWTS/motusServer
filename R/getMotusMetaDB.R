@@ -140,14 +140,17 @@ getMotusMetaDB = function() {
         return (cachedDB)
     }
 
-    ## open / create the cached DB
+    ## open / create the cached DB; because we might be re-populating it via network
+    ## API calls to motus.org, allow for a 5 minute busy timeout.
     s = src_sqlite(cachedDB, TRUE)
+    dbGetQuery(s$con, "pragma busy_timeout=300000")
 
     ## if all tables are already present; save this as the older version
     if (all(c("tags", "tagDeps", "events", "species", "projs", "recvDeps", "antDeps", "recvGPS") %in% src_tbls(s))) {
         dbDisconnect(s$con)
         file.rename(cachedDB, oldCachedDB) ## overwrites any existing old copy
         s = src_sqlite(cachedDB, TRUE)
+        dbGetQuery(s$con, "pragma busy_timeout=300000")
     }
 
     ## grab tags
