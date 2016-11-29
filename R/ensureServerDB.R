@@ -11,8 +11,6 @@
 
 ensureServerDB = function() {
     sql = safeSQL(MOTUS_SERVER_DB)
-    ## 10 second busy-timeout
-    sql("PRAGMA busy_timeout=10000")
     sql(sprintf("CREATE TABLE IF NOT EXISTS %s (
 serno TEXT UNIQUE PRIMARY KEY,
 procNum INTEGER
