@@ -172,6 +172,7 @@ MOTUS_RECV_MAP_DB = "/SG/receiver_map.sqlite"
 MOTUS_DOS_FILENAME_REGEX = "^[a-zA-Z0-9]+~[0-9].(GZ|TXT)"
 
 ## the unfortunate individual who receives emails when things need attention
+#'@export
 
 MOTUS_ADMIN_EMAIL = "jbrzusto@fastmail.fm"
 
