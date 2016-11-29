@@ -94,7 +94,7 @@
 #' For a mobile receiver deployment, the full set of GPS records for the receiver are given.
 #'
 #' \itemize{
-#' \item deviceID motus device ID
+#' \item deviceID motus receiver ID
 #' \item ts timestamp for fix
 #' \item lat
 #' \item lon
@@ -203,9 +203,10 @@ getMotusMetaDB = function() {
     recv$serno = sub("(SRX600|SRX800|SRX-DL)", "Lotek", perl=TRUE, recv$serno)
     dbWriteTable(s$con, "recvDeps", recv, overwrite=TRUE)
     dbWriteTable(s$con, "antDeps", ant %>% as.data.frame, overwrite=TRUE)
-    ## GPS table; initially, this contains only a single fix for each receiver deployment
-    ## but the tagview() function will be responsible for filling in additional fixes
-    ## for mobile receivers.
+
+    ## GPS fix table; initially, this contains only a single fix for
+    ## each receiver deployment but we'll eventually be filling in
+    ## additional fixes for mobile receivers.
 
     dbWriteTable(s$con, "recvGPS",
                  recv %>% transmute (

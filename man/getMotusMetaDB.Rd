@@ -101,7 +101,7 @@ lat, lon, and elev are the same values as in the recvDeps record.
 For a mobile receiver deployment, the full set of GPS records for the receiver are given.
 
 \itemize{
-\item deviceID motus device ID
+\item deviceID motus receiver ID
 \item ts timestamp for fix
 \item lat
 \item lon
