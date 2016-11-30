@@ -86,13 +86,23 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 makeReceiverPlot = function(recv, meta=NULL, title="", condense=3600, ts = NULL, monoBN = NULL) {
-    if (is.character(recv))
+    owner = list(recv=FALSE, meta=FALSE)
+
+    if (is.character(recv)) {
         recv = src_sqlite(recv)
+        owner$recv = TRUE
+    }
     if (is.null(meta)) {
         meta = recv
     } else if (is.character(meta)) {
         meta = src_sqlite(meta)
+        owner$meta = TRUE
     }
+
+    ## on exit, close DB connections we opened; dplyr has finalizers for these, but we
+    ## want to avoid building up too much cruft before the next gc()
+
+    on.exit(for (n in names(owner)) if (owner[[n]]) dbDisconnect(get(n)$con))
 
     ## grab receiver serial number from "meta" map in recv database
     rinfo = getMap(recv)
