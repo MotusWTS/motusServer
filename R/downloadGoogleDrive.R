@@ -54,6 +54,7 @@ downloadGoogleDrive = function(link, dir) {
         safeSys("gdrive",
                 "download",
                 "query",
+                "-r",
                 "--no-progress",
                 "--path",
                 dir,
