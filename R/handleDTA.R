@@ -18,7 +18,7 @@ handleDTA = function(j) {
 
     ## merge files into receiver database(s)
 
-    info = ltMergeFiles(j$dir)
+    info = ltMergeFiles(j$path)
 
     ## queue findtags subjobs for each receiver having data files with
     ## new content
