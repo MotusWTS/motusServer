@@ -2,6 +2,8 @@
 #'
 #' The plot is an object of class \code{trellis} which can then
 #' be sent to an open plotting device using \code{print()}.
+#' Note: only detections with valid timestamps, i.e. after
+#' 1 Jan 2010, are shown.
 #'
 #' @param recv path or dplyr::src_sqlite to the receiver database
 #'
@@ -180,6 +182,9 @@ monoBN[1]))
         tags = rbind(tags, pulses, reboots)
     }
 
+    ## filter out anything with an invalid (pre-GPS) date
+
+    tags = tags %>% filter_(~ts >= MOTUS_SG_EPOCH)
     class(tags$ts) = c("POSIXt", "POSIXct")
 
     dayseq = seq(from=round(min(tags$ts), "days"), to=round(max(tags$ts),"days"), by=24*3600)

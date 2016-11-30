@@ -191,3 +191,6 @@ MOTUS_RECEIVER_LOCK_TABLE = "recvLocks"
 ## flash drives, and we often get these files in a transfer.
 
 MOTUS_JUNKFILE_REGEX = "(__MACOSX/|System Volume Information/|._.DS_Store)"
+
+## the earliest valid date from a sensorgnome (= as.numeric(ymd("2010-01-01")))
+MOTUS_SG_EPOCH = 1262304000

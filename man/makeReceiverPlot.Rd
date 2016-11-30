@@ -85,6 +85,8 @@ during the condensation period.
 \description{
 The plot is an object of class \code{trellis} which can then
 be sent to an open plotting device using \code{print()}.
+Note: only detections with valid timestamps, i.e. after
+1 Jan 2010, are shown.
 }
 \details{
 If both \code{ts} and \code{monoBN} are NULL, then all
