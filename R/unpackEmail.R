@@ -26,7 +26,7 @@
 #' the message is returned instead.
 #'
 #' @note  Trailing DOS-style newlines are translated into unix-style newlines
-#' before unpacking the message, since \code{munpack} can't handle this.
+#' before unpacking the message, since I'm not sure \code{ripmime} can handle this.
 #'
 #' @export
 #'
@@ -46,11 +46,9 @@ unpackEmail = function(msg, dir, headers=c("From", "Reply-To", "Subject"), maxHe
     }
 
     ## because the incoming email might (incorrectly) use \r\n end of lines,
-    ## convert these to \n
-    res = safeSys(sprintf("cat %s | sed -e 's/\\r$//' | munpack -C %s -q -t", msg, dir), quote=FALSE)
-    res = read.csv(textConnection(res), sep=" ", header=FALSE, as.is=TRUE)
-    names(res) = c("name", "mime")
-    textParts = file.path(dir, subset(res, mime=="(text/plain)")$name)
+    ## convert these to \n with sed
+    safeSys(sprintf("cat %s | sed -e 's/\\r$//' | ripmime -i - -d %s --stderr -q", msg, dir), quote=FALSE)
+    textParts = dir(dir, pattern="^textfile[0-9_]*$", full.names=TRUE)
 
     if (length(textParts) == 0){
         ## nothing unpacked, so just use original message

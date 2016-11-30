@@ -37,7 +37,7 @@ concatenation of all text parts, possibly preceded by some headers.
 }
 \note{
 Trailing DOS-style newlines are translated into unix-style newlines
-before unpacking the message, since \code{munpack} can't handle this.
+before unpacking the message, since I'm not sure \code{ripmime} can handle this.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
