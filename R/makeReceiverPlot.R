@@ -227,17 +227,21 @@ monoBN[1]))
             boot = grepl("^ Reboot", y, perl=TRUE)  ## must match fullID formatting from dbGetQuery above
             tag = ! (ant | boot)
             ## plot reboots
-            panel.xyplot(x[boot], y[boot], groups=groups[boot], pch = as.character(groups[boot]), col="black", ...)
+            if (any(boot))
+                panel.xyplot(x[boot], y[boot], groups=groups[boot], pch = as.character(groups[boot]), col="black", ...)
             ## plot antennas
-            panel.xyplot(x[ant], y[ant], groups=groups[ant], pch = '|', ...)
+            if (any(ant))
+                panel.xyplot(x[ant], y[ant], groups=groups[ant], pch = '|', ...)
             ## plot tags
-            panel.xyplot(x[tag], y[tag], groups=groups[tag], ...)
+            if (any(tag))
+                panel.xyplot(x[tag], y[tag], groups=groups[tag], ...)
         },
         main = list(paste0(title, "\n", sprintf("Receiver: %s", serno)), cex=1.5),
         ylab = list(ylab, cex=1.5),
         xlab = list(dateLabel, cex=1.5),
         cex = 1.5,
         scales=list(cex = 1.5),
+        auto.key = if (isLotek) list(title="Antenna", columns=6) else FALSE
         )
 
     return (list(
