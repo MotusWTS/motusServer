@@ -17,6 +17,12 @@ handleRerunReceiver(j)
 sessions to run; If not specified, then for an SG receiver, all
 boot sessions are rerun.  Ignored for Lotek receivers.
 
+\item ts real vector of length 1 or 2; the start (and possibly end)
+timestamp of boot sessions to run.  Ignored for an SG. If not
+specified for a Lotek receiver, exports all data.  Otherwise, exports
+data only in the specified period (if length is 2) or starting
+at the specified timestamp (if length is 1)
+
 \item exportOnly logical scalar; if TRUE, skip running the tagfinder
 
 \item cleanup logical scalar; if TRUE, delete all hits, runs,
