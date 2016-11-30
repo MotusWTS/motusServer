@@ -44,7 +44,7 @@ downloadGoogleDrive = function(link, dir) {
     info = safeSys("gdrive", "info", ID, splitOutput=TRUE)
 
     ## gdrive sends errors to stdout, not stderr
-    if (grepl("error", info[1], ignore.case=TRUE, fixed=TRUE))
+    if (grepl("error", info[1], ignore.case=TRUE))
         stop("Unable to download file.\nAttempt to get metadata failed with: ", info[1])
 
     ## see whether it's a folder
