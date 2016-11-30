@@ -106,6 +106,10 @@ makeReceiverPlot = function(recv, meta=NULL, title="", condense=3600, ts = NULL,
 
     ## grab receiver serial number from "meta" map in recv database
     rinfo = getMap(recv)
+
+    if (! isTRUE(rinfo$dbType == "receiver"))
+        stop("This is not a receiver database.  Use a different function for plotting tagProject or site databases.")
+
     serno = rinfo$recvSerno
     isLotek = rinfo$recvType == "Lotek"
 
