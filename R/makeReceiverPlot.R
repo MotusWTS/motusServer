@@ -160,9 +160,17 @@ makeReceiverPlot = function(recv, meta=NULL, title="", condense=3600, ts = NULL,
 
     tags$fullID = as.factor(tags$fullID)
 
+    ## if all frequencies are the same, remove from fullID and append to axis label
+    ylabExtra = ""
+
+    freqs = unique(sapply(strsplit(levels(tags$fullID), "@"), function(x) x[2]))
+    if (length(freqs) == 1) {
+        levels(tags$fullID) = sub("@.*", "", levels(tags$fullID), perl=TRUE)
+        ylabExtra = paste0("\nall tags @ ", freqs, " MHz")
+    }
 
     if (! isLotek) {
-        ## get pulse counts to show as status, and append to the dataset
+        ## get pulse counts and reboots to show as status, and append to the dataset
         ## FIXME: if anyone cares, they can recode this in dplyr form
         ## Note that the fullID column must match that used in grepl() in the panel.xyplot function below.
 
@@ -199,11 +207,12 @@ monoBN[1]))
     ## filter out anything with an invalid (pre-GPS) date
 
     tags = tags %>% filter_(~ts >= MOTUS_SG_EPOCH)
+
     class(tags$ts) = c("POSIXt", "POSIXct")
 
     dayseq = seq(from=round(min(tags$ts), "days"), to=round(max(tags$ts),"days"), by=24*3600)
 
-    ylab = "Full Tag ID"
+    ylab = paste0("Full Tag ID", ylabExtra)
     numTags = length(unique(tags$fullID))
     width = 500 + 7 * length(dayseq)  ## 7 pixels per day plus margins
     height = 300 + 20 * numTags  ## 20 pixels per tag line plus margins
