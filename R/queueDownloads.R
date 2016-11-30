@@ -17,6 +17,7 @@
 queueDownloads = function(j, msg) {
 
     links = regexPieces(dataTransferRegex, msg)[[1]]
+    links = links[! duplicated(links)]  ## can't use 'unique' as it drops names
 
     ## queue any links
 
