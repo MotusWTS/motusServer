@@ -89,11 +89,11 @@ ltMergeFiles = function(files, dbdir=MOTUS_PATH$RECV) {
         meta = getMap(src)
 
         meta$dbType = "receiver" ## indicate this is a receiver database (vs. a tagProject database)
-        meta$recvSerno = recv
+        meta$recvSerno = x$recv
         meta$recvType = "Lotek"
 
         ## get bare serial number by dropping "Lotek-"
-        bareno = sub("Lotek-", "", recv, fixed=TRUE)
+        bareno = sub("Lotek-", "", x$recv, fixed=TRUE)
 
         ## map to serial number, as per info from Lotek:
 
