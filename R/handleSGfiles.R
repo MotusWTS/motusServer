@@ -78,5 +78,8 @@ handleSGfiles = function(j) {
         group_by(serno) %>%
         do (ignore=queueExport(.))
 
+    if (! any(info$use > 0))
+        jobLog(j, "There were no new files in the dataset, so I didn't do anything.")
+
     return(TRUE)
 }
