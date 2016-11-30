@@ -58,7 +58,7 @@ downloadGoogleDrive = function(link, dir) {
                 "--no-progress",
                 "--path",
                 dir,
-                paste0("'", ID, "' in parents")
+                paste0("\"'", ID, "' in parents\"")
                 )
     } else {
         safeSys("gdrive",
