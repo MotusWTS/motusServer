@@ -169,14 +169,28 @@ makeReceiverPlot = function(recv, meta=NULL, title="", condense=3600, ts = NULL,
         ylabExtra = paste0("\nall tags @ ", freqs, " MHz")
     }
 
-    if (! isLotek) {
-        ## get pulse counts and reboots to show as status, and append to the dataset
-        ## FIXME: if anyone cares, they can recode this in dplyr form
-        ## Note that the fullID column must match that used in grepl() in the panel.xyplot function below.
+    ## get pulse counts and reboots to show as status, and append to the dataset
+    ## FIXME: if anyone cares, they can recode this in dplyr form
+    ## Note that the fullID column must match that used in grepl() in the panel.xyplot function below.
+
+    if (isLotek) {
+        ## get pulse counts from the period in question; grab any from batches that overlap
+        ## the specified time interval; further filtering happens below
 
         pulses = dbGetQuery(recv$con, sprintf("
+select ant,
+' Antenna ' || ant || ' Activity' as fullID,
+hourBin as bin,
+hourBin * 3600 + 1800 as ts,
+1 as n,
+0 as freq,
+0 as sig
+from pulseCounts where hourBin between %.14g and %.14g",
+floor(ts[1] / 3600), floor(ts[2] / 3600)))
+    } else {
+        pulses = dbGetQuery(recv$con, sprintf("
 select t1.ant,
-' Antenna ' || t1.ant || ' Status' as fullID,
+' Antenna ' || t1.ant || ' Activity' as fullID,
 t1.hourBin as bin,
 t1.hourBin * 3600 + 1800 as ts,
 1 as n,
@@ -184,12 +198,13 @@ t1.hourBin * 3600 + 1800 as ts,
 0 as sig
 from pulseCounts as t1 join batches as t2 on t1.batchID=t2.batchID where t2.monoBN between %.14g and %.14g group by t1.ant, t1.hourBin",
 monoBN[1], monoBN[2]))
+    }
+    pulses$fullID = as.factor(pulses$fullID)
 
-        pulses$fullID = as.factor(pulses$fullID)
+    ## get the time of each reboot, again as bogus tags records
+    ## Note that the fullID column must match that used in grepl() in the panel.xyplot function below.
 
-        ## get the time of each reboot, again as bogus tags records
-        ## Note that the fullID column must match that used in grepl() in the panel.xyplot function below.
-
+    if (! isLotek) {
         reboots = dbGetQuery(recv$con, sprintf("
 select monoBN%%10 as ant,
 ' Reboot Odometer' as fullID,
@@ -201,8 +216,10 @@ min(tsBegin) as ts,
 from batches where monoBN >= %d and tsBegin >= 1262304000 group by monoBN",
 monoBN[1]))
         reboots$fullID = as.factor(reboots$fullID)
-        tags = rbind(tags, pulses, reboots)
+    } else {
+        reboots = NULL
     }
+    tags = rbind(tags, pulses, reboots)
 
     ## filter out anything with an invalid (pre-GPS) date
 
@@ -240,8 +257,7 @@ monoBN[1]))
         ylab = list(ylab, cex=1.5),
         xlab = list(dateLabel, cex=1.5),
         cex = 1.5,
-        scales=list(cex = 1.5),
-        auto.key = if (isLotek) list(title="Antenna", columns=6) else FALSE
+        scales=list(cex = 1.5)
         )
 
     return (list(
