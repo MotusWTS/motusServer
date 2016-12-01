@@ -25,7 +25,7 @@ handleLtFindtags = function(j) {
     src = getRecvSrc(j$serno)
     rv = ltFindTags(src, getMotusMetaDB())
     closeRecvSrc(src)
-    jobLog(j, paste0("Got ", rv, " tag detections."))
+    jobLog(j, paste0("Got ", rv[2], " tag detections."))
 
     return(TRUE)
 }
