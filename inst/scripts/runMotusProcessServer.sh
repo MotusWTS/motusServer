@@ -103,11 +103,9 @@ function onExit {
     if [[ $TRACE != 0 && "$MYTMPDIR" =~ /tmp/tmp* ]]; then
         rm -rf "$MYTMPDIR"
     fi
-    echo Process server $N stopped. >> /sgm/logs/mainlog.txt
 
     ## delete receiver locks held by this process
-    sqlite3 /sgm/server.sqlite "pragma busy_timeout=10000; delete from recvLocks where procNum=$N"
-
+    sqlite3 /sgm/server.sqlite "pragma busy_timeout=10000; delete from recvLocks where procNum=$N" > /dev/null
 }
 
 ## call the cleanup handler on exit
@@ -116,7 +114,7 @@ trap onExit EXIT
 
 echo $$ > /sgm/processServer$N.pid
 
-killFile=/sgm/kill$N
+killFile=/sgm/queue/0/kill$N
 rm -f $killFile
 
 ## restart the process whenever it dies, allowing a
@@ -124,18 +122,18 @@ rm -f $killFile
 
 if [[ $TRACE == 0 ]]; then
     while (( 1 )); do
-        nohup Rscript -e "library(motusServer);processServer($N, tracing=FALSE)" >> /sgm/logs/process$N.txt 2>&1
         echo running server for queue $N
+        nohup Rscript -e "library(motusServer);processServer($N, tracing=FALSE)" >> /sgm/logs/process$N.txt 2>&1
+
         ## Kill off the inotifywait process; it's in our process group.
         ## This should happen internally, but might not.
         pkill -g $$ inotifywait
 
         ## delete receiver locks held by this process
-        sqlite3 /sgm/server.sqlite "pragma busy_timeout=10000; delete from recvLocks where procNum=$N"
+        sqlite3 /sgm/server.sqlite "pragma busy_timeout=10000; delete from recvLocks where procNum=$N" > /dev/null
 
         ## check for a file called $killFile, and if it exists, delete it and quit
         if [[ -f $killFile ]]; then
-            echo Process server $N detected file $killFile. >> /sgm/logs/mainlog.txt
             rm -f $killFile
             exit 0
         fi

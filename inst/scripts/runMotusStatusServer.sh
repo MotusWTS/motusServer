@@ -64,11 +64,12 @@ fi
 
 function onExit {
 ## cleanup the pid file, and possibly the temporary R file
+## Log to the master log, because this server is stopped via signal.
+    echo `date +%Y-%m-%dT%H-%M-%S.%6N`: Status server killed. >> /sgm/logs/mainlog.txt
     rm -f $PIDFILE
     if [[ $TRACE != 0 && "$MYTMPDIR" =~ /tmp/tmp* ]]; then
         rm -rf "$MYTMPDIR"
     fi
-    echo Status server stopped. >> /sgm/logs/mainlog.txt
 }
 
 ## call the cleanup handler on exit

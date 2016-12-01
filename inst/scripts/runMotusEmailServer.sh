@@ -66,7 +66,6 @@ function onExit {
     if [[ $TRACE != 0 && "$MYTMPDIR" =~ /tmp/tmp* ]]; then
         rm -rf "$MYTMPDIR"
     fi
-    echo Email server stopped. >> /sgm/logs/mainlog.txt
 }
 
 ## call the cleanup handler on exit
@@ -74,6 +73,9 @@ function onExit {
 trap onExit EXIT
 
 echo $$ > $PIDFILE
+
+killFile=/sgm/inbox/killE
+rm -f $killFile
 
 if [[ $TRACE == 0 ]]; then
     while (( 1 )); do
@@ -84,7 +86,6 @@ if [[ $TRACE == 0 ]]; then
 
         ## check for a file called $killFile, and if it exists, delete it and quit
         if [[ -f $killFile ]]; then
-            echo Email server detected file $killFile. >> /sgm/logs/mainlog.txt
             rm -f $killFile
             exit 0
         fi

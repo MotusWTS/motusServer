@@ -33,12 +33,14 @@ if [[ "$1" == "-g" ]]; then
 fi
 
 for i in $PNUMS; do
+    KILLFILE=/sgm/queue/0/kill$i
     if [[ $GRACEFUL ]]; then
-        touch /sgm/kill$i;
+        touch $KILLFILE
     else
         PID=`cat /sgm/processServer$i.pid`
         if [[ "$PID" != "" ]]; then
             pkill -g $PID
+            echo `date +%Y-%m-%dT%H-%M-%S.%6N`: Process server for queue $i killed. >> /sgm/logs/mainlog.txt
             rm -f /sgm/processServer$i.pid
         fi
     fi

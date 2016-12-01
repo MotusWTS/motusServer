@@ -21,8 +21,10 @@
 #' @return This function does not return; it is meant for use in an R
 #'     script run in the background.  After each subjob is handled,
 #'     the function checks for the existence of a file called
-#'     \code{MOTUS_PATH$ROOT/killE}.  If that file is found,
-#'     the function calls quit(save="no").
+#'     \code{MOTUS_PATH$INBOX/killE}.  If that file is found,
+#'     the function calls quit(save="no").  The file will also
+#'     be detected within the call to feed() when the queue
+#'     is empty, because it is located in the watched folder.
 #'
 #' @export
 #'
@@ -33,7 +35,7 @@ emailServer = function(tracing = FALSE) {
         options(error=recover)
 
     ensureServerDirs()
-    motusLog("EmailServer started")
+    motusLog("Email server started")
 
     ## The queue is a vector of job IDs, maintained in execution order.
     ## Execution order is depth-first, sorting by job ID within a parent
@@ -60,13 +62,17 @@ emailServer = function(tracing = FALSE) {
 
     pkgEnv = as.environment("package:motusServer")
 
-    ## the kill file:
-    killFile = file.path(MOTUS_PATH$ROOT, "killE")
+    ## the kill file; must be in the same folder as passed to getFeeder,
+    ## so that creating the killFile causes a return from feed() below:
+
+    killFile = file.path(MOTUS_PATH$INBOX, "killE")
 
     repeat {
 
         if (length(MOTUS_QUEUE) == 0) {
             msg = feed()    ## this might might wait a long time
+            if (msg == killFile)
+                break
 
             ## create and enqueue a new email job
             j = newJob("email", .parentPath=MOTUS_PATH$MAIL_QUEUE, msgFile=msg)
@@ -109,9 +115,11 @@ emailServer = function(tracing = FALSE) {
                 j$done = -1
             }
         }
-
-        ## check for a killN file
+        ## check for a killN file; we repeat the check from above, in case
+        ## we're working through the pre-existing portion of the queue
         if (file.exists(killFile))
-            quit(save="no")
+            break
     }
+    motusLog("Email server stopped")
+    quit(save="no")
 }

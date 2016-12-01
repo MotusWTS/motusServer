@@ -28,6 +28,8 @@ statusServer = function(port, tracing=FALSE) {
     for (f in allApps)
         SERVER$add(RhttpdApp$new(app = get(f), name = f))
 
+    motusLog("Status server started")
+
     SERVER$start(port = port)
 
     if (! tracing) {

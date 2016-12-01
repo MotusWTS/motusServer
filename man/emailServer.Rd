@@ -14,8 +14,10 @@ calling each handler.}
 This function does not return; it is meant for use in an R
     script run in the background.  After each subjob is handled,
     the function checks for the existence of a file called
-    \code{MOTUS_PATH$ROOT/killE}.  If that file is found,
-    the function calls quit(save="no").
+    \code{MOTUS_PATH$INBOX/killE}.  If that file is found,
+    the function calls quit(save="no").  The file will also
+    be detected within the call to feed() when the queue
+    is empty, because it is located in the watched folder.
 }
 \description{
 Watch for new messages in \code{MOTUS_PATH$INBOX}.
