@@ -8,8 +8,8 @@
 #' This function uses the official Lotek database to look up tag
 #' parameters.  It also estimates a precise burst interval as the mean
 #' of those burst intervals from previously-registered tags which are
-#' within 0.05 s of the one you specify here.  
-#' 
+#' within 0.05 s of the one you specify here.
+#'
 #' You will be shown the full set of registration parameters and given
 #' a chance to cancel the process if they look wrong.
 #'
@@ -44,7 +44,7 @@
 #' @param tsStart: start of deployment, if known.
 #'
 #' @param species: 4-letter code of species, if known
-#' 
+#'
 #' @param ...: additional parameters to motusQuery()
 #'
 #' @return a 3-element numeric vector; the first element is the motus
@@ -83,7 +83,7 @@ motusQuickRegTag = function(projectID,
 
     if (! grepl("20[0-9][0-9]-[1-4]", dateBin))
         stop("dateBin must be specified as YYYY-Q, where Q is 1, 2, 3 or 4")
-    
+
     mfgID = as.character(mfgID)
 
     manufacturer = "Lotek"
@@ -92,13 +92,13 @@ motusQuickRegTag = function(projectID,
 
     codeSet = paste0("Lotek", codeSet)
 
-    offsetFreq = 4
+    offsetFreq = 0 ## assume nominal frequency
 
     if (! exists("allMotusTags")) {
         allMotusTags <<- tbl(src_sqlite(getMotusMetaDB()), "tags") %>% collect %>% as.data.frame
         allMotusTags <<- subset(allMotusTags, ! is.na(period))
     }
-    
+
     pip = allMotusTags$period[abs(allMotusTags$period - period) <= 0.05]
     periodSD = sd(pip)
     if (periodSD > 0.003)
@@ -108,7 +108,7 @@ motusQuickRegTag = function(projectID,
 
     pulseLen = 2.5
 
-    db = subset(ltGetCodeset(codeSet), id==mfgID)
+    db = subset(ltGetCodeset(codeSet), id==floor(as.numeric(mfgID)))
 
     param1 = db$g1
     param2 = db$g2
@@ -154,14 +154,14 @@ motusQuickRegTag = function(projectID,
         if (isTRUE(! is.null(v) && (is.na(v) || (is.character(v) && nchar(v) == 0))))
             assign(n, NULL)
     }
-    
+
     ## convert non-NULL to numeric
     for (n in c("tsStart")) {
         v = get(n)
         if (isTRUE(! is.null(v)))
             assign(n, as.numeric(v))
     }
-    
+
     if (is.null(tsStart) && is.null(species))
         return (c(res$tagID, NA, period))
 
@@ -175,7 +175,6 @@ motusQuickRegTag = function(projectID,
         }
     }
 
-    resD = motusDeployTag(res$tagID, "pending", tsStart=tsStart, speciesID=sp$id)
+    resD = motusDeployTag(res$tagID, projectID, "pending", tsStart=tsStart, speciesID=sp$id)
     return (c(res$tagID, resD$deployID, period))
 }
-
