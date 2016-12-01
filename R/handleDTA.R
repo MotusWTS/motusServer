@@ -27,7 +27,7 @@ handleDTA = function(j) {
         ## nothing to do if no new files to use
 
         if (! any(f$dataNew)) {
-            jobLog(paste0("Receiver ", f$serno[1], ":  the .DTA files have no new data, so the tag finder will not be run"))
+            jobLog(j, paste0("Receiver ", f$serno[1], ":  the .DTA files have no new data, so the tag finder will not be run"))
             return(0)
         }
         newSubJob(j, "LtFindtags", serno=f$serno[1], tsStart=min(f$ts[f$dataNew]))
