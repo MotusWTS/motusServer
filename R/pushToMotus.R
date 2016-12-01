@@ -32,8 +32,8 @@ pushToMotus = function(src) {
 
     deviceID = getMotusDeviceID(src)
 
-    ## ensure the device ID has been set on all batches
-    ## it is a constant, and the only reason we do this
+    ## Ensure the device ID has been set on all batches.
+    ## It is a constant, and the only reason we do this
     ## is to have the same schema for receiver and master
     ## databases.
     sql("update batches set motusDeviceID=%d", deviceID)
@@ -51,7 +51,6 @@ pushToMotus = function(src) {
     ## for a batch, after writing all hits, runs, etc.
 
     ## So we need to reserve a block of nrow(b) IDs in motus.batches
-
 
     firstMotusBatchID = motusReserveKeys(mt, "batches", "batchID", nrow(newBatches), "motusDeviceID", -deviceID)
     offsetBatchID = firstMotusBatchID - newBatches$batchID[1]
@@ -200,6 +199,13 @@ pushToMotus = function(src) {
         if (nrow(bpa) > 0)
             dbWriteTable(mtcon, "batchParams", bpa, append=TRUE, row.names=FALSE)
 
+        ## ----------  copy pulseCounts  ----------
+        pcs = sql("select * from pulseCounts where batchID = %d", b$batchID)
+        pcs$batchID = pcs$batchID + offsetBatchID
+
+        if (nrow(pcs) > 0)
+            dbWriteTable(mtcon, "pulseCounts", pcs, append=TRUE, row.names=FALSE)
+
         ## ----------  generate runUpdates  ----------
 
         ## For runs which began before this batch and which either
@@ -238,4 +244,6 @@ pushToMotus = function(src) {
     mtsql("update batches set tsMotus = 0 where tsMotus = -1 and batchID >= %d and batchID <= %d",
           offsetBatchID + newBatches$batchID[1],
           offsetBatchID + tail(newBatches$batchID, 1))
+
+    invisible(NULL)
 }

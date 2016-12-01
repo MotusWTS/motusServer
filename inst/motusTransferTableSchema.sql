@@ -169,6 +169,21 @@ CREATE TABLE IF NOT EXISTS batchParams (
     PRIMARY KEY (batchID, progName, paramName) -- only one value of a given parameter per program per batch
 );----
 
+CREATE TABLE IF NOT EXISTS pulseCounts (
+-- This table records antenna activity.  Neither Lotek nor SG
+-- receivers provide explicit reports of antenna status, so we just
+-- record the approximate number of pulses detected per hour on each
+-- antenna.  A non-zero value is treated as "antenna was working".
+-- These pulses are from both valid tag detections and noise or id =
+-- 999 detections (the latter treated as only a single pulse).
+
+    batchID INT NOT NULL REFERENCES batches, -- which batch run these pulse counts are for
+    ant TINYINT NOT NULL,                    -- antenna
+    hourBin INT,                             -- hour bin for this count; this is round(ts/3600)
+    count   INT,                             -- number of pulses for given pcode in this file
+    PRIMARY KEY (batchID, ant, hourBin)      -- a single count for each batchID, antenna, and hourBin
+);----
+
 -- Sometimes we will want to entirely replace a bunch of batches with
 -- new ones.  Really, we just delete the old batches, and insert
 -- new ones (or not).  This table records deletions.  We will guarantee
@@ -197,6 +212,7 @@ CREATE TABLE IF NOT EXISTS sg_import_log (
 
 GRANT SELECT, UPDATE(tsMotus)   ON motus.batchDelete    TO 'denis'@'%';
 GRANT SELECT                    ON motus.batchParams    TO 'denis'@'%';
+GRANT SELECT                    ON motus.pulseCounts    TO 'denis'@'%';
 GRANT SELECT                    ON motus.batchProgs     TO 'denis'@'%';
 GRANT SELECT, UPDATE (tsMotus)  ON motus.batches        TO 'denis'@'%';
 GRANT SELECT                    ON motus.gps            TO 'denis'@'%';
