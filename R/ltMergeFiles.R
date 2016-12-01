@@ -58,8 +58,7 @@ ltMergeFiles = function(files, dbdir=MOTUS_PATH$RECV) {
         })
         if (skip)
             next
-        src = src_sqlite(file.path(dbdir, paste0(x$recv, ".motus")), TRUE)
-        sgEnsureDBTables(src)
+        src = getRecvSrc(x$recv)
 
         ## compute file hash, then check whether it already is in database
         fhash = digest(blob, algo="sha512", serialize=FALSE)
