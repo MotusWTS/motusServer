@@ -63,8 +63,12 @@ safeSys = function(cmd, ..., shell=TRUE, quote=TRUE, minErrorCode=1, splitOutput
     if (shell) {
         if (quote) {
             ## shell-quote args except for named parameters
-            named = names(args) != ""
-            args[! named] = shQuote(args[! named])
+            if (! is.null(names(args))) {
+                named = names(args) != ""
+                args[! named] = shQuote(args[! named])
+            } else {
+                args = shQuote(args)
+            }
         }
         command = paste(cmd, paste(args, collapse=" "), ">", outFile, "2>", errFile)
         rv = suppressWarnings(system(command = command, intern = FALSE))
