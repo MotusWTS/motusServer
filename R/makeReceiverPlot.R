@@ -151,21 +151,30 @@ makeReceiverPlot = function(recv, meta=NULL, title="", condense=3600, ts = NULL,
     ## avg(x), and max(x) are all just x
 
     tags = tags %>% summarize(ts=min(ts), n=length(ts),
-        freq=avg(freq), sig=max(sig)) %>% collect %>% as.data.frame
+        freq=avg(freq), sig=max(sig), motusID=motusTagID, mfgID=mfgID, proj=label) %>% collect %>% as.data.frame
 
     ## drop ".0" suffix from Ids, as it is wrong (FIXME: this should be done in getMotusMetaDB())
 
     fixup = which(grepl(".0@", tags$fullID, fixed=TRUE))
     tags$fullID[fixup] = sub(".0@", "@", tags$fullID[fixup], fixed=TRUE)
 
-    tags$fullID = as.factor(tags$fullID)
+    ## append motus ID
+    tags$fullID = sprintf("%s Mot%d", tags$fullID, tags$motusID)
+
+    ## make into a factor, sorting levels by project label, and then increasing mfgID
+    tags$fullID = factor(tags$fullID, levels = unique(tags$fullID[order(tags$proj, as.numeric(tags$mfgID))]))
+
+    ## remove fields we no longer need, so we don't have to pad the
+    ## pulse and boot pseudo-tag records
+
+    tags$mfgID = tags$proj = tags$motusID = NULL
 
     ## if all frequencies are the same, remove from fullID and append to axis label
     ylabExtra = ""
 
-    freqs = unique(sapply(strsplit(levels(tags$fullID), "@"), function(x) x[2]))
+    freqs = unique(unlist(regexPieces("@(?<freq>[0-9.]*)", levels(tags$fullID))))
     if (length(freqs) == 1) {
-        levels(tags$fullID) = sub("@.*", "", levels(tags$fullID), perl=TRUE)
+        levels(tags$fullID) = sub("@[0-9.]*", "", levels(tags$fullID), perl=TRUE)
         ylabExtra = paste0("\nall tags @ ", freqs, " MHz")
     }
 
