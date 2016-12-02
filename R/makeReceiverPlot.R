@@ -245,7 +245,7 @@ monoBN[1]))
             tag = ! (ant | boot)
             ## plot reboots
             if (any(boot))
-                panel.xyplot(x[boot], y[boot], groups=groups[boot], pch = as.character(groups[boot]), col="black", ...)
+                panel.xyplot(x[boot], y[boot], groups=groups[boot], pch = as.character(levels(as.factor(groups[boot]))), col="black", ...)
             ## plot antennas
             if (any(ant))
                 panel.xyplot(x[ant], y[ant], groups=groups[ant], pch = '|', ...)
