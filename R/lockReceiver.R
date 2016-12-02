@@ -19,10 +19,17 @@ lockReceiver = function(serno, lock=TRUE) {
     ## Note: the locking is achieved by the UNIQUE PRIMARY KEY property on serno
 
     if (lock) {
-        ## try to lock this serial number to our process number
-        MOTUS_SERVER_DB_SQL(sprintf("INSERT INTO %s VALUES(:serno, :N)", MOTUS_RECEIVER_LOCK_TABLE),
-                        serno = serno,
-                        N = MOTUS_PROCESS_NUM)
+        ## try to lock this serial number to our process number; this
+        ## fails at the sqlite level if there's already a lock on the
+        ## receiver; however, to cover the case where the lock is
+        ## ours, due to sloppy coding in this package, we don't use
+        ## this exception to determine whether locking succeeded.
+
+        try(
+            MOTUS_SERVER_DB_SQL(sprintf("INSERT INTO %s VALUES(:serno, :N)", MOTUS_RECEIVER_LOCK_TABLE),
+                                serno = serno,
+                                N = MOTUS_PROCESS_NUM),
+            silent = TRUE)
 
         ## return logical indicating whether locking succeeded
 
