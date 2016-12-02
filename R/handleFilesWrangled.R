@@ -54,8 +54,13 @@ tj$log, "
     ## this from queue 0.
     newSubJob(tj, "newFiles", .enqueue=FALSE)
 
-    ## move the topJob to the top-level processServer queue
+    ## Mark this job as finished before moving its topjob to queue 0,
+    ## otherwise this job might be re-executed by the process Server
+    ## This closes issue #46
+    j$done = 1
 
+    ## move the top job to queue 0, from where a single processServer
+    ## will claim it.
     tj$queue = 0
     moveJob(tj, MOTUS_PATH$QUEUE0)
 }
