@@ -69,7 +69,7 @@ j = newJob("rerunReceiver", .parentPath=MOTUS_PATH$INCOMING, serno=serno, monoBN
 
 ## move the topJob to the top-level processServer queue
 
-j$queue = 0
+j$queue = "0"
 moveJob(j, MOTUS_PATH$QUEUE0)
 
 cat("Job", unclass(j), "has been entered into queue 0\n")

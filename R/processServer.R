@@ -70,9 +70,10 @@ processServer = function(N, tracing=FALSE) {
                 next
             }
 
-            ## log this enqueuing in job and globally
             ## queue the subjobs which are not already done
             nsj = loadJobs(topJob=j)
+
+            ## log this enqueuing in job and globally
             msg = sprintf("Job %d with %d pending subjobs entered processing queue #%d", j, nsj, N)
             motusLog(msg)
             jobLog(j, msg)

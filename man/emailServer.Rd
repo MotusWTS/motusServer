@@ -25,7 +25,7 @@ Watch for new messages in \code{MOTUS_PATH$INBOX}.
 \details{
 When a new message is found:
 \itemize{
-\item create a new job folder in /sgm/email_queue
+\item create a new job folder in \code{MOTUS_PATH$EMAIL_QUEUE}
 \item unpack the email's parts (e.g. attachments, or enclosed forwarded messages)
 \item validate by looking for an authorization token
 \item save attachments

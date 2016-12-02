@@ -31,10 +31,10 @@
 #' For any jobs to be loaded we verify that the "path" field is
 #' correct, in case the server was interrupted while moving a job.
 #'
-#' @param which character scalar or integer scalar.  If character, only
-#'     load jobs whose top job is of this type.  If integer, only
-#'     load jobs whose top job is in that queue.  If NULL (the default),
-#'     do not actually load or queue any jobs.
+#' @param which character scalar or integer scalar, which will be
+#'     converted to a character scalar.  Load only jobs whose top job
+#'     is in that queue.  If NULL (the default), do not actually load
+#'     or queue any jobs.
 #'
 #' @param topJob integer; if not NULL, jobs which are not done and whose
 #' topjob is this are queued.  Default: NULL.
@@ -47,13 +47,15 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 loadJobs = function(which = NULL, topJob=NULL) {
-    if (!is.null(which) && ( length(which) != 1 || ! (is.numeric(which) || is.character(which))))
-        stop("Must specify 'which' as an integer queue number or character scalar job type")
-
+    if (!is.null(which)) {
+        if ( length(which) != 1 || ! (is.numeric(which) || is.character(which)))
+            stop("Must specify 'which' as an integer queue number or character scalar job type")
+        which = as.character(which)
+    }
     MOTUS_QUEUE <<- NULL
 
     ## connect the global Jobs object to the MOTUS_SERVER_DB's jobs table
-    Jobs <<- Copse(MOTUS_SERVER_DB, "jobs", type=character(), done=integer(), queue=integer(), path=character(), oldpath=character(), user=character())
+    Jobs <<- Copse(MOTUS_SERVER_DB, "jobs", type=character(), done=integer(), queue=character(), path=character(), oldpath=character(), user=character())
 
     if (is.null(which) && is.null(topJob))
         return()
@@ -62,13 +64,9 @@ loadJobs = function(which = NULL, topJob=NULL) {
 
     j = integer(0)
     if (is.character(which)) {
-        ## by job type
+        ## by queue name
         j = query(Jobs,
-                  paste0("select t1.id from jobs as t1 left join jobs as t2 on t1.stump=t2.id where (t1.path is not null and t1.oldpath is not null) and (t1.done = 0) and ((t2.id is NULL and t1.type = '", which,"') or t2.type ='", which, "')"))[[1]]
-    } else if (is.numeric(which)) {
-        ## by queue number
-        j = query(Jobs,
-                  paste0("select t1.id from jobs as t1 left join jobs as t2 on t1.stump=t2.id where t1.done = 0 and t2.queue=",  round(which)))[[1]]
+                  paste0("select t1.id from jobs as t1 left join jobs as t2 on t1.stump=t2.id where t1.done = 0 and t2.queue='",  which, "'"))[[1]]
     }
 
     if (! is.null(topJob)) {

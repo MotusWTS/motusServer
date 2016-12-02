@@ -93,7 +93,7 @@ MOTUS_PATH = list(
                                                ## access point to the processing queue
     LOCKS            = "/sgm/locks",           ## locks for process queues and receiver DBs
     LOGS             = "/sgm/logs",            ## processing logs
-    MAIL_QUEUE       = "/sgm/email_queue",     ## queue for processing emails by emailServer()
+    MAIL_QUEUE       = "/sgm/queue/E",         ## queue for processing emails by emailServer()
     MANUAL           = "/sgm/manual",          ## folders needing manual attention
     MOTR             = "/sgm/motr",            ## links to receiver DBs by motus ID
     OLDROOT          = "/SG",                  ## root of old-style folder hierarchy

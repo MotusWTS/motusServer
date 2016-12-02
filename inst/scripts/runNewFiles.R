@@ -66,7 +66,7 @@ if (! preserve) {
 
 ## move the job to the top-level processServer queue
 
-j$queue = 0
+j$queue = "0"
 moveJob(j, MOTUS_PATH$QUEUE0)
 
 cat("Job", unclass(j), "has been entered into queue 0\n")

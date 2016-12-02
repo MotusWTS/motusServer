@@ -4,7 +4,7 @@
 #'
 #' When a new message is found:
 #' \itemize{
-#' \item create a new job folder in /sgm/email_queue
+#' \item create a new job folder in \code{MOTUS_PATH$EMAIL_QUEUE}
 #' \item unpack the email's parts (e.g. attachments, or enclosed forwarded messages)
 #' \item validate by looking for an authorization token
 #' \item save attachments
@@ -51,7 +51,8 @@ emailServer = function(tracing = FALSE) {
     ## This sorting occurs when new jobs are enqueued.  Removing
     ## a job preserves order and requires no additional care.
 
-    loadJobs("email")
+    ## load job from our queue
+    loadJobs("E")
 
     ## get a feed of email messages
 

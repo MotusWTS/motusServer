@@ -61,6 +61,6 @@ tj$log, "
 
     ## move the top job to queue 0, from where a single processServer
     ## will claim it.
-    tj$queue = 0
+    tj$queue = "0"
     moveJob(tj, MOTUS_PATH$QUEUE0)
 }

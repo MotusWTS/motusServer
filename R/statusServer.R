@@ -181,10 +181,10 @@ queueStatus = function(env) {
     es = file.exists("/sgm/emailServer.pid")
 
     ## num jobs in email queue
-    qm = DB("select count(distinct t1.id) from jobs as t1 join jobs as t2 on t1.id=t2.stump where t1.pid is null and t1.queue is null and t2.done=0 and t1.type='email'")[[1]]
+    qm = DB("select count(distinct t1.id) from jobs as t1 join jobs as t2 on t1.id=t2.stump where t1.pid is null and t1.queue='E' and t2.done=0")[[1]]
 
     ## num jobs waiting to be assigned to a processor
-    q0 = DB("select count(*) from jobs where pid is null and queue=0 and done=0")[[1]]
+    q0 = DB("select count(*) from jobs where pid is null and queue='0' and done=0")[[1]]
 
     ## which processServers, if any, are running
     pids = dir("/sgm", pattern="^processServer[0-9]+.pid$", full.names=TRUE)
@@ -214,10 +214,11 @@ queueStatus = function(env) {
     ## for each tagfinder process, show its status and queue length
 
     for (p in 1:8) {
+        pc = as.character(p)
         running = p %in% qr
-        jj = DB("select distinct t1.id from jobs as t1 join jobs as t2 on t1.id = t2.stump where t1.pid is null and t1.queue=:p and t2.done=0", p=p)[[1]]
-        jdone = DB("select count(*) from jobs as t1 where t1.pid is null and t1.queue=:p and t1.done!=0", p=p)[[1]]
-        jbad = DB("select count(distinct t1.id) from jobs as t1 join jobs as t2 on t1.id = t2.stump where t1.pid is null and t1.queue=:p and t2.done<0", p=p)[[1]]
+        jj = DB("select distinct t1.id from jobs as t1 join jobs as t2 on t1.id = t2.stump where t1.pid is null and t1.queue=:p and t2.done=0", p=pc)[[1]]
+        jdone = DB("select count(*) from jobs as t1 where t1.pid is null and t1.queue=:p and t1.done!=0", p=pc)[[1]]
+        jbad = DB("select count(distinct t1.id) from jobs as t1 join jobs as t2 on t1.id = t2.stump where t1.pid is null and t1.queue=:p and t2.done<0", p=pc)[[1]]
         res$write(paste0(ul,
           "<b>Tagfinder Processor #", p, "</b>\n",
           " - ", if (! running) "<b>not</b> ", "running\n",

@@ -23,10 +23,10 @@ claimJob = function(j, N) {
     ##
     ##  sqlite3 /sgm/server.sqlite
     ##
-    ##  sqlite> EXPLAIN UPDATE JOBS SET queue=8 WHERE id=9 AND queue=0;
+    ##  sqlite> EXPLAIN UPDATE JOBS SET queue='8' WHERE id=9 AND queue='0';
 
-    query(Jobs, paste0("update jobs set queue=", N, " where id=", j, " and queue=0"))
-    if(isTRUE(N == j$queue)) {
+    query(Jobs, paste0("update jobs set queue='", N, "' where id=", j, " and queue='0'"))
+    if(isTRUE(as.character(N) == j$queue)) {
         moveJob(j, MOTUS_PATH[[paste0("QUEUE", N)]])
         return (TRUE)
     }
