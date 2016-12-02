@@ -115,6 +115,16 @@ processServer = function(N, tracing=FALSE) {
             }
         }
 
+        ## If the job is done (even with errors), and there are no related subjobs left in the queue,
+        ## move the topjob to MOTUS_PATH$DONE
+
+        if (! isTRUE(j$done == 0)) {
+                    tj = topJob(j)
+                    if (0 == length(subjobsInQueue(tj))) {
+                        moveJob(tj, MOTUS_PATH$DONE)
+                    }
+        }
+
         ## check for a killN file
         if (file.exists(killFile))
             break
