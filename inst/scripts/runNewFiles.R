@@ -9,16 +9,16 @@ ARGS = commandArgs(TRUE)
 if (length(ARGS) == 0) {
     cat("
 
-Usage: runNewFiles.R [-p] DIR
+Usage: runNewFiles.R [-n] DIR
 
 where:
 
  DIR: path to the folder containing new files
 
- -p:  preserve the original files.  A new folder with either hardlinks to
+ -n:  don't preserve the original files.  Without this option,a new folder with either hardlinks to
   the original files (when on the same filesystem as the folder /sgm) or
   copies of the original files (when on a different filesystem) is created,
-  and that folder is run instead of DIR.
+  and that folder is run instead of DIR.  With the '-n' option, the original files are moved.
 
 A new job with type 'newFiles' will be created and placed into the master queue (queue 0),
 from where a processServer can claim it.  The sender will be: ",
@@ -29,12 +29,12 @@ MOTUS_ADMIN_EMAIL,
     q(save="no", status=1)
 }
 
-preserve = FALSE
+preserve = TRUE
 
 while(isTRUE(substr(ARGS[1], 1, 1) == "-")) {
     switch(ARGS[1],
-           "-p" = {
-               preserve = TRUE
+           "-n" = {
+               preserve = FALSE
            },
            {
                stop("Unknown argument: ", ARGS[1])
