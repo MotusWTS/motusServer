@@ -159,10 +159,33 @@ makeReceiverPlot = function(recv, meta=NULL, title="", condense=3600, ts = NULL,
     tags$fullID[fixup] = sub(".0@", "@", tags$fullID[fixup], fixed=TRUE)
 
     ## append motus ID
-    tags$fullID = sprintf("%s Mot%d", tags$fullID, tags$motusID)
+    tags$fullID = sprintf("%s M.%d", tags$fullID, tags$motusID)
 
     ## make into a factor, sorting levels by project label, and then increasing mfgID
     tags$fullID = factor(tags$fullID, levels = unique(tags$fullID[order(tags$proj, as.numeric(tags$mfgID))]))
+
+    ## for ambiguous tags, add items to the y-axis label
+    mID = unique(tags$motusID)
+
+    xlabExtra = ""
+    heightExtra = 0
+    if (any(mID < 0)) {
+        aID = mID[mID < 0]
+        ambig = dbGetQuery(recv$con, paste0("
+select ambigID, motusTagID1, motusTagID2, motusTagID3, motusTagID4, motusTagID5, motusTagID6
+from tagAmbig where ambigID in (", paste0(aID, collapse=","), ")"))
+        xlabExtra = paste0("\nAmbiguous Tags: ",
+                           paste( sapply(1:nrow(ambig),
+                                         function(i) {
+                                             a = ambig[i, -1]
+                                             a = a[!is.na(a)]
+                                             paste0("M.", ambig[i, 1], " = ", paste0("M.", a, collapse=" or "))
+                                         }
+                                         ), collapse="; "
+                                 ))
+        ## adjust plot height for extra lines
+        heightExtra = 20
+    }
 
     ## remove fields we no longer need, so we don't have to pad the
     ## pulse and boot pseudo-tag records
@@ -170,12 +193,12 @@ makeReceiverPlot = function(recv, meta=NULL, title="", condense=3600, ts = NULL,
     tags$mfgID = tags$proj = tags$motusID = NULL
 
     ## if all frequencies are the same, remove from fullID and append to axis label
-    ylabExtra = ""
 
     freqs = unique(unlist(regexPieces("@(?<freq>[0-9.]*)", levels(tags$fullID))))
+    ylabExtra = ""
     if (length(freqs) == 1) {
         levels(tags$fullID) = sub("@[0-9.]*", "", levels(tags$fullID), perl=TRUE)
-        ylabExtra = paste0("\nall tags @ ", freqs, " MHz")
+        ylabExtra = paste0(ylabExtra, "\nall tags @ ", freqs, " MHz")
     }
 
     ## get pulse counts and reboots to show as status, and append to the dataset
@@ -241,8 +264,9 @@ monoBN[1]))
     ylab = paste0("Full Tag ID", ylabExtra)
     numTags = length(unique(tags$fullID))
     width = 500 + 7 * length(dayseq)  ## 7 pixels per day plus margins
-    height = 300 + 20 * numTags  ## 20 pixels per tag line plus margins
+    height = 300 + 20 * numTags + heightExtra  ## 20 pixels per tag line plus margins
     dateLabel = sprintf("Date (GMT)\n%s", paste(format(range(tags$ts), "%Y-%b-%d %H:%M"), collapse=" to "))
+    dateLabel = paste0(dateLabel, xlabExtra)
     plot = xyplot(
         fullID~ts,
         groups = ant, data = tags,
