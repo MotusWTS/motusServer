@@ -20,7 +20,7 @@ where:
   copies of the original files (when on a different filesystem) is created,
   and that folder is run instead of DIR.  With the '-n' option, the original files are moved.
 
-A new job with type 'newFiles' will be created and placed into the master queue (queue 0),
+A new job with type 'serverFiles' will be created and placed into the master queue (queue 0),
 from where a processServer can claim it.  The sender will be: ",
 
 MOTUS_ADMIN_EMAIL,
@@ -49,13 +49,13 @@ suppressMessages(suppressWarnings(library(motusServer)))
 
 loadJobs()
 
-j = newJob("newFiles", .parentPath=MOTUS_PATH$INCOMING, replyTo=MOTUS_ADMIN_EMAIL, valid=TRUE, .enqueue=FALSE)
+j = newJob("serverFiles", .parentPath=MOTUS_PATH$INCOMING, replyTo=MOTUS_ADMIN_EMAIL, valid=TRUE, .enqueue=FALSE)
 
 ## move, hardlink, or copy files to the job's dir
 
 if (! preserve) {
     ## just move the files to the new job's folder
-    moveFiles(DIR, j$path)
+    moveDirContents(DIR, j$path)
 } else {
     ## we need to leave existing files alone
     ## try hardlink, and if that fails, copy
@@ -64,7 +64,8 @@ if (! preserve) {
     }
 }
 
-## move the job to the top-level processServer queue
+## move the job to the mail queue, since it's the email server that processes
+## unpacking archives and sanity checks on new files
 
 j$queue = "0"
 moveJob(j, MOTUS_PATH$QUEUE0)
