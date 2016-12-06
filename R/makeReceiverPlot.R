@@ -29,8 +29,22 @@
 #' @param antCol colours to use for each antenna, beginning with antenna number 0.
 #' Antenna numbers run from 0 to 10, so at most the first 11 elements are used.
 #'
-#' Default: c("black", "cyan", "green", "gold", "red", "blue", "darkgreen", "darkred", "pink", "purple", "orange")
-#'
+#' Default:
+#' \code{
+#'  c(
+#'   "#000000", ## black
+#'   "#0000ff", ## blue
+#'   "#20bd00", ## green
+#'   "#a617b8", ## purple
+#'   "#fb7402", ## orange
+#'   "#11d0e1", ## cyan
+#'   "#18770b", ## dark green
+#'   "#e7c00a", ## gold
+#'   "#ff0000", ## red
+#'   "#5eff00", ## yellow green
+#'   "#a5a5a5"  ## gray
+#'   )
+#' }
 #'
 #' @details If both \code{ts} and \code{monoBN} are NULL, then all
 #'     detections in database \code{recv} are plotted.
@@ -91,7 +105,8 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-makeReceiverPlot = function(recv, meta=NULL, title="", condense=3600, ts = NULL, monoBN = NULL, antCol=c("black", "cyan", "green", "gold", "red", "blue", "darkgreen", "darkred", "pink", "purple", "orange")) {
+makeReceiverPlot = function(recv, meta=NULL, title="", condense=3600, ts = NULL, monoBN = NULL, antCol=c("#000000", "#0000ff", "#20bd00", "#a617b8", "#fb7402", "#11d0e1", "#18770b", "#e7c00a", "#ff0000", "#5eff00", "#a5a5a5")
+) {
     owner = list(recv=FALSE, meta=FALSE)
 
     if (is.character(recv)) {
