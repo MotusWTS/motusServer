@@ -26,6 +26,12 @@
 #' @param monoBN integer vector of length 2; range of boot sessions to
 #'     plot; Default: NULL, meaning no restriction on boot sessions.
 #'
+#' @param antCol colours to use for each antenna, beginning with antenna number 0.
+#' Antenna numbers run from 0 to 10, so at most the first 11 elements are used.
+#'
+#' Default: c("black", "cyan", "green", "gold", "red", "blue", "darkgreen", "darkred", "pink", "purple", "orange")
+#'
+#'
 #' @details If both \code{ts} and \code{monoBN} are NULL, then all
 #'     detections in database \code{recv} are plotted.
 #'
@@ -85,7 +91,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-makeReceiverPlot = function(recv, meta=NULL, title="", condense=3600, ts = NULL, monoBN = NULL) {
+makeReceiverPlot = function(recv, meta=NULL, title="", condense=3600, ts = NULL, monoBN = NULL, antCol=c("black", "cyan", "green", "gold", "red", "blue", "darkgreen", "darkred", "pink", "purple", "orange")) {
     owner = list(recv=FALSE, meta=FALSE)
 
     if (is.character(recv)) {
@@ -201,6 +207,36 @@ from tagAmbig where ambigID in (", paste0(aID, collapse=","), ")"))
         ylabExtra = paste0(ylabExtra, "\nall tags @ ", freqs, " MHz")
     }
 
+    ## get GPS fixes
+
+    if (isLotek) {
+        ## get GPS fixes from the period in question; grab any from batches that overlap
+        ## the specified time interval; further filtering happens below
+
+        gps = dbGetQuery(recv$con, sprintf("
+select 1 as ant,
+' GPS Fixes' as fullID,
+round(min(ts)/3600-1800) as bin,
+min(ts),
+1 as n,
+0 as freq,
+0 as sig
+from gps where ts between %.14g and %.14g group by round(ts/3600-1800)",
+ts[1], ts[2]))
+    } else {
+        gps = dbGetQuery(recv$con, sprintf("
+select 1 as ant,
+' GPS Fixes' as fullID,
+round(min(t1.ts)/3600-1800) as bin,
+min(t1.ts) as ts,
+1 as n,
+0 as freq,
+0 as sig
+from gps as t1 join batches as t2 on t1.batchID=t2.batchID where t2.monoBN between %d and %d group by round(t1.ts/3600-1800)",
+monoBN[1], monoBN[2]))
+    }
+    gps$fullID = as.factor(gps$fullID)
+
     ## get pulse counts and reboots to show as status, and append to the dataset
     ## FIXME: if anyone cares, they can recode this in dplyr form
     ## Note that the fullID column must match that used in grepl() in the panel.xyplot function below.
@@ -228,7 +264,7 @@ t1.hourBin * 3600 + 1800 as ts,
 1 as n,
 0 as freq,
 0 as sig
-from pulseCounts as t1 join batches as t2 on t1.batchID=t2.batchID where t2.monoBN between %.14g and %.14g group by t1.ant, t1.hourBin",
+from pulseCounts as t1 join batches as t2 on t1.batchID=t2.batchID where t2.monoBN between %d and %d group by t1.ant, t1.hourBin",
 monoBN[1], monoBN[2]))
     }
     pulses$fullID = as.factor(pulses$fullID)
@@ -251,7 +287,7 @@ monoBN[1]))
     } else {
         reboots = NULL
     }
-    tags = rbind(tags, pulses, reboots)
+    tags = rbind(tags, pulses, gps, reboots)
 
     ## filter out anything with an invalid (pre-GPS) date
 
@@ -264,7 +300,7 @@ monoBN[1]))
     ylab = paste0("Full Tag ID", ylabExtra)
     numTags = length(unique(tags$fullID))
     width = 500 + 7 * length(dayseq)  ## 7 pixels per day plus margins
-    height = 300 + 20 * numTags + heightExtra  ## 20 pixels per tag line plus margins
+    height = 315 + 20 * numTags + heightExtra  ## 20 pixels per tag line plus margins
     dateLabel = sprintf("Date (GMT)\n%s", paste(format(range(tags$ts), "%Y-%b-%d %H:%M"), collapse=" to "))
     dateLabel = paste0(dateLabel, xlabExtra)
     plot = xyplot(
@@ -274,17 +310,21 @@ monoBN[1]))
             panel.abline(h=unique(y), lty=2, col="gray")
             panel.abline(v=dayseq, lty=3, col="gray")
             ant = grepl("^ Antenna", y, perl=TRUE)    ## must match fullID formatting from dbGetQuery above
-            boot = grepl("^ Reboot", y, perl=TRUE)  ## must match fullID formatting from dbGetQuery above
-            tag = ! (ant | boot)
+            boot = grepl("^ Reboot", y, perl=TRUE)    ## ...
+            gps = grepl("^ GPS", y, perl=TRUE)        ## ...
+            tag = ! (ant | boot | gps)
             ## plot reboots
             if (any(boot))
                 panel.xyplot(x[boot], y[boot], groups=groups[boot], pch = as.character(levels(as.factor(groups[boot]))), col="black", ...)
+            ## plot gps fix times
+            if (any(gps))
+                panel.xyplot(x[gps], y[gps], groups=groups[gps], pch = "|", col="green", ...)
             ## plot antennas
             if (any(ant))
-                panel.xyplot(x[ant], y[ant], groups=groups[ant], pch = '|', ...)
+                panel.xyplot(x[ant], y[ant], groups=groups[ant], pch = '|', col = antCol[1 + as.integer(levels(as.factor(groups[ant])))], ...)
             ## plot tags
             if (any(tag))
-                panel.xyplot(x[tag], y[tag], groups=groups[tag], ...)
+                panel.xyplot(x[tag], y[tag], groups=groups[tag], col = antCol[1 + as.integer(levels(as.factor(groups[tag])))], ...)
         },
         main = list(paste0(title, "\n", sprintf("Receiver: %s", serno)), cex=1.5),
         ylab = list(ylab, cex=1.5),

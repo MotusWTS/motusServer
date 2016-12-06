@@ -5,7 +5,8 @@
 \title{make a plot of tag detections and status of antennas}
 \usage{
 makeReceiverPlot(recv, meta = NULL, title = "", condense = 3600,
-  ts = NULL, monoBN = NULL)
+  ts = NULL, monoBN = NULL, antCol = c("black", "cyan", "green", "gold",
+  "red", "blue", "darkgreen", "darkred", "pink", "purple", "orange"))
 }
 \arguments{
 \item{recv}{path or dplyr::src_sqlite to the receiver database}
@@ -28,6 +29,11 @@ Default: NULL, meaning no restriction on timestamps.}
 
 \item{monoBN}{integer vector of length 2; range of boot sessions to
 plot; Default: NULL, meaning no restriction on boot sessions.}
+
+\item{antCol}{colours to use for each antenna, beginning with antenna number 0.
+Antenna numbers run from 0 to 10, so at most the first 11 elements are used.
+
+Default: c("black", "cyan", "green", "gold", "red", "blue", "darkgreen", "darkred", "pink", "purple", "orange")}
 }
 \value{
 a list with these items:
