@@ -26,4 +26,5 @@ handleServerFiles = function(j) {
     ## queue a job to finally handle all the files
     newSubJob(j, "filesWrangled")
 
+    return (TRUE)
 }
