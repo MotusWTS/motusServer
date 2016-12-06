@@ -8,7 +8,7 @@
 #'
 #' @param dir directory into which the file(s) will be downloaded
 #'
-#' @return returns invisible(NULL)
+#' @return message stating how many bytes were downloaded.
 #'
 #' @note This will not work with the URL in the email that dropbox
 #'     generates when a user chooses to share a file in the most
@@ -38,8 +38,9 @@ downloadDropbox = function(link, dir) {
 
     ## parse out the filename
     file = parse_url(link)$path %>% basename
+    dest = file.path(dir, file)
 
-    f = CFILE(file.path(dir, file), "wb")
+    f = CFILE(dest, "wb")
 
     ## as per dropbox docs, change dl parameter to 1 (doesn't seem to be required)
     url = sub("dl=0$", "dl=1", link, perl=TRUE)
@@ -47,5 +48,5 @@ downloadDropbox = function(link, dir) {
     curlPerform(url=url, followLocation = TRUE, writedata=f@ref)
 
     RCurl::close(f)
-    invisible(NULL)
+    return(sprintf("Downloaded %.0f bytes for file %s", file.info(dest)$size, file))
 }
