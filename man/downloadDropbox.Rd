@@ -13,7 +13,7 @@ sent to the file or folder recipient.}
 \item{dir}{directory into which the file(s) will be downloaded}
 }
 \value{
-returns invisible(NULL)
+message stating how many bytes were downloaded.
 }
 \description{
 Download the file or folder (recursively) from a URL pointing to
