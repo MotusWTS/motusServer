@@ -16,6 +16,8 @@ handleRerunReceiver(j)
 \item monoBN integer vector of length 2; the range of receiver boot
 sessions to run; If not specified, then for an SG receiver, all
 boot sessions are rerun.  Ignored for Lotek receivers.
+If only exporting, then export from the latest deployment record
+that is not later than \code{monoBN[1]}.
 
 \item ts real vector of length 1 or 2; the start (and possibly end)
 timestamp of boot sessions to run.  Ignored for an SG. If not

@@ -14,6 +14,8 @@
 #' \item monoBN integer vector of length 2; the range of receiver boot
 #' sessions to run; If not specified, then for an SG receiver, all
 #' boot sessions are rerun.  Ignored for Lotek receivers.
+#' If only exporting, then export from the latest deployment record
+#' that is not later than \code{monoBN[1]}.
 #'
 #' \item ts real vector of length 1 or 2; the start (and possibly end)
 #' timestamp of boot sessions to run.  Ignored for an SG. If not
@@ -77,8 +79,9 @@ handleRerunReceiver = function(j) {
             now = as.numeric(Sys.time())
             ts = c(now - 24 * 365.25 * 3600, now)
         }
-    } else {
+    } else if (!exportOnly) {
         ## for an SG, get all boot sessions within the range, or all if null
+        ## We only do this if we'll be running the tag finder, as
         src = getRecvSrc(serno)
         allBN = dbGetQuery(src$con, "select distinct monoBN from files order by monoBN")[[1]]
         if (length(monoBN) == 0) {
