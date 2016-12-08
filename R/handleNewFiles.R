@@ -35,7 +35,12 @@
 
 handleNewFiles = function(j) {
 
-    all = dir(list.dirs(j$path, recursive=FALSE), recursive=TRUE, full.names=TRUE)
+    ## list of original subjobs
+    ## (does not include subfolders created by subjobs in this function)
+
+    originalSubjobs = children(j)
+    originalDirs = list.dirs(j$path, recursive=FALSE)
+    all = dir(originalDirs, recursive=TRUE, full.names=TRUE)
 
     ## delete junk files
     junk = grep(MOTUS_JUNKFILE_REGEX, all, perl=TRUE)
@@ -61,7 +66,7 @@ handleNewFiles = function(j) {
     if (length(syslog)) {
         for (d in unique(dirname(all[syslog]))) {
             sj = newSubJob(j, "logs", .makeFolder=TRUE)
-            moveDirContents(d, j$path)
+            moveDirContents(d, j$path) ## files will be moved before this process can run the newly queued job
         }
         all = all[ - syslog ]
     }
@@ -73,13 +78,19 @@ handleNewFiles = function(j) {
     unknown = grep("(\\.txt(\\.gz)?$)|~", all, perl=TRUE, invert=TRUE)
     if (length(unknown)) {
         sj = newSubJob(j, "unknownFiles", .makeFolder=TRUE)
-        moveDirContents(all[unknown], sj$path)
+        moveFiles(all[unknown], sj$path)
         all = all[ - unknown ]
     }
 
-    ## treat all remaining files as sensorgnome data files
-    if (length(all))
-        newSubJob(j, "SGfiles")
+    ## treat all remaining files as sensorgnome data files,
+    ## but preserve the folder structure by simply moving
+    ## the original jobs into the new SGfiles subjob.
+
+    if (length(all)) {
+        sj = newSubJob(j, "SGfiles", .makeFolder = TRUE)
+        for (jj in originalSubjobs)
+            moveJob(jj, sj$path)
+    }
 
     return(TRUE)
 }
