@@ -8,7 +8,7 @@
   http://www.sqlite.org/src/artifact?ci=trunk&filename=ext/misc/fileio.c
 
 */
-  
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <sqlite3ext.h>
@@ -78,6 +78,7 @@ static void writefileFunc(
   const char *z;
   sqlite3_int64 rc;
   const char *zFile;
+  int len;
 
   int append = argc > 2 && sqlite3_value_int(argv[2]) > 0;
 
@@ -85,11 +86,12 @@ static void writefileFunc(
   if( zFile==0 ) return;
   out = fopen(zFile, append ? "ab" : "wb");
   if( out==0 ) return;
+  len = sqlite3_value_bytes(argv[1]);
   z = (const char*)sqlite3_value_blob(argv[1]);
   if( z==0 ){
     rc = 0;
   }else{
-    rc = fwrite(z, 1, sqlite3_value_bytes(argv[1]), out);
+    rc = fwrite(z, 1, len, out);
   }
   fclose(out);
   sqlite3_result_int64(context, rc);
@@ -100,8 +102,8 @@ static void writefileFunc(
 __declspec(dllexport)
 #endif
 int sqlite3_fileio_init(
-                        sqlite3 *db, 
-                        char **pzErrMsg, 
+                        sqlite3 *db,
+                        char **pzErrMsg,
                         const sqlite3_api_routines *pApi
                         ){
   int rc = SQLITE_OK;
@@ -126,7 +128,7 @@ static void compressFunc (sqlite3_context *context, int argc, sqlite3_value **ar
 }
 
 static void uncompressFunc ( sqlite3_context *context, int argc, sqlite3_value **argv ) {
-  // JMB: unlike the original function, this function requires a second paramter
+  // JMB: unlike the original function, this function requires a second parameter
   // giving the uncompressed size.
 
   unsigned int nIn, nOut, rc;
