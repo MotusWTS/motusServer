@@ -487,12 +487,20 @@ setData.Twig = function(T, names, values, clearOld=FALSE) {
 
     for(i in seq(along=names)) {
         if (names[i] %in% names(C$fixed)) {
-            C$sql(paste("update", C$table, "set ", names[i], "=:value", wh), value=values[[i]])
+            if (is.null(values[[i]]))
+                C$sql(paste("update", C$table, "set ", names[i], "=null", wh))
+            else
+                C$sql(paste("update", C$table, "set ", names[i], "=:value", wh), value=values[[i]])
         } else {
-            C$sql(paste("update", C$table, "set data=json_set(ifnull(data, '{}'), '$.' ||:name, json(:value))", wh),
-                  name = names[i],
-                  value = unclass(toJSON(values[[i]], auto_unbox=TRUE, digits=NA))
+            if (is.null(values[[i]]))
+            C$sql(paste("update", C$table, "set data=json_remove(data, '$.' ||:name)", wh),
+                  name = names[i]
                   )
+            else
+                C$sql(paste("update", C$table, "set data=json_set(ifnull(data, '{}'), '$.' ||:name, json(:value))", wh),
+                      name = names[i],
+                      value = unclass(toJSON(values[[i]], auto_unbox=TRUE, digits=NA))
+                      )
         }
     }
     now = as.numeric(Sys.time())
