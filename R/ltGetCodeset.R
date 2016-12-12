@@ -39,7 +39,7 @@ ltGetCodeset = function(codeSet = c("Lotek4", "Lotek3")) {
 
     fn = sprintf("/home/sg/ramfs/%s.sqlite", codeSet)
 
-    if (Sys.getenv("USER") == "sg" && file.exists(fn)) {
+    if (Sys.getenv("USER") %in%  c("root", "sg") && file.exists(fn)) {
         con = dbConnect(SQLite(), fn)
         rv = dbGetQuery(con, "select id, g1, g2, g3 from tags order by id")
         dbDisconnect(con)
