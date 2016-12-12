@@ -57,6 +57,7 @@ getYearProjSite = function(serno, ts=NULL, bootnum=NULL) {
     sql = function(...) dbGetQuery(con, sprintf(...))
 
     sql("attach database '%s' as d", MOTUS_RECV_MAP_DB)
+    sql("pragma busy_timeout=10000")
 
     ## look up Lotek sites by serial number and timestamp
 
@@ -76,7 +77,7 @@ getYearProjSite = function(serno, ts=NULL, bootnum=NULL) {
     if (nrow(sg) > 0) {
         dbWriteTable(con, "sg", sg %>% as.data.frame, row.names=FALSE)
 
-        ## get latest row (largest boot) that is still no later than ts for each receiver
+        ## get latest row (largest boot) that is still no later than bootnum for each receiver
         sql("create table ressg as select t1.serno as serno, t2.Year as year, t2.Project as proj, t2.Site as site, null as tsStart, t2.BootnumLo as bootnumStart from sg as t1 left outer join d.bootnumMap as t2 on t1.serno = t2.Serno and t2.BootnumLo = (select max(t3.BootnumLo) from d.bootnumMap as t3 where t3.Serno=t2.Serno and t3.BootnumLo <= t1.bootnum)")
 
         sg = sql("select * from ressg")
