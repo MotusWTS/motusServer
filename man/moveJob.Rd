@@ -2,24 +2,25 @@
 % Please edit documentation in R/moveJob.R
 \name{moveJob}
 \alias{moveJob}
-\title{move a job from one folder to another}
+\title{move a top job to a new folder}
 \usage{
-moveJob(job, dest)
+moveJob(j, dest)
 }
 \arguments{
-\item{job}{Twig object representing the job.}
+\item{j}{Twig object representing the job.}
 
 \item{dest}{path to new folder where the job's folder will become
 a subfolder.}
 }
 \value{
 TRUE on success; FALSE if the job's folder could not be moved
+
+Note: this function can only move a top job.  To move subjobs to different
+parents, use \link{\code{reparentJob()}}
 }
 \description{
 Retain the old path to the job, in case of interruption
 between recording the new path and moving the folder.
-Also, move all jobs which have this job as an ancestor,
-adjusting their \code{$path} items appropriately
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}

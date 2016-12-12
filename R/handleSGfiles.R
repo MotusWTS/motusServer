@@ -18,7 +18,7 @@
 
 handleSGfiles = function(j) {
 
-    r = sgMergeFiles(j$path)
+    r = sgMergeFiles(jobPath(j))
     info = r$info
 
     ## TODO: (perhaps) if there were any files for which we were able to

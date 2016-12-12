@@ -20,7 +20,7 @@ handleUnknownFiles = function(j) {
     if (tj$valid) {
         email(tj$replyTo[1], paste0("motus job ", tj, ": some files you sent could not be processed"),
               paste0("I don't know how to handle the following files from your transfer:\n\n",
-                     paste0("   ", dir(j$path, recursive=TRUE, full.names=FALSE), collapse="\n"),
+                     paste0("   ", dir(jobPath(j), recursive=TRUE, full.names=FALSE), collapse="\n"),
                      "\n\nThese files have been retained on our server."
                      )
               )

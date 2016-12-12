@@ -22,7 +22,8 @@ handleLogs = function(j) {
     ## possibly gz-compressed logfiles; note that grep returns 1 to indicate
     ## "match found", rather than an error.  So we specify minErrorCode=2
 
-    res = safeSys('zgrep -P -h --binary-files=text', paste0('"', MOTUS_SG_SERNO_REGEX, '"'), paste0(j$path, '/*'), '2>/dev/null | head -1l', shell=TRUE, quote=FALSE, minErrorCode=2)
+    path = jobPath(j)
+    res = safeSys('zgrep -P -h --binary-files=text', paste0('"', MOTUS_SG_SERNO_REGEX, '"'), paste0(path, '/*'), '2>/dev/null | head -1l', shell=TRUE, quote=FALSE, minErrorCode=2)
 
     if (length(res) == 0)
         return (FALSE)   ## no serial number found
@@ -31,10 +32,10 @@ handleLogs = function(j) {
     serno = regexPieces(MOTUS_SG_SERNO_REGEX, res)[[1]]["serno"][1]
 
     ## archive the folder
-    newdir = file.path(MOTUS_PATH$RECVLOG, serno, format(file.mtime(j$path), "%Y-%m-%dT%H-%M-%S"))
+    newdir = file.path(MOTUS_PATH$RECVLOG, serno, format(file.mtime(path), "%Y-%m-%dT%H-%M-%S"))
     dir.create(newdir, recursive=TRUE, showWarnings=FALSE)
 
-    rv = all(moveDirContents(j$path, newdir))
+    rv = all(moveDirContents(path, newdir))
 
     jobLog(j, paste0("Saved SG log files to ", newdir))
 

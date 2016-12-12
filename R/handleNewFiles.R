@@ -39,7 +39,7 @@ handleNewFiles = function(j) {
     ## (does not include subfolders created by subjobs in this function)
     tj = topJob(j)
     originalSubjobs = children(tj)
-    originalDirs = list.dirs(j$path, recursive=FALSE)
+    originalDirs = list.dirs(jobPath(j), recursive=FALSE)
     all = dir(originalDirs, recursive=TRUE, full.names=TRUE)
 
     ## delete junk files
@@ -56,7 +56,7 @@ handleNewFiles = function(j) {
     dta = grep("(?i)\\.DTA$", all, perl=TRUE)
     if (length(dta)) {
         sj = newSubJob(tj, "DTA", .makeFolder=TRUE)
-        moveFilesUniquely(all[dta], sj$path)
+        moveFilesUniquely(all[dta], jobPath(sj))
         all = all[ - dta]
     }
 
@@ -66,7 +66,7 @@ handleNewFiles = function(j) {
     if (length(syslog)) {
         for (d in unique(dirname(all[syslog]))) {
             sj = newSubJob(tj, "logs", .makeFolder=TRUE)
-            moveDirContents(d, j$path) ## files will be moved before this process can run the newly queued job
+            moveDirContents(d, jobPath(sj)) ## files will be moved before this process can run the newly queued job
         }
         all = all[ - syslog ]
     }
@@ -78,29 +78,23 @@ handleNewFiles = function(j) {
     unknown = grep("(\\.txt(\\.gz)?$)|~", all, perl=TRUE, invert=TRUE)
     if (length(unknown)) {
         sj = newSubJob(tj, "unknownFiles", .makeFolder=TRUE)
-        moveFiles(all[unknown], sj$path)
+        moveFiles(all[unknown], jobPath(sj))
         all = all[ - unknown ]
     }
 
-    ## treat all remaining files as sensorgnome data files,
-    ## but preserve the folder structure by simply moving
-    ## the original jobs into the new SGfiles subjob.
-
-    ## FIXME:  this is broken: need to make sure jobs don't get
-    ## their paths rewritten more than once, which they can
-    ## under this scheme and the path-prefix search used
-    ## by moveJob to decide which jobs need to have their
-    ## paths rewritten as a result of the move.  It should
-    ## only be descendent jobs, so we should probably use
-    ## a recursive common table expression to find these
-    ## in subjobs, rather than the path prefix test.
+    ## treat all remaining files as sensorgnome data files.
+    ## We create a new subjob for these, and reparent any
+    ## jobs that existed before this function was called
+    ## and which have folders.  This is to accomplish
+    ## a light-weight move of the putative SG files into
+    ## their own filesystem tree, disjoint from the other
+    ## trees for this top job.
 
     if (length(all)) {
         sj = newSubJob(tj, "SGfiles", .makeFolder = TRUE)
-        tjPath = tj$path
         for (jj in originalSubjobs) {
-            if (Jobs[[jj]]$path != tjPath)
-                moveJob(Jobs[[jj]], sj$path)
+            if (jobHasFolder(jj))
+                reparent(Jobs[[jj]], sj)
         }
     }
 

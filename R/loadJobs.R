@@ -79,13 +79,18 @@ loadJobs = function(which = NULL, topJob=NULL) {
         }
     }
 
-    ## correct paths in case server was interrupted after recording new path but before moving job,
-    ## and enqueue jobs
+    ## if a job's conceptual path was moved, but its filesystem folder
+    ## was not, fix this.
 
     for (i in j) {
-        if (! file.exists(Jobs[[i]]$path) && file.exists(Jobs[[i]]$oldpath))
-            Jobs[[i]]$path = Jobs[[i]]$oldpath
-        queueJob(Jobs[[i]])
+        job = Jobs[[i]]
+        if (jobHasFolder(job)) {
+            path = jobPath(job)
+            if (! file.exists(path) && file.exists(job$oldpath)) {
+                file.rename(job$oldpath, path)
+            }
+        }
+        queueJob(job)
     }
     return(length(j))
 }

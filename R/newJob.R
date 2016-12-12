@@ -14,7 +14,9 @@
 #'
 #' @param .parentPath the folder in which to create the new job's folder.
 #' If omitted, no folder is created for this job, and the job's \code{$path}
-#' item is set to the \code{.parent$path}, if \code{.parent} is not null.
+#' item is set to NULL.  If .parentPath is specified as NULL, then the
+#' new job's path is just its formatted id number.  Otherwise, the job's path
+#' is \code{.parentPath} followed by "/" and the job's formatted ID.
 #'
 #' @param ...  additional named metadata for this job
 #'
@@ -36,11 +38,8 @@
 newJob = function(.type, .parentPath, ..., .parent=NULL, .enqueue=TRUE) {
     j = newTwig(Jobs, type=.type, done=FALSE, ..., .parent=.parent)
     if (! missing(.parentPath)) {
-        np = file.path(.parentPath, sprintf("%08d", j))
-        j$path = np
-        dir.create(np, recursive=TRUE, mode=MOTUS_DEFAULT_FILEMODE)
-    } else if (!is.null(.parent)) {
-        j$path = .parent$path
+        j$path = do.call('file.path', c(list(), .parentPath, sprintf("%08d", j)))
+        dir.create(jobPath(j), recursive=TRUE, mode=MOTUS_DEFAULT_FILEMODE)
     }
     if (.enqueue)
         queueJob(j)

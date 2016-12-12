@@ -26,7 +26,7 @@
 
 newSubJob = function(.j, .type, .makeFolder=FALSE, ...) {
     if (.makeFolder)
-        newJob(.type=.type, .parentPath=.j$path, ..., .parent=.j)
+        newJob(.type=.type, .parentPath=NULL, ..., .parent=.j)
     else
         newJob(.type=.type, ..., .parent=.j)
 }
