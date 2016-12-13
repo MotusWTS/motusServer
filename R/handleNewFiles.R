@@ -35,8 +35,11 @@
 
 handleNewFiles = function(j) {
 
-    ## list of original subjobs
+    ## list of original subjobs and folders
     ## (does not include subfolders created by subjobs in this function)
+    ## We will be moving these into the subjob of type "newFiles" created
+    ## at the end of this function.
+
     tj = topJob(j)
     originalSubjobs = children(tj)
     originalDirs = list.dirs(jobPath(j), recursive=FALSE)
@@ -93,9 +96,16 @@ handleNewFiles = function(j) {
     if (length(all)) {
         sj = newSubJob(tj, "SGfiles", .makeFolder = TRUE)
         for (jj in originalSubjobs) {
-            if (jobHasFolder(jj))
-                reparent(Jobs[[jj]], sj)
+            job = Jobs[[jj]]  ## 'in' discards class attribute...
+            if (jobHasFolder(job))
+                reparentJob(job, sj)
         }
+        ## move any remaining original folders to the job path; this will
+        ## fail silently on those original folders which are job folders,
+        ## because reparentJob() has already moved those.
+        ## This step is mainly for scripts such as runNewFiles.R which leave
+        ## a non-job subfolder in the "newFiles" job folder.
+        moveFiles(originalDirs, jobPath(sj))
     }
 
     return(TRUE)
