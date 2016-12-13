@@ -50,7 +50,7 @@ handleSanityCheck = function(j) {
     writeLines(f[chk > 0], tmpf)
 
     ## append files to a zip archive, using the file-list mechanism
-    rv = safeSys(paste0("cd ", j$dir, "/..; cat ", tmpf, " | zip -@ ", file.path(t$path, MOTUS_BADFILE_ARCHIVE)), quote=FALSE)
+    rv = safeSys(paste0("cd ", j$dir, "/..; cat ", tmpf, " | zip -@ ", file.path(jobPath(t), MOTUS_BADFILE_ARCHIVE)), quote=FALSE)
 
     ## drop file list
     file.remove(tmpf)

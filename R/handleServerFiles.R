@@ -17,11 +17,13 @@
 
 handleServerFiles = function(j) {
 
+    path = jobPath(j)
+
     ## queue a job to sanity check the files
-    newSubJob(j, "sanityCheck", dir=j$path)
+    newSubJob(j, "sanityCheck", dir=path)
 
     ## queue a job to unpack archives
-    newSubJob(j, "queueArchives", dir=j$path)
+    newSubJob(j, "queueArchives", dir=path)
 
     ## queue a job to finally handle all the files
     newSubJob(j, "filesWrangled")

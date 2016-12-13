@@ -17,7 +17,7 @@
 
 handleEmail = function(j) {
     msgFile = j$msgFile
-    path = j$path
+    path = jobPath(j)
     newmsg = file.path(path, basename(msgFile))
     file.rename(msgFile, newmsg)
 
@@ -67,10 +67,10 @@ handleEmail = function(j) {
     ## This lets us provide a better error message than if we just
     ## capture the error message from trying to decompress an all-zero
     ## archive, e.g.
-    newSubJob(j, "sanityCheck", dir=j$path)
+    newSubJob(j, "sanityCheck", dir=path)
 
     ## queue a job to unpack archives
-    newSubJob(j, "queueArchives", dir=j$path)
+    newSubJob(j, "queueArchives", dir=path)
 
     ## parse out and links to remote data storage
     ## and enqueue jobs to download them

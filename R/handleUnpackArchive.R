@@ -17,7 +17,7 @@
 handleUnpackArchive = function(j) {
     file = j$file
     bn = basename(file)
-    dir = j$path
+    dir = jobPath(j)
 
     suffix = regexPieces(MOTUS_ARCHIVE_REGEX, bn)[[1]] %>% tolower
 

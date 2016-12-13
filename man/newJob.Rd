@@ -11,7 +11,9 @@ newJob(.type, .parentPath, ..., .parent = NULL, .enqueue = TRUE)
 
 \item{.parentPath}{the folder in which to create the new job's folder.
 If omitted, no folder is created for this job, and the job's \code{$path}
-item is set to the \code{.parent$path}, if \code{.parent} is not null.}
+item is set to NULL.  If .parentPath is specified as NULL, then the
+new job's path is just its formatted id number.  Otherwise, the job's path
+is \code{.parentPath} followed by "/" and the job's formatted ID.}
 
 \item{...}{additional named metadata for this job}
 

@@ -33,7 +33,7 @@ handleDownload = function(j) {
 
     method = j$method
     url = j$url
-    path = j$path
+    path = jobPath(j)
 
     sanURL = sanitizeURL(url, method)
 
