@@ -22,13 +22,12 @@
 moveJob = function(j, dest) {
     if (! is.null(parent(j)))
         stop("can only use moveJob() on a top-level job")
-    old = jobPath(j)
-    j$oldpath = old ## save the old path
-    j$path = dest
+    j$oldpath = oldpath = jobPath(j)
+    newpath = file.path(dest, basename(oldpath))
+    j$path = newpath  ## for top level jobs, path is full path
     if (! file.exists(dest) && ! dir.create(dest, recursive=TRUE, mode=MOTUS_DEFAULT_FILEMODE, showWarnings=FALSE))
         stop("unable to create destination folder: ", dest)
-    new = file.path(dest, basename(old))
-    if(isTRUE(file.rename(old, new)))
+    if(isTRUE(file.rename(oldpath, newpath)))
         return(TRUE)
     return(FALSE)
 }
