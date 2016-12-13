@@ -80,45 +80,46 @@ MOTUS_BADFILE_ARCHIVE = "bad_files.zip.NOAUTO"
 #'@export
 
 MOTUS_PATH = list(
-    ROOT             = "/sgm",
-    BIN              = "/sgm/bin",             ## executable scripts
-    CACHE            = "/sgm/cache",           ## recent results of large queries from motus.org
-    CRYPTO           = "/sgm/crypto",          ## public/private keypairs for ssh etc. by receivers
-    DONE             = "/sgm/done",            ## folders for completed jobs
-    DOWNLOADS        = "/sgm/downloads",       ## manually-downloaded files; downloadXXX() checks here before (re) grabbing file
-    ERRORS           = "/sgm/errors",          ## save dumped call stacks of server errors
-    INBOX            = "/sgm/inbox",           ## emails go here, unless /sgm/EMBARGO exists
-    INBOX_EMBARGOED  = "/sgm/inbox_embargoed", ## incoming emails under embargo (not processed)
-    INCOMING         = "/sgm/incoming",        ## files / dirs moved here are processed by server(); this is the external / asynchronous
-                                               ## access point to the processing queue
-    LOCKS            = "/sgm/locks",           ## locks for process queues and receiver DBs
-    LOGS             = "/sgm/logs",            ## processing logs
-    MAIL_QUEUE       = "/sgm/queue/E",         ## queue for processing emails by emailServer()
-    MANUAL           = "/sgm/manual",          ## folders needing manual attention
-    MOTR             = "/sgm/motr",            ## links to receiver DBs by motus ID
-    OLDROOT          = "/SG",                  ## root of old-style folder hierarchy
-    OUTBOX           = "/sgm/outbox",          ## copies of all sent emails
-    OUTBOX_EMBARGOED = "/sgm/outbox_embargoed",  ## unsent outgoing emails
-    PLOTS            = "/sgm/plots",           ## generated plots
-    PUB              = "/sgm/pub",             ## web-visible public content
-    QUEUES           = "/sgm/queue",           ## queues for processing items
-    QUEUE0           = "/sgm/queue/0",         ## queue 0 is watched for new entries by each of the processServers;
-                                               ## at most one of them will claim the new job.
-    QUEUE1           = "/sgm/queue/1",         ## queue 1..8 for processServers
-    QUEUE2           = "/sgm/queue/2",
-    QUEUE3           = "/sgm/queue/3",
-    QUEUE4           = "/sgm/queue/4",
-    QUEUE5           = "/sgm/queue/5",
-    QUEUE6           = "/sgm/queue/6",
-    QUEUE7           = "/sgm/queue/7",
-    QUEUE8           = "/sgm/queue/8",
-    RECV             = "/sgm/recv",            ## receiver databases
-    RECVLOG          = "/sgm/recvlog",         ## logfiles from receivers
-    REFS             = "/sgm/refs",            ## links to receiver DBs by year, projCode, siteCode
-    SPAM             = "/sgm/spam",            ## saved invalid emails
-    TAGS             = "/sgm/tags",            ## ??
-    TAGREG_CLEANUP   = "/sgm/tagregCleanup.R", ## script to provided tag registration cleanups downstream from motus
-    TMP              = "/sgm/tmp"              ## intermediate storage; persistent across reboots
+    ROOT             = "/sgm/",
+    BIN              = "/sgm/bin/",                  ## executable scripts
+    CACHE            = "/sgm/cache/",                ## recent results of large queries from motus.org
+    CRYPTO           = "/sgm/crypto/",               ## public/private keypairs for ssh etc. by receivers
+    DONE             = "/sgm/done/",                 ## folders for completed jobs
+    DOWNLOADS        = "/sgm/downloads/",            ## manually-downloaded files; downloadXXX() checks here before (re) grabbing file
+    ERRORS           = "/sgm/errors/",               ## save dumped call stacks of server errors
+    INBOX            = "/sgm/inbox/",                ## emails go here, unless /sgm/EMBARGO exists
+    INBOX_EMBARGOED  = "/sgm/inbox_embargoed/",      ## incoming emails under embargo (not processed)
+    INCOMING         = "/sgm/incoming/",             ## files / dirs moved here are processed by server(); this is the external / asynchronous
+                                                     ## access point to the processing queue
+    LOCKS            = "/sgm/locks/",                ## locks for process queues and receiver DBs
+    LOGS             = "/sgm/logs/",                 ## processing logs
+    MAIL_QUEUE       = "/sgm/queue/E/",              ## queue for processing emails by emailServer()
+    MANUAL           = "/sgm/manual/",               ## folders needing manual attention
+    MOTR             = "/sgm/motr/",                 ## links to receiver DBs by motus ID
+    OLDROOT          = "/SG/",                       ## root of old-style folder hierarchy
+    OUTBOX           = "/sgm/outbox/",               ## copies of all sent emails
+    OUTBOX_EMBARGOED = "/sgm/outbox_embargoed/",     ## unsent outgoing emails
+    PARAM_OVERRIDES  = "/sgm/paramOverrides.sqlite", ## DB with table of receiver-boot-session-specific overrides for the tag finder
+    PLOTS            = "/sgm/plots/",                ## generated plots
+    PUB              = "/sgm/pub/",                  ## web-visible public content
+    QUEUES           = "/sgm/queue/",                ## queues for processing items
+    QUEUE0           = "/sgm/queue/0/",              ## queue 0 is watched for new entries by each of the processServers;
+                                                     ## at most one of them will claim the new job.
+    QUEUE1           = "/sgm/queue/1/",              ## queue 1..8 for processServers
+    QUEUE2           = "/sgm/queue/2/",
+    QUEUE3           = "/sgm/queue/3/",
+    QUEUE4           = "/sgm/queue/4/",
+    QUEUE5           = "/sgm/queue/5/",
+    QUEUE6           = "/sgm/queue/6/",
+    QUEUE7           = "/sgm/queue/7/",
+    QUEUE8           = "/sgm/queue/8/",
+    RECV             = "/sgm/recv/",                 ## receiver databases
+    RECVLOG          = "/sgm/recvlog/",              ## logfiles from receivers
+    REFS             = "/sgm/refs/",                 ## links to receiver DBs by year, projCode, siteCode
+    SPAM             = "/sgm/spam/",                 ## saved invalid emails
+    TAGS             = "/sgm/tags/",                 ## ??
+    TAGREG_CLEANUP   = "/sgm/tagregCleanup.R",       ## script to provided tag registration cleanups downstream from motus
+    TMP              = "/sgm/tmp"                    ## intermediate storage; persistent across reboots
 )
 
 ## main logfile name

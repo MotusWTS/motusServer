@@ -68,8 +68,9 @@
 #'
 
 ensureServerDirs = function() {
+    dirs = grep("/$", unlist(MOTUS_PATH), perl=TRUE, value=TRUE)
     rv = any(sapply(
-        MOTUS_PATH,
+        dirs,
         dir.create,
         recursive = TRUE,     ## create parent dir if necessary
         mode = "0774",        ## full permissions for owner and group, read-only for others
