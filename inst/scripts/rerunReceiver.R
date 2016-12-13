@@ -67,7 +67,8 @@ loadJobs()
 
 j = newJob("rerunReceiver", .parentPath=MOTUS_PATH$INCOMING, serno=serno, monoBN=monoBN, exportOnly=exportOnly, cleanup=cleanup, replyTo=MOTUS_ADMIN_EMAIL, valid=TRUE, .enqueue=FALSE)
 
-jobLog(paste0("Rerunning receiver ", serno, " with monoBN=", paste(monoBN, collapse="..."))
+jobLog(j, paste0("Rerunning receiver ", serno, " with monoBN=", paste(monoBN, collapse="...")))
+
 ## move the topJob to the top-level processServer queue
 
 j$queue = "0"
