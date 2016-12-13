@@ -7,6 +7,7 @@
 #'
 #' The messages in \code{msg} are joined with "\\n" and appended to any already existing for this job.
 #'
+#' @export
 
 jobLog = function(j, msg) {
     if (!inherits(j, "Twig"))
