@@ -12,7 +12,8 @@ jobHasFolder(j)
 \value{
 TRUE if and only if the job 'should' have a folder in the
     filesystem.  This is indicated by a non-null value for the
-    job's \code{path} column in the Copse database.
+    job's \code{path} column in the Copse database, which translates
+    into a non-NA value in R.
 }
 \description{
 does a job have a folder in the filesystem?
