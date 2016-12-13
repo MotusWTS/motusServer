@@ -138,6 +138,9 @@ MOTUS_ARCHIVE_REGEX = paste0("(?i)\\.(?<suffix>",
                              paste(MOTUS_ARCHIVE_SUFFIXES, collapse="|"),
                              ")$")
 
+## silly dir() can't handle perl-style regex, so make another for that
+MOTUS_ARCHIVE_DIR_REGEX = paste0("\\.(", paste(MOTUS_ARCHIVE_SUFFIXES, collapse="|"), ")$")
+
 ## allowed file suffixes for emailed data files:
 
 MOTUS_FILE_ATTACHMENT_SUFFIXES = c(
