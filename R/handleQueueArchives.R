@@ -15,7 +15,7 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 handleQueueArchives = function(j) {
-    archs = dir(j$dir, recursive=TRUE, pattern=".*zip|.*7z|.*rar", ignore.case=TRUE,
+    archs = dir(j$dir, recursive=TRUE, pattern=MOTUS_ARCHIVE_DIR_REGEX, ignore.case=TRUE,
                 full.names=TRUE)
     for (a in archs) {
         newSubJob(j, "unpackArchive", .makeFolder=TRUE, file=a)
