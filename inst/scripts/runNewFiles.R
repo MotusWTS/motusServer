@@ -9,7 +9,7 @@ ARGS = commandArgs(TRUE)
 if (length(ARGS) == 0) {
     cat("
 
-Usage: runNewFiles.R [-n] DIR
+Usage: runNewFiles.R [-n] [-s] DIR
 
 where:
 
@@ -19,6 +19,10 @@ where:
   the original files (when on the same filesystem as the folder /sgm) or
   copies of the original files (when on a different filesystem) is created,
   and that folder is run instead of DIR.  With the '-n' option, the original files are moved.
+
+ -s: sanity check files; the sanity check is slow, because each file is checked
+  to see whether it is all zeroes, or an invalid archive. This is normally skipped for files
+  already on the server.
 
 A new job with type 'serverFiles' will be created and placed into the master queue (queue 0),
 from where a processServer can claim it.  The sender will be: ",
@@ -30,11 +34,15 @@ MOTUS_ADMIN_EMAIL,
 }
 
 preserve = TRUE
+sanityCheck = FALSE
 
 while(isTRUE(substr(ARGS[1], 1, 1) == "-")) {
     switch(ARGS[1],
            "-n" = {
                preserve = FALSE
+           },
+           "-s" = {
+               sanityCheck = TRUE
            },
            {
                stop("Unknown argument: ", ARGS[1])
@@ -49,7 +57,7 @@ suppressMessages(suppressWarnings(library(motusServer)))
 
 loadJobs()
 
-j = newJob("serverFiles", .parentPath=MOTUS_PATH$INCOMING, replyTo=MOTUS_ADMIN_EMAIL, valid=TRUE, .enqueue=FALSE)
+j = newJob("serverFiles", .parentPath=MOTUS_PATH$INCOMING, replyTo=MOTUS_ADMIN_EMAIL, valid=TRUE, sanityCheck=sanityCheck, .enqueue=FALSE)
 jobLog(j, paste0("Merging new files from server directory ", DIR))
 ## move, hardlink, or copy files to the job's dir
 

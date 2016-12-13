@@ -7,7 +7,13 @@
 handleServerFiles(j)
 }
 \arguments{
-\item{j}{the job}
+\item{j}{the job
+The job can have these properties:
+\itemize{
+\item sanityCheck if TRUE, sanity check files, which is
+time-consuming but a good idea if files come from a source where they might
+not have been fully sync'd (e.g. dropbox) before the user sent us a link to them.
+}}
 }
 \value{
 TRUE; As a side effect, subjobs for sanity checking files and
