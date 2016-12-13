@@ -55,11 +55,11 @@ j = newJob("serverFiles", .parentPath=MOTUS_PATH$INCOMING, replyTo=MOTUS_ADMIN_E
 
 if (! preserve) {
     ## just move the files to the new job's folder
-    moveDirContents(DIR, j$path)
+    moveDirContents(DIR, jobPath(j))
 } else {
     ## we need to leave existing files alone
     ## try hardlink, and if that fails, copy
-    if (! lightWeightCopy(DIR, j$path)) {
+    if (! lightWeightCopy(DIR, jobPath(j))) {
         stop("Failed to make a lightweight copy of ", DIR)
     }
 }
