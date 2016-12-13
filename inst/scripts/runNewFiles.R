@@ -50,7 +50,7 @@ suppressMessages(suppressWarnings(library(motusServer)))
 loadJobs()
 
 j = newJob("serverFiles", .parentPath=MOTUS_PATH$INCOMING, replyTo=MOTUS_ADMIN_EMAIL, valid=TRUE, .enqueue=FALSE)
-
+jobLog(j, paste0("Merging new files from server directory ", DIR))
 ## move, hardlink, or copy files to the job's dir
 
 if (! preserve) {
