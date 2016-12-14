@@ -167,16 +167,16 @@ getMotusMetaDB = function() {
     ## rename "code" column to "label"
     names(p)[match("code", names(p))] = "label"
 
-    dbWriteTable(s$con, "projs", p, overwrite=TRUE)
+    dbWriteTable(s$con, "projs", p, overwrite=TRUE, row.names=FALSE)
 
     ## add a fullID label for each tagDep
     t$fullID = sprintf("%s#%s:%.1f@%g", p$label[match(t$projectID, p$id)], t$mfgID, t$period, t$nomFreq)
 
     ## write just the deployment portion of the records to tagDeps
-    dbWriteTable(s$con, "tagDeps", t[, c(1:2, match("deployID", names(t)): ncol(t))], overwrite=TRUE)
+    dbWriteTable(s$con, "tagDeps", t[, c(1:2, match("deployID", names(t)): ncol(t))], overwrite=TRUE, row.names=FALSE)
 
     ## grab species
-    dbWriteTable(s$con, "species", motusListSpecies(), overwrite=TRUE)
+    dbWriteTable(s$con, "species", motusListSpecies(), overwrite=TRUE, row.names=FALSE)
 
     ## grab receivers
     recv = data_frame()
@@ -204,8 +204,8 @@ getMotusMetaDB = function() {
     recv = recv %>% as.data.frame
     ## workaround until upstream changes format of serial numbers for Lotek receivers
     recv$serno = sub("(SRX600|SRX800|SRX-DL)", "Lotek", perl=TRUE, recv$serno)
-    dbWriteTable(s$con, "recvDeps", recv, overwrite=TRUE)
-    dbWriteTable(s$con, "antDeps", ant %>% as.data.frame, overwrite=TRUE)
+    dbWriteTable(s$con, "recvDeps", recv, overwrite=TRUE, row.names=FALSE)
+    dbWriteTable(s$con, "antDeps", ant %>% as.data.frame, overwrite=TRUE, row.names=FALSE)
 
     ## GPS fix table; initially, this contains only a single fix for
     ## each receiver deployment but we'll eventually be filling in
@@ -218,7 +218,7 @@ getMotusMetaDB = function() {
                               lat = latitude,
                               lon = longitude,
                               elev = 0 ),
-                 overwrite=TRUE)
+                 overwrite=TRUE, row.names=FALSE)
 
     dbDisconnect(s$con)
     return (cachedDB)
