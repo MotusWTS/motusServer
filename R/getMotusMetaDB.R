@@ -123,6 +123,21 @@
 #' \item sensorsPermissions
 #' }
 #'
+#'
+#' \strong{paramOverrides:}
+#' \itemize{
+#' \item projectID; project ID to which this override applies for all matching receiver deployments
+#' \item serno; receiver serial number
+#' \item tsStart; starting timestamp for this override
+#' \item tsEnd; ending timestamp for this override
+#' \item monoBNlow; starting boot session for this override
+#' \item monoBNhigh; ending boot session for this override
+#' \item progName; program name; e.g. "find_tags_motus"
+#' \item paramName; name of parameter; e.g. "default_freq"
+#' \item paramVal; value of parameter e.g. 166.38
+#' \item why; character vector giving reason for override
+#' }
+#'
 #' @export
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
@@ -220,6 +235,14 @@ getMotusMetaDB = function() {
                               elev = 0 ),
                  overwrite=TRUE, row.names=FALSE)
 
+    ## DEPRECATED: copy paramOverrides table from paramOverrides database until there's a motus
+    ## API call to fetch these
+    sql = ensureParamOverridesTable()
+    dbWriteTable(s$con, "paramOverrides", sql("select * from paramOverrides"), overwrite=TRUE, row.names=FALSE)
+    sql(.CLOSE=TRUE)
+
     dbDisconnect(s$con)
+
     return (cachedDB)
+
 }

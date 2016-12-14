@@ -7,6 +7,8 @@
 #' in the receiver database.  Each boot session is run as a separate
 #' batch.
 #'
+#' @param serno receiver serial number
+#'
 #' @param src dplyr src_sqlite to receiver database
 #'
 #' @param tagDB path to sqlite tag registration database
@@ -30,7 +32,6 @@
 #'
 #' @param mbn integer monotonic boot number(s); this is the monoBN field
 #'     from the \code{files} table in the receiver's sqlite database.
-#'     Defaults to NULL, meaning run the tag finder on all boot sessions.
 #'
 #' @return the batch number and the number of tag detections in the stream.
 #'
@@ -38,7 +39,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-sgFindTags = function(src, tagDB, resume=TRUE, par = sgDefaultFindTagsParams, mbn = NULL) {
+sgFindTags = function(serno, src, tagDB, resume=TRUE, par = sgDefaultFindTagsParams, mbn) {
 
     cmd = "LD_LIBRARY_PATH=/usr/local/lib/boost_1.60 /home/john/proj/find_tags/find_tags_motus"
     if (is.list(par))
@@ -48,17 +49,17 @@ sgFindTags = function(src, tagDB, resume=TRUE, par = sgDefaultFindTagsParams, mb
 
     sql = function(...) dbGetQuery(src$con, sprintf(...))
 
-    if (is.null(mbn))
-        mbn = sql("select distinct monoBN from files order by monoBN") [[1]]
-
     for (bn in sort(mbn)) {
 
         ## if not resuming, discard resume information.
         if (! resume)
             sql("delete from batchState where progName='find_tags_motus' and monoBN=%d", bn)
 
+        ## get parameter overrides
+        por = getParamOverrides(serno, monoBN = bn)
+
         ## start the child;
-        bcmd = paste(cmd, pars, if (resume) "--resume", paste0("--bootnum=", bn), "--src_sqlite", tagDB, src$path, " 2>&1 ")
+        bcmd = paste(cmd, pars, por, if (resume) "--resume", paste0("--bootnum=", bn), "--src_sqlite", tagDB, src$path, " 2>&1 ")
 
         motusLog("Running %s", bcmd)
 
@@ -66,7 +67,7 @@ sgFindTags = function(src, tagDB, resume=TRUE, par = sgDefaultFindTagsParams, mb
     }
 
     ## get ID and stats for new batch of tag detections
-    rv = dbGetQuery(src$con, "select batchID, numHits from batches order by batchID desc limit 1")
+    rv = sql("select batchID, numHits from batches order by batchID desc limit 1")
 
     return (c(rv))
 }

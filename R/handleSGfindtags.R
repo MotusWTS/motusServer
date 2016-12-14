@@ -45,7 +45,7 @@ handleSGfindtags = function(j) {
     rv = NULL
     ## run the tag finder
     tryCatch({
-        rv = sgFindTags(src, getMotusMetaDB(), resume=j$canResume, mbn=j$monoBN)
+        rv = sgFindTags(serno, src, getMotusMetaDB(), resume=j$canResume, mbn=j$monoBN)
     }, error = function(e) {
         jobLog(j, paste(as.character(e), collapse="   \n"))
     })

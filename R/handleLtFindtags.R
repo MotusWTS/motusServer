@@ -21,9 +21,10 @@
 
 handleLtFindtags = function(j) {
 
-    jobLog(j, paste0("Running tag finder on receiver ", j$serno))
-    src = getRecvSrc(j$serno)
-    rv = ltFindTags(src, getMotusMetaDB())
+    serno = j$serno
+    jobLog(j, paste0("Running tag finder on receiver ", serno))
+    src = getRecvSrc(serno)
+    rv = ltFindTags(serno, src, getMotusMetaDB())
     closeRecvSrc(src)
     jobLog(j, paste0("Got ", rv[2], " tag detections."))
 

@@ -129,6 +129,21 @@ which the fixtureType is "Ship".
 \item tagsPermissions
 \item sensorsPermissions
 }
+
+
+\strong{paramOverrides:}
+\itemize{
+\item projectID; project ID to which this override applies for all matching receiver deployments
+\item serno; receiver serial number
+\item tsStart; starting timestamp for this override
+\item tsEnd; ending timestamp for this override
+\item monoBNlow; starting boot session for this override
+\item monoBNhigh; ending boot session for this override
+\item progName; program name; e.g. "find_tags_motus"
+\item paramName; name of parameter; e.g. "default_freq"
+\item paramVal; value of parameter e.g. 166.38
+\item why; character vector giving reason for override
+}
 }
 \description{
 Get the motus database of metadata for tags, receivers, projects,

@@ -4,10 +4,12 @@
 \alias{sgFindTags}
 \title{find tags in an SG stream}
 \usage{
-sgFindTags(src, tagDB, resume = TRUE, par = sgDefaultFindTagsParams,
-  mbn = NULL)
+sgFindTags(serno, src, tagDB, resume = TRUE, par = sgDefaultFindTagsParams,
+  mbn)
 }
 \arguments{
+\item{serno}{receiver serial number}
+
 \item{src}{dplyr src_sqlite to receiver database}
 
 \item{tagDB}{path to sqlite tag registration database}
@@ -30,8 +32,7 @@ the boot count.}
 \code{\link{sgDefaultFindTagsParams}}}
 
 \item{mbn}{integer monotonic boot number(s); this is the monoBN field
-from the \code{files} table in the receiver's sqlite database.
-Defaults to NULL, meaning run the tag finder on all boot sessions.}
+from the \code{files} table in the receiver's sqlite database.}
 }
 \value{
 the batch number and the number of tag detections in the stream.
