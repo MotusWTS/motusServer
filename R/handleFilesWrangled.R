@@ -38,8 +38,6 @@ and overall data processing status here:
 
 if you are logged-in with your sensorgnome.org credentials.
 
-When your job is complete, we'll send another email to let you know where
-to find the results.
 -------------------------------------------------------------------------
 Result of processing email:
 ",
