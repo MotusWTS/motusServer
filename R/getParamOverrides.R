@@ -12,6 +12,11 @@
 #' @param progName program name for which the parameters are sought;
 #' Default: "find_tags_motus"
 #'
+#' @param recvDepTol numeric scalar; how much slop is allowed when looking
+#' up the project ID for a receiver?  Sometimes, people have recorded incorrect
+#' start of deployment dates, and/or the estimate of boot session time is
+#' inaccurate.  Default: 3*24*3600 which is 3 days.
+#'
 #' @return a character scalar of parameters, ready for the command line
 #'
 #' @note Overrides come from the paramOverrides table of the motus meta database.
@@ -26,7 +31,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-getParamOverrides = function(serno, monoBN=NULL, tsStart=NA, progName="find_tags_motus") {
+getParamOverrides = function(serno, monoBN=NULL, tsStart=NA, progName="find_tags_motus", recvDepTol=3*24*3600) {
 
     meta = safeSQL(getMotusMetaDB())
 
@@ -36,18 +41,20 @@ getParamOverrides = function(serno, monoBN=NULL, tsStart=NA, progName="find_tags
     }
 
     ## lookup the projectID for the appropriate receiver deployment
-    pid = meta("select projectID from recvDeps where serno=:serno and tsStart <= :tsStart
+    pid = meta("select projectID from recvDeps where serno=:serno and tsStart - :tol <= :tsStart
 and (tsEnd is null or tsEnd > :tsStart) order by tsStart desc limit 1",
-               serno=serno,
-               tsStart = tsStart)[[1]]
+serno=serno,
+tsStart = tsStart,
+tol = recvDepTol)[[1]]
 
     ## lookup project-wide overrides by date
 
     if (length(pid) > 0) {
         projOR = meta("select '--' || paramName || ' ' || paramVal from paramOverrides where projectID=:pid and progName=:progName
-and tsStart <= :tsStart and (tsEnd is null or tsEnd > :tsStart) order by tsStart desc limit 1",
+and tsStart - :tol <= :tsStart and (tsEnd is null or tsEnd > :tsStart) order by tsStart desc limit 1",
 pid=pid,
 progName=progName,
+tol=recvDepTol,
 tsStart=tsStart)[[1]]
     } else {
         projOR = NULL
