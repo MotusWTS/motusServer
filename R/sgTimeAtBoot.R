@@ -8,8 +8,14 @@
 #' slot where the boot time could not be estimated; e.g. because the receiver
 #' did not get a GPS fix.
 #'
-#' @details the start time is typically \code{fixedBy + tsLow} for records in the
-#' receiver's timeFixes table.  This needs to be made explicit; see:
+#' @details the start time is taken as the first valid timestamp of
+#'     files from that boot session.  In most situations, the GPS sets
+#'     a sensorgnome's clock shortly after boot, so the estimate will
+#'     be some few minutes later than the true boot time.  Where
+#'     possible, we correct for the timespan during which the SG was
+#'     producing pre-GPS-timestamped files in that boot session.
+#'
+#' This procedure needs to be made explicit in upstream processing; see:
 #' \link{https://github.com/jbrzusto/find_tags/issues/12}
 #'
 #' @export
@@ -24,16 +30,25 @@ sgTimeAtBoot = function(serno, monoBN) {
 
     ## Use a common table expression to import the monoBN values into
     ## a temporary table using a clause like "(values (M1), (M2),
-    ## ...(MN))", then join that to the timeFixes table for this
-    ## receiver.  We group by t1.monoBN in case there's more than one
-    ## timeFix for a given bootnum, and in that case use the minimum.
-    ## The 'left' join ensures we get NA when the given monoBN slot has
-    ## no corresponding entry in timeFixes
+    ## ...(MN))", then join that to the files table, where we look for
+    ## the earliest valid file timestamp for each boot session
 
     rv = as.numeric(
         sql(paste0("with tmpbn(monoBN) as ( values ", paste0("(", monoBN, ")", collapse=","), ")
- select min(t2.fixedBy + t2.tsLow) as ts from tmpbn as t1 left join timeFixes as t2
- on t1.monoBN=t2.monoBN group by t1.monoBN")) [[1]])
+ select t2.ts as ts from tmpbn as t1 left join (select monoBN, min(ts) as ts from files where ts >= ", MOTUS_SG_EPOCH, " group by monoBN) as t2
+ on t1.monoBN=t2.monoBN")) [[1]])
+
+    ## as a minimum correction, look at the span of time among pre-GPS timestamped files
+    ## from the same boot session, if there are at least two
+
+    preGPS = sql(paste0("with tmpbn(monoBN) as ( values ", paste0("(", monoBN, ")", collapse=","), ")
+ select t2.tsLo, t2.tsHi from tmpbn as t1 left join (select monoBN, min(ts) as tsLo, max(ts)
+as tsHi from files where ts < ", MOTUS_SG_EPOCH, " group by monoBN) as t2 on t1.monoBN=t2.monoBN"))
+
+    span = as.numeric(preGPS$tsHi) - as.numeric(preGPS$tsLo)
+    span[is.na(span)] = 0
+
+    rv = rv - span
 
     sql(.CLOSE=TRUE)
     return(rv)

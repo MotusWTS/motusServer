@@ -20,8 +20,14 @@ did not get a GPS fix.
 Get start times for boot sessions for a sensorgnome.
 }
 \details{
-the start time is typically \code{fixedBy + tsLow} for records in the
-receiver's timeFixes table.  This needs to be made explicit; see:
+the start time is taken as the first valid timestamp of
+    files from that boot session.  In most situations, the GPS sets
+    a sensorgnome's clock shortly after boot, so the estimate will
+    be some few minutes later than the true boot time.  Where
+    possible, we correct for the timespan during which the SG was
+    producing pre-GPS-timestamped files in that boot session.
+
+This procedure needs to be made explicit in upstream processing; see:
 \link{https://github.com/jbrzusto/find_tags/issues/12}
 }
 \author{
