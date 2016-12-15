@@ -4,12 +4,9 @@
 \alias{sgFindTags}
 \title{find tags in an SG stream}
 \usage{
-sgFindTags(serno, src, tagDB, resume = TRUE, par = sgDefaultFindTagsParams,
-  mbn)
+sgFindTags(src, tagDB, resume = TRUE, par = NULL, mbn)
 }
 \arguments{
-\item{serno}{receiver serial number}
-
 \item{src}{dplyr src_sqlite to receiver database}
 
 \item{tagDB}{path to sqlite tag registration database}
@@ -28,8 +25,7 @@ memory for storing the bootcount, and relied on writing it to
 the SD card; updating to a new SD card would typically reset
 the boot count.}
 
-\item{par}{list of parameters to the findtags code; defaults to
-\code{\link{sgDefaultFindTagsParams}}}
+\item{par}{list of non-default parameters to the findtags code; defaults to NULL}
 
 \item{mbn}{integer monotonic boot number(s); this is the monoBN field
 from the \code{files} table in the receiver's sqlite database.}

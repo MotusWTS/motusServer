@@ -13,6 +13,13 @@
 #'
 #' @return
 #'
+#' @note FIXME: we run all data from the receiver in a single go; we need
+#' a batch concept for these receivers, if for no other reason than
+#' to allow time/deployment-dependent parameter overrides.
+#' see \link{https://github.com/jbrzusto/motusServer/issues/60}
+#' For now, any project or receiver parameter override active
+#' at the time the function is called will be used.
+#'
 #' @seealso \link{\code{processServer}}
 #'
 #' @export
@@ -24,7 +31,11 @@ handleLtFindtags = function(j) {
     serno = j$serno
     jobLog(j, paste0("Running tag finder on receiver ", serno))
     src = getRecvSrc(serno)
-    rv = ltFindTags(serno, src, getMotusMetaDB())
+
+    ## get parameter overrides
+    por = getParamOverrides(serno, tsStart=Sys.time())
+
+    rv = ltFindTags(src, getMotusMetaDB(), par=paste(ltDefaultFindTagsParams, por))
     closeRecvSrc(src)
     jobLog(j, paste0("Got ", rv[2], " tag detections."))
 

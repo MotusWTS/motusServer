@@ -4,17 +4,15 @@
 \alias{ltFindTags}
 \title{find tags in a Lotek receiver dataset}
 \usage{
-ltFindTags(serno, src, tagDB, par = ltDefaultFindTagsParams)
+ltFindTags(src, tagDB, par = NULL)
 }
 \arguments{
-\item{serno}{receiver serial number}
-
 \item{src}{dplyr src_sqlite to (lotek) receiver database}
 
 \item{tagDB}{path to sqlite tag registration database}
 
 \item{par}{list of parameters to the filtertags code.  Defaults
-to \link{\code{ltDefaultFindTagsParams}}}
+to NULL;}
 }
 \value{
 the number of tag detections in the stream.
@@ -24,14 +22,6 @@ This function searches for sequences of tag detections
 corresponding to registered (ID, burst interval) pairs and adds
 them to the hits, runs, batches etc. tables in the receiver
 database.
-}
-\note{
-FIXME: we run all data from the receiver in a single go; we need
-a batch concept for these receivers, if for no other reason than
-to allow time/deployment-dependent parameter overrides.
-see \link{https://github.com/jbrzusto/motusServer/issues/60}
-For now, any project or receiver parameter override active
-at the time the function is called will be used.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}

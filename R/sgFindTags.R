@@ -7,8 +7,6 @@
 #' in the receiver database.  Each boot session is run as a separate
 #' batch.
 #'
-#' @param serno receiver serial number
-#'
 #' @param src dplyr src_sqlite to receiver database
 #'
 #' @param tagDB path to sqlite tag registration database
@@ -27,8 +25,7 @@
 #'     the SD card; updating to a new SD card would typically reset
 #'     the boot count.
 #'
-#' @param par list of parameters to the findtags code; defaults to
-#' \code{\link{sgDefaultFindTagsParams}}
+#' @param par list of non-default parameters to the findtags code; defaults to NULL
 #'
 #' @param mbn integer monotonic boot number(s); this is the monoBN field
 #'     from the \code{files} table in the receiver's sqlite database.
@@ -39,7 +36,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-sgFindTags = function(serno, src, tagDB, resume=TRUE, par = sgDefaultFindTagsParams, mbn) {
+sgFindTags = function(src, tagDB, resume=TRUE, par = NULL, mbn) {
 
     cmd = "LD_LIBRARY_PATH=/usr/local/lib/boost_1.60 /home/john/proj/find_tags/find_tags_motus"
     if (is.list(par))
@@ -55,11 +52,8 @@ sgFindTags = function(serno, src, tagDB, resume=TRUE, par = sgDefaultFindTagsPar
         if (! resume)
             sql("delete from batchState where progName='find_tags_motus' and monoBN=%d", bn)
 
-        ## get parameter overrides
-        por = getParamOverrides(serno, monoBN = bn)
-
         ## start the child;
-        bcmd = paste(cmd, pars, por, if (resume) "--resume", paste0("--bootnum=", bn), "--src_sqlite", tagDB, src$path, " 2>&1 ")
+        bcmd = paste(cmd, pars, if (resume) "--resume", paste0("--bootnum=", bn), "--src_sqlite", tagDB, src$path, " 2>&1 ")
 
         motusLog("Running %s", bcmd)
 

@@ -22,6 +22,14 @@ allow for pause/resume later.
 Called by \code{\link{processServer}}. After running the tag
 finder, queues a new subjob that exports data.
 }
+\note{
+FIXME: we run all data from the receiver in a single go; we need
+a batch concept for these receivers, if for no other reason than
+to allow time/deployment-dependent parameter overrides.
+see \link{https://github.com/jbrzusto/motusServer/issues/60}
+For now, any project or receiver parameter override active
+at the time the function is called will be used.
+}
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }

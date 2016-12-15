@@ -42,10 +42,14 @@ handleSGfindtags = function(j) {
 
     src = getRecvSrc(serno)
 
+    ## get parameter overrides
+    por = getParamOverrides(serno, monoBN = j$monoBN)
+    jobLog(j, paste0("Got overrides for ", serno, " and monoBN = ", j$monoBN, ": ", por))
+
     rv = NULL
     ## run the tag finder
     tryCatch({
-        rv = sgFindTags(serno, src, getMotusMetaDB(), resume=j$canResume, mbn=j$monoBN)
+        rv = sgFindTags(src, getMotusMetaDB(), resume=j$canResume, par = paste(sgDefaultFindTagsParams, por), mbn=j$monoBN)
     }, error = function(e) {
         jobLog(j, paste(as.character(e), collapse="   \n"))
     })
