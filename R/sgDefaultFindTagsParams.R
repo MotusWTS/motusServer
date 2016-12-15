@@ -29,6 +29,6 @@ sgDefaultFindTagsParams =
         "--burst_slop_expansion=1",
         "--use_events",
         "--max_skipped_bursts=20",
-        "--default_freq=166.38"
+        "--default_freq=166.376"
         ),
         collapse = " ")
