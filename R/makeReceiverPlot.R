@@ -304,9 +304,10 @@ monoBN[1]))
     }
     tags = rbind(tags, pulses, gps, reboots)
 
-    ## filter out anything with an invalid (pre-GPS) date
+    ## filter out anything with an invalid (pre-GPS) date, or a date in the future
+    NOW = as.numeric(Sys.time())
 
-    tags = tags %>% filter_(~ts >= MOTUS_SG_EPOCH)
+    tags = tags %>% filter_(~ts >= MOTUS_SG_EPOCH & ts <= NOW)
 
     class(tags$ts) = c("POSIXt", "POSIXct")
 
