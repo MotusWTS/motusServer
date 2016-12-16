@@ -45,10 +45,17 @@ unpackEmail = function(msg, dir, headers=c("From", "Reply-To", "Subject"), maxHe
         h = character(0)
     }
 
+    ## create a subdirectory for attachments
+
+    attDir = file.path(dir, "attachments")
+    dir.create(attDir)
+
     ## because the incoming email might (incorrectly) use \r\n end of lines,
-    ## convert these to \n with sed
-    safeSys(sprintf("cat %s | sed -e 's/\\r$//' | ripmime -i - -d %s --stderr -q", msg, dir), quote=FALSE)
-    textParts = dir(dir, pattern="^textfile[0-9_]*$", full.names=TRUE)
+    ## convert these to \n with sed, then pipe into ripmime which unpack into attDir
+
+    safeSys(sprintf("cat %s | sed -e 's/\\r$//' | ripmime -i - -d %s --stderr -q", msg, attDir), quote=FALSE)
+    parts = dir(attDir, full.names=TRUE)
+    textParts = grep("/textfile[0-9_]*$", parts, value=TRUE, perl=TRUE)
 
     if (length(textParts) == 0){
         ## nothing unpacked, so just use original message
@@ -56,6 +63,11 @@ unpackEmail = function(msg, dir, headers=c("From", "Reply-To", "Subject"), maxHe
     } else {
         ## paste the subject line and text parts of the message (if any)
         msg = paste0(paste0(c(h, unlist(lapply(textParts, readLines))), collapse="\n"), "\n")
+        file.remove(textParts)
     }
+
+    ## try drop the attachments subdir, which only succeeds if it is empty
+    file.remove(attDir)
+
     return(msg)
 }

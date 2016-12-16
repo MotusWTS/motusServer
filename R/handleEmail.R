@@ -80,15 +80,6 @@ handleEmail = function(j) {
     ## email is complete and it's time to process the data
     newSubJob(j, "filesWrangled")
 
-    ## drop text parts with names like "textfileN"
-    file.remove (
-        dir(path,
-            pattern    = "^textfile[0-9_]+$",
-            recursive  = TRUE,
-            full.names = TRUE
-            )
-    )
-
     ## top-level processing of the email is complete, although sub-jobs are not.
     return (TRUE)
 }
