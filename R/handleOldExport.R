@@ -41,19 +41,18 @@ handleOldExport = function(j) {
     tsStart = info$tsStart
     monoBNStart = info$bootnumStart
 
-    ## extend ts or monoBN to start of deployment
-    ts[1] = min(ts[1], tsStart)
-    monoBN[1] = min(monoBN[1], monoBNStart)
-
     if (is.na(site)) {
-        msg = paste0("Error: unable to determine Year / Proj / Site for ", serno)
+        msg = paste0("Warning: unable to determine Year / Proj / Site for ", serno)
         if (isLotek) {
             msg = paste0(msg, " in ts range: ", paste(ts, collapse=", "))
         } else {
             msg = paste0(msg, " in monoBN (boot sessions): ", paste(monoBN, collapse=", "))
         }
         jobLog(j, msg)
-        return(FALSE)
+    } else {
+        ## extend ts or monoBN to start of deployment
+        ts[1] = min(ts[1], tsStart)
+        monoBN[1] = min(monoBN[1], monoBNStart)
     }
 
     ## get a tagview for the detections in this receiver (a tagview joins batches/runs/hits with appropriate metadata)
@@ -66,8 +65,13 @@ handleOldExport = function(j) {
     condense = 3600
     condenseLabel = "hourly"
 
-    title = sprintf("%d %s %s Tags (%s)", year, proj, site, condenseLabel)
-    datafilename = sprintf("/SG/contrib/%d/%s/%s/%d_%s_%s_%s_tags.rds", year, proj, site, year, proj, site, condenseLabel)
+    if (! is.na(site)) {
+        title = sprintf("%d %s %s Tags (%s)", year, proj, site, condenseLabel)
+        datafilename = sprintf("/SG/contrib/%d/%s/%s/%d_%s_%s_%s_tags.rds", year, proj, site, year, proj, site, condenseLabel)
+    } else {
+        title = sprintf("Tags for receiver %s (%s) - Project and Site Unknown", serno, condenseLabel)
+        datafilename = sprintf("/sgm/plots/%s_%s_tags.rds", serno, condenseLabel)
+    }
     plotfilename = sub("\\.rds$", "\\.png", datafilename, perl=TRUE)
 
     ## generate the plot object and condensed dataset
@@ -81,21 +85,29 @@ handleOldExport = function(j) {
     dev.off()
 
     ## make a pdf too, assuming a 90 dpi display
-    pdf(sub("\\.png$", ".pdf", plotfilename, perl=TRUE), width=rv$width / 90, height=rv$height / 90)
+    pdfname = sub("\\.png$", ".pdf", plotfilename, perl=TRUE)
+    pdf(pdfname, width=rv$width / 90, height=rv$height / 90)
     print(rv$plot)
     dev.off()
 
-
     jobLog(j, paste0("Exported hourly dataset (and plot) to:  ", basename(datafilename), "(.png/.pdf)"))
 
-    system(sprintf("cd /SG/contrib/%d/%s/%s; /SG/code/attach_site_files_to_wiki.R", year, proj, site))
+    if (! is.na(site)) {
+        system(sprintf("cd /SG/contrib/%d/%s/%s; /SG/code/attach_site_files_to_wiki.R", year, proj, site))
 
-    ## get the wiki user for this site
-    con = dbConnect(SQLite(), "/SG/motus_sg.sqlite")
-    user = dbGetQuery(con, paste0("select SGwikiUser from projectMap where year=", year, " and ProjCode='", proj, "'"))[[1]]
-    dbDisconnect(con)
+        ## get the wiki user for this site
+        con = dbConnect(SQLite(), "/SG/motus_sg.sqlite")
+        user = dbGetQuery(con, paste0("select SGwikiUser from projectMap where year=", year, " and ProjCode='", proj, "'"))[[1]]
+        dbDisconnect(con)
 
-    wikiLink = sprintf('https://sensorgnome.org/User:%s/%s', user, site)
+        wikiLink = sprintf('https://sensorgnome.org/User:%s/%s', user, site)
+    } else {
+        user = topJob(j)$user
+        for (f in c(datafilename, plotfilename, pdfname)) {
+            safeSys(sprintf("/SG/code/wiki_attach.R sensorgnome \"^%s$\" \"%s\"", user, f), quote=FALSE, minErrorCode=3)
+        }
+        wikiLink = sprintf('https://sensorgnome.org/User:%s', user)
+    }
     jobLog(j, paste0('Uploaded data and plot to wiki page here: <a href="', wikiLink, '">', wikiLink, '</a>'))
     return (TRUE)
 }
