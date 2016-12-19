@@ -76,7 +76,7 @@ emailServer = function(tracing = FALSE) {
                 break
 
             ## create and enqueue a new email job
-            j = newJob("email", .parentPath=MOTUS_PATH$MAIL_QUEUE, msgFile=msg)
+            j = newJob("email", .parentPath=MOTUS_PATH$MAIL_QUEUE, queue=basename(MOTUS_PATH$MAIL_QUEUE), msgFile=msg)
 
             ## record receipt within the job's log
             jobLog(j, paste("Received message at", basename(msg)))
