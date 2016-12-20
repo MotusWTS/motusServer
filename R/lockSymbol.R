@@ -6,8 +6,8 @@
 #' @param symbol character scalar; this can be a receiver serial
 #'     number, database filename, or other arbitrary unique symbol.
 #'
-#' @param owner integer; defaults to id of process trying to lock the
-#'     symbol, but any integer uniquely associated with the process
+#' @param owner integer; defaults to process group id of the R
+#'     session, but any integer uniquely associated with the process
 #'     can be used. The owner is recorded in the symLocks table of the
 #'     motus server database when locking is successful (indeed,
 #'     'successful' means that after attempting to lock the symbol,
@@ -25,7 +25,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-lockSymbol = function(symbol, owner=Sys.getpid(), lock=TRUE) {
+lockSymbol = function(symbol, owner=getPGID(), lock=TRUE) {
     ## Note: the locking is achieved by the UNIQUE PRIMARY KEY property on symbol
 
     if (lock) {
