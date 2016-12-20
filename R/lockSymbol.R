@@ -1,14 +1,15 @@
-#' try to lock or unlock a symbol, preventing any other cooperating motusServer process
+#' Try to lock or unlock a symbol, preventing any other cooperating motusServer process
 #' from using it.
 #'
 #' This is mainly to prevent interleaved access to receiver and other databases.
 #'
-#' @param symbol character scalar; this can be a receiver serial number, database name,
-#' or other arbitrary unique symbol.
+#' @param symbol character scalar; this can be a receiver serial
+#'     number, database filename, or other arbitrary unique symbol.
 #'
 #' @param owner integer; defaults to id of process trying to lock the
-#'     symbol, but any integer can be used. The owner is recorded in
-#'     the symLocks table when locking is successful (indeed,
+#'     symbol, but any integer uniquely associated with the process
+#'     can be used. The owner is recorded in the symLocks table of the
+#'     motus server database when locking is successful (indeed,
 #'     'successful' means that after attempting to lock the symbol,
 #'     the owner associated with it is this parameter).
 #'
@@ -30,9 +31,12 @@ lockSymbol = function(symbol, owner=Sys.getpid(), lock=TRUE) {
     if (lock) {
         ## try to lock this serial number to our process number; this
         ## fails at the sqlite level if there's already a lock on the
-        ## receiver; however, to cover the case where the lock is
-        ## ours, due to sloppy coding in this package, we don't use
-        ## this exception to determine whether locking succeeded.
+        ## receiver; i.e. if there's already a record in symLocks with
+        ## the given symbol.  However, to cover the case where the
+        ## lock is ours, e.g. due to sloppy coding in this package, we
+        ## don't use this exception to determine whether locking
+        ## succeeded.  All we're interested in is whether \code{owner}
+        ## really does own the symbol; that's what "success" means here.
 
         try(
             MOTUS_SERVER_DB_SQL(sprintf("INSERT INTO %s VALUES(:symbol, :owner)", MOTUS_SYMBOLIC_LOCK_TABLE),

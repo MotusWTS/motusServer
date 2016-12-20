@@ -2,18 +2,19 @@
 % Please edit documentation in R/lockSymbol.R
 \name{lockSymbol}
 \alias{lockSymbol}
-\title{try to lock or unlock a symbol, preventing any other cooperating motusServer process
+\title{Try to lock or unlock a symbol, preventing any other cooperating motusServer process
 from using it.}
 \usage{
 lockSymbol(symbol, owner = Sys.getpid(), lock = TRUE)
 }
 \arguments{
-\item{symbol}{character scalar; this can be a receiver serial number, database name,
-or other arbitrary unique symbol.}
+\item{symbol}{character scalar; this can be a receiver serial
+number, database filename, or other arbitrary unique symbol.}
 
 \item{owner}{integer; defaults to id of process trying to lock the
-symbol, but any integer can be used. The owner is recorded in
-the symLocks table when locking is successful (indeed,
+symbol, but any integer uniquely associated with the process
+can be used. The owner is recorded in the symLocks table of the
+motus server database when locking is successful (indeed,
 'successful' means that after attempting to lock the symbol,
 the owner associated with it is this parameter).}
 
