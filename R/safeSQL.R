@@ -8,7 +8,7 @@
 #'     to SQLite database, or MySQLConnection.
 #'
 #' @param busyTimeout how many total seconds to wait while retrying a
-#'     locked database.  Default: 30.  Uses \code{pragma busy_timeout}
+#'     locked database.  Default: 300 (5 minutes).  Uses \code{pragma busy_timeout}
 #'     to allow for inter-process DB locking.  Only implemented for
 #'     SQLite connections.
 #'
@@ -47,7 +47,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-safeSQL = function(con, busyTimeout = 10) {
+safeSQL = function(con, busyTimeout = 300) {
     if (is.character(con))
         con = dbConnect(SQLite(), con)
     isSQLite = inherits(con, "SQLiteConnection")
