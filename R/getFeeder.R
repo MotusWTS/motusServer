@@ -95,7 +95,15 @@ getFeeder = function(incoming, tracing = FALSE, messages=c("close_write", "moved
             ## process group which is watching the same directory.
             ## There should only be one of these!
 
-            system(sprintf("pkill -KILL -g %d -f inotifywait.*%s", Sys.getpid(), incoming))
+            ## Note: if this function is called from an R session which is started by
+            ## a shell script, it's own pid won't be its pgid.
+
+            stat = readLines(file.path("/proc", Sys.getpid(), "stat"), n=1)
+            ## drop the process name (surrounded in parens) before trying to parse
+            ## out the pgid
+            stat = sub(".*\\) ", "", stat, perl=TRUE)
+            pgid = as.integer(strsplit(stat, " ", fixed=TRUE)[[1]][3])
+            system(sprintf("pkill -KILL -g %d -f inotifywait.*%s", pgid, incoming))
             close(evtCon)
             evtCon <<- NULL
             return(NULL)
