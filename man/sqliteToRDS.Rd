@@ -2,9 +2,9 @@
 % Please edit documentation in R/sqliteToRDS.R
 \name{sqliteToRDS}
 \alias{sqliteToRDS}
-\title{export the results of an sqlite query directly into an .rds file}
+\title{Export the results of an sqlite query directly into an .rds file}
 \usage{
-sqliteToRDS(con, query, bind.data = data.frame(), out, classes = NULL,
+sqliteToRDS(con, query, bind.data = data.frame(x = 0L), out, classes = NULL,
   rowsPerBlock = 10000, stringsAsFactors = TRUE)
 }
 \arguments{
@@ -15,8 +15,9 @@ the query will be written to the .rds file, but the query can
 include 'limit' and 'offset' phrases.}
 
 \item{bind.data}{values for query parameters, if any; see
-\link{\code{dbSendPreparedQuery}}.  Defaults to \code{data.frame()},
-i.e. an empty data.frame.}
+\link{\code{dbSendPreparedQuery}}.  Defaults to \code{data.frame(x=0L)},
+i.e. a trivial data.frame meant only to pass the sanity checks
+imposed by \code{dbSendPreparedQuery()}}
 
 \item{out}{character scalar; name of file to which the query
 results will be saved.  Should end in ".rds".}
@@ -42,7 +43,7 @@ slot of the \code{'classes'} parameter.}
 integer scalar; the number of result rows written to file \code{out}.
 }
 \description{
-export the results of an sqlite query directly into an .rds file
+Export the results of an sqlite query directly into an .rds file
 }
 \details{
 Typically, exporting the contents of an sqlite database

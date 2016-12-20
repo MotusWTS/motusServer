@@ -1,4 +1,4 @@
-#' export the results of an sqlite query directly into an .rds file
+#' Export the results of an sqlite query directly into an .rds file
 #'
 #' @details Typically, exporting the contents of an sqlite database
 #'     table as an R .rds file has meant reading the entire table into
@@ -68,8 +68,9 @@
 #'     include 'limit' and 'offset' phrases.
 #'
 #' @param bind.data values for query parameters, if any; see
-#' \link{\code{dbSendPreparedQuery}}.  Defaults to \code{data.frame()},
-#' i.e. an empty data.frame.
+#' \link{\code{dbSendPreparedQuery}}.  Defaults to \code{data.frame(x=0L)},
+#' i.e. a trivial data.frame meant only to pass the sanity checks
+#' imposed by \code{dbSendPreparedQuery()}
 #'
 #' @param out character scalar; name of file to which the query
 #'     results will be saved.  Should end in ".rds".
@@ -101,7 +102,7 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 
-sqliteToRDS = function(con, query, bind.data=data.frame(), out, classes = NULL, rowsPerBlock=10000, stringsAsFactors = TRUE) {
+sqliteToRDS = function(con, query, bind.data=data.frame(x=0L), out, classes = NULL, rowsPerBlock=10000, stringsAsFactors = TRUE) {
     ## get the result types by asking for the first row of the
     ## query
 
@@ -130,10 +131,10 @@ sqliteToRDS = function(con, query, bind.data=data.frame(), out, classes = NULL, 
 
     ## which columns are to be coded as factors?
 
-    fact = which(col$Sclass == "character" & (stringsAsFactors | sapply(col$name, function(x) 'factor' %in% useClass[[x]])))
+    fact = which(col$Sclass == "character" & (stringsAsFactors | sapply(1:n, function(x) 'factor' %in% useClass[[x]])))
     col$Sclass[fact] = "factor"
     for (i in fact)
-        useClass[[i]] = c(useClass[[i]], "factor")
+        useClass[[i]] = unique(c(useClass[[i]], "factor"))
 
     ## list of levels vectors for each of these columns, indexed by column number
     colLevels = list()
@@ -143,7 +144,7 @@ sqliteToRDS = function(con, query, bind.data=data.frame(), out, classes = NULL, 
         colLevels[[f]] = dbGetPreparedQuery(con, paste0("select distinct ", col$name[f], " from (", query, ")"), bind.data)[[1]]
 
     ## which columns are to be exported as logical?
-    logi = which(col$Sclass == "integer" &  sapply(col$name, function(x) 'logical' %in% useClass[[x]]))
+    logi = which(col$Sclass == "integer" &  sapply(1:n, function(x) 'logical' %in% useClass[[x]]))
     col$Sclass[logi] = "logical"
 
     ## open temporary files for each column, and file prefix and suffix
@@ -190,9 +191,9 @@ sqliteToRDS = function(con, query, bind.data=data.frame(), out, classes = NULL, 
                        ## write a plain integer vector
                        writeBin(match(block[[i]], colLevels[[i]]), colCon[[i]], endian="little")
                    },
-                   string = {
-                       ## use serialize for this
-                       writeBin(serializeNoHeader(block[[i]]), colCon[[i]])
+                   character = {
+                       ## use serialize for this; we also need to drop the STRSXP and LENGTH bytes
+                       writeBin(serializeNoHeader(block[[i]], dropTypeLen=TRUE), colCon[[i]])
                    },
                    ## write a plain vector of appropriate numeric type
                    writeBin(block[[i]], colCon[[i]], endian="little")
@@ -247,7 +248,7 @@ sqliteToRDS = function(con, query, bind.data=data.frame(), out, classes = NULL, 
     lapply(colCon, close)
 
     ## append each column file
-    cmd = paste0("cat ", paste0(c(colFiles[n+1], colFiles[1:n], colFiles[n+2]), collapse=" "), " | gzip -9 > ", out)
+    cmd = paste0("cat ", paste0(c(colFiles[n+1], colFiles[1:n], colFiles[n+2]), collapse=" "), " | bzip2 -9 -c > ", out)
     system(cmd)  ## NB: we don't use safeSys because that overrides redirects  (FIXME!)
 
     ## delete the intermediate files
@@ -262,6 +263,8 @@ sqliteToRDS = function(con, query, bind.data=data.frame(), out, classes = NULL, 
 #'
 #' @param x the R object
 #'
+#' @param dropTypeLen logical; if TRUE, also drop the initial TYPE and length fields (8 extra bytes)
+#'
 #' @return raw vector to which x has been serialized in binary little-endian (non-XDR) format,
 #' but without the leading 'B\\n' and three 32-bit integers of header:
 #'    RDS_serialization_version
@@ -274,10 +277,10 @@ sqliteToRDS = function(con, query, bind.data=data.frame(), out, classes = NULL, 
 #'
 #' @export
 
-serializeNoHeader = function(x) {
+serializeNoHeader = function(x, dropTypeLen=FALSE) {
     r = rawConnection(raw(), "wb")
     serialize(x, r, ascii=FALSE, xdr=FALSE)
-    rv = rawConnectionValue(r) [-(1:14)]
+    rv = rawConnectionValue(r) [-(1:ifelse(dropTypeLen, 22, 14))]
     close(r)  ## don't wait for gc() to do this
     return(rv)
 }
