@@ -148,6 +148,19 @@ getMotusMetaDB = function() {
     cachedDB = "/sgm/cache/motus_meta_db.sqlite"
     oldCachedDB = "/sgm/cache/motus_meta_db_old.sqlite"
 
+    ## try to lock the cachedDB (by trying to lock its name)
+    while(! lockSymbol(cachedDB)) {
+        ## FIXME: we should probably return NA immediately, and have processServer re-queue the job at the end of the queue
+        Sys.sleep(10)
+    }
+
+    ## make sure we unlock the receiver DB when this function exits, even on error
+    ## NB: the runMotusProcessServer script also drops any locks held by a given
+    ## processServer after the latter exits.
+
+    on.exit(lockSymbol(cachedDB, lock=FALSE))
+
+
     ## if either the cached copy doesn't exist, or it is more than 1 day old,
     ## grab it again
 
