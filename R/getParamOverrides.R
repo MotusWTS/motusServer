@@ -17,7 +17,8 @@
 #' start of deployment dates, and/or the estimate of boot session time is
 #' inaccurate.  Default: 3*24*3600 which is 3 days.
 #'
-#' @return a character scalar of parameters, ready for the command line
+#' @return a character scalar of parameters, ready for the command line; if there
+#' are no applicable overrides, returns ""
 #'
 #' @note Overrides come from the paramOverrides table of the motus meta database.
 #' As of 2016 Dec 14, this database is just copied from /sgm/paramOverrides.sqlite, but

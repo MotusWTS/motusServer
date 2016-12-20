@@ -26,7 +26,8 @@ start of deployment dates, and/or the estimate of boot session time is
 inaccurate.  Default: 3*24*3600 which is 3 days.}
 }
 \value{
-a character scalar of parameters, ready for the command line
+a character scalar of parameters, ready for the command line; if there
+are no applicable overrides, returns ""
 }
 \description{
 Get the parameter overrides for a receiver and time or boot session.
