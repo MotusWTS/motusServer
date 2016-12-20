@@ -29,7 +29,7 @@ handleSGfindtags = function(j) {
 
     ## lock this receiver's DB.  If we can't, then sleep for 10 seconds and try again.
 
-    while(! lockReceiver(serno)) {
+    while(! lockSymbol(serno)) {
         ## FIXME: we should probably return NA immediately, and have processServer re-queue the job at the end of the queue
         Sys.sleep(10)
     }
@@ -38,7 +38,7 @@ handleSGfindtags = function(j) {
     ## NB: the runMotusProcessServer script also drops any locks held by a given
     ## processServer after the latter exits.
 
-    on.exit(lockReceiver(serno, FALSE))
+    on.exit(lockSymbol(serno, lock=FALSE))
 
     src = getRecvSrc(serno)
 

@@ -10,7 +10,7 @@ ensureServerDB()
 safeSQL connection to the server database.
 }
 \description{
-this database holds a table of receiver locks (to prevent multiple
+This database holds a table of symbolic locks (e.g. to prevent multiple
 processes from running a job on the same receiver in parallel)
 }
 \author{

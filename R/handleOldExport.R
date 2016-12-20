@@ -23,7 +23,7 @@ handleOldExport = function(j) {
     monoBN = j$monoBN
     isLotek = grepl("^Lotek", serno, perl=TRUE)
 
-    while(! lockReceiver(serno)) {
+    while(! lockSymbol(serno)) {
         ## FIXME: we should probably return NA immediately, and have processServer re-queue the job at the end of the queue
         Sys.sleep(10)
     }
@@ -32,7 +32,7 @@ handleOldExport = function(j) {
     ## NB: the runMotusProcessServer script also drops any locks held by a given
     ## processServer after the latter exits.
 
-    on.exit(lockReceiver(serno, FALSE))
+    on.exit(lockSymbol(serno, lock=FALSE))
 
     info = tail(getYearProjSite(serno, ts=ts, bootnum=monoBN), 1)
     year = info$year

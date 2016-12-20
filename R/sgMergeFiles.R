@@ -127,7 +127,7 @@ sgMergeFiles = function(files, dbdir = MOTUS_PATH$RECV) {
 
         ## try to lock the receiver, waiting 10 seconds each time we fail
 
-        while(! lockReceiver(recv)) {
+        while(! lockSymbol(recv)) {
             ## FIXME: we should probably return NA immediately, and have processServer re-queue the job at the end of the queue
             Sys.sleep(10)
         }
@@ -136,7 +136,7 @@ sgMergeFiles = function(files, dbdir = MOTUS_PATH$RECV) {
         ## NB: the runMotusProcessServer script also drops any locks held by a given
         ## processServer after the latter exits.
 
-        on.exit(lockReceiver(recv, FALSE))
+        on.exit(lockSymbol(recv, lock=FALSE))
 
         ## get the row indexes of files from this receiver among the full set of files
 
@@ -294,7 +294,7 @@ sgMergeFiles = function(files, dbdir = MOTUS_PATH$RECV) {
 
             resumable = c(resumable, structure(is.na(compare$maxOldTS) | compare$minNewTS >= compare$maxOldTS, names = paste(compare$recv, compare$Fbootnum)))
         }
-        lockReceiver(recv, FALSE)
+        lockSymbol(recv, lock=FALSE)
     }
     return (list(
         info = structure(allf %>%
