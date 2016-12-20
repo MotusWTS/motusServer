@@ -44,7 +44,8 @@ handleSGfindtags = function(j) {
 
     ## get parameter overrides
     por = getParamOverrides(serno, monoBN = j$monoBN)
-    jobLog(j, paste0("Got overrides for ", serno, " and monoBN = ", j$monoBN, ": ", por))
+    if (por != "")
+        jobLog(j, paste0("Got parameter overrides: ", por))
 
     rv = NULL
     ## run the tag finder
