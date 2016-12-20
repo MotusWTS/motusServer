@@ -4,10 +4,12 @@
 \alias{serializeNoHeader}
 \title{serialize an object to a raw vector, without the "RDS" file header.}
 \usage{
-serializeNoHeader(x)
+serializeNoHeader(x, dropTypeLen = FALSE)
 }
 \arguments{
 \item{x}{the R object}
+
+\item{dropTypeLen}{logical; if TRUE, also drop the initial TYPE and length fields (8 extra bytes)}
 }
 \value{
 raw vector to which x has been serialized in binary little-endian (non-XDR) format,
