@@ -148,12 +148,13 @@ dumpJobDetails = function(res, j, i) {
     if (is.null(replyTo))
         replyTo = "none"
 
-    res$write(sprintf("<h3>Status for job %d</h3><pre><b>Created Date:</b> %s\n<b>Last Activity:</b> %s\n<b>Sender:</b> %s\n<b>Queue: </b>%s</pre><h4>Log:</h4><pre>%s\n</pre>",
+    res$write(sprintf("<h3>Status for job %d</h3><pre><b>Created Date:</b> %s\n<b>Last Activity:</b> %s\n<b>Sender:</b> %s\n<b>Queue: </b>%s\n<b>Summary: </b>%s</pre><h4>Log:</h4><pre>%s\n</pre>",
                       j,
                       format(TS(ctime(j))),
                       format(TS(mtime(j))),
                       replyTo,
                       if (is.na(j$queue)) "None" else paste(j$queue),
+                      if (is.null(j$summary)) "" else j$summary,
                       paste0("   ", gsub("\n", "\n   ", j$log, fixed=TRUE))
                       )
               )

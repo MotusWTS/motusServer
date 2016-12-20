@@ -108,6 +108,6 @@ handleOldExport = function(j) {
         }
         wikiLink = sprintf('https://sensorgnome.org/User:%s', user)
     }
-    jobLog(j, paste0('Uploaded data and plot to wiki page here: <a href="', wikiLink, '">', wikiLink, '</a>'))
+    jobLog(j, paste0('Uploaded hourly data and plot to wiki page here: <a href="', wikiLink, '">', wikiLink, '</a>'), summary=TRUE)
     return (TRUE)
 }

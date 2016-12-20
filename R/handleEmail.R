@@ -74,8 +74,8 @@ handleEmail = function(j) {
 
     ## parse out and links to remote data storage
     ## and enqueue jobs to download them
-    queueDownloads(j, txt)
-
+    nd = queueDownloads(j, txt)
+    jobLog(j, paste0("Will try downloading from ", nd, " links."))
     ## queue a job that runs when all file-wrangling related to the
     ## email is complete and it's time to process the data
     newSubJob(j, "filesWrangled")

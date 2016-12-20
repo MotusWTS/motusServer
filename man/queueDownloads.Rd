@@ -13,7 +13,7 @@ queueDownloads(j, msg)
 \item{msg}{character scalar; the message text.}
 }
 \value{
-no return value.
+the number of unique links for which download subjobs were queued
 }
 \description{
 The links must be of the forms specified in \link{\code{dataTransferRegex}}

@@ -18,6 +18,6 @@
 
 jobFail = function(j, msg, code=-1) {
     j$done = code
-    jobLog(j, msg)
+    jobLog(j, msg, summary=TRUE)
     moveJob(j, MOTUS_PATH$ERRORS)
 }

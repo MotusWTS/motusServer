@@ -8,7 +8,7 @@
 #'
 #' @param msg character scalar; the message text.
 #'
-#' @return no return value.
+#' @return the number of unique links for which download subjobs were queued
 #'
 #' @export
 #'
@@ -24,4 +24,5 @@ queueDownloads = function(j, msg) {
     for (i in seq(along=links)) {
         newSubJob(j, "download", .makeFolder=TRUE, url=links[i], method=names(links)[i])
     }
+    return(length(links))
 }

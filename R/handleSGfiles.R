@@ -43,6 +43,8 @@ handleSGfiles = function(j) {
 
     ## function to queue a run of a receiver boot session, and export of its data
 
+    nsj = 0
+
     queueFindtags = function(f) {
 
         newSubJob(j, "SGfindtags",
@@ -50,6 +52,7 @@ handleSGfiles = function(j) {
                   monoBN = f$monoBN[1],
                   canResume = isTRUE(r$resumable[paste(f$serno[1], f$monoBN[1])])
                   )
+        nsj <<- nsj + 1
     }
 
     ## queue runs of all receiver boot sessions with new data
@@ -60,6 +63,7 @@ handleSGfiles = function(j) {
         group_by(serno, monoBN) %>%
         do (ignore=queueFindtags(.))
 
+    jobLog(j, paste0("Will run tag finder on ", nsj, " receiver boot sessions"), summary=TRUE)
 
     ## function to queue an export of new data
 
@@ -79,7 +83,7 @@ handleSGfiles = function(j) {
         do (ignore=queueExport(.))
 
     if (! any(info$use > 0))
-        jobLog(j, "There were no new files in the dataset, so I didn't do anything.")
+        jobLog(j, "There were no new files in the dataset, so I didn't do anything.", summary=TRUE)
 
     return(TRUE)
 }
