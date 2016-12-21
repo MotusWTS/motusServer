@@ -4,6 +4,8 @@
 ## Run a folder of new files as if they had been submitted via email.
 ##
 
+suppressMessages(suppressWarnings(library(motusServer)))
+
 ARGS = commandArgs(TRUE)
 
 if (length(ARGS) == 0) {
@@ -51,7 +53,6 @@ while(isTRUE(substr(ARGS[1], 1, 1) == "-")) {
 }
 
 DIR=ARGS[1]
-suppressMessages(suppressWarnings(library(motusServer)))
 
 ## create and enqueue a job to process the new files
 
