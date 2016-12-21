@@ -405,10 +405,10 @@ query.Copse = function(C, ...) {
 
 with.Copse = function(C, expr, ...) {
     C$sql("savepoint copse")
-    cat("savepoint with.Copse")
+##    cat("savepoint with.Copse")
     .rollback = TRUE
-##    on.exit(C$sql(if (.rollback) "rollback to copse" else "release copse"))
-    on.exit({C$sql(if(.rollback) "rollback to copse" else "release copse"); cat (if (.rollback) "rollback with.Copse\n" else "release with.Copse\n")})
+    on.exit(C$sql(if (.rollback) "rollback to copse" else "release copse"))
+##    on.exit({C$sql(if(.rollback) "rollback to copse" else "release copse"); cat (if (.rollback) "rollback with.Copse\n" else "release with.Copse\n")})
     ## any access to Twigs in C in expr are now within a transaction
     eval(substitute(expr), parent.frame(2))
     .rollback = FALSE
@@ -439,10 +439,10 @@ names.Twig = function(T) {
         force(name)
 
     C$sql("savepoint copse")
-    cat("savepoint [[.Twig\n")
+##    cat("savepoint [[.Twig\n")
     .rollback = TRUE
-    ## on.exit(C$sql(if(.rollback) "rollback to copse" else "release copse"))
-    on.exit({C$sql(if(.rollback) "rollback to copse" else "release copse"); cat (if (.rollback) "rollback [[.Twig\n" else "release [[.Twig\n")})
+    on.exit(C$sql(if(.rollback) "rollback to copse" else "release copse"))
+##    on.exit({C$sql(if(.rollback) "rollback to copse" else "release copse"); cat (if (.rollback) "rollback [[.Twig\n" else "release [[.Twig\n")})
     fr = paste0("from ", C$table, " where id in (", paste(T, collapse=","), ")")
     if (name %in% names(C$fixed)) {
         rv = C$sql(paste("select", name, fr))[[1]]
@@ -492,10 +492,10 @@ setData.Twig = function(T, names, values, clearOld=FALSE) {
         force(values)
 
     C$sql("savepoint copse")
-    cat("savepoint setData.Twig\n")
+##    cat("savepoint setData.Twig\n")
     .rollback = TRUE
-    ## on.exit(C$sql(if(.rollback) "rollback to copse" else "release copse"))
-    on.exit({C$sql(if(.rollback) "rollback to copse" else "release copse"); cat (if (.rollback) "rollback setData.Twig\n" else "release setData.Twig\n")})
+    on.exit(C$sql(if(.rollback) "rollback to copse" else "release copse"))
+##    on.exit({C$sql(if(.rollback) "rollback to copse" else "release copse"); cat (if (.rollback) "rollback setData.Twig\n" else "release setData.Twig\n")})
 
     if (missing(values)) {
         values = names
