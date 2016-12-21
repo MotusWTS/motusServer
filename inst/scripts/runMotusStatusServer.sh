@@ -80,7 +80,7 @@ echo $$ > $PIDFILE
 
 if [[ $TRACE == 0 ]]; then
     while (( 1 )); do
-        nohup Rscript -e "library(motusServer);statusServer(port=$PORT, tracing=FALSE)"
+        nohup Rscript -e "library(motusServer);statusServer(port=$PORT, tracing=FALSE)" >> /sgm/logs/status.txt 2>&1
         sleep 15
     done
 else
