@@ -12,12 +12,17 @@
 #'     to allow for inter-process DB locking.  Only implemented for
 #'     SQLite connections.
 #'
-#' @return a function, S, taking two or more parameters:
-#' \itemize{
-#' \item \code{query} sqlite query; parameters are:
-#' \itemize{
-#' \item words beginning with ":" for RSQLite,
-#' \item sprintf-style formatting codes (e.g. "%d") for MySQL
+#' @return a function, S with class "safeSQL" taking two or more
+#'     parameters: \itemize{ \item \code{query} sqlite query;
+#'     parameters are: \itemize{ \item words beginning with ":" for
+#'     RSQLite, \item sprintf-style formatting codes (e.g. "%d") for
+#'     MySQL }.
+#'
+#' @note for convenience, access is provided to some safeSQL internals, via the
+#' "$" method:
+#'\itemize{
+#' \item \code{$con} the underlying db connection
+#' \item \code{$db} the underlying database filename
 #' }
 #'
 #' \item \code{...} list of named (RSQLite) or unnamed (MySQL) items
@@ -48,6 +53,8 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 safeSQL = function(con, busyTimeout = 300) {
+    if (inherits(con, "safeSQL"))
+        return(con)
     if (is.character(con))
         con = dbConnect(SQLite(), con)
     isSQLite = inherits(con, "SQLiteConnection")
@@ -56,33 +63,53 @@ safeSQL = function(con, busyTimeout = 300) {
         ########## RSQLite ##########
 
         dbGetQuery(con, paste0("pragma busy_timeout=", round(busyTimeout * 1000)))
-        function(query, ..., .CLOSE=FALSE) {
-            if (.CLOSE) {
-                dbDisconnect(con)
-                return(con <<- NULL)
-            }
-            if (length(list(...)) > 0) {
-                dbGetPreparedQuery(con, query, data.frame(..., stringsAsFactors=FALSE))
-            } else {
-                dbGetQuery(con, query)
-            }
-        }
+        structure(
+            function(query, ..., .CLOSE=FALSE) {
+                if (.CLOSE) {
+                    dbDisconnect(con)
+                    return(con <<- NULL)
+                }
+                if (length(list(...)) > 0) {
+                    dbGetPreparedQuery(con, query, data.frame(..., stringsAsFactors=FALSE))
+                } else {
+                    dbGetQuery(con, query)
+                }
+            },
+            class = "safeSQL"
+        )
     } else {
 
         ########## MySQL ########
 
-        function(..., .CLOSE=FALSE) {
-            if (.CLOSE) {
-                dbDisconnect(con)
-                return(con <<- NULL)
-            }
-            a = list(...)
-            if (length(a) > 1) {
-                ## there are some paramters to the query, so escape those which are strings
-                a = c(a[[1]], lapply(a[-1], function(x) if (is.character(x)) dbEscapeStrings(con=con, x) else x ))
-            }
-            q = do.call(sprintf, a)
-            dbGetQuery(con, q)
-        }
+        structure(
+            function(..., .CLOSE=FALSE) {
+                if (.CLOSE) {
+                    dbDisconnect(con)
+                    return(con <<- NULL)
+                }
+                a = list(...)
+                if (length(a) > 1) {
+                    ## there are some paramters to the query, so escape those which are strings
+                    a = c(a[[1]], lapply(a[-1], function(x) if (is.character(x)) dbEscapeStrings(con=con, x) else x ))
+                }
+                q = do.call(sprintf, a)
+                dbGetQuery(con, q)
+            },
+            class = "safeSQL"
+        )
     }
+}
+
+#' provide read access to some safeSQL internals
+#'
+#' @param name item name; must be one of 'db' or 'con'
+#'
+#' @return: either the database filename, or the db connection
+
+`$.safeSQL` = function(x, name) {
+    switch(substitute(name),
+           db = environment(x)$con@dbname,
+           con = environment(x)$con,
+           NULL
+           )
 }

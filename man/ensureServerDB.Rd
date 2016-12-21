@@ -7,11 +7,14 @@
 ensureServerDB()
 }
 \value{
-safeSQL connection to the server database.
+no return value, but saves a safeSQL connection to the server database
+in the global symbol \code{ServerDB}
 }
 \description{
 This database holds a table of symbolic locks (e.g. to prevent multiple
 processes from running a job on the same receiver in parallel)
+It also holds all job information in table \code{jobs}, but that
+table is ensured by the call to \link{\code{Copse()}} in \link{\code{loadJobs()}}
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}

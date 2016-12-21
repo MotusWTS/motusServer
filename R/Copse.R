@@ -146,7 +146,7 @@ Copse = function(db, table, ...) {
         extraIndex = character()
     }
 
-    have = dbExistsTable(environment(sql)$con, table)
+    have = dbExistsTable(sql$con, table)
     if (have) {
         haveTypes = sql(paste("pragma table_info(", table, ")"))
         haveTypes = subset(haveTypes, ! name %in% c("id", "pid", "stump", "mtime", "ctime", "data"))
@@ -170,7 +170,6 @@ extraCols,"
     rv = new.env(parent=emptyenv())
     rv$sql = sql
     rv$table = table
-    rv$db = db
     rv$fixed = fixed
     return(structure(rv, class="Copse"))
 }
@@ -179,7 +178,7 @@ extraCols,"
 
 print.Copse = function(x, ...) {
     n = x$sql(paste("select count(*) from", x$table))[[1]]
-    cat("Copse with", n, "Twigs in table",x$table, "of database", x$db, "\n")
+    cat("Copse with", n, "Twigs in table", x$table, "of database", x$sql$db, "\n")
 }
 
 ## FIXME: put all this stuff in separate files in its own package
@@ -406,8 +405,10 @@ query.Copse = function(C, ...) {
 
 with.Copse = function(C, expr, ...) {
     C$sql("savepoint copse")
+    cat("savepoint with.Copse")
     .rollback = TRUE
-    on.exit(C$sql(if (.rollback) "rollback to copse" else "release copse"))
+##    on.exit(C$sql(if (.rollback) "rollback to copse" else "release copse"))
+    on.exit({C$sql(if(.rollback) "rollback to copse" else "release copse"); cat (if (.rollback) "rollback with.Copse\n" else "release with.Copse\n")})
     ## any access to Twigs in C in expr are now within a transaction
     eval(substitute(expr), parent.frame(2))
     .rollback = FALSE
@@ -417,7 +418,7 @@ with.Copse = function(C, expr, ...) {
 
 print.Twig = function(x, ...) {
     C = copse(x)
-    cat("Twig(s) with id(s)", paste(x, collapse=","), "from table", C$table, "in database", C$db, "\n")
+    cat("Twig(s) with id(s)", paste(x, collapse=","), "from table", C$table, "in database", C$sql$db, "\n")
 }
 
 names.Twig = function(T) {
@@ -429,9 +430,19 @@ names.Twig = function(T) {
 
 `[[.Twig` = function(T, name) {
     C = copse(T)
+
+    ## We don't want a long-lived savepoint (which locks the database)
+    ## if for some bizarre reason 'name' take a long time to compute,
+    ## so force name to be evaluated before creating a savepoint.
+
+    if (!missing(name))
+        force(name)
+
     C$sql("savepoint copse")
+    cat("savepoint [[.Twig\n")
     .rollback = TRUE
-    on.exit(C$sql(if(.rollback) "rollback to copse" else "release copse"))
+    ## on.exit(C$sql(if(.rollback) "rollback to copse" else "release copse"))
+    on.exit({C$sql(if(.rollback) "rollback to copse" else "release copse"); cat (if (.rollback) "rollback [[.Twig\n" else "release [[.Twig\n")})
     fr = paste0("from ", C$table, " where id in (", paste(T, collapse=","), ")")
     if (name %in% names(C$fixed)) {
         rv = C$sql(paste("select", name, fr))[[1]]
@@ -470,9 +481,21 @@ names.Twig = function(T) {
 
 setData.Twig = function(T, names, values, clearOld=FALSE) {
     C = copse(T)
+
+    ## We don't want a long-lived savepoint (which locks the
+    ## database) if any of names or values take a long time to compute,
+    ## so force their evaluation before creating a savepoint.
+
+    if (!missing(names))
+        force(names)
+    if (!missing(values))
+        force(values)
+
     C$sql("savepoint copse")
+    cat("savepoint setData.Twig\n")
     .rollback = TRUE
-    on.exit(C$sql(if(.rollback) "rollback to copse" else "release copse"))
+    ## on.exit(C$sql(if(.rollback) "rollback to copse" else "release copse"))
+    on.exit({C$sql(if(.rollback) "rollback to copse" else "release copse"); cat (if (.rollback) "rollback setData.Twig\n" else "release setData.Twig\n")})
 
     if (missing(values)) {
         values = names

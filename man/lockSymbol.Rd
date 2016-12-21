@@ -30,6 +30,10 @@ if \code{lock} is \code{TRUE}, then return TRUE if this
 \description{
 This is mainly to prevent interleaved access to receiver and other databases.
 }
+\note{
+requires existence of the symbol ServerDB in the global environment;
+this can be ensured by first calling \link{\code{ensureServerDB()}}
+}
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }

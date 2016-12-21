@@ -1,4 +1,4 @@
-#' Load unfinished jobs from server database and enqueue them.
+#' Load and maybe enqueue unfinished jobs from the server database.
 #'
 #' A global object \code{Jobs} is created, which manages jobs.
 #' It is populated from the "jobs" table in the server database.
@@ -39,7 +39,7 @@
 #' @param topJob integer; if not NULL, jobs which are not done and whose
 #' topjob is this are queued.  Default: NULL.
 #'
-#' @return the number of jobs enqueued in the global \code{MOTUS_QUEUE}.
+#' @return the number of jobs enqueued in the new global \code{MOTUS_QUEUE}.
 #' The Jobs are stored in the global \code{Jobs}.
 #'
 #' @export
@@ -47,6 +47,10 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 loadJobs = function(which = NULL, topJob=NULL) {
+    if (exists("Jobs", .GlobalEnv))
+        return()
+    ensureServerDB()
+
     if (!is.null(which)) {
         if ( length(which) != 1 || ! (is.numeric(which) || is.character(which)))
             stop("Must specify 'which' as an integer queue number or character scalar job type")
@@ -55,42 +59,19 @@ loadJobs = function(which = NULL, topJob=NULL) {
     MOTUS_QUEUE <<- NULL
 
     ## connect the global Jobs object to the MOTUS_SERVER_DB's jobs table
-    Jobs <<- Copse(MOTUS_SERVER_DB, "jobs", type=character(), done=integer(), queue=character(), path=character(), oldpath=character(), user=character())
+    Jobs <<- Copse(ServerDB, "jobs", type=character(), done=integer(), queue=character(), path=character(), oldpath=character(), user=character())
 
-    if (is.null(which) && is.null(topJob))
+    if (is.null(which))
         return()
 
-    ## get IDs of jobs of selected type
+    ## get IDs of jobs from selected queue
 
-    j = integer(0)
-    if (is.character(which)) {
-        ## by queue name
-        j = query(Jobs,
-                  paste0("select t1.id from jobs as t1 left join jobs as t2 on t1.stump=t2.id where t1.done = 0 and t2.queue='",  which, "'"))[[1]]
+    jj = query(Jobs, paste0("select t1.id from jobs as t1 left join jobs as t2 on t1.stump=t2.id where t1.done = 0 and t2.queue='",  which, "'"))[[1]]
+
+    ## queue these jobs
+    for (j in jj) {
+        job = Jobs[[j]]
+        queueJob(job, verify=TRUE)  ## verify, so in case server failed before job's on-disk path was updated to match its db path
     }
-
-    if (! is.null(topJob)) {
-        topJob = as.integer(topJob)[1]
-        if (! is.na(topJob)) {
-            ## by id of topJob
-            j = c(j, query(Jobs,
-                           paste0("select t1.id from jobs as t1 where t1.done = 0 and t1.stump=",  topJob))[[1]]
-                  )
-        }
-    }
-
-    ## if a job's conceptual path was moved, but its filesystem folder
-    ## was not, fix this.
-
-    for (i in j) {
-        job = Jobs[[i]]
-        if (jobHasFolder(job)) {
-            path = jobPath(job)
-            if (! file.exists(path) && file.exists(job$oldpath)) {
-                file.rename(job$oldpath, path)
-            }
-        }
-        queueJob(job)
-    }
-    return(length(j))
+    return(length(jj))
 }

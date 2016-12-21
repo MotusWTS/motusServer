@@ -37,8 +37,6 @@ processServer = function(N, tracing=FALSE) {
 
     ensureServerDirs()
 
-    MOTUS_SERVER_DB_SQL <<- ensureServerDB()
-
     motusLog("Process server started for queue %d", N)
 
     loadJobs(N)
@@ -70,8 +68,8 @@ processServer = function(N, tracing=FALSE) {
                 next
             }
 
-            ## queue the subjobs which are not already done
-            nsj = loadJobs(topJob=j)
+            ## queue those subjobs which are not already done
+            nsj = queueUnfinishedSubjobs(j)
 
             ## log this enqueuing in job and globally
             msg = sprintf("Job %d with %d pending subjobs entered processing queue #%d", j, nsj, N)

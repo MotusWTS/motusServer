@@ -16,38 +16,6 @@ locked database.  Default: 300 (5 minutes).  Uses \code{pragma busy_timeout}
 to allow for inter-process DB locking.  Only implemented for
 SQLite connections.}
 }
-\value{
-a function, S, taking two or more parameters:
-\itemize{
-\item \code{query} sqlite query; parameters are:
-\itemize{
-\item words beginning with ":" for RSQLite,
-\item sprintf-style formatting codes (e.g. "%d") for MySQL
-}
-
-\item \code{...} list of named (RSQLite) or unnamed (MySQL) items
-specifying values for parameters in query.
-For RSQLite, these items are passed to \code{data.frame}, along with the
-parameter \code{stringsAsFactors=FALSE}.
-\itemize{
-\item \emph{SQLite example}:
-\code{
-S("insert into contacts values(:address, :phone)", address=c("123 West Blvd, Truro, NS", "5 East St., Digby, NS"), phone=c("902-555-1234", "902-555-6789"))
-}
-\item \emph{MySQL example}:
-\code{
-S("insert into contacts values(\"%s\", \"%s\")", "123 West Blvd, Truro, NS", "902-555-1234")
-S("insert into contacts values(\"%s\", \"%s\")", "5 East St., Digby, NS", "902-555-6789")
-}
-}
-
-\item \code{.CLOSE} boolean scalar; if TRUE, close the underlying
-database connection, disabling further use of this function.
-
-}
-
-Note that for MySQL, only one line of an insert can be provided per call.
-}
 \description{
 This uses dbGetPreparedQuery (for RSQLite) or dbEscapeStrings
 (for MySQL).  It should prevent e.g. SQL injection attacks.

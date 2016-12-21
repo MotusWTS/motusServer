@@ -21,6 +21,9 @@
 #'     FALSE.  If \code{lock} is \code{FALSE}, then always return
 #'     TRUE.
 #'
+#' @note requires existence of the symbol ServerDB in the global environment;
+#' this can be ensured by first calling \link{\code{ensureServerDB()}}
+#'
 #' @export
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
@@ -39,17 +42,17 @@ lockSymbol = function(symbol, owner=getPGID(), lock=TRUE) {
         ## really does own the symbol; that's what "success" means here.
 
         try(
-            MOTUS_SERVER_DB_SQL(sprintf("INSERT INTO %s VALUES(:symbol, :owner)", MOTUS_SYMBOLIC_LOCK_TABLE),
+            ServerDB(sprintf("INSERT INTO %s VALUES(:symbol, :owner)", MOTUS_SYMBOLIC_LOCK_TABLE),
                                 symbol = symbol,
                                 owner = owner),
             silent = TRUE)
 
         ## return logical indicating whether locking succeeded
 
-        return (isTRUE(owner == MOTUS_SERVER_DB_SQL(sprintf("SELECT owner from %s where symbol=:symbol", MOTUS_SYMBOLIC_LOCK_TABLE),
+        return (isTRUE(owner == ServerDB(sprintf("SELECT owner from %s where symbol=:symbol", MOTUS_SYMBOLIC_LOCK_TABLE),
                                                             symbol = symbol)[[1]]))
     }
-    MOTUS_SERVER_DB_SQL(sprintf("DELETE FROM %s where symbol=:symbol", MOTUS_SYMBOLIC_LOCK_TABLE),
+    ServerDB(sprintf("DELETE FROM %s where symbol=:symbol", MOTUS_SYMBOLIC_LOCK_TABLE),
                     symbol = symbol)
     return (TRUE)
 }

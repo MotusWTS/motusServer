@@ -2,7 +2,7 @@
 % Please edit documentation in R/loadJobs.R
 \name{loadJobs}
 \alias{loadJobs}
-\title{Load unfinished jobs from server database and enqueue them.}
+\title{Load and maybe enqueue unfinished jobs from the server database.}
 \usage{
 loadJobs(which = NULL, topJob = NULL)
 }
@@ -16,7 +16,7 @@ or queue any jobs.}
 topjob is this are queued.  Default: NULL.}
 }
 \value{
-the number of jobs enqueued in the global \code{MOTUS_QUEUE}.
+the number of jobs enqueued in the new global \code{MOTUS_QUEUE}.
 The Jobs are stored in the global \code{Jobs}.
 }
 \description{
