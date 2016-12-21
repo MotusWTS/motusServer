@@ -13,20 +13,17 @@
 #'     SQLite connections.
 #'
 #' @return a function, S with class "safeSQL" taking two or more
-#'     parameters: \itemize{ \item \code{query} sqlite query;
-#'     parameters are: \itemize{ \item words beginning with ":" for
-#'     RSQLite, \item sprintf-style formatting codes (e.g. "%d") for
-#'     MySQL }.
-#'
-#' @note for convenience, access is provided to some safeSQL internals, via the
-#' "$" method:
-#'\itemize{
-#' \item \code{$con} the underlying db connection
-#' \item \code{$db} the underlying database filename
-#' }
-#'
+#'     parameters:
+#' \itemize{
+#' \item \code{query} sqlite query; parameters are:
+#'     \itemize{
+#'        \item words beginning with ":" for  RSQLite,
+#'        \item sprintf-style formatting codes (e.g. "\%d") for
+#'          MySQL
+#'      }
 #' \item \code{...} list of named (RSQLite) or unnamed (MySQL) items
 #' specifying values for parameters in query.
+#'
 #' For RSQLite, these items are passed to \code{data.frame}, along with the
 #' parameter \code{stringsAsFactors=FALSE}.
 #' \itemize{
@@ -44,6 +41,13 @@
 #' \item \code{.CLOSE} boolean scalar; if TRUE, close the underlying
 #' database connection, disabling further use of this function.
 #'
+#' }
+#'
+#' @note for convenience, access is provided to some safeSQL internals, via the
+#' "$" method for class \code{safeSQL}
+#' \itemize{
+#' \item \code{$con} the underlying db connection
+#' \item \code{$db} the underlying database filename
 #' }
 #'
 #' Note that for MySQL, only one line of an insert can be provided per call.
