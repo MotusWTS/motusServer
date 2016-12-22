@@ -33,6 +33,7 @@ loggingTry = function (j, expr)
                 saveRDS(frames, out)
                 motusLog(c(paste0("Error with call stack saved to ", out), e, names(frames)))
                 jobLog(j, paste0("Error: ", e))
+                jobLog(j, paste0("Error: ", e), summary=TRUE)
                 return(FALSE)
            }),
         error = identity
