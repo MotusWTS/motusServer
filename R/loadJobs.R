@@ -36,9 +36,6 @@
 #'     is in that queue.  If NULL (the default), do not actually load
 #'     or queue any jobs.
 #'
-#' @param topJob integer; if not NULL, jobs which are not done and whose
-#' topjob is this are queued.  Default: NULL.
-#'
 #' @return the number of jobs enqueued in the new global \code{MOTUS_QUEUE}.
 #' The Jobs are stored in the global \code{Jobs}.
 #'
@@ -46,7 +43,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-loadJobs = function(which = NULL, topJob=NULL) {
+loadJobs = function(which = NULL) {
     if (exists("Jobs", .GlobalEnv))
         return()
     ensureServerDB()
