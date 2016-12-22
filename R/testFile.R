@@ -26,7 +26,6 @@ testFile = function(files) {
     rv = rep(0L, length(files))
     fi = file.info(files)
     for (i in seq(along=files)) {
-        ec = safeSys("cmp", "/dev/zero", files[i], minErrorCode=3)
         if (is.na(fi$size[i])) {
             rv[i] = 1   ## file doesn't exist
             next
@@ -35,6 +34,7 @@ testFile = function(files) {
             rv[i] = 4
             next
         }
+        ec = safeSys("cmp", "/dev/zero", files[i], minErrorCode=3)
         if (ec == "") {
             rv[i] = 2;  ## file is all zeroes
             next
