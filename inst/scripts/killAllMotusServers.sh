@@ -13,6 +13,8 @@ Kills all motus servers by invoking these scripts:
 
    - killMotusEmailServer.sh [-g]
 
+   - killMotusUploadServer.sh
+
    - killMotusStatusServer.sh
 
    - killMotusProcessServer.sh -a [-g]
@@ -34,7 +36,8 @@ if [[ "$1" == "-g" ]]; then
 fi
 
 /sgm/bin/killMotusEmailServer.sh $GRACEFUL
+/sgm/bin/killMotusUploadServer.sh
 /sgm/bin/killMotusStatusServer.sh
 /sgm/bin/killMotusProcessServers.sh -a $GRACEFUL
 
-echo Killed email server, status server, and all process servers.
+echo Killed email, upload, status and all process servers.

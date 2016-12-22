@@ -13,6 +13,8 @@ Run all motus servers by invoking these scripts:
 
    - runMotusEmailServer.sh
 
+   - runMotusUploadServer.sh
+
    - runMotusStatusServer.sh
 
    - runMotusProcessServer.sh 1
@@ -34,10 +36,13 @@ if [[ "$1" != "" ]]; then
     N=$1
 fi
 
+## use 'setsid' to launch each server in its own process group
+
 setsid /sgm/bin/runMotusEmailServer.sh &
+setsid /sgm/bin/runMotusUploadServer.sh &
 setsid /sgm/bin/runMotusStatusServer.sh &
 for i in `seq 1 $N`; do
     setsid /sgm/bin/runMotusProcessServer.sh $i &
 done
 
-echo "Started email server, status server, and $N process server(s)."
+echo "Started email, upload, status and $N process servers."
