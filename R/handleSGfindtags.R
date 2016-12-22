@@ -27,12 +27,9 @@ handleSGfindtags = function(j) {
 
     jobLog(j, paste0("Running tag finder on receiver ", serno, " boot session ", j$monoBN, if (j$canResume) " (resumed)"))
 
-    ## lock this receiver's DB.  If we can't, then sleep for 10 seconds and try again.
+    ## lock this receiver's DB
 
-    while(! lockSymbol(serno)) {
-        ## FIXME: we should probably return NA immediately, and have processServer re-queue the job at the end of the queue
-        Sys.sleep(10)
-    }
+    lockSymbol(serno)
 
     ## make sure we unlock the receiver DB when this function exits, even on error
     ## NB: the runMotusProcessServer script also drops any locks held by a given

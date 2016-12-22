@@ -55,11 +55,7 @@ handleRerunReceiver = function(j) {
     ## Lock the receiver; this is really only needed for cleanup and
     ## selecting existing boot sessions, but easiest to always do.
 
-    while(! lockSymbol(serno)) {
-        ## FIXME: we should probably return NA immediately, and have
-        ## processServer re-queue the job at the end of the queue
-        Sys.sleep(10)
-    }
+    lockSymbol(serno)
 
     ## make sure we unlock the receiver DB when this function exits,
     ## even on error.  NB: the runMotusProcessServer script also drops

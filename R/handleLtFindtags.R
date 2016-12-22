@@ -30,6 +30,17 @@ handleLtFindtags = function(j) {
 
     serno = j$serno
     jobLog(j, paste0("Running tag finder on receiver ", serno))
+
+    ## lock this receiver's database
+    lockSymbol(serno)
+
+    ## make sure we unlock the receiver DB when this function exits, even on error
+    ## NB: the runMotusProcessServer script also drops any locks held by a given
+    ## processServer after the latter exits.
+
+    on.exit(lockSymbol(serno, lock=FALSE))
+
+
     src = getRecvSrc(serno)
 
     ## get parameter overrides

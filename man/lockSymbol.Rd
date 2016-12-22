@@ -5,7 +5,7 @@
 \title{Try to lock or unlock a symbol, preventing any other cooperating motusServer process
 from using it.}
 \usage{
-lockSymbol(symbol, owner = getPGID(), lock = TRUE)
+lockSymbol(symbol, owner = getPGID(), lock = TRUE, block = TRUE)
 }
 \arguments{
 \item{symbol}{character scalar; this can be a receiver serial
@@ -20,6 +20,10 @@ the owner associated with it is this parameter).}
 
 \item{lock}{logical scalar; if TRUE, try unlock the receiver;
 otherwise, release any lock.}
+
+\item{block}{logical scalar; if TRUE, the default, don't return
+until locking the symbol has succeeded. Otherwise, return
+immediately with TRUE or FALSE.}
 }
 \value{
 if \code{lock} is \code{TRUE}, then return TRUE if this

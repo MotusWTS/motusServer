@@ -149,10 +149,7 @@ getMotusMetaDB = function() {
     oldCachedDB = "/sgm/cache/motus_meta_db_old.sqlite"
 
     ## try to lock the cachedDB (by trying to lock its name)
-    while(! lockSymbol(cachedDB)) {
-        ## FIXME: we should probably return NA immediately, and have processServer re-queue the job at the end of the queue
-        Sys.sleep(10)
-    }
+    lockSymbol(cachedDB)
 
     ## make sure we unlock the receiver DB when this function exits, even on error
     ## NB: the runMotusProcessServer script also drops any locks held by a given

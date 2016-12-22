@@ -23,10 +23,7 @@ handleOldExport = function(j) {
     monoBN = j$monoBN
     isLotek = grepl("^Lotek", serno, perl=TRUE)
 
-    while(! lockSymbol(serno)) {
-        ## FIXME: we should probably return NA immediately, and have processServer re-queue the job at the end of the queue
-        Sys.sleep(10)
-    }
+    lockSymbol(serno)
 
     ## make sure we unlock the receiver DB when this function exits, even on error
     ## NB: the runMotusProcessServer script also drops any locks held by a given

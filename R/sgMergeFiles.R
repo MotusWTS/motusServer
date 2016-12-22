@@ -125,12 +125,9 @@ sgMergeFiles = function(files, dbdir = MOTUS_PATH$RECV) {
         if (is.na(recv))
             next
 
-        ## try to lock the receiver, waiting 10 seconds each time we fail
+        ## lock the receiver
 
-        while(! lockSymbol(recv)) {
-            ## FIXME: we should probably return NA immediately, and have processServer re-queue the job at the end of the queue
-            Sys.sleep(10)
-        }
+        lockSymbol(recv)
 
         ## make sure we unlock the receiver DB when this function exits, even on error
         ## NB: the runMotusProcessServer script also drops any locks held by a given

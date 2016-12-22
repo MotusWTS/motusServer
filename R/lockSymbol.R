@@ -16,6 +16,10 @@
 #' @param lock logical scalar; if TRUE, try unlock the receiver;
 #'     otherwise, release any lock.
 #'
+#' @param block logical scalar; if TRUE, the default, don't return
+#'     until locking the symbol has succeeded. Otherwise, return
+#'     immediately with TRUE or FALSE.
+#'
 #' @return if \code{lock} is \code{TRUE}, then return TRUE if this
 #'     process now has an exclusive lock on the symbol, otherwise
 #'     FALSE.  If \code{lock} is \code{FALSE}, then always return
@@ -28,7 +32,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-lockSymbol = function(symbol, owner=getPGID(), lock=TRUE) {
+lockSymbol = function(symbol, owner=getPGID(), lock=TRUE, block=TRUE) {
     ## Note: the locking is achieved by the UNIQUE PRIMARY KEY property on symbol
 
     if (lock) {
@@ -41,16 +45,25 @@ lockSymbol = function(symbol, owner=getPGID(), lock=TRUE) {
         ## succeeded.  All we're interested in is whether \code{owner}
         ## really does own the symbol; that's what "success" means here.
 
-        try(
-            ServerDB(sprintf("INSERT INTO %s VALUES(:symbol, :owner)", MOTUS_SYMBOLIC_LOCK_TABLE),
-                                symbol = symbol,
-                                owner = owner),
-            silent = TRUE)
+        repeat {
+            try(
+                ServerDB(sprintf("INSERT INTO %s VALUES(:symbol, :owner)", MOTUS_SYMBOLIC_LOCK_TABLE),
+                         symbol = symbol,
+                         owner = owner),
+                silent = TRUE)
 
-        ## return logical indicating whether locking succeeded
+            ## return logical indicating whether locking succeeded
 
-        return (isTRUE(owner == ServerDB(sprintf("SELECT owner from %s where symbol=:symbol", MOTUS_SYMBOLIC_LOCK_TABLE),
-                                                            symbol = symbol)[[1]]))
+            haveLock = isTRUE(owner == ServerDB(sprintf("SELECT owner from %s where symbol=:symbol", MOTUS_SYMBOLIC_LOCK_TABLE),
+                                                            symbol = symbol)[[1]])
+            if (haveLock || ! block)
+                return(haveLock)
+
+            ## locking failed and we're not supposed to return until it succeeds,
+            ## so sleep a random amount and try again
+
+            Sys.sleep(10 * runif(1))
+        }
     }
     ServerDB(sprintf("DELETE FROM %s where symbol=:symbol", MOTUS_SYMBOLIC_LOCK_TABLE),
                     symbol = symbol)
