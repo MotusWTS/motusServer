@@ -60,7 +60,14 @@ for convenience, access is provided to some safeSQL internals, via the
 \item \code{$db} the underlying database filename
 }
 
-Note that for MySQL, only one line of an insert can be provided per call.
+For MySQL, only one line of an insert can be provided per call; i.e. there is
+no SendPreparedQuery method to allow binding a data.frame's data to a prepared
+query.
+
+safeSQL is meant for multi-process access of a DB with small, fast
+queries; this is the case for the server.sqlite database that holds
+job information.  The longer accesses required by e.g. the tag
+finder are handled by locking the receiver DB via lockSymbol().
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}

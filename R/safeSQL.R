@@ -50,7 +50,14 @@
 #' \item \code{$db} the underlying database filename
 #' }
 #'
-#' Note that for MySQL, only one line of an insert can be provided per call.
+#' For MySQL, only one line of an insert can be provided per call; i.e. there is
+#' no SendPreparedQuery method to allow binding a data.frame's data to a prepared
+#' query.
+#'
+#' safeSQL is meant for multi-process access of a DB with small, fast
+#' queries; this is the case for the server.sqlite database that holds
+#' job information.  The longer accesses required by e.g. the tag
+#' finder are handled by locking the receiver DB via lockSymbol().
 #'
 #' @export
 #'
@@ -73,10 +80,19 @@ safeSQL = function(con, busyTimeout = 300) {
                     dbDisconnect(con)
                     return(con <<- NULL)
                 }
-                if (length(list(...)) > 0) {
-                    dbGetPreparedQuery(con, query, data.frame(..., stringsAsFactors=FALSE))
-                } else {
-                    dbGetQuery(con, query)
+                repeat {
+                    tryCatch(
+                        if (length(list(...)) > 0) {
+                            return(dbGetPreparedQuery(con, query, data.frame(..., stringsAsFactors=FALSE)))
+                        } else {
+                            return(dbGetQuery(con, query))
+                        },
+                        error = function(e) {
+                            if (! grepl("database is locked", as.character(e)))
+                                stop(e) ## re-throw if the error isn't due to a locked database
+                        })
+                    ## failed due to locked database; wait a while and retry
+                    Sys.sleep(10 * runif(1))
                 }
             },
             class = "safeSQL"
