@@ -54,6 +54,7 @@ following the instructions here:\n
         e = paste0(e)
         e = paste("We failed to download the file or folder you sent.\nEither the link is wrong, or the content has expired.\nPlease try resending.\nCurl error message was: ", e)
         jobLog(j, e)
+        jobLog(j, e, summary=TRUE)
     })
 
     if (is.null(rv))
