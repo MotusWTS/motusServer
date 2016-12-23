@@ -4,7 +4,7 @@
 \alias{uploadServer}
 \title{watch for and enqueue uploaded files}
 \usage{
-uploadServer(tracing = FALSE, fileEvent = "ATTRIB")
+uploadServer(tracing = FALSE, fileEvent = "CREATE")
 }
 \arguments{
 \item{tracing}{logical scalar, default FALSE.  If TRUE, enter
@@ -32,9 +32,10 @@ and when a new file is found, queue a job to process it.
 }
 \note{
 this depends on some other process placing uploaded files into
-the folder \code{MOTUS_PATH$UPLOADS}.  We're using:
+the folder \code{MOTUS_PATH$UPLOADS}.  We're using a patched version of
 \link{http://http://www.projectsend.org}
-whose last event for an uploaded is "ATTRIB".
+whose last task for an uploaded file is to create a hardlink to it
+in \code{MOTUS_PATH$UPLOADS}
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}

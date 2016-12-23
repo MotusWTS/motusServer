@@ -22,15 +22,16 @@
 #'     is empty, because it is located in the watched folder.
 #'
 #' @note this depends on some other process placing uploaded files into
-#' the folder \code{MOTUS_PATH$UPLOADS}.  We're using:
+#' the folder \code{MOTUS_PATH$UPLOADS}.  We're using a patched version of
 #' \link{http://http://www.projectsend.org}
-#' whose last event for an uploaded is "ATTRIB".
+#' whose last task for an uploaded file is to create a hardlink to it
+#' in \code{MOTUS_PATH$UPLOADS}
 #'
 #' @export
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-uploadServer = function(tracing = FALSE, fileEvent="ATTRIB") {
+uploadServer = function(tracing = FALSE, fileEvent="CREATE") {
     if(tracing)
         options(error=recover)
 
@@ -67,13 +68,24 @@ uploadServer = function(tracing = FALSE, fileEvent="ATTRIB") {
         if (tracing)
             browser()
 
-        ## create and enqueue a new email job
+        ## the files in /sgm/uploads are hardlinks to uploaded files in
+        ## ProjectSend's upload/files folder.
+        ## They have filenames of this form:
+        ##    USER:YYYY-mm-ddTHH-MM-SS:filename
+        ## where USER is the authenticated username of the uploader, and the string between ':' is the upload timestamp.
+
+        parts = strsplit(basename(upfile), ":", fixed=TRUE)[[1]]
+
+        ## lookup the email address for this user from the data_uploads.sg_users
+        ## table (the database used by ProjectSend as configured on our server)
+        email = dbGetQuery(openMotusDB()$con, paste0("select email from data_uploads.sg_users where name='", parts[1], "'")) [[1]]
+
+        ## create and enqueue a new upload job
         ## FIXME: change replyTo to match upload user's email
-        j = newJob("uploadFile", .parentPath=MOTUS_PATH$INCOMING, replyTo=MOTUS_ADMIN_EMAIL, valid=TRUE, .enqueue=FALSE)
+        j = newJob("uploadFile", .parentPath=MOTUS_PATH$INCOMING, replyTo=email, valid=TRUE, .enqueue=FALSE)
 
         ## record receipt within the job's log
-        jobLog(j, paste("File uploaded:", basename(upfile)))
-
+        jobLog(j, paste("File uploaded:", parts[3]), summary=TRUE)
 
         jpath = file.path(jobPath(j), "upload")
         dir.create(jpath)
