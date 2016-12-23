@@ -28,5 +28,7 @@ handleUploadFile = function(j) {
     newSubJob(j, "newFiles")
 
     ## fixme: add a job to email the user upon job completion
+    newSubJob(j, "uploadProcessed")
+
     return (TRUE)
 }
