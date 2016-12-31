@@ -2,7 +2,7 @@
 % Please edit documentation in R/sgMergeFiles.R
 \name{sgMergeFiles}
 \alias{sgMergeFiles}
-\title{Merge a batch of raw SG files with an existing receiver database.}
+\title{Merge a batch of raw SG files with their receiver database(s).}
 \usage{
 sgMergeFiles(files, dbdir = MOTUS_PATH$RECV)
 }
@@ -39,8 +39,10 @@ subset of files from a distinct (serno, monoBN) pair.  The vector has names cons
 Returns NULL if no valid sensorgnome data files were found.
 }
 \description{
-Determines which files are redundant, new, or partially new.  Does *not*
-run the tag finder.
+Determines which files are redundant, new, or partially new.  Does
+*not* run the tag finder.  Any files which are symlinks are deleted
+after merging their contents; i.e. the symlink is deleted, not the
+file it points to.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}

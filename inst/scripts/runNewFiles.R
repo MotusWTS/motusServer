@@ -11,26 +11,31 @@ ARGS = commandArgs(TRUE)
 if (length(ARGS) == 0) {
     cat("
 
-Usage: runNewFiles.R [-n] [-s] DIR
+Usage: runNewFiles.R [-n|-l] [-m] [-s] DIR
 
 where:
 
  DIR: path to the folder containing new files
 
- -n:  don't preserve the original files.  Without this option,a new folder with either hardlinks to
-  the original files (when on the same filesystem as the folder /sgm) or
-  copies of the original files (when on a different filesystem) is created,
-  and that folder is run instead of DIR.  With the '-n' option, the original files are moved.
+ -l: symlink to the new files; create a new folder with symlinks to
+  all files in the original folder
 
- -s: sanity check files; the sanity check is slow, because each file is checked
-  to see whether it is all zeroes, or an invalid archive. This is normally skipped for files
-  already on the server.
+ -n: don't preserve the original files.  Without this option, a new
+  folder with either hardlinks to the original files (when on the same
+  filesystem as the folder /sgm) or copies of the original files (when
+  on a different filesystem) is created, and that folder is run
+  instead of DIR.  With the '-n' option, the original files are moved.
+  This option is ignored if -l is specified.
 
  -m: merge files into databases, but do not run the tagfinder.
 
  -s: sanity check files; the sanity check is slow, because each file
-A new job with type 'serverFiles' will be created and placed into the master queue (queue 0),
-from where a processServer can claim it.  The sender will be: ",
+  is checked to see whether it is all zeroes, or an invalid
+  archive. This is normally skipped for files already on the server.
+
+A new job with type 'serverFiles' will be created and placed into the
+master queue (queue 0), from where a processServer can claim it.  The
+sender will be: ",
 
 MOTUS_ADMIN_EMAIL,
 "\n"
@@ -40,6 +45,7 @@ MOTUS_ADMIN_EMAIL,
 
 preserve = TRUE
 sanityCheck = FALSE
+symLink = FALSE
 mergeOnly = FALSE
 
 while(isTRUE(substr(ARGS[1], 1, 1) == "-")) {
@@ -52,6 +58,9 @@ while(isTRUE(substr(ARGS[1], 1, 1) == "-")) {
            },
            "-m" = {
                mergeOnly = TRUE
+           },
+           "-l" = {
+               symLink = TRUE
            },
            {
                stop("Unknown argument: ", ARGS[1])
@@ -66,7 +75,6 @@ DIR=ARGS[1]
 loadJobs()
 
 j = newJob("serverFiles", .parentPath=MOTUS_PATH$INCOMING, replyTo=MOTUS_ADMIN_EMAIL, valid=TRUE, sanityCheck=sanityCheck, .enqueue=FALSE, mergeOnly=mergeOnly)
-j = newJob("serverFiles", .parentPath=MOTUS_PATH$INCOMING, replyTo=MOTUS_ADMIN_EMAIL, valid=TRUE, sanityCheck=sanityCheck, .enqueue=FALSE)
 jobLog(j, paste0("Merging new files from server directory ", DIR))
 ## move, hardlink, or copy files to the job's dir
 
@@ -76,7 +84,7 @@ if (! preserve) {
 } else {
     ## we need to leave existing files alone
     ## try hardlink, and if that fails, copy
-    if (! lightWeightCopy(DIR, jobPath(j))) {
+    if (! lightWeightCopy(DIR, jobPath(j), sym=symLink)) {
         stop("Failed to make a lightweight copy of ", DIR)
     }
 }

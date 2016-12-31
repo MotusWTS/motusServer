@@ -4,20 +4,22 @@
 \alias{lightWeightCopy}
 \title{Make a light-weight recursive copy of a folder.}
 \usage{
-lightWeightCopy(src, dst)
+lightWeightCopy(src, dst, sym = FALSE)
 }
 \arguments{
 \item{src}{character vector; paths to source files / folders}
 
 \item{dst}{character scalar; path to target folder}
+
+\item{sym}{logical scalar; if TRUE, use symbolic links instead
+of hard links.  Default: FALSE}
 }
 \value{
 TRUE on success, FALSE otherwise.
 }
 \description{
-This uses hardlinks wherever possible, so that file
-data are not copied, but falls back to normal copy where
-necessary.
+This uses hard (or symbolic) links wherever possible, so that file
+data are not copied, but falls back to normal copy where necessary.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
