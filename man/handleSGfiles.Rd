@@ -20,6 +20,10 @@ For each unique SG serial number found among the names of
     the incoming files, queue a subjob for each boot session having
     data files.
 }
+\note{
+if \code{topJob(j)$mergeOnly)} is TRUE, then only merge files
+into receiver databases; don't run the tag finder.
+}
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }

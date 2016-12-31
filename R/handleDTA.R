@@ -8,6 +8,9 @@
 #'
 #' @return TRUE after queueing jobs
 #'
+#' @note if \code{topJob(j)$mergeOnly)} is TRUE, then only merge files
+#' into receiver databases; don't run the tag finder.
+#'
 #' @seealso \link{\code{processServer}}
 #'
 #' @export
@@ -19,6 +22,9 @@ handleDTA = function(j) {
     ## merge files into receiver database(s)
 
     info = ltMergeFiles(jobPath(j))
+
+    if (isTRUE(topJob(j)$mergeOnly > 0))
+        return(TRUE)
 
     ## queue findtags subjobs for each receiver having data files with
     ## new content

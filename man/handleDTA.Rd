@@ -17,6 +17,10 @@ Called by \code{\link{processServer}} for a file or folder added
 to the queue.  Merges files into receiver DBs, then queues
 a job to run the tag finder on each of these.
 }
+\note{
+if \code{topJob(j)$mergeOnly)} is TRUE, then only merge files
+into receiver databases; don't run the tag finder.
+}
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }

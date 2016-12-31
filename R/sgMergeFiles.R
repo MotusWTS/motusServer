@@ -1,7 +1,9 @@
-#' Merge a batch of raw SG files with an existing receiver database.
+#' Merge a batch of raw SG files with their receiver database(s).
 #'
-#' Determines which files are redundant, new, or partially new.  Does *not*
-#' run the tag finder.
+#' Determines which files are redundant, new, or partially new.  Does
+#' *not* run the tag finder.  Any files which are symlinks are deleted
+#' after merging their contents; i.e. the symlink is deleted, not the
+#' file it points to.
 #'
 #' @param files either a character vector of full paths to files, or
 #'     the full path to a directory, which will be searched
@@ -293,6 +295,11 @@ sgMergeFiles = function(files, dbdir = MOTUS_PATH$RECV) {
         }
         lockSymbol(recv, lock=FALSE)
     }
+
+    links = Sys.readlink(ff)
+    links = links[! (is.na(links) | links == "")]
+    file.remove(links)
+
     return (list(
         info = structure(allf %>%
                          transmute(

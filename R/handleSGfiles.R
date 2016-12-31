@@ -10,6 +10,9 @@
 #'
 #' @return TRUE
 #'
+#' @note if \code{topJob(j)$mergeOnly)} is TRUE, then only merge files
+#' into receiver databases; don't run the tag finder.
+#'
 #' @seealso \link{\code{processServer}}
 #'
 #' @export
@@ -19,6 +22,10 @@
 handleSGfiles = function(j) {
 
     r = sgMergeFiles(jobPath(j))
+
+    if (isTRUE(topJob(j)$mergeOnly > 0))
+        return(TRUE)
+
     info = r$info
 
     ## TODO: (perhaps) if there were any files for which we were able to

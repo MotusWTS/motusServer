@@ -26,6 +26,9 @@ where:
   to see whether it is all zeroes, or an invalid archive. This is normally skipped for files
   already on the server.
 
+ -m: merge files into databases, but do not run the tagfinder.
+
+ -s: sanity check files; the sanity check is slow, because each file
 A new job with type 'serverFiles' will be created and placed into the master queue (queue 0),
 from where a processServer can claim it.  The sender will be: ",
 
@@ -37,6 +40,7 @@ MOTUS_ADMIN_EMAIL,
 
 preserve = TRUE
 sanityCheck = FALSE
+mergeOnly = FALSE
 
 while(isTRUE(substr(ARGS[1], 1, 1) == "-")) {
     switch(ARGS[1],
@@ -45,6 +49,9 @@ while(isTRUE(substr(ARGS[1], 1, 1) == "-")) {
            },
            "-s" = {
                sanityCheck = TRUE
+           },
+           "-m" = {
+               mergeOnly = TRUE
            },
            {
                stop("Unknown argument: ", ARGS[1])
@@ -58,6 +65,7 @@ DIR=ARGS[1]
 
 loadJobs()
 
+j = newJob("serverFiles", .parentPath=MOTUS_PATH$INCOMING, replyTo=MOTUS_ADMIN_EMAIL, valid=TRUE, sanityCheck=sanityCheck, .enqueue=FALSE, mergeOnly=mergeOnly)
 j = newJob("serverFiles", .parentPath=MOTUS_PATH$INCOMING, replyTo=MOTUS_ADMIN_EMAIL, valid=TRUE, sanityCheck=sanityCheck, .enqueue=FALSE)
 jobLog(j, paste0("Merging new files from server directory ", DIR))
 ## move, hardlink, or copy files to the job's dir
