@@ -170,6 +170,14 @@ queueStatus = function(env) {
 
     res$header("Cache-control", "no-cache")
     res$header("Content-Type", "text/html; charset=utf-8")
+    ## is upload server running?
+    us = file.exists("/sgm/uploadServer.pid")
+
+    ## number of upload jobs waiting, started, completed successfully, completed with error
+    uinfo = ServerDB("select count(*) from jobs where type = 'uploadFile' and queue == '0'
+            union all select count(*) from jobs where type = 'uploadFile' and queue != '0'
+            union all select count(*) from jobs where type = 'uploadProcessed' and done>0
+            union all select count(*) from jobs where type = 'uploadProcessed' and done<0")[[1]]
 
     ## number of embargoed emails awaiting processing
     emb = length(dir("/sgm/inbox_embargoed"))
@@ -197,6 +205,13 @@ queueStatus = function(env) {
     res$write(paste0(
         "<small>As of ", format(Sys.time(), "%d %b %Y %H:%M:%S (GMT)</small>"),
         "<pre>",
+        "<b>Upload Server</b>\n",
+        " - ", if (! us) "<b>not</b> ", "running\n",
+        " - files received by upload: ", uinfo[1]+uinfo[2], "\n",
+        " - files waiting for a processor: ", uinfo[1], "\n",
+        " - files with processing completed successfully: ", uinfo[3], "\n",
+        " - files where processing stopped with an error: ", uinfo[4], "\n",
+        ul,
         "<b>Embargoed INBOX</b>\n",
         emb, " email(s) awaiting manual intervention\n",
         ul,
