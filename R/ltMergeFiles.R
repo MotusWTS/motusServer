@@ -58,6 +58,17 @@ ltMergeFiles = function(files, dbdir=MOTUS_PATH$RECV) {
         })
         if (skip)
             next
+
+        ## lock the receiver DB
+
+        lockSymbol(x$recv)
+
+        ## make sure we unlock the receiver DB when this function exits, even on error
+        ## NB: the runMotusProcessServer script also drops any locks held by a given
+        ## processServer after the latter exits.
+
+        on.exit(lockSymbol(x$recv, lock=FALSE))
+
         src = getRecvSrc(x$recv)
 
         ## compute file hash, then check whether it already is in database
@@ -74,89 +85,93 @@ ltMergeFiles = function(files, dbdir=MOTUS_PATH$RECV) {
 
         if (this %>% count %>% as.data.frame > 0) {
             rv$dataNew[i] = FALSE
-            next
-        }
-
-        comp = memCompress(blob, type="bzip2")
-
-        ## sqlite connection
-
-        con = src$con
-
-        ## write meta data
-
-        meta = getMap(src)
-
-        meta$dbType = "receiver" ## indicate this is a receiver database (vs. a tagProject database)
-        meta$recvSerno = x$recv
-        meta$recvType = "Lotek"
-
-        ## get bare serial number by dropping "Lotek-"
-        bareno = sub("Lotek-", "", x$recv, fixed=TRUE)
-
-        ## map to serial number, as per info from Lotek:
-
-        ## > Yes, serial number uniquely identifies receiver.  All the SRX600
-        ## > receiver serial numbers are 6###.  The SRX800 serial numbers start at 1.
-        ## > It will be a long time before we get to 6000.  The old SRX400A models
-        ## > were 9###A and up.
-        ## ---
-        ## > SRX-DL receivers have serial numbers 8###.
-
-        if (bareno >= "9000A") {
-            model = "SRX400A"
-        } else if (bareno >= "8000") {
-            model = "SRX-DL"
-        } else if (bareno >= "6000") {
-            model = "SRX600"
         } else {
-            model = "SRX800"
+
+            comp = memCompress(blob, type="bzip2")
+
+            ## sqlite connection
+
+            con = src$con
+
+            ## write meta data
+
+            meta = getMap(src)
+
+            meta$dbType = "receiver" ## indicate this is a receiver database (vs. a tagProject database)
+            meta$recvSerno = x$recv
+            meta$recvType = "Lotek"
+
+            ## get bare serial number by dropping "Lotek-"
+            bareno = sub("Lotek-", "", x$recv, fixed=TRUE)
+
+            ## map to serial number, as per info from Lotek:
+
+            ## > Yes, serial number uniquely identifies receiver.  All the SRX600
+            ## > receiver serial numbers are 6###.  The SRX800 serial numbers start at 1.
+            ## > It will be a long time before we get to 6000.  The old SRX400A models
+            ## > were 9###A and up.
+            ## ---
+            ## > SRX-DL receivers have serial numbers 8###.
+
+            if (bareno >= "9000A") {
+                model = "SRX400A"
+            } else if (bareno >= "8000") {
+                model = "SRX-DL"
+            } else if (bareno >= "6000") {
+                model = "SRX600"
+            } else {
+                model = "SRX800"
+            }
+
+            meta$recvModel = model
+
+            ## write file record
+            dbGetPreparedQuery(
+                con,
+                "insert into DTAfiles (name, size, tsBegin, tsEnd, tsDB, hash, contents) values (:name, :size, :tsBegin, :tsEnd, :tsDB, :hash, :contents)",
+                data_frame(
+                    name     = bname,
+                    size     = length(blob),
+                    tsBegin  = min(x$tags$ts),
+                    tsEnd    = max(x$tags$ts),
+                    tsDB     = as.numeric(Sys.time()),
+                    hash     = fhash,
+                    contents = list(comp) ## NB: make list, else dataframe replicates entire row for each byte!
+                ) %>% as.data.frame
+            )
+            rv$use[i] = TRUE
+            fid = dbGetQuery(con, "select max(fileID) from DTAfiles")[[1,1]]
+
+            ## write tags records
+
+            ## FIXME: it would be nice to factor out antenna frequency,
+            ## codeset, gain, lat/lon as we do for SG records.  This would
+            ## make for much smaller data files.  But we can't do this by
+            ## timestamp, as these can jump around significantly in the
+            ## .DTA files, and so must use file (lexical) order.
+
+            dbGetPreparedQuery(
+                con,
+                "insert or ignore into DTAtags (fileID, dtaline, ts, id, ant, sig, lat, lon, antFreq, gain, codeSet) values (:fileID, :dtaline, :ts, :id, :ant, :sig, :lat, :lon, :antFreq, :gain, :codeSet)",
+                data_frame(
+                    fileID  = fid,
+                    dtaline = x$tags$dtaline,
+                    ts      = x$tags$ts,
+                    id      = x$tags$id,
+                    ant     = x$tags$ant,
+                    sig     = x$tags$sig,
+                    lat     = x$tags$lat,
+                    lon     = x$tags$lon,
+                    antFreq = x$tags$antfreq,
+                    gain    = x$tags$gain,
+                    codeSet = x$tags$codeset
+                ) %>% as.data.frame
+            )
         }
-
-        meta$recvModel = model
-
-        ## write file record
-        dbGetPreparedQuery(
-            con,
-            "insert into DTAfiles (name, size, tsBegin, tsEnd, tsDB, hash, contents) values (:name, :size, :tsBegin, :tsEnd, :tsDB, :hash, :contents)",
-            data_frame(
-                name     = bname,
-                size     = length(blob),
-                tsBegin  = min(x$tags$ts),
-                tsEnd    = max(x$tags$ts),
-                tsDB     = as.numeric(Sys.time()),
-                hash     = fhash,
-                contents = list(comp) ## NB: make list, else dataframe replicates entire row for each byte!
-            ) %>% as.data.frame
-        )
-        rv$use[i] = TRUE
-        fid = dbGetQuery(con, "select max(fileID) from DTAfiles")[[1,1]]
-
-        ## write tags records
-
-        ## FIXME: it would be nice to factor out antenna frequency,
-        ## codeset, gain, lat/lon as we do for SG records.  This would
-        ## make for much smaller data files.  But we can't do this by
-        ## timestamp, as these can jump around significantly in the
-        ## .DTA files, and so must use file (lexical) order.
-
-        dbGetPreparedQuery(
-            con,
-            "insert or ignore into DTAtags (fileID, dtaline, ts, id, ant, sig, lat, lon, antFreq, gain, codeSet) values (:fileID, :dtaline, :ts, :id, :ant, :sig, :lat, :lon, :antFreq, :gain, :codeSet)",
-            data_frame(
-                fileID  = fid,
-                dtaline = x$tags$dtaline,
-                ts      = x$tags$ts,
-                id      = x$tags$id,
-                ant     = x$tags$ant,
-                sig     = x$tags$sig,
-                lat     = x$tags$lat,
-                lon     = x$tags$lon,
-                antFreq = x$tags$antfreq,
-                gain    = x$tags$gain,
-                codeSet = x$tags$codeset
-            ) %>% as.data.frame
-        )
+        ## unlock the receiver and drop the source
+        lockSymbol(x$recv, lock=FALSE)
+        rm(src)
+        gc(2)
     }
     return (rv)
 }
