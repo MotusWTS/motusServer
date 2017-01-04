@@ -104,7 +104,7 @@ ltMergeFiles = function(files, dbdir=MOTUS_PATH$RECV) {
             ## get bare serial number by dropping "Lotek-"
             bareno = sub("Lotek-", "", x$recv, fixed=TRUE)
 
-            ## map to serial number, as per info from Lotek:
+            ## map to model as per info from Lotek:
 
             ## > Yes, serial number uniquely identifies receiver.  All the SRX600
             ## > receiver serial numbers are 6###.  The SRX800 serial numbers start at 1.
@@ -113,12 +113,25 @@ ltMergeFiles = function(files, dbdir=MOTUS_PATH$RECV) {
             ## ---
             ## > SRX-DL receivers have serial numbers 8###.
 
-            if (bareno >= "9000A") {
+            ## and further:
+
+            ## > As of June 1 2016 we decided to switch the SRX800 D
+            ## > variant SN allocation to the format, D######,
+            ## > i.e. D000426. This helps us distinguish a D variant
+            ## > from a M / MD variant. The change in SN allocation
+            ## > actually occurs from SN 000390 to SN D000391.
+
+            if (substr(bareno, 1, 1) == "D") {
+                model = "SRX800D"
+            } else if (bareno >= "9000A") {
                 model = "SRX400A"
             } else if (bareno >= "8000") {
                 model = "SRX-DL"
             } else if (bareno >= "6000") {
                 model = "SRX600"
+            } else if (as.integer(bareno) >= 391) {
+                ## per Lotek, it's not a model "D"
+                model = "SRX800M/MD"
             } else {
                 model = "SRX800"
             }
