@@ -79,8 +79,10 @@ jobLog(j, paste0("Merging new files from server directory ", DIR))
 ## move, hardlink, or copy files to the job's dir
 
 if (! preserve) {
-    ## just move the files to the new job's folder
-    moveDirContents(DIR, jobPath(j))
+    ## just move the files to a new subfolder of the new job's folder
+    newdir = file.path(jobPath(j), "files")
+    dir.create(newdir)
+    moveDirContents(DIR, newdir)
 } else {
     ## we need to leave existing files alone
     ## try hardlink, and if that fails, copy
