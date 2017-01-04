@@ -232,7 +232,7 @@ from tagAmbig where ambigID in (", paste0(aID, collapse=","), ")"))
 select 1 as ant,
 ' GPS Fixes' as fullID,
 round(min(ts)/3600-1800) as bin,
-min(ts),
+min(ts) as ts,
 1 as n,
 0 as freq,
 0 as sig
