@@ -65,7 +65,7 @@ getYearProjSite = function(serno, ts=NULL, bootnum=NULL) {
         dbWriteTable(con, "lotek", lotek %>% as.data.frame, row.names=FALSE)
 
         ## get latest row (largest tsHi) that is still no later than ts for each receiver
-        sql("create table reslotek as select t1.serno as serno, 0 as year, t2.Project as proj, t2.Site as site, t2.tsLo as tsStart, null as bootnumStart from lotek as t1 left outer join d.map as t2 on t1.serno = t2.Serno and t2.tsLo = (select max(t3.tsLo) from d.map as t3 where t3.Serno=t2.Serno and t3.tsLo <= t1.ts)")
+        sql("create table reslotek as select t1.serno as serno, 0 as year, t2.Project as proj, t2.Site as site, (t2.tsLo * (t2.tsLo >= %14f) + (t2.tsHi - 6 * 30 * 24 * 3600) * (t2.tsLo < %14f)) as tsStart, null as bootnumStart from lotek as t1 left outer join d.map as t2 on t1.serno = t2.Serno and t2.tsLo = (select max(t3.tsLo) from d.map as t3 where t3.Serno=t2.Serno and t3.tsLo <= t1.ts)", MOTUS_SG_EPOCH, MOTUS_SG_EPOCH)
 
         lotek = sql("select * from reslotek")
 
