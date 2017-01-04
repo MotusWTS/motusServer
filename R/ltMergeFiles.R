@@ -150,23 +150,25 @@ ltMergeFiles = function(files, dbdir=MOTUS_PATH$RECV) {
             ## timestamp, as these can jump around significantly in the
             ## .DTA files, and so must use file (lexical) order.
 
-            dbGetPreparedQuery(
-                con,
-                "insert or ignore into DTAtags (fileID, dtaline, ts, id, ant, sig, lat, lon, antFreq, gain, codeSet) values (:fileID, :dtaline, :ts, :id, :ant, :sig, :lat, :lon, :antFreq, :gain, :codeSet)",
-                data_frame(
-                    fileID  = fid,
-                    dtaline = x$tags$dtaline,
-                    ts      = x$tags$ts,
-                    id      = x$tags$id,
-                    ant     = x$tags$ant,
-                    sig     = x$tags$sig,
-                    lat     = x$tags$lat,
-                    lon     = x$tags$lon,
-                    antFreq = x$tags$antfreq,
-                    gain    = x$tags$gain,
-                    codeSet = x$tags$codeset
-                ) %>% as.data.frame
-            )
+            if (isTRUE(nrow(x$tags) > 0)) {
+                dbGetPreparedQuery(
+                    con,
+                    "insert or ignore into DTAtags (fileID, dtaline, ts, id, ant, sig, lat, lon, antFreq, gain, codeSet) values (:fileID, :dtaline, :ts, :id, :ant, :sig, :lat, :lon, :antFreq, :gain, :codeSet)",
+                    data_frame(
+                        fileID  = fid,
+                        dtaline = x$tags$dtaline,
+                        ts      = x$tags$ts,
+                        id      = x$tags$id,
+                        ant     = x$tags$ant,
+                        sig     = x$tags$sig,
+                        lat     = x$tags$lat,
+                        lon     = x$tags$lon,
+                        antFreq = x$tags$antfreq,
+                        gain    = x$tags$gain,
+                        codeSet = x$tags$codeset
+                    ) %>% as.data.frame
+                )
+            }
         }
         ## unlock the receiver and drop the source
         lockSymbol(x$recv, lock=FALSE)
