@@ -1,17 +1,17 @@
-Sketch of motus server modules
+# Sketch of motusServer design #
 
-Principles:
+## Principles:
 
-   - atomic completion of jobs and jobSteps
+   - atomic completion of jobs and subjobs
 
-   - on interrupt / resume, must be able to resume uncompleted jobs
-     and jobSteps
+   - on interrupt / restart, must be able to resume uncompleted jobs
+     and jobSteps (we're not there yet)
 
    - full details on what has been done and its status
 
    - easy to read for web server
 
-Storing state:
+## Storing state:
 
    - pure filesystem (e.g. filenames that encode steps, parameters; existing version)
       - pro: persistent, easy to script, atomic,
@@ -21,23 +21,37 @@ Storing state:
       - pro: persistent, atomic, no worries about encoding etc.
       - con: slightly harder to script
 
-   - master database in /sgm/server.sqlite
+   - **master database** in /sgm/server.sqlite; transient files and email messages in file tree
       - pro: everything in one place for queries etc.; atomic
       - con: any?
 
 - incoming emails processed by /sgm/bin/incomingEmail.sh
-  - message -> drop carriage returns -> /sgm/inbox/TS
+  - message -> drop carriage returns -> /sgm/inbox/
 
 - emailServer: job is to watch for new messages (via close_write) in /sgm/inbox, then
-   create and queue a new job; does not unpack archives, but does sanity checks
-   on downloaded files
+   create and queue a new job; does sanity checks and recursively unpacks archives
+   until there are no recognized archive types left
 
-- jobServer: process jobs; there can be multiple instances of mainServer
-  running.; each watches its own incoming directory
-  /sgm/queueN
+- uploadServer: watches for new uploads (via the ProjectSend code hooked on sensorgnome.org/upload;
+  unpacks newly-uploaded files recursively, then queues job folder for processing
 
-- allocServer: watch for jobs added to /sgm/incoming; choose a running server
-  N and move the job to /sgm/queueN
+- processServer: process jobs; there can be multiple instances of processServer
+  running.; each watches the master incoming directory
+    /sgm/queue/0
+  and competes to claim new jobs which are moved there; this happens via atomic
+  operations on the 'queue' field of records in the job table.
+
+- statusServer: generates web-page summaries of job processing; currently this
+  is called only via the server-side includes on sensorgnome.org pages:
+
+    https://sensorgnome.org/Motus_Processing_Status
+
+  and
+
+    https://sensorgnome.org/My_Job_Status
+
+   which don't permit full navigation, as I haven't found a convenient way to
+   do that on the sensorgnome.org dekiwiki
 
 - job folder; A job is a run of a set of files.  e.g. the email server
   generates a job for each valid email, consisting of all attached, downloaded
@@ -46,65 +60,20 @@ Storing state:
 
 Job information:
    id: unique primary integer;
-   ts: numeric; -- starting timestamp
-   tsEnd: numeric; -- ending timestamp (ending timestamp of last task)
-   complete: boolean; (true if all tasks are complete)
-   info: text; -- json string with job info
-       - type of job (name of handler)
-       - owner: email address for person to notify
-       - params (named object)
+   pid: parent id; id of job which created this job, if any; a job with pid=null
+       is a "top-level" job, created by an external event (receipt of email; upload
+       of file, ...)
+   stump: id of top-level job; ultimate ancestor of this job
+   queue: queue in which this job resides; 'E': email; 'U': upload '1'...'8' process
+          server; '0': awaiting a process server;  only valid in top-level jobs
 
-Step information:
-   id: unique primary big integer;
-   ts: numeric; -- starting timestamp
-   tsLast: numeric; -- last activity timestamp
-   jobID: ID of parent job;
-   complete: boolean;
-   info: text; json string with task info
-      - type of step (name of handler)
-      - params (named object)
-   errors: text; json string with error info
-      [
-       {
-        retCode: integer;
-        msg: string;
-        }...
-      ]
+   ctime: numeric; -- creation timestamp
+   mtime: numeric; -- modification timestamp
+   done: 0: in process; > 0 successful completion; < 0 stopped with error
+   type: type of job e.g. 'uploadFile' or 'email'
 
-Job type "email"
-- parameters:
-   - msgfile: name of message file (without bz2 extension); e.g. YYYY-MM-DDTHH-MM-SS.NNNNNNNNN
-?   - headers: array of name:value pairs for retained headers (Reply-To, From, Subject)
-?)   - text: message text
-
-Job steps for job "email"
-  - one step for each attached file, to run sanity check
-
-  - two steps for each unique download URL; one to download; one to sanity check
-
-  - one step to send summary email to sender
-
-- dir structure under (e.g.) /sgm/queue/0/00000123
-    - YYYY-MM-DDTHH-MM-SS.NNNNNNNNN(.bz2) - message file; compressed after being unpacked
-    - msg symlink to above e.g -> YYYY-MM-DDTHH-MM-SS.NNNNNNNNN.bz2
-    - attachments:
-    - downloads: folder
-      - downloads/1: folder with files from 1st download link
-      ...
-      - downloads/n: folder with files from nth download link
-
-jobStep: name="checkFile"
- parameters:
-  path: path to file relative to job directory
-
-jobStep: name="download"
- parameters:
-  URL: full URL
-  type: "googleDrive", "dropbox", "wetransferDirect", "wetransferConf", "FTP"
-
-
-
-
-
-
-    /msgparts: folder
+   data: text; -- json string with additional job details:
+       - log: details of what has been done
+       - summary: summary for job
+       - replyTo: email address for person to notify
+       - ... depending on type of job
