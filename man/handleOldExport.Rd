@@ -23,7 +23,8 @@ export data the 'old' (pre-motus) way.
 \details{
 We generate Year/Proj/Site plots for the receiver, showing
     hourly tag detections and antenna status, then upload these to
-    the user's wiki page at sensorgnome.org
+    the user's wiki page at sensorgnome.org; a copy or symlink
+    is placed in /sgm/plots
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}

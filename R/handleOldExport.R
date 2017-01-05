@@ -2,7 +2,8 @@
 #'
 #' @details We generate Year/Proj/Site plots for the receiver, showing
 #'     hourly tag detections and antenna status, then upload these to
-#'     the user's wiki page at sensorgnome.org
+#'     the user's wiki page at sensorgnome.org; a copy or symlink
+#'     is placed in /sgm/plots
 #'
 #' @param j the job, with these fields:
 #' \itemize{
@@ -67,7 +68,7 @@ handleOldExport = function(j) {
         datafilename = sprintf("/SG/contrib/%d/%s/%s/%d_%s_%s_%s_tags.rds", year, proj, site, year, proj, site, condenseLabel)
     } else {
         title = sprintf("Tags for receiver %s (%s) - Project and Site Unknown", serno, condenseLabel)
-        datafilename = sprintf("/sgm/plots/%s_%s_tags.rds", serno, condenseLabel)
+        datafilename = file.path(MOTUS_PATH$PLOTS, sprintf("%s_%s_tags.rds", serno, condenseLabel))
     }
     plotfilename = sub("\\.rds$", "\\.png", datafilename, perl=TRUE)
 
@@ -96,9 +97,9 @@ handleOldExport = function(j) {
         con = dbConnect(SQLite(), "/SG/motus_sg.sqlite")
         user = dbGetQuery(con, paste0("select SGwikiUser from projectMap where year=", year, " and ProjCode='", proj, "'"))[[1]]
         dbDisconnect(con)
-        ## create links from /sgm/plots
+        ## create links from MOTUS_PATH$PLOTS
         for (f in c(datafilename, plotfilename, pdfname)) {
-            file.symlink(f, file.path("/sgm/plots", basename(f)))
+            file.symlink(f, file.path(MOTUS_PATH$PLOTS, basename(f)))
         }
 
         wikiLink = sprintf('https://sensorgnome.org/User:%s/%s', user, site)
