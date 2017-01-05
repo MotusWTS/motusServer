@@ -228,14 +228,14 @@ queueStatus = function(env) {
 
     ## for each tagfinder process, show its status and queue length
 
-    for (p in 1:8) {
+    for (p in c(1:8, 101)) {
         pc = as.character(p)
         running = p %in% qr
         jj = ServerDB("select distinct t1.id from jobs as t1 join jobs as t2 on t1.id = t2.stump where t1.pid is null and t1.queue=:p and t2.done=0", p=pc)[[1]]
         jdone = ServerDB("select count(*) from jobs as t1 where t1.pid is null and t1.queue=:p and t1.done!=0", p=pc)[[1]]
         jbad = ServerDB("select count(distinct t1.id) from jobs as t1 join jobs as t2 on t1.id = t2.stump where t1.pid is null and t1.queue=:p and t2.done<0", p=pc)[[1]]
         res$write(paste0(ul,
-          "<b>Tagfinder Processor #", p, "</b>\n",
+          "<b>Tagfinder Processor #", p, ifelse(p > 100, " (priority) ", ""), "</b>\n",
           " - ", if (! running) "<b>not</b> ", "running\n",
           "<b>Jobs:</b>\n",
           " - successfully completed: ", jdone - jbad, "\n",
