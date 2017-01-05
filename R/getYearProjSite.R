@@ -69,6 +69,8 @@ getYearProjSite = function(serno, ts=NULL, bootnum=NULL) {
 
         lotek = sql("select * from reslotek")
 
+        ## for some reason, the above leads to a character column if there's an NA anywhere in it
+        lotek$tsStart = as.numeric(lotek$tsStart)
         lotek$year = as.integer(year(structure(lotek$tsStart, class=class(Sys.time()))))
     }
 
