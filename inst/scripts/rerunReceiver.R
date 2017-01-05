@@ -9,7 +9,7 @@ ARGS = commandArgs(TRUE)
 if (length(ARGS) == 0) {
     cat("
 
-Usage: rerunReceiver.R [-c] [-e] SERNO [BLO BHI]
+Usage: rerunReceiver.R [-p] [-c] [-e] SERNO [BLO BHI]
 
 where:
 
@@ -18,6 +18,9 @@ where:
  BLO BHI: for an SG, you can specify a range of boot sessions by specifying
  BLO and BHI as the low and high boot sessions, respectively;
  for Lotek receivers, all raw data are reprocessed
+
+ -p: run the job at high priority, on one of the processServers dedicated
+     to short, fast jobs; this jumps the queue of processing uploaded data.
 
  -e: don't re-run the tag finder; just re-export data
 
@@ -32,12 +35,16 @@ from where a processServer can claim it.
     q(save="no", status=1)
 }
 
+priority = FALSE
 exportOnly = FALSE
 cleanup = FALSE
 monoBN = NULL
 
 while(isTRUE(substr(ARGS[1], 1, 1) == "-")) {
     switch(ARGS[1],
+           "-p" = {
+               priority = TRUE
+           },
            "-e" = {
                exportOnly = TRUE
            },
@@ -69,9 +76,14 @@ j = newJob("rerunReceiver", .parentPath=MOTUS_PATH$INCOMING, serno=serno, monoBN
 
 jobLog(j, paste0("Rerunning receiver ", serno, " with monoBN=", paste(monoBN, collapse="...")))
 
-## move the topJob to the top-level processServer queue
+## move the job to the queue 0 or the priority queue
 
 j$queue = "0"
-moveJob(j, MOTUS_PATH$QUEUE0)
 
-cat("Job", unclass(j), "has been entered into queue 0\n")
+if (priority) {
+    moveJob(j, MOTUS_PATH$PRIORITY)
+    cat("Job", unclass(j), "has been entered into the priority queue\n")
+} else {
+    moveJob(j, MOTUS_PATH$QUEUE0)
+    cat("Job", unclass(j), "has been entered into queue 0\n")
+}

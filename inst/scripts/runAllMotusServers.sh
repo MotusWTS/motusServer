@@ -41,8 +41,12 @@ fi
 setsid /sgm/bin/runMotusEmailServer.sh &
 setsid /sgm/bin/runMotusUploadServer.sh &
 setsid /sgm/bin/runMotusStatusServer.sh &
-for i in `seq 1 $N`; do
+
+## '99' is the priority server, for short fast jobs; it won't
+## run uploaded data.
+
+for i in `seq 1 $N` 101; do
     setsid /sgm/bin/runMotusProcessServer.sh $i &
 done
 
-echo "Started email, upload, status and $N process servers."
+echo "Started email, upload, status and $N + 1 process servers, one for high-priority jobs."

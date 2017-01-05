@@ -96,6 +96,10 @@ handleOldExport = function(j) {
         con = dbConnect(SQLite(), "/SG/motus_sg.sqlite")
         user = dbGetQuery(con, paste0("select SGwikiUser from projectMap where year=", year, " and ProjCode='", proj, "'"))[[1]]
         dbDisconnect(con)
+        ## create links from /sgm/plots
+        for (f in c(datafilename, plotfilename, pdfname)) {
+            file.symlink(f, file.path("/sgm/plots", basename(f)))
+        }
 
         wikiLink = sprintf('https://sensorgnome.org/User:%s/%s', user, site)
     } else {

@@ -17,9 +17,12 @@ Run a motus process server that deals with batches of files.
    -t enable tracing, so run in foreground.  Program will enter the
       debugger before each job step.
 
-   N [optional] assign this process to queue N.  If not specified,
-      uses the first N in 1..8 for which /sgm/processServerN.pid
-      does not exist.
+   N [optional] assign this process to queue N, which must be a
+      positive integer.  If not specified, uses the first N in 1..8
+      for which /sgm/processServerN.pid does not exist.  If N > 100,
+      runs as a high priority server, for short fast jobs entered
+      into /sgm/priority.  A priority server doesn't handle uploaded
+      data, and won't claim jobs from /sgm/queue/0
 
 EOF
             exit 1;
@@ -34,8 +37,12 @@ while [[ "$1" != "" ]]; do
             TRACE=1
             ;;
 
-        [1-8])
+        [0-9]*)
             N=$1
+            if [[ $N -lt 1 ]]; then
+                echo If specified, N must be positive
+                exit 1
+            fi
             ;;
 
         -h|*)

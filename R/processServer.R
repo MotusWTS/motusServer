@@ -11,8 +11,13 @@
 #' created before Y, and X1 and Y1 are both in the queue, then X1 will
 #' be processed before Y1, regardless of which was enqueued first.
 #'
-#' @param N integer queue number in the range 1..8, this process
-#' will perform its operations in the folder \code{MOTUS_PATH$QUEUE\emph{N}}
+#' @param N integer queue number. If in the range 1..8, this process
+#' will watch for new jobs in \code{MOTUS_PATH$QUEUE0} and will
+#' store its operations in the folder \code{MOTUS_PATH$QUEUE\emph{N}}
+#' If \code{N >= 100}, the process will watch for new jobs in
+#' \code{MOTUS_PATH$PRIORITY}.  This is to allow high-priority jobs to run separately
+#' from those handling uploaded data.  It's meant for manual runs on
+#' the server, and runs for small batches of data from attached receivers.
 #'
 #' @param tracing boolean scalar; if TRUE, enter the debugger before
 #' each handler is called
@@ -20,7 +25,9 @@
 #' @return This function does not return; it is meant for use in an R
 #'     script run in the background.  After each subjob is handled,
 #'     the function checks for the existence of a file called
-#'     \code{MOTUS_PATH$QUEUE0/kill\emph{N}}.  If that file is found,
+#'     \code{MOTUS_PATH$QUEUE0/kill\emph{N}} or
+#'     \code{MOTUS_PATH$PRIORITY/kill\emph{N}} (for N >= 101)
+#'     If that file is found,
 #'     the function calls quit(save="no").  The file will also
 #'     be detected within the call to feed() when the queue
 #'     is empty, because it is located in the watched folder.
@@ -41,9 +48,10 @@ processServer = function(N, tracing=FALSE) {
 
     loadJobs(N)
 
+    INQUEUE = if (N > 100) MOTUS_PATH$PRIORITY else MOTUS_PATH$QUEUE0
     ## get a feed of email messages
 
-    feed = getFeeder(MOTUS_PATH$QUEUE0, tracing=tracing)
+    feed = getFeeder(INQUEUE, tracing=tracing)
 
     ## kill off the inotifywait process when we exit this function
     on.exit(feed(TRUE), add=TRUE)
@@ -51,7 +59,7 @@ processServer = function(N, tracing=FALSE) {
     pkgEnv = as.environment("package:motusServer")
 
     ## the kill file:
-    killFile = file.path(MOTUS_PATH$QUEUE0, paste0("kill", N))
+    killFile = file.path(INQUEUE, paste0("kill", N))
 
     repeat {
 

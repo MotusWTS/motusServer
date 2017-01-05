@@ -11,11 +11,14 @@ ARGS = commandArgs(TRUE)
 if (length(ARGS) == 0) {
     cat("
 
-Usage: runNewFiles.R [-n|-l] [-m] [-s] DIR
+Usage: runNewFiles.R [-p] [-n|-l] [-m] [-s] DIR
 
 where:
 
  DIR: path to the folder containing new files
+
+ -p: if specified, run on one of the priority processServers, jumping
+  the queue ahead of any uploaded data jobs
 
  -l: symlink to the new files; create a new folder with symlinks to
   all files in the original folder
@@ -43,6 +46,7 @@ MOTUS_ADMIN_EMAIL,
     q(save="no", status=1)
 }
 
+priority = FALSE
 preserve = TRUE
 sanityCheck = FALSE
 symLink = FALSE
@@ -50,6 +54,9 @@ mergeOnly = FALSE
 
 while(isTRUE(substr(ARGS[1], 1, 1) == "-")) {
     switch(ARGS[1],
+           "-p" = {
+               priority = TRUE
+           },
            "-n" = {
                preserve = FALSE
            },
@@ -91,10 +98,14 @@ if (! preserve) {
     }
 }
 
-## move the job to the mail queue, since it's the email server that processes
-## unpacking archives and sanity checks on new files
+## move the job to the queue 0 or the priority queue
 
-j$queue = "0"
-moveJob(j, MOTUS_PATH$QUEUE0)
+j$queue = "0"  ## this is a marker for claiming the job, not really the queue value, so fine for PRIORITY jobs too
 
-cat("Job", unclass(j), "has been entered into queue 0\n")
+if (priority) {
+    moveJob(j, MOTUS_PATH$PRIORITY)
+    cat("Job", unclass(j), "has been entered into the priority queue\n")
+} else {
+    moveJob(j, MOTUS_PATH$QUEUE0)
+    cat("Job", unclass(j), "has been entered into queue 0\n")
+}

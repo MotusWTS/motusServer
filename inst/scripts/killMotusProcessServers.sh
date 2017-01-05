@@ -15,22 +15,25 @@ EOF
 fi
 
 PNUMS=""
-MAXPNUM=8
 
 if [[ "$1" == "-a" ]]; then
     shift
-    for i in `seq 1 $MAXPNUM`; do
-        if [[ -f /sgm/processServer$i.pid ]]; then
-            PNUMS="$PNUMS $i"
-        fi
-    done
+    PNUMS=`cd /sgm; ls -1 processServer*.pid | sed -e 's/processServer//; s/.pid//'`
 fi
+
+
 GRACEFUL=""
 
 if [[ "$1" == "-g" ]]; then
     GRACEFUL="y"
     shift
 fi
+
+PNUMS="$PNUMS $*"
+if [[ "$PNUMS" == "" ]]; then
+    exit 0;
+fi
+
 
 for i in $PNUMS; do
     KILLFILE=/sgm/queue/0/kill$i
