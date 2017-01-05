@@ -21,11 +21,9 @@ motusRegisterReceiver = function(serno, macAddr = NULL, secretKey = NULL) {
 
     if (is.null(secretKey)) {
         newserno = sub("^SG-", "sg_", serno, perl=TRUE)
-        ## receiver is a sensorgnome
         ## see whether the receiver already has a private key
         privKeyFile = file.path(MOTUS_PATH$CRYPTO, paste0("id_dsa_", newserno))
-        privKey = readChar(privKeyFile, 1e5, useBytes=TRUE)
-        if (! isTRUE(length(privKey) == 1)) {
+        if (! file.exists(privKeyFile)) {
             ## generate a public/private key pair for this receiver
             ## NOTE: if the receiver ever connects via ssh to our server,
             ## it will still have a new keypair generated.
@@ -33,8 +31,8 @@ motusRegisterReceiver = function(serno, macAddr = NULL, secretKey = NULL) {
             privKeyFile = file.path(MOTUS_PATH$CRYPTO, paste0("id_dsa_", newserno))
             file.remove(privKeyFile, paste0(privKeyFile, ".pub"))
             safeSys("ssh-keygen", "-q", "-t", "dsa", "-f", privKeyFile, "-N", "")
-            privKey = readChar(privKeyFile, 1e5, useBytes=TRUE)
         }
+        privKey = readChar(privKeyFile, 1e5, useBytes=TRUE)
         ## now calculate the SHA1 sum of the private key file, which is what
         ## we use as the receiver's secret key for the motus API
 
