@@ -6,6 +6,9 @@
 #'     \code{basename(f)}, but will differ when the basename has been
 #'     corrected (e.g. to remove invalid UTF-8 sequences).
 #'
+#' @param checkDOS if TRUE, the default, try to correct DOS 8.3-style filenames;
+#' if FALSE, return NA for rows corresponding to these.
+#'
 #' @return a dataframe of components, with one row per filename and these columns:
 #'
 #' \enumerate{
@@ -29,7 +32,7 @@
 #'
 #' @export
 
-parseFilenames = function(f, base=basename(f)) {
+parseFilenames = function(f, base=basename(f), checkDOS=TRUE) {
     rv = splitToDF(sgFilenameRegex, base, as.is=TRUE, validOnly=FALSE)
     if (is.null(rv))
         return(rv)
@@ -40,7 +43,8 @@ parseFilenames = function(f, base=basename(f)) {
 
     ## check and correct 8.3 DOS filenames, which are shortened SG filenames
 
-    rv = fixDOSfilenames(f, rv)
+    if (checkDOS)
+        rv = fixDOSfilenames(f, rv)
 
     rv$ts = ymd_hms(rv$ts)
 

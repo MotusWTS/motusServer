@@ -4,7 +4,7 @@
 \alias{parseFilenames}
 \title{parse sensorgnome filenames into components}
 \usage{
-parseFilenames(f, base = basename(f))
+parseFilenames(f, base = basename(f), checkDOS = TRUE)
 }
 \arguments{
 \item{f}{character vector of filenames with full path}
@@ -12,6 +12,9 @@ parseFilenames(f, base = basename(f))
 \item{base}{character vector of file basenames; these default to
 \code{basename(f)}, but will differ when the basename has been
 corrected (e.g. to remove invalid UTF-8 sequences).}
+
+\item{checkDOS}{if TRUE, the default, try to correct DOS 8.3-style filenames;
+if FALSE, return NA for rows corresponding to these.}
 }
 \value{
 a dataframe of components, with one row per filename and these columns:
