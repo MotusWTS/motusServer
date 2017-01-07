@@ -59,18 +59,22 @@ syncServer = function(tracing = FALSE, fileEvent="CLOSE_WRITE") {
         ## get the port number
         port = ServerDB("select tunnelport from receivers where serno=:serno", serno=serno)[[1]]
 
+        ## ignore request if there's no tunnel port known for this serial number
+        if (! isTRUE(port > 0))
+            next
+
         ## use rsync to grab files into the file repo, and return a list of their names
         ## relative to repoDir; returned as a '\n'-delimited string
-        fileList = safeSys(sprintf("rsync --dry-run --rsync-path='ionice -c 3 nice -n 12 rsync' --size-only --out-format '%%n' -r -e 'sshpass -p bone ssh -oStrictHostKeyChecking=no -p %d' bone@localhost:/media/*/SGdata/* /sgm/file_repo/%s/", port, serno), quote=FALSE)
+        rv = safeSys(sprintf("rsync --rsync-path='ionice -c 3 nice -n 12 rsync' --size-only --out-format '%%n' -r -e 'sshpass -p bone ssh -oStrictHostKeyChecking=no -p %d' bone@localhost:/media/*/SGdata/* /sgm/file_repo/%s/", port, serno), quote=FALSE)
 
-        newFiles = file.path(repoDir, strsplit(fileList, "\n", fixed=TRUE)[[1]])
+        newFiles = file.path(repoDir, strsplit(rv, "\n", fixed=TRUE)[[1]])
 
         ## queue a job to handle all the changed files
-        j = newJob("newFiles", .parentPath=MOTUS_PATH$INCOMING, replyTo=MOTUS_ADMIN_EMAIL, .enqueue=FALSE)
-        newdir = file.path(jobPath(j), "sync")
-        dir.create(newdir)
+        j = newJob("newFiles", .parentPath=MOTUS_PATH$INCOMING, .enqueue=FALSE)
+        newDir = file.path(jobPath(j), "sync")
+        dir.create(newDir)
 
-        file.symlink(fileList, file.path(newdir, basename(fileList)))
+        file.symlink(newFiles, file.path(newDir, basename(newFiles)))
         moveJob(j, MOTUS_PATH$PRIORITY)
 
         cat("Queued", length(newFiles), "files from attached receiver", serno, " into priority queue\n")
