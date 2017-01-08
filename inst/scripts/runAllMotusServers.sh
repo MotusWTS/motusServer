@@ -21,6 +21,8 @@ Run all motus servers by invoking these scripts:
    - runMotusProcessServer.sh 2
      ...
    - runMotusProcessServer.sh N
+   - runMotusProcessServer.sh 101
+   - runMotusSyncServer.sh
 
 Defaults to N=4.
 
@@ -48,5 +50,6 @@ setsid /sgm/bin/runMotusStatusServer.sh &
 for i in `seq 1 $N` 101; do
     setsid /sgm/bin/runMotusProcessServer.sh $i &
 done
+setsid /sgm/bin/runMotusSyncServer.sh &
 
-echo "Started email, upload, status and $N + 1 process servers, one for high-priority jobs."
+echo "Started email, upload, status, sync and $N + 1 process servers, one for high-priority jobs."

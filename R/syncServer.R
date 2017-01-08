@@ -44,40 +44,15 @@ syncServer = function(tracing = FALSE, fileEvent="CLOSE_WRITE") {
     on.exit(feed(TRUE), add=TRUE)
 
     repeat {
-        serno = basename(feed())    ## this might might wait a long time
-        serno = gsub("[^-[:alnum:]]", "", serno, perl=TRUE) ## replace dangerous characters
+        touchFile = feed()             ## this might might wait a long time
+        file.remove(touchFile)         ## the file is empty, was only needed to trigger this event
+        serno = basename(touchFile)
+        serno = gsub("[^-[:alnum:]]", "", serno, perl=TRUE) ## sanitize possibly malicious serial number
         if (tracing)
             browser()
 
-        ## the files placed in /sgm/sync are empty; their names are the serial number
-        ## of an attached receiver.
-
-        repoDir = file.path(MOTUS_PATH$FILE_REPO, serno)
-        if (!file.exists(repoDir))
-            dir.create(repoDir)
-
-        ## get the port number
-        port = ServerDB("select tunnelport from receivers where serno=:serno", serno=serno)[[1]]
-
-        ## ignore request if there's no tunnel port known for this serial number
-        if (! isTRUE(port > 0))
-            next
-
-        ## use rsync to grab files into the file repo, and return a list of their names
-        ## relative to repoDir; returned as a '\n'-delimited string
-        rv = safeSys(sprintf("rsync --rsync-path='ionice -c 3 nice -n 12 rsync' --size-only --out-format '%%n' -r -e 'sshpass -p bone ssh -oStrictHostKeyChecking=no -p %d' bone@localhost:/media/*/SGdata/* /sgm/file_repo/%s/", port, serno), quote=FALSE)
-
-        newFiles = file.path(repoDir, strsplit(rv, "\n", fixed=TRUE)[[1]])
-
-        ## queue a job to handle all the changed files
-        j = newJob("newFiles", .parentPath=MOTUS_PATH$INCOMING, .enqueue=FALSE)
-        newDir = file.path(jobPath(j), "sync")
-        dir.create(newDir)
-
-        file.symlink(newFiles, file.path(newDir, basename(newFiles)))
+        j = newJob("syncReceiver", .parentPath=MOTUS_PATH$INCOMING, .enqueue=FALSE, serno=serno, queue="0")
         moveJob(j, MOTUS_PATH$PRIORITY)
-
-        cat("Queued", length(newFiles), "files from attached receiver", serno, " into priority queue\n")
     }
     motusLog("Sync server stopped")
     quit(save="no")

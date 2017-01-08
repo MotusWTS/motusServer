@@ -61,6 +61,9 @@ processServer = function(N, tracing=FALSE) {
     ## the kill file:
     killFile = file.path(INQUEUE, paste0("kill", N))
 
+    if (tracing)
+        browser()
+
     repeat {
 
         if (length(MOTUS_QUEUE) == 0) {
