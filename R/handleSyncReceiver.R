@@ -49,7 +49,7 @@ handleSyncReceiver = function(j) {
 
     newFiles = file.path(repoDir, rv)
 
-    nj = newSubJob(j, "newFiles", .parentPath=MOTUS_PATH$INCOMING)
+    nj = newSubJob(j, "newFiles")
 
     ## queue a job to handle all the changed files
     newDir = file.path(jobPath(nj), "sync")
