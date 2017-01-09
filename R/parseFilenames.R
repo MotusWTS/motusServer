@@ -19,8 +19,8 @@
 #'  \item "ts":  timestamp embedded in name (double, with class \code{c("POSIXt", "POSIXct")} )
 #'  \item "tsCode":  timestamp code ('P' means before GPS fix, 'Z' means accurate to 1e-6 s, 'Y' to 1e-5s, 'X' to 1e-4s, ..., 'T' to 1s)
 #'  \item "port":  port number, if this file is associated with a single port (e.g. a .WAV file); NA if all ports
-#'  \item "extension":  extension of uncompressed file; e.g. ".txt"
-#'  \item "comp":  integer; file compression type":  NA = uncompressed, 1 = gzip, 2 = lzip
+#'  \item "extension":  character extension of uncompressed file; e.g. ".txt"
+#'  \item "comp":  character; file compression type, if any:  "", or ".gz"
 #'
 #' }
 #' @note Returns NULL if no filenames match regex; otherwise, return value has rows
@@ -55,5 +55,14 @@ parseFilenames = function(f, base=basename(f), checkDOS=TRUE) {
         rv$serno[fix] = "SG-1614BBBK1911_1"
         file.rename(f[fix], sub("1614BBBK1911", "1614BBBK1911_1", f[fix], fixed=TRUE))
     }
+
+    ## Thanks to read.csv semantics in splitToDF, if none of the files
+    ## was a .gz, then column the 'comp' column is logical NA,
+    ## but if any of the files was a .gz, those which weren't have
+    ## comp=""; so make the column "" in the former case.
+
+    if (is.logical(rv$comp))
+        rv$comp = ""
+
     return(rv)
 }
