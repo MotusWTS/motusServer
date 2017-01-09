@@ -57,7 +57,7 @@ handleSGfiles = function(j) {
         newSubJob(j, "SGfindtags",
                   serno = f$serno[1],
                   monoBN = f$monoBN[1],
-                  canResume = isTRUE(r$resumable[paste(f$serno[1], f$monoBN[1])])
+                  canResume = isTRUE(r$resumable[paste(f$serno[1], f$monoBN[1])][[1]])
                   )
         nsj <<- nsj + 1
     }
