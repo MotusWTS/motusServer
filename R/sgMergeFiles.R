@@ -304,8 +304,8 @@ sgMergeFiles = function(files, dbdir = MOTUS_PATH$RECV) {
     }
 
     links = Sys.readlink(ff)
-    links = links[! (is.na(links) | links == "")]
-    file.remove(links)
+    ff = ff[! (is.na(links) | links == "")]
+    file.remove(ff)
 
     return (list(
         info = structure(allf %>%
