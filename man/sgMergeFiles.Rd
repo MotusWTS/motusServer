@@ -41,8 +41,8 @@ Returns NULL if no valid sensorgnome data files were found.
 \description{
 Determines which files are redundant, new, or partially new.  Does
 *not* run the tag finder.  Any files which are symlinks are deleted
-after merging their contents; i.e. the symlink is deleted, not the
-file it points to.
+after merging their target's contents; i.e. the symlink is deleted,
+not the file it points to.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}

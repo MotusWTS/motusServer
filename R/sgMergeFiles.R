@@ -2,8 +2,8 @@
 #'
 #' Determines which files are redundant, new, or partially new.  Does
 #' *not* run the tag finder.  Any files which are symlinks are deleted
-#' after merging their contents; i.e. the symlink is deleted, not the
-#' file it points to.
+#' after merging their target's contents; i.e. the symlink is deleted,
+#' not the file it points to.
 #'
 #' @param files either a character vector of full paths to files, or
 #'     the full path to a directory, which will be searched
@@ -88,10 +88,16 @@ sgMergeFiles = function(files, dbdir = MOTUS_PATH$RECV) {
 
     ## Here's what to do for each file (F) in the new set:
     ##
-    ## - if F is in oldf and isDone is TRUE, we do nothing, as complete file is already present
-    ## - otherwise, if an uncompressed F is in allf, then copy it to oldf if it is larger than
-    ##   than any existing copy
-    ## - otherwise, copy the compressed F (if valid) from allf to oldf.
+    ## - if F is in oldf and isDone is TRUE, we do nothing, as
+    ##   complete file is already present
+    ##
+    ## - if F is compressed F and valid, it must be complete, and so
+    ##   we copy it to oldf and set isDone to TRUE
+    ##
+    ## - if F is compressed and not valid, we ignore it
+    ##
+    ## - if F is uncompressed and either not already in, or longer
+    ##   than the existing version in the DB, copy it to the DB
 
     ## parse filenames into components
     pfc = parseFilenames(allf$fullname, allf$basename)
@@ -171,17 +177,16 @@ sgMergeFiles = function(files, dbdir = MOTUS_PATH$RECV) {
             mutate(
                 done = is.finite(isDone) & isDone,
 
-                ## Mark compressed version of new files which are present as both
-                ## compressed and uncompressed, as the compressed one is incomplete.
-                ## Files are sorted by name, so the compressed copy will be marked
-                ## as TRUE by duplicated().
+                ## See which files are incomplete .gz files; (only
+                ## test .gz files we don't already have in full; i.e. do test
+                ## number 4 only on files where done is FALSE)
 
-                partial = duplicated(name),
+                partial = testFile(fullname, tests=as.list(4 * ! done)) > 0,
 
                 ## Mark uncompressed files which are not longer than the existing version
 
                 nsize = file.info(fullname)[["size"]],
-                small = ! is.na(size) & nsize <= size & ! done & ! partial,
+                small = (Fcomp == "") & (! is.na(size) & nsize <= size),
 
                 ## Mark files not seen before
                 new = is.na(fileID),
@@ -247,7 +252,7 @@ sgMergeFiles = function(files, dbdir = MOTUS_PATH$RECV) {
                             ts       = newf$Fts[i],
                             tscode   = newf$FtsCode[i],
                             tsDB     = now,
-                            isDone   = !is.na(newf$Fcomp[i]),  ## we see only the compressed file, so it must be finished (note that decompression succeeded)
+                            isDone   = newf$Fcomp[i]==".gz",  ## incomplete compressed files are dropped above
                             stringsAsFactors = FALSE
                         )
                     )
@@ -259,9 +264,10 @@ sgMergeFiles = function(files, dbdir = MOTUS_PATH$RECV) {
                 } else {
                     dbGetPreparedQuery(
                         con,
-                        "update files set size=:size, fileID=:fileID ",
+                        "update files set size=:size, isDone=:isDone where fileID=:fileID ",
                         data.frame(
                             size     = attr(fcon, "len"),
+                            isDone   = newf$Fcomp[i] == ".gz",  ## incomplete compressed files are dropped above
                             fileID   = newf$fileID[i]
                         )
                     )
