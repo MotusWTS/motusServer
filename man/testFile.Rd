@@ -4,10 +4,15 @@
 \alias{testFile}
 \title{Test files for validity.}
 \usage{
-testFile(files)
+testFile(files, tests = 1:4)
 }
 \arguments{
 \item{files}{vector of paths of files to check}
+
+\item{tests}{integer vector of tests to try; must be a subset of 1:4.
+Alternatively, this can be a list, in which case element \code{tests[[i]]} is
+an integer vector specifying the tests to be performed on the \code{i}th file.
+Default: 1:4}
 }
 \value{
 integer vector of same length as \code{files}, with values
@@ -16,11 +21,13 @@ from this list:
 \itemize{
 \item 0: the file passes all tests
 \item 1: the file doesn't exist
-\item 2: the file is non-empty but all zeroes
-\item 3: the file is non-empty and has a .gz, .bz2, .7z, .rar, or .zip extension, but fails
+\item 2: the file is empty.
+\item 3: the file is non-empty but all zeroes
+\item 4: the file is non-empty and has a .gz, .bz2, .7z, .rar, or .zip extension, but fails
 the integrity test of the appropriate archiving program
-\item 4: the file is empty.
 }
+For each input file, the function returns either 0, or the number of the
+first test to fail.  Tests are attempted in order of increasing number.
 }
 \description{
 Sometimes users send shared links to folders before all files have sync'd,

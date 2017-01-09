@@ -23,28 +23,36 @@ handleSanityCheck = function(j) {
     chk = testFile(f)
     if (all(chk == 0))
         return(TRUE)
-    ch2 = f[chk == 2]; ## zero-filled files
-    if (length(ch2) > 0) {
-        jobLog(j, c(paste("Error: these", length(ch2), "files are full of zeroes:"),
-                    "(perhaps your folder has not finished syncing?)",
-                    paste0("   ", basename(head(ch2, 5))), if (length(ch2) > 5) "   ..."))
-    }
-    ch3 = f[chk == 3]; ## corrupt archives
+    ch3 = f[chk == 3]; ## zero-filled files
     if (length(ch3) > 0) {
-        jobLog(j, c(paste("Error: these", length(ch3), "archives are corrupt:"),
-                    "(perhaps your folder has not finished syncing?)", paste0("   ", basename(ch3))))
+        jobLog(j, c(paste("Error: these", length(ch3), "files are full of zeroes:"),
+                    "(perhaps your folder has not finished syncing?)",
+                    paste0("   ", basename(head(ch3, 5))), if (length(ch3) > 5) "   ..."))
     }
-    ch4 = f[chk == 4]; ## empty files
+    ch4 = f[chk == 4]; ## corrupt compressed file
+
+    ## ignore corrupt files called XXX.txt.gz files if there is also a
+    ## file called XXX.txt This is typical for a download from the SG,
+    ## where the most recent output file's compressed form is not
+    ## complete, and thus corrupt.
+
+    ignore = grepl("\\.txt\\.gz$", ch4, perl=TRUE) & sub("\\.gz$", "", ch4, perl=TRUE) %in% f
+    chk[chk == 4 & ignore] = 0
+    ch4 = ch4[! ignore]
+
     if (length(ch4) > 0) {
-        jobLog(j, c(paste("Warning: these", length(ch4), "files are empty:"),
-                    paste0("   ", basename(ch4))))
+        jobLog(j, c(paste("Error: these", length(ch4), "archives are corrupt:"),
+                    "(perhaps your folder has not finished syncing?)", paste0("   ", basename(ch4))))
+    }
+    ch2 = f[chk == 2]; ## empty files
+    if (length(ch2) > 0) {
+        jobLog(j, c(paste("Warning: these", length(ch2), "files are empty:"),
+                    paste0("   ", basename(ch2))))
     }
     if (any(chk == 0)) {
         jobLog(j, paste("Processing will continue with the remaining", sum(chk==0), "files."))
     }
     ## write names of bad files to a temporary location so we can tar them;
-    ## to prevent collisions from different archives with same-named files,
-    ## we prepend the job ID
 
     tmpf = tempfile()
     writeLines(f[chk > 0], tmpf)
