@@ -42,6 +42,9 @@ handleSyncReceiver = function(j) {
     ## we ignore errors, and user whatever list of files is returned
     rv = safeSys(sprintf("rsync --rsync-path='ionice -c 2 -n 7 nice -n 10 rsync' --size-only --out-format '%%n' -r -e 'sshpass -p bone ssh -oStrictHostKeyChecking=no -p %d' bone@localhost:/media/*/SGdata/* /sgm/file_repo/%s/", port, serno), quote=FALSE, minErrorCode=100, splitOutput=TRUE)
 
+    ## remove directories, else these will be traversed, leading to double
+    ## listings of files
+    rv = grep("/$", rv, perl=TRUE, invert=TRUE, value=TRUE)
     if (! isTRUE(length(rv) > 0)) {
         jobLog(j, paste0("No new files obtained for receiver ", serno), summary=TRUE)
         return(FALSE)
