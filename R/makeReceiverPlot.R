@@ -138,7 +138,7 @@ makeReceiverPlot = function(recv, meta=NULL, title="", condense=3600, ts = NULL,
     tags = tagview(recv, meta)
 
     ## do usual filtering on freqsd, run length
-    tags = tags %>% filter_(~(is.na(freqsd) | freqsd < 0.1) & len >= 3)
+    tags = tags %>% filter_(~(is.na(freqSD) | freqSD < 0.1) & len >= 3)
 
     ## filter by monoBN or ts
 
