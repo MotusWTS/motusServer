@@ -303,15 +303,26 @@ sgMergeFiles = function(files, dbdir = MOTUS_PATH$RECV) {
         lockSymbol(recv, lock=FALSE)
     }
 
-    links = Sys.readlink(ff)
-    ff = ff[! (is.na(links) | links == "")]
-    file.remove(ff)
+    ## remove files which are just symlinks
+    link = Sys.readlink(ff)
+    isLink = !( is.na(link) | link == "")
+    file.remove(ff[isLink])
+
+    ## save any files to be used in the file repo
+    reallyUse = allf$use & ! allf$corrupt
+    keep = reallyUse & !isLink
+    useFiles = ff[keep]
+    dirsNeeded = unique(file.path(MOTUS_PATH$FILE_REPO, allf$Fserno[keep], format(allf$Fts[keep], "%Y-%m-%d")))
+    for( d in dirsNeeded)
+        dir.create(d, showWarnings=FALSE, recursive=TRUE)
+
+    file.rename(useFiles, file.path(MOTUS_PATH$FILE_REPO, allf$Fserno[keep], format(allf$Fts[keep], "%Y-%m-%d"), basename(useFiles)))
 
     return (list(
         info = structure(allf %>%
                          transmute(
                              name = fullname,
-                             use = use & ! corrupt,
+                             use = reallyUse,
                              new = new,
                              done = done,
                              corrupt = corrupt,
