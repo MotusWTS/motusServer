@@ -1,3 +1,4 @@
+#!/bin/bash
 # Repeatedly trigger a job to grab and process new files from an attached SG.
 #
 # This script creates an empty file with a given SG serial number in /sgm/sync
@@ -21,6 +22,17 @@ SERNO=$1
 WAITLO=$2
 WAITHI=$3
 RUNNOW=1
+SYNCFILE=/sgm/remote/sync/$SERNO
+JOBFILE=/sgm/remote/atjobs/$SERNO
+
+# remove any existing at job for this receiver; we don't want sporadic
+# disconnect / reconnect by the receiver to launch multiple
+# interleaved sequences of syncReceiver jobs
+
+if [[ -f $JOBFILE ]]; then
+    atrm `cat $JOBFILE`
+    rm -f $JOBFILE
+fi
 
 if [[ -f ~sg_remote/connections/${SERNO/SG-/} ]]; then
     ## sanitize SERNO by removing everything but alphanumerics and '-'
@@ -44,8 +56,11 @@ if [[ -f ~sg_remote/connections/${SERNO/SG-/} ]]; then
 
     if [[ $RUNNOW ]]; then
         ## trigger a sync job by the motusSyncServer
-        touch /sgm/sync/$SERNO
+        rm -f $SYNCFILE
+        touch $SYNCFILE
     fi
 
-    echo $0 $SERNO $WAITLO $WAITHI | at -M now + $WAIT minutes
+    ## launch the at-job, and record its at-job number under the receiver serial number
+    ## (this number can be used to kill the at-job with atrm; see above)
+    echo $0 $SERNO $WAITLO $WAITHI | at -M now + $WAIT minutes 2>&1 | gawk '/^job/{print $2}' > $JOBFILE
 fi
