@@ -14,9 +14,6 @@
 #' @param dbMeta dplyr src to database with "tags", "projects",
 #'     "species", and "recvDeps" tables.  Default: \code{db}
 #'
-#' @param minRunLen minimum number of hits in a run; runs with fewer
-#'     hits are dropped
-#'
 #' @param mobile logical or NULL (the default); determines the source
 #'     of GPS fixes for tag detections.  Possible values are:
 #'
@@ -93,7 +90,7 @@
 #' the table will contain a time series of fixes.  The view will use this table
 #' to provide lat/lon/elevation.
 
-tagview = function(db, dbMeta=db, minRunLen=3, mobile=NULL, keep=FALSE) {
+tagview = function(db, dbMeta=db, mobile=NULL, keep=FALSE) {
 
     ## convert any paths to src_sqlite
 

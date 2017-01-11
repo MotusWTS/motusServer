@@ -4,7 +4,7 @@
 \alias{tagview}
 \title{create a tbl of tag detections with all metadata.}
 \usage{
-tagview(db, dbMeta = db, minRunLen = 3, mobile = NULL, keep = FALSE)
+tagview(db, dbMeta = db, mobile = NULL, keep = FALSE)
 }
 \arguments{
 \item{db}{dplyr src_sqlite to detections database, or path to
@@ -13,9 +13,6 @@ runs.}
 
 \item{dbMeta}{dplyr src to database with "tags", "projects",
 "species", and "recvDeps" tables.  Default: \code{db}}
-
-\item{minRunLen}{minimum number of hits in a run; runs with fewer
-hits are dropped}
 
 \item{mobile}{logical or NULL (the default); determines the source
     of GPS fixes for tag detections.  Possible values are:
