@@ -194,6 +194,10 @@ getMotusMetaDB = function() {
 
     dbWriteTable(s$con, "projs", p, overwrite=TRUE, row.names=FALSE)
 
+    ## clean up the nominal frequency, which has issues upstream
+    t$nomFreq = round(t$nomFreq, 3)          ## upstream problems with conversion from lower-precision float
+    t$nomFreq[t$nomFreq==166.376] == 166.38  ## from my own mistakes
+
     ## add a fullID label for each tagDep
     t$fullID = sprintf("%s#%s:%.1f@%g", p$label[match(t$projectID, p$id)], t$mfgID, t$period, t$nomFreq)
 
