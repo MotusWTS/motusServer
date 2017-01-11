@@ -37,6 +37,16 @@ handleSyncReceiver = function(j) {
         return(FALSE)
     }
 
+    ## lock the receiver
+
+    lockSymbol(serno)
+
+    ## make sure we unlock the receiver DB when this function exits, even on error
+    ## NB: the runMotusProcessServer script also drops any locks held by a given
+    ## processServer after the latter exits.
+
+    on.exit(lockSymbol(serno, lock=FALSE))
+
     ## use rsync to grab files into the file repo, and return a list of their names
     ## relative to repoDir; returned as a '\n'-delimited string
     ## we ignore errors, and user whatever list of files is returned
