@@ -1,0 +1,166 @@
+#!/usr/bin/python
+# -*- Mode:Python; indent-tabs-mode:t; tab-width:4; python-indent:4 -*-;
+
+# script that runs while apache runs and translates tokens
+# for live SG connection ports into mapped live port numbers.
+#
+# Reads one line at a time from stdin; writes either the live
+# port number or "BOGUS" to stdout.  The input line
+# looks like:
+#   SG-SERNO_SERNO_TOKEN  (for initial load from an SG)
+# or
+#   _SERNO_TOKEN (for subsequent requests from the SG)
+#
+# The mapping is maintained in an sqlite database.
+
+import io
+import sys
+import sqlite3
+import time
+import subprocess
+##import faulthandler
+##import signal
+##import traceback
+
+NUM_PROXY_PORTS = 5 ## must match number of Proxy entries in /etc/apache2/sites-available/live-sensorgnome
+PROXY_PORT_BASE = 50000 ## proxy port base;
+MASTER_RECEIVER_DB = '/sgm/remote/receivers.sqlite'  ## master database of receivers
+
+## ports used are PROXY_PORT_BASE + 1, PROXY_PORT_BASE + 2, ... PROXY_PORT_BASE + NUM_PROXY_PORTS
+
+LIVE_SQLITE_DB = '/sgm/remote/live.sqlite'
+conn = sqlite3.connect(LIVE_SQLITE_DB)
+conn.row_factory = sqlite3.Row
+curs = conn.cursor()
+## in case we got restarted - delete the existing port map as all mapping ssh process would
+## have been killed
+curs.execute('delete from port_maps')
+conn.commit()
+rcon = sqlite3.connect(MASTER_RECEIVER_DB)
+rcon.row_factory = sqlite3.Row
+rcurs = rcon.cursor()
+
+##debug = open("/tmp/mapfault.txt", "w")
+##faulthandler.enable(debug, True)
+##faulthandler.register(signal.SIGUSR1, debug, True)
+
+reverse_tunnels = {}
+
+while True:
+	line = sys.stdin.readline()
+	if line == None:
+		continue
+	# split the line from input by '_' delimiters
+	parts = (line.rstrip('\n')+'____').split('_')
+	cmd = parts[0]  # SG-SERNO if connecting for the first time, else empty
+	serno = parts[1]  # SERNO
+	token = parts[2] + "_" + parts[3] + "_" + parts[4]  # supposed user token
+
+	start_session = (cmd != "")
+    ## check whether it's a valid user token
+
+	port = "NULL"  ## assume it's not valid
+
+	res = curs.execute('select user, token from user_tokens where token = :token', {"token": token}).fetchone()
+	if res != None:
+		if serno.find('RPi2') >= 0:
+			web_server = 'localhost'
+		else:
+			web_server = '192.168.7.2'
+
+		user = res["user"]
+		# the token is valid, see who if anyone is connected to this SG
+		pmap = curs.execute('select user, port from port_maps where serno = :serno', {"serno": serno}).fetchone()
+		if pmap != None:
+			if pmap["user"] == user:
+				# this user is already connected - return existing port map
+				port = "%d" % pmap["port"]
+				reverse_tunnels[port].poll()
+				if reverse_tunnels[port].returncode != None:
+					tunnel_port = rcurs.execute('select tunnelport from receivers where serno = :serno', {"serno": serno}).fetchone()['tunnelport']
+					reverse_tunnels[port] = subprocess.Popen([
+							"sshpass",
+							"-p", "bone",
+							"ssh",
+							"-n",
+							"-p", "%s" % tunnel_port,
+							"-M",
+							"-o", "StrictHostKeyChecking=no",
+							"-o", "ControlMaster=auto",
+							"-o", "ExitOnForwardFailure=yes",
+							"-S", "/sgm/remote/sockets/%s" % serno,
+							"-O", "forward",
+							"-L%s:%s:80" % (port, web_server),
+							"bone@localhost",
+							"sleep", "600"  ## automatically die after 10 minutes
+							])
+					time.sleep(2)
+
+			elif start_session:
+				# bump existing user
+				curs.execute('update port_maps set user = :user, ts=:ts where serno = :serno', {"user": user, "ts": time.time(), "serno": serno})
+				conn.commit()
+				port = "%d" % pmap["port"]
+
+		elif start_session:
+			# no one currently connected to this SG, but new user means to
+			# so get an available port
+
+			# first, connect to the receivers database to get tunnel port numbers for
+			# any existing connection and new ones
+
+			port = curs.execute('select 1+t1.port as free from port_maps as t1 left outer join port_maps as t2 on t1.port + 1 = t2.port where t2.port is null order by t1.port limit 1;').fetchone()
+			if port != None:
+				port = port['free']
+			else:
+				port = 1 + PROXY_PORT_BASE
+
+			if port > NUM_PROXY_PORTS + PROXY_PORT_BASE:
+				# all proxy ports are being used, so bump off the oldest mapping
+				oldest = curs.execute('select port, serno from port_maps order by ts limit 1').fetchone()
+				if oldest != None and oldest['port'] in reverse_tunnels:
+					reverse_tunnels[oldest['port']].kill()
+					del reverse_tunnels[oldest['port']]
+
+				# atomically re-assign that port to the new user and receiver
+				curs.execute('update port_maps set user=:user, serno=:serno, ts=:ts where port=:oldest',
+							 {"user": user, "serno": serno, "oldest": oldest['port'], "ts": time.time()})
+				conn.commit()
+
+				port = oldest['port']
+
+			else:
+				# create a new record for this port
+				curs.execute('insert into port_maps (user, serno, port, ts) values(:user, :serno, :port, :ts)',
+							 {"user": user, "serno": serno, "port": port, "ts": time.time()})
+				conn.commit()
+
+			# create the reverse tunnel to the SG's web server
+			tunnel_port = rcurs.execute('select tunnelport from receivers where serno = :serno', {"serno": serno}).fetchone()['tunnelport']
+
+			port = '%d' % port
+
+			reverse_tunnels[port] = subprocess.Popen([
+					"sshpass",
+					"-p", "bone",
+					"ssh",
+					"-n",
+					"-p", "%s" % tunnel_port,
+					"-M",
+					"-o", "ControlMaster=auto",
+					"-o", "StrictHostKeyChecking=no",
+					"-o", "ExitOnForwardFailure=yes",
+					"-S", "/sgm/remote/sockets/%s" % serno,
+					"-O", "forward",
+					"-L%s:%s:80" % (port, web_server),
+					"bone@localhost",
+					"sleep", "600"  ## automatically die after 10 minutes
+					])
+ 			time.sleep(2)
+
+
+#	debug.write(port + '\n')
+#	debug.flush()
+
+	sys.stdout.write(str(port) + '\n')
+	sys.stdout.flush()

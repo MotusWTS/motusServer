@@ -1,0 +1,44 @@
+-- -*- mode: sql; -*-
+--
+-- Create tables for handling live remote sensorgnome connections
+-- 
+-- This code will generate the appropriate tables in a .sqlite database
+
+-- user_tokens: authentication tokens generated when user logs into sensorgnome.org wiki
+-- We use these to control access to live.sensorgnome.org
+
+create table if not exists user_tokens (
+        user string,       -- username on sensorgnome.org wiki
+        token string,      -- authentication token of latest user session on sensorgnome.org wiki
+        ts real            -- time at which token was recorded in database
+);
+
+-- for fast lookup of tokens
+create index if not exists user_tokens_token on user_tokens (token);
+
+-- only allow one token per user
+create unique index if not exists user_tokens_user on user_tokens (user);
+
+-- port_maps: associate users to proxy ports
+-- connections to remote sensorgnomes via live.sensorgnome.org use
+-- apache mod_proxy to pass requests and results between the end user
+-- and the remote sensorgnome.  We only allocate a small number of
+-- proxy connections, and use this table to keep track of who is using them.
+
+create table if not exists port_maps (
+        serno string,    -- sensorgnome serial number
+        user string,     -- username on sensorgnome.org wiki
+        port integer,    -- port on sensorgnome.org host used to tunnel back to SG's web server
+        ts real          -- time at which this mapping was made
+        );
+
+-- only allow one proxy port per sensorgnome (the SG's web browser code
+-- can only handle a single connection)
+create unique index if not exists port_maps_serno on port_maps (serno);
+
+-- only allow one sensorgnome per proxy port
+create unique index if not exists port_maps_port on port_maps (port);
+
+-- fast lookup by user or map creation time
+create index if not exists port_maps_user on port_maps (user);
+create index if not exists port_maps_ts on port_maps (ts);

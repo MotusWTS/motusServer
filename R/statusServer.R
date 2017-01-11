@@ -39,9 +39,9 @@ statusServer = function(port, tracing=FALSE) {
 
 ## a string giving the list of apps for this server
 
-allApps = c("latestJobs", "queueStatus")
+allApps = c("latestJobsApp", "queueStatusApp", "connectedReceiversApp", "allReceiversApp", "getUploadTokenApp")
 
-latestJobs = function(env) {
+latestJobsApp = function(env) {
 
     ## return summary table of latest top jobs, with clickable expansion for details
     ## parameters:
@@ -160,7 +160,7 @@ dumpJobDetails = function(res, j, i) {
     res$write("</div>")
 }
 
-queueStatus = function(env) {
+queueStatusApp = function(env) {
     ## return summary of master queue and processing queues
     ## parameters:
     ## - none so far
@@ -251,5 +251,318 @@ queueStatus = function(env) {
             res$write(hwrite(info, border=0, row.style=list('font-weight:bold'), row.bgcolor=rep(c("#ffffff", "#f0f0f0"), length=nrow(info))))
         }
     }
+    res$finish()
+}
+
+connectedReceiversApp = function(env) {
+
+    req <- Rook::Request$new(env)
+    res <- Rook::Response$new()
+
+    res$header("Cache-control", "no-cache")
+    res$header("Content-Type", "text/html; charset=utf-8")
+
+    user <- req$GET()[['user']]
+    token <- req$GET()[['token']]
+
+    ## saveRDS(env, "/tmp/request.rds") ## for debugging
+
+    ## list of serial numbers of connected receivers
+    recv = dir(MOTUS_PATH$REMOTE_CONNECTIONS)
+
+    ## list of mapped tunnel ports (character vector)
+    ports = system("netstat -n -l -t 2>/dev/null | grep 127.0.0.1 | gawk '{split($4, A, /:/); pn=0+A[2]; if (pn >= 40000 && pn < 50000) print pn}'", intern=TRUE)
+
+    ## get list of receiver serial numbers by port
+
+    if (length(ports) > 0) {
+        con = dbConnect(SQLite(), MOTUS_PATH$REMOTE_RECEIVERS)
+        sql = function(...) dbGetQuery(con, sprintf(...))
+        portByRecv = sql("select tunnelport,serno from receivers where tunnelport in (%s)", paste(ports, collapse=","))
+        dbDisconnect(con)
+        rownames(portByRecv) = portByRecv$serno
+    } else {
+        portByRecv = NULL
+    }
+
+    ## add in receivers with an ssh port mapped but no live data streaming
+    ## this can happen for various reasons, e.g. if the master js process
+    ## on the SG has died.
+
+    connRecv = recv
+    recv = unique(c(recv, portByRecv$serno))
+
+    ## get latest project/site names for any receivers
+    YEAR = format(Sys.time(), "%Y")
+    con = dbConnect(RSQLite::SQLite(), "/SG/receiver_map.sqlite")
+    projSite = dbGetQuery(con, "select t1.Serno as Serno, t1.Project as Project, t1.Site as Site from map as t1 left outer join map as t2 on t1.Serno=t2.Serno and t1.tsHi < t2.tsHi where t2.tsHi is null  order by t1.Serno")
+    dbDisconnect(con)
+    rownames(projSite)=substring(projSite$Serno, 4)
+
+    ## get wiki user ID for each project
+    con = dbConnect(RSQLite::SQLite(), "/SG/motus_sg.sqlite")
+    projWiki = dbGetQuery(con, "select projCode, SGWikiUser from projectMap")
+    dbDisconnect(con)
+    projWiki = structure(projWiki$SGWikiUser, names=projWiki$projCode)
+
+    Now = Sys.time()
+    now = as.numeric(Now)
+    html = sprintf(
+        "
+<br>This table generated at %s
+<br>
+<table rows=%d cols=%d border=1>
+<tr><th>Serial No.<br>Click for SG<br>Web Interface</th><th>Tunnel Port</th><th>Lat/Lon<br>Click for Map</th><th>Project, Site<br>Click for Wiki Page</th><th>Boot<br>Count</th><th>Connected<br>Since</th><th>Ants with Hits<br>Latest Hour</th><th>Latest Hit on Tag<br>Known to Receiver</th><th>When</th><th>Hits Today</th><th>Total Hits</th><th>Live User</th></tr>",
+format(Now, "%Y %b %d %H:%M:%S GMT"),
+1 + length(recv), 10)
+
+    tbl = character(length(recv))
+
+
+    con = dbConnect(SQLite(), MOTUS_PATH$REMOTE_LIVE)
+    sql = function(...) dbGetQuery(con, sprintf(...))
+    if (! is.null(user)) {
+        old_token = sql("select token from user_tokens where user='%s'", user)
+
+        if (nrow(old_token) == 0 || old_token[1,1] != token)
+            ## auth token is new or has changed, so insert new one with timestamp
+            sql("insert or replace into user_tokens (user, token, ts) values ('%s', '%s', '%f')", user, token, as.numeric(Sys.time()))
+    }
+    ## get the list of SG <-> user connections
+    loggedIn = sql("select serno,user,ts from port_maps")
+    dbDisconnect(con)
+    rownames(loggedIn) = loggedIn$serno
+    class(loggedIn$ts) = c("POSIXt", "POSIXct")
+
+    for (i in seq(along=recv)) {
+        db = file.path(MOTUS_PATH$REMOTE_STREAMS, paste0(recv[i], ".sqlite"))
+        if (file.exists(db)) {
+            cat("About to try open ", db, "\n")
+            con = dbConnect(RSQLite::SQLite(), db)
+            bootCount = dbGetQuery(con, "select max (parval) from metadata where parname = 'bootCount'")[1,1]
+            if (is.na(bootCount))
+                bootCount = 0
+            gps = dbGetQuery(con, "select * from gps where ts != 'NaN' order by ts desc limit 1")
+            tag = dbGetQuery(con, "select * from taghits order by ts desc limit 1")
+            numHits = dbGetQuery(con, "select count(*) from taghits")
+            numHitsToday = dbGetQuery(con, sprintf("select count(*) from taghits where ts >= %f", trunc(Now, "days")))
+            ##        devices = dbGetQuery(con, "select * from devices order by ts")
+            lastCon = dbGetQuery(con, "select serverts from connections order by serverts desc limit 1")
+            ports = unlist(dbGetQuery(con, sprintf("select distinct port from taghits where serverts >= %f", now-3600))[,1])
+            if (length(ports) == 0)
+                ports = ""
+            if (nrow(lastCon) > 0) {
+                lastCon = lastCon[1,1]
+            } else {
+                lastCon = 0
+            }
+            class(lastCon) = c("POSIXt", "POSIXct")
+            ## if (nrow(devices) > 0) {
+            ##   numAnts = sum(unlist(tapply(1:nrow(devices), devices$port,
+            ##     function(i) {
+            ##       j = tail(i, 1)
+            ##       devices$action[j] == 'A' && grepl("funcube", devices$type[j], ignore.case=TRUE)
+            ##     })))
+            ## } else {
+            ##   numAnts = 0
+            ## }
+            dbDisconnect(con)
+        } else {
+            bootCount = 1
+            gps = NULL
+            tag = NULL
+            numHits = 0
+            numHitsToday = 0
+            ports = ""
+            lastCon = structure(0, class=c("POSIXt", "POSIXct"))
+        }
+        haveTags = ! (is.null(tag) || nrow(tag) == 0)
+
+        if (haveTags) {
+            class(tag$ts) = c("POSIXt", "POSIXct")
+            msg = list(tag = paste(tag$tagID, "on ant", tag$port[1]),
+                       ts = paste(format(round(diff(c(tag$ts[1], Now)), 3)), "ago"))
+        } else {
+            msg = list(tag = "none while connected", ts = "")
+            numHits = numHitsToday = 0
+        }
+
+        if (is.null(gps) || nrow(gps) == 0) {
+            gps = list(lat=0, lon=0)
+            if (haveTags)
+                tag$ts[1] = structure(tag$serverts[1], class=c("POSIXt", "POSIXct"))
+        }
+
+        tunnelport = as.character(portByRecv[recv[i], "tunnelport"])
+        if (length(tunnelport) == 0 || is.na(tunnelport))
+            tunnelport = "none"
+
+        user = loggedIn[recv[i], "user"]
+        if (is.na(user))
+            userMsg = ""
+        else
+            userMsg = sprintf("%s @ %s", user, format(loggedIn[recv[i], "ts"], "%b %d - %H:%M"))
+
+        try({
+            if (tunnelport != "none") {
+                anchor = sprintf('<a href="http://live.sensorgnome.org/SESSION_SG-%s_%s" style="color: #000000">%s</a>',
+                                 recv[i],
+                                 token,
+                                 recv[i])
+            } else {
+                anchor = sprintf("%s", recv[i])
+            }
+
+            ps = projSite[recv[i], c("Project", "Site")]
+            if (is.na(ps[[1]])) {
+                ps = c("?", "?")
+            } else {
+                ps = as.character(ps)
+            }
+            latLon = paste(round(gps$lat, 3), round(gps$lon, 3), sep=",")
+            latLonURL = sprintf("https://google.com/search?q=%.6f,%.6f", gps$lat, gps$lon)
+
+            wikiUser = projWiki[ps[1]]
+            if (! is.na(wikiUser)) {
+                psURL = Utils$escape(sprintf("User:%s/%s", wikiUser, ps[2]))
+            } else {
+                psURL = ""
+            }
+            tbl[i] = sprintf('<tr><td style="background-color: %s">%s</td><td style="text-align:center">%s</td><td style="text-align:center"><a href="%s">%s</a></td><td style="text-align:center"><a href="%s">%s</a></td><td style="text-align:center">%d</td><td style="text-align:center">%s</td><td style="text-align:center">%s</td><td style="text-align:center">%s</td><td style="text-align:center">%s</td><td style="text-align:center">%.0f</td><td style="text-align:center">%.0f</td><td style="text-align:center">%s</td></tr>',
+                             if (recv[i] %in% connRecv) "#80ff80" else "#ff8080",
+                             anchor,
+                             tunnelport,
+                             latLonURL,
+                             latLon,
+                             psURL,
+                             paste(ps, collapse=","),
+                             bootCount,
+                             format(lastCon, "%d %b %H:%M"),
+                             paste(sort(ports), collapse=", "),
+                             msg$tag,
+                             msg$ts,
+                             numHitsToday,
+                             numHits,
+                             userMsg
+                             )
+
+        }, silent=TRUE)
+    }
+
+    html = paste(html, paste(tbl, collapse="\n"), '</table><br>If a receiver is shown with a <span style="background-color:#ff8080">red background</span>, then it is connected by secure shell but does not have a data-streaming connection.  This might be because its master control process has died.  Troubleshooting via ssh tunnel is recommended.<br><br>If an SG has a streaming connection but no tunnel port, you cannot connect to its web interface.  Wait 5 minutes and check again whether the tunnel port has been assigned.', sep="\n")
+
+    res$write(html)
+    res$finish()
+}
+
+allReceiversApp = function(env) {
+    req <- Rook::Request$new(env)
+    res <- Rook::Response$new()
+
+    res$header("Cache-control", "no-cache")
+
+    html1 = "<div><ul>"
+
+    f = dir(MOTUS_PATH$REMOTE_STREAMS, pattern=".*\\.sqlite$", full.names=TRUE)
+    recv_with_db = sub(".sqlite$", "", basename(f))
+
+    con = dbConnect(SQLite(),MOTUS_PATH$REMOTE_RECEIVERS)
+    recv = dbGetQuery(con, "select * from receivers where verified=1 order by serno")
+    dbDisconnect(con)
+
+    recv$connNow = file.exists(file.path(MOTUS_PATH$REMOTE_CONNECTIONS, recv$serno))
+
+    class(recv$creationdate) = c("POSIXt", "POSIXct")
+    recv$db = f[match(recv$serno, recv_with_db)]
+
+    recv = recv[order(1 - recv$connNow, recv$serno),]
+    Now = Sys.time()
+    now = as.numeric(Now)
+    html = sprintf(
+"
+<br>This table generated at %s
+<br>
+<table rows=%d cols=%d border=1>
+<tr><th>Serial No.</th><th>Lat</th><th>Lon</th><th>Boot<br>Count</th><th>Ants with Hits<br>Latest Hour</th><th>Latest Tag Hit</th><th>When</th><th>Hits Today</th><th>Total Hits</th></tr>",
+      format(Now, "%Y %b %d %H:%M:%S GMT"),
+      1 + nrow(recv), 9)
+
+    tbl = character(nrow(recv))
+    for (i in seq(along=tbl)) {
+      if (is.na(recv$db)[i]) {
+        tbl[i] = sprintf('<tr><td>%s</td><td colspan=8>No data received</td></tr>', recv$serno[i])
+      } else {
+        con = dbConnect(SQLite(), file.path(MOTUS_PATH$REMOTE_STREAMS, paste0(recv$serno[i], ".sqlite")))
+        bootCount = dbGetQuery(con, "select max (parval) from metadata where parname = 'bootCount'")[1,1]
+        if (is.na(bootCount))
+          bootCount = 0
+        gps = dbGetQuery(con, "select * from gps where ts != 'NaN' order by ts desc limit 1")
+        tag = dbGetQuery(con, "select * from taghits order by ts desc limit 1")
+        numHits = dbGetQuery(con, "select count(*) from taghits")
+        numHitsToday = dbGetQuery(con, sprintf("select count(*) from taghits where ts >= %f", trunc(Now, "days")))
+        devices = dbGetQuery(con, "select * from devices order by ts")
+        lastCon = dbGetQuery(con, "select serverts from connections order by serverts desc limit 1")
+        ports = unlist(dbGetQuery(con, sprintf("select distinct port from taghits where serverts >= %f", now-3600))[,1])
+        if (nrow(lastCon) > 0) {
+          lastCon = lastCon[1,1]
+        } else {
+          lastCon = 0
+        }
+        if (nrow(devices) > 0) {
+          numAnts = sum(unlist(tapply(1:nrow(devices), devices$port,
+            function(i) {
+              j = tail(i, 1)
+              devices$action[j] == 'A' && grepl("funcube", devices$type[j], ignore.case=TRUE)
+            })))
+        } else {
+          numAnts = 0
+        }
+        dbDisconnect(con)
+        class(tag$ts) = c("POSIXt", "POSIXct")
+
+        if (is.null(tag) || nrow(tag) == 0) {
+          tag = list(tagID = 0, antFreq=0, port=0, ts=structure(0, class=c("POSIXt", "POSIXct")))
+          numHits = numHitsToday = 0
+        }
+
+        if (is.null(gps) || nrow(gps) == 0) {
+          gps = list(lat=0, lon=0)
+          tag$ts[1] = structure(tag$serverts[1], class=c("POSIXt", "POSIXct"))
+        }
+
+        try({
+        tbl[i] = sprintf('<tr><td style="background-color: %s">%s</td><td>%.4f</td><td>%.4f</td><td>%d</td><td>%s</td><td>%d @ %.3f on Ant %d</td><td>%s ago</td><td>%.0f</td><td>%.0f</td></tr>',
+             (if (recv$connNow[i]) "#80ff80" else if (now - lastCon < 600) "#ffff80" else "#ff8080"),
+             recv$serno[i],
+             gps$lat,
+             gps$lon,
+             bootCount,
+             paste(sort(ports), collapse=", "),
+             tag$tagID[1], tag$antFreq[1], tag$port[1],
+             format(round(diff(c(tag$ts[1], Now)), 3)),
+             numHitsToday,
+             numHits)
+      }, silent=TRUE)
+      }
+    }
+    html = paste(html, paste(tbl, collapse="\n"), "</table>", sep="\n")
+
+    res$write(html)
+    res$finish()
+}
+
+getUploadTokenApp =  function(env) {
+    req <- Rook::Request$new(env)
+    res <- Rook::Response$new()
+    res$header("Cache-control", "no-cache")
+
+    user <- req$GET()[['user']]
+    email <- req$GET()[['email']]
+
+    ## generate the token using openssl's rand_bytes
+
+    rv = getUploadToken(user, email)
+
+    res$write(sprintf('<pre>Token: %s<br><br>Email: %s<br><br>Expires:%s</pre>', rv$token, email, format(rv$expiry, "%Y %b %d %H:%M:%S GMT")))
     res$finish()
 }

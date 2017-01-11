@@ -19,12 +19,23 @@ import time
 import atexit
 import fcntl
 import io
+import signal
 
+# handle SIGTERM so we remove the connection object via the atexit handler
+def handler(signum, frame):
+	sys.exit(1)
+
+signal.signal(signal.SIGTERM, handler)
+signal.signal(signal.SIGINT, handler)
+
+# this folder has to be in the home of the sg_remote user
 SSH_DIR = '/home/sg_remote/.ssh/'
-MASTER_SQLITE_DB = '/home/sg_remote/receivers.sqlite'
-MASTER_SQLITE_DB_LOCK = '/home/sg_remote/receivers.sqlite.lockfile'
 
-STREAMS_PATH = '/home/sg_remote/streams'
+# all other paths go into the /sgm hierarchy
+MASTER_SQLITE_DB = '/sgm/remote/receivers.sqlite'
+MASTER_SQLITE_DB_LOCK = '/sgm/remote/receivers.sqlite.lockfile'
+
+STREAMS_PATH = '/sgm/remote/streams'
 
 # valid serial numbers look like this:
 SERIAL_NO_REGEX = re.compile(r'^[A-Za-z0-9]{12}$')
@@ -32,7 +43,7 @@ SERIAL_NO_REGEX = re.compile(r'^[A-Za-z0-9]{12}$')
 # valid data or metadata stream lines look like this:
 STREAM_LINE_REGEX = re.compile(r'^[-#@a-zA-Z0-9,.+;: /"]{1,100}$')
 
-CONNECTION_FLAG_PATH = '/home/sg_remote/connections/'
+CONNECTION_FLAG_PATH = '/sgm/remote/connections/'
 MIN_TUNNEL_PORT = 40000
 MAX_TUNNEL_PORT = 49999
 
@@ -46,7 +57,7 @@ serno = os.environ['SG_SERNO']
 
 # if the client used the factory key, the serno is 'new'
 
-ff = open("/home/sg_remote/log.txt", "a")
+ff = open("/sgm/logs/sg_remote_log.txt", "a")
 ff.write("%d,%s\n" % (time.time(), serno))
 
 if serno == "new":
@@ -174,7 +185,7 @@ if serno == "new":
 	    # fill up an sqlite database with junk, and can't connect to any services
 	    # on the host.
 
-	    auth_key_file.write('command="/home/sg_remote/code/sg_remote"'
+	    auth_key_file.write('command="/sgm/bin/sg_remote"'
 	                        ',no-pty'
 	                        ',no-X11-forwarding'
 	                        ',single-remote-forwarding-port=%d'
@@ -300,6 +311,14 @@ create index if not exists unknown_ts on unknown ( serverts );
 
     conn.execute('insert into connections values (?, ?)', (time.time(), 1))
     conn.commit()
+
+	# ignore SIGCHILD so the following spawned process won't stick around as defunct
+	signal.signal(signal.SIGCLD, signal.SIG_IGN)
+
+	# spawn a process to sync this receiver after some random amount
+	# of time we're using setsid, but if that doesn't work, do a
+	# chained spawn with intermediate shell
+	subprocess.Popen(['/usr/bin/setsid', '/sgm/bin/syncAttachedReceiver.sh', 'SG-%s' % (serno)])
 
     while True:
         # for now, limit input lines to 100 chars + '\n'

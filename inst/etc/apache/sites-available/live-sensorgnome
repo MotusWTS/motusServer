@@ -1,0 +1,105 @@
+##
+## this is the apache configuration file for live.sensorgnome.org
+## install this in /etc/apache2/sites-available, then symlink from /etc/apache2/sites-enabled
+
+
+RewriteLock /sgm/remote/live.sqlite.lock
+<VirtualHost *:80>
+        ServerName live.sensorgnome.org
+	ServerAdmin john@localhost
+
+	ErrorLog ${APACHE_LOG_DIR}/error_live_sensorgnome.log
+
+	# Possible values include: debug, info, notice, warn, error, crit,
+	# alert, emerg.
+        LogLevel error
+
+	RewriteEngine on
+#        RewriteLog /tmp/rewritelog.txt
+#        RewriteLogLevel 4
+
+	CustomLog ${APACHE_LOG_DIR}/access_live_sensorgnome.log combined
+
+        ## only users with token get their connection proxied to one
+        ## of the live ports.  The tokens are obtained from a Rook
+        ## application called by the wiki, only for logged-in users.
+        ## Initially, the token appears as a leading
+        ## /SESSION_<SERNO>_<TOKEN>]giving the SG serial
+        ## number followed by the user authentication token.  This is looked up in a
+        ## database via the map_live_token_to_port script and if found
+        ## to be valid, the corresponding port is used to create a
+        ## proxy address.
+
+	RewriteMap sglivecontrol prg:/sgm/bin/map_live_token_to_port
+#	RewriteMap sglivecontroldbg prg:/sgm/bin/map_live_token_to_port_dbg
+
+        ## When first connecting, the URL is /SESSION_<SERNO>_<TOKEN>
+        ## where SESSION is the literal 'SESSION', <SERNO> is the serial number, <TOKEN> is 
+        ## the user's authorization token.
+        ## We do a redirect to /SG-<SERNO> and add cookies for user and authtoken
+
+	RewriteRule ^/SESSION_SG-([A-Za-z0-9]{12})_([a-zA-Z0-9_]+) /SG-$1 [CO=sensorgnome_live:$1_$2:live.sensorgnome.org,R,L]
+
+        ## if the cookie has been set, try use it by having sglivecontrol map it to a forwarded port
+
+        RewriteCond %{REQUEST_URI} ^/
+        RewriteCond %{HTTP_COOKIE} ^.*sensorgnome_live=([^;]+)
+#	RewriteRule ^/(SG-[A-Z0-9]{12})?(.*) /${sglivecontroldbg:$1_%1}${sglivecontrol:$1_%1|BOGUS}/$2 [PT,L]
+        RewriteRule ^/(SG-[A-Za-z0-9]{12})?(.*) /${sglivecontrol:$1_%1|BOGUS}/$2 [PT,L]
+
+        ## otherwise, disallow access
+        RewriteRule .* - [F,L]
+
+        ## We maintain up to 5 live ports which get mapped via ssh tunnel
+        ## to SensorGnomes.
+
+        <Location /BOGUS>
+            ## this indicates the user tried to connect without a valid
+            ## token.
+            Deny from all
+        </Location>
+
+        ## Otherwise, looking up the token supplied us with a proxy port number
+        ## (inserted at the start of the URL by the last RewriteRule above)
+        ## which we now use to select the proxy host, which is a local
+        ## port that has been mapped via ssh to a particular SG's web
+        ## server port.
+
+        ProxyTimeout 600
+
+	<Location /50001>
+		  ProxyPass         http://localhost:50001  keepalive=On ttl=600 timeout=600 retry=0
+		  ProxyPassReverse  http://localhost:50001
+    		  ProxyPass         ws://localhost:50001    keepalive=On ttl=600 timeout=600 retry=0
+	          ProxyPassReverse  ws://localhost:50001
+        </Location>
+
+	<Location /50002>
+		  ProxyPass         http://localhost:50002  keepalive=On ttl=600 timeout=600 retry=0
+		  ProxyPassReverse  http://localhost:50002
+    		  ProxyPass         ws://localhost:50002    keepalive=On ttl=600 timeout=600 retry=0
+	          ProxyPassReverse  ws://localhost:50002
+        </Location>
+
+	<Location /50003>
+		  ProxyPass         http://localhost:50003  keepalive=On ttl=600 timeout=600 retry=0
+		  ProxyPassReverse  http://localhost:50003
+    		  ProxyPass         ws://localhost:50003    keepalive=On ttl=600 timeout=600 retry=0
+	          ProxyPassReverse  ws://localhost:50003
+        </Location>
+
+	<Location /50004>
+		  ProxyPass         http://localhost:50004  keepalive=On ttl=600 timeout=600 retry=0
+		  ProxyPassReverse  http://localhost:50004
+    		  ProxyPass         ws://localhost:50004    keepalive=On ttl=600 timeout=600 retry=0
+	          ProxyPassReverse  ws://localhost:50004
+        </Location>
+
+	<Location /50005>
+		  ProxyPass         http://localhost:50005  keepalive=On ttl=600 timeout=600 retry=0
+		  ProxyPassReverse  http://localhost:50005
+    		  ProxyPass         ws://localhost:50005    keepalive=On ttl=600 timeout=600 retry=0
+	          ProxyPassReverse  ws://localhost:50005
+        </Location>
+
+</VirtualHost>

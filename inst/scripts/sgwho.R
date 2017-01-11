@@ -15,11 +15,11 @@ if (isTRUE(ARGS[1] == "-p")) {
         q(save="no")
 }
 
-RECVS = paste0("SG-", sort(dir("/home/sg_remote/connections")))
+RECVS = paste0("SG-", sort(dir("/sgm/remote/connections")))
 
 YEAR = strftime(Sys.time(), "%Y")
 CON = dbConnect(SQLite(), "/SG/receiver_map.sqlite")
-dbGetQuery(CON, "attach database '/home/sg_remote/receivers.sqlite' as d")
+dbGetQuery(CON, "attach database '/sgm/remote/receivers.sqlite' as d")
 
 QUERY=paste0("select printf('%s %s/%s', t1.Serno, t1.Project, t1.Site) from map as t1 left join map as t2 on t1.Serno=t2.Serno and t1.tsHi < t2.tsHi where t2.tsHi is NULL and t1.Serno in (", paste0("'", RECVS, "'", collapse=","), ")")
 RES = unlist(dbGetQuery(CON, QUERY))

@@ -121,8 +121,15 @@ MOTUS_PATH = list(
     RECV             = "/sgm/recv/",                 ## receiver databases
     RECVLOG          = "/sgm/recvlog/",              ## logfiles from receivers
     REFS             = "/sgm/refs/",                 ## links to receiver DBs by year, projCode, siteCode
+    REMOTE           = "/sgm/remote/",               ## items dealing with remote attached receivers
+    REMOTE_ATJOBS    = "/sgm/remote/atjobs/",        ## at-job IDs for syncReceiver jobs, by receiver serial number
+    REMOTE_CONNECTIONS = "/sgm/remote/connections/", ## empty files whose names are serial numbers of connected receivers
+    REMOTE_LIVE      = "/sgm/remote/live.sqlite",    ## DB of live client connections to receivers via our web server
+    REMOTE_STREAMS   = "/sgm/remote/streams/",       ## .sqlite databases of all live content streamed from receivers
+    REMOTE_SOCKETS   = "/sgm/remote/sockets/",       ## sockets used for the live webpage to connected receivers
+    REMOTE_RECEIVERS = "/sgm/remote/receivers.sqlite",
     SPAM             = "/sgm/spam/",                 ## saved invalid emails
-    SYNC             = "/sgm/sync/",                 ## when an empty file having a receiver serial number as its name is placed here,
+    SYNC             = "/sgm/remote/sync/",          ## when an empty file having a receiver serial number as its name is placed here,
                                                      ## the receiver is sync'd remotely
     TAGS             = "/sgm/tags/",                 ## ??
     TAGREG_CLEANUP   = "/sgm/tagregCleanup.R",       ## script to provided tag registration cleanups downstream from motus

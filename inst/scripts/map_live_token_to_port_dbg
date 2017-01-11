@@ -1,0 +1,17 @@
+#!/usr/bin/python
+# -*- Mode:Python; indent-tabs-mode:t; tab-width:4; python-indent:4 -*-;
+
+# dump stdin to stdout and a log file
+
+import sys
+
+debug = open("/tmp/maplog.txt", "w")
+debug.write("Starting debug log for map_live_token_to_port\n")
+debug.flush()
+
+while True:
+	line = sys.stdin.readline()
+	debug.write(line)
+	debug.flush()
+	sys.stdout.write('NULL\n')
+	sys.stdout.flush()
