@@ -1,7 +1,8 @@
 #' Ensure we have the mysql transfer tables for moving SG data to
 #' motus.
 #'
-#' @param src dplyr::src_mysql to motus transfer database
+#' @param src dplyr::src_mysql to motus transfer database, e.g. as returned
+#' by \link{\code{openMotusDB}}
 #'
 #' @param recreate vector of table names which should be dropped then re-created,
 #' losing any existing data.  Defaults to empty vector, meaning no tables

@@ -8,7 +8,8 @@ motus.}
 ensureMotusTransferTables(src, recreate = c())
 }
 \arguments{
-\item{src}{dplyr::src_mysql to motus transfer database}
+\item{src}{dplyr::src_mysql to motus transfer database, e.g. as returned
+by \link{\code{openMotusDB}}}
 
 \item{recreate}{vector of table names which should be dropped then re-created,
 losing any existing data.  Defaults to empty vector, meaning no tables

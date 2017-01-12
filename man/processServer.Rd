@@ -10,7 +10,7 @@ processServer(N, tracing = FALSE)
 \item{N}{integer queue number. If in the range 1..8, this process
 will watch for new jobs in \code{MOTUS_PATH$QUEUE0} and will
 store its operations in the folder \code{MOTUS_PATH$QUEUE\emph{N}}
-If \code{N >= 100}, the process will watch for new jobs in
+If \code{N >= 101}, the process will watch for new jobs in
 \code{MOTUS_PATH$PRIORITY}.  This is to allow high-priority jobs to run separately
 from those handling uploaded data.  It's meant for manual runs on
 the server, and runs for small batches of data from attached receivers.}
