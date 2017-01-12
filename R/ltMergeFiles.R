@@ -21,6 +21,13 @@
 #' @note If err is not NA for a file, then other fields for that file
 #'     might not be set appropriately in the return value.
 #'
+#' @details Any files which are not identical to an existing file are saved
+#' in the file repository at \code{MOTUS_PATH$FILE_REPO}, in addition to
+#' being stored internally in the receiver database.  The names will be
+#' modified if necessary to avoid collisions with existing files.
+#'
+#' Remaining files are deleted.
+#'
 #' @export
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
@@ -188,5 +195,15 @@ ltMergeFiles = function(files, dbdir=MOTUS_PATH$RECV) {
         rm(src)
         gc(2)
     }
+
+    ## save any files used in the receiver's folder in the file repo
+    for (recv in unique(rv$serno)) {
+        move = subset(rv, serno==recv & use)$fullname
+        if (length(move) > 0)
+            moveFilesUniquely(move, file.path(MOTUS_PATH$FILE_REPO, serno))
+    }
+
+    ## delete all remaining files
+    file.remove(rv$ff)
     return (rv)
 }
