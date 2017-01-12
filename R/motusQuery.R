@@ -12,11 +12,11 @@
 #'
 #' @param serno; serial number of receiver from which request is being
 #'     sent; if NULL, the default, uses MOTUS_SECRETS$serno.
-#' 
+#'
 #' @param masterKey; if NULL (the default), use key from the
 #'     MOTUS_SECRETS object.  Otherwise, \code{masterKey} is the name
 #'     of a file to read the secret key from.
-#' 
+#'
 #' @return the result of sending the request to the motus API.  The
 #'     result is a JSON-format character scalar if \code{json} is
 #'     \code{TRUE}; otherwise it is an R list with named components,
@@ -24,7 +24,7 @@
 #'
 #' @note all queries and return values are logged in the file "motus_query_log.txt"
 #' in the user's home directory.
-#' 
+#'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 motusQuery = function (API, params = NULL, requestType="post", show=FALSE, json=FALSE, serno=NULL, masterKey=NULL) {
@@ -44,7 +44,7 @@ motusQuery = function (API, params = NULL, requestType="post", show=FALSE, json=
     if (is.null(serno))
         serno = MOTUS_SECRETS$serno
 
-    HASH = "%s_%s_%s" %>% sprintf(serno, DAY, KEY) %>% digest("sha1", serialize=FALSE) %>% toupper
+    HASH = "%s_%s_%s" %>% sprintf(toupper(serno), DAY, KEY) %>% digest("sha1", serialize=FALSE) %>% toupper
 
     ## query object for getting project list
 
