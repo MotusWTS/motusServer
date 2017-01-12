@@ -67,7 +67,7 @@ safeSQL = function(con, busyTimeout = 300) {
     if (inherits(con, "safeSQL"))
         return(con)
     if (inherits(con, "src"))
-        con = src$con
+        con = con$con
     if (is.character(con))
         con = dbConnect(SQLite(), con)
     isSQLite = inherits(con, "SQLiteConnection")
