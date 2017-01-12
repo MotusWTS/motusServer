@@ -5,7 +5,7 @@
 #'
 #' @param con RSQLite connection to database, as returned by
 #'     dbConnect(SQLite(), ...), or character scalar giving path
-#'     to SQLite database, or MySQLConnection.
+#'     to SQLite database, or MySQLConnection, or dplyr::src
 #'
 #' @param busyTimeout how many total seconds to wait while retrying a
 #'     locked database.  Default: 300 (5 minutes).  Uses \code{pragma busy_timeout}
@@ -66,6 +66,8 @@
 safeSQL = function(con, busyTimeout = 300) {
     if (inherits(con, "safeSQL"))
         return(con)
+    if (inherits(con, "src"))
+        con = src$con
     if (is.character(con))
         con = dbConnect(SQLite(), con)
     isSQLite = inherits(con, "SQLiteConnection")

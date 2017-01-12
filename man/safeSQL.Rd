@@ -9,7 +9,7 @@ safeSQL(con, busyTimeout = 300)
 \arguments{
 \item{con}{RSQLite connection to database, as returned by
 dbConnect(SQLite(), ...), or character scalar giving path
-to SQLite database, or MySQLConnection.}
+to SQLite database, or MySQLConnection, or dplyr::src}
 
 \item{busyTimeout}{how many total seconds to wait while retrying a
 locked database.  Default: 300 (5 minutes).  Uses \code{pragma busy_timeout}
