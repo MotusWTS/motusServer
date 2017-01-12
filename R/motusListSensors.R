@@ -22,7 +22,6 @@ motusListSensors = function(projectID = NULL, year = NULL, serialNo=NULL, ...) {
         serialNo   = serialNo
         )
 
-    if (! is.null(macAddress))
     motusQuery(MOTUS_API_LIST_SENSORS, requestType="get",
                par,
                 ...)
