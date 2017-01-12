@@ -27,7 +27,9 @@ getMotusDeviceID = function(src, useFirst=TRUE) {
     if (length(mm) > 0) {
         if (nrow(mm) == 1 || (nrow(mm) > 0 && useFirst)) {
             m$deviceID = mm$deviceID[match(m$recvSerno, mm$serno)][1]
-            return(as.integer(m$deviceID))
+            rv = as.integer(m$deviceID)
+            if (isTRUE(rv > 0))
+                return(rv)
         } else {
             stop("More than one registered receiver has this serial number; motusIDs are:\n", capture.output(mm))
         }
