@@ -4,8 +4,7 @@
 \alias{motusListSensors}
 \title{return a list of all motus sensors}
 \usage{
-motusListSensors(projectID = NULL, year = NULL, serialNo = NULL,
-  macAddress = NULL, ...)
+motusListSensors(projectID = NULL, year = NULL, serialNo = NULL, ...)
 }
 \arguments{
 \item{projectID:}{integer; motus internal project ID}
@@ -14,12 +13,6 @@ motusListSensors(projectID = NULL, year = NULL, serialNo = NULL,
 
 \item{serialNo:}{character; serial "number" for sensor, if a
 specific sensor is sought.}
-
-\item{macAddress:}{character; 12 hex digits in lower case; MAC
-address of 1st ethernet adapter on sensor; used to distinguish
-between sensors with the same serialNo value (e.g. beaglebone
-blacks made by CircuitCo and Element14 can have the same serial
-number, but their MAC addresses are unique)}
 
 \item{...:}{additional parameters to motusQuery()}
 }

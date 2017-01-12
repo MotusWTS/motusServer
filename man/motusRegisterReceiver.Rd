@@ -4,14 +4,10 @@
 \alias{motusRegisterReceiver}
 \title{register a receiver with motus (admin only)}
 \usage{
-motusRegisterReceiver(serno, macAddr = NULL, secretKey = NULL)
+motusRegisterReceiver(serno, secretKey = NULL)
 }
 \arguments{
 \item{serno:}{character vector, such as "SG-1234BBBK5678"}
-
-\item{macAddr:}{MAC address of receiver's 1st ethernet port, as
-12 upper-case hex digits without punctuation or spaces.  Defaults
-to NULL, meaning "not known".}
 
 \item{secretKey:}{if NULL, generate a pair of public/private ssh keys
 for the receiver, and use the SHA1-sum of the private key file as the

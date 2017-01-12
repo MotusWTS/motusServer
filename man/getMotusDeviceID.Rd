@@ -10,7 +10,7 @@ getMotusDeviceID(src, useFirst = TRUE)
 \item{src}{dplyr src_sqlite to receiver database}
 
 \item{useFirst}{if TRUE, the first receiver matching the given
-serial number and macAddr is used. if FALSE and more than one
+serial number is used. if FALSE and more than one
 receiver matches, fail with an error.}
 }
 \value{

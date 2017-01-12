@@ -2,10 +2,6 @@
 #'
 #' @param serno: character vector, such as "SG-1234BBBK5678"
 #'
-#' @param macAddr: MAC address of receiver's 1st ethernet port, as
-#' 12 upper-case hex digits without punctuation or spaces.  Defaults
-#' to NULL, meaning "not known".
-#'
 #' @param secretKey: if NULL, generate a pair of public/private ssh keys
 #' for the receiver, and use the SHA1-sum of the private key file as the
 #' secretKey.  Otherwise, this is an upper case hex string giving the
@@ -17,7 +13,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-motusRegisterReceiver = function(serno, macAddr = NULL, secretKey = NULL) {
+motusRegisterReceiver = function(serno, secretKey = NULL) {
 
     if (is.null(secretKey)) {
         newserno = sub("^SG-", "sg_", serno, perl=TRUE)
@@ -43,8 +39,7 @@ motusRegisterReceiver = function(serno, macAddr = NULL, secretKey = NULL) {
 
     motusQuery(MOTUS_API_REGISTER_RECEIVER, requestType="get",
                params=list(
-                   secretKey = toupper(secretKey),
-                   macAddr = macAddr
+                   secretKey = toupper(secretKey)
                ),
                masterKey = masterKey, serno=serno)
 }

@@ -209,17 +209,6 @@ sgMergeFiles = function(files, dbdir = MOTUS_PATH$RECV) {
         meta$recvSerno = recv
         meta$recvType = "SG"
         meta$recvModel = if (grepl("BBBK", newf$Fserno[1])) "BBBK" else if (grepl("RPi2", newf$Fserno[1])) "RPi2" else "BBW"
-
-        ## OBSOLETE: we don't try to use this.
-        ## ## because macAddr has not been supplied in the past, we try grab it
-        ## ## if *any* file provides it, so long as it's for the correct recv
-
-        ## if (is.null(meta$recvMACAddr)) {
-        ##     first = which(! is.na(newf$FmacAddr))
-        ##     if (length(first) > 0 && newf$Fserno[first[1]] == meta$serno) {
-        ##         meta$macAddr = newf$FmacAddr[first[1]]
-        ##     }
-        ## }
         now = as.numeric(Sys.time())
         if (nrow(newf) > 0) {
             for (i in 1:nrow(newf)) {

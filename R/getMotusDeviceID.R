@@ -3,7 +3,7 @@
 #' @param src dplyr src_sqlite to receiver database
 #'
 #' @param useFirst if TRUE, the first receiver matching the given
-#' serial number and macAddr is used. if FALSE and more than one
+#' serial number is used. if FALSE and more than one
 #' receiver matches, fail with an error.
 #'
 #' @return the sensor ID, an integer
@@ -19,18 +19,11 @@ getMotusDeviceID = function(src, useFirst=TRUE) {
     ## try get this information from the receiver database.
     m = getMap(src)
     deviceID = m$deviceID
-    if (length(deviceID) > 0 && ! is.na(deviceID))
+    if (isTRUE(deviceID > 0))
         return(as.integer(deviceID))
 
-    macAddr = m$macAddr
-
-    ## temporary workaround of API weirdness: default null macAddr is
-    ## an integer 0, not "0"
-    if (! isTRUE(macAddr != 0 && macAddr != "0"))
-        macAddr = NULL
-
     ## see whether motus knows this receiver
-    mm = motusListSensors(serialNo=m$recvSerno, macAddress=macAddr)
+    mm = motusListSensors(serialNo=m$recvSerno)
     if (length(mm) > 0) {
         if (nrow(mm) == 1 || (nrow(mm) > 0 && useFirst)) {
             m$deviceID = mm$deviceID[match(m$recvSerno, mm$serno)][1]
@@ -41,12 +34,12 @@ getMotusDeviceID = function(src, useFirst=TRUE) {
     }
 
     ## try register this receiver
-    motusRegisterReceiver(m$recvSerno, macAddr)
+    motusRegisterReceiver(m$recvSerno)
 
     ## read back the ID of the newly-registered receiver
     ## (the API call above doesn't return the ID)
 
-    mm = motusListSensors(serialNo=m$recvSerno, macAddress=macAddr)
+    mm = motusListSensors(serialNo=m$recvSerno)
     m$deviceID = mm$id
     return(mm$id)
 }
