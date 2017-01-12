@@ -222,23 +222,6 @@ GRANT SELECT                    ON motus.runs           TO 'denis'@'%';
 GRANT SELECT, UPDATE            ON motus.sg_import_log  TO 'denis'@'%';
 GRANT SELECT, UPDATE (tsMotus)  ON motus.tagAmbig       TO 'denis'@'%';
 
--- Table history records all processing done on sensorgnome.org
-
-CREATE TABLE IF NOT EXISTS history (
-       histID INT PRIMARY KEY UNIQUE NOT NULL AUTO_INCREMENT,
-       event CHAR(8) NOT NULL,    -- event type: "CLEAR", "MERGE", "FIND"
-       origin CHAR(128) NOT NULL, -- origin of event: "data email from xxx@yyy.zz", "command-line @ sensorgnome.org"
-       serno CHAR(32),            -- serial number of device involved in this event (if any)
-       exitCode INTEGER,          -- return value of script
-       errorMsg TEXT,             -- error message, if any
-       outputURLs TEXT,           -- set of URLs of outputs, separated by '^' character
-       outputInfo TEXT,           -- set of URL labels, separated by '^' character
-       ts FLOAT(53)               -- timestamp event was added to table
-);----
-
-CREATE INDEX history_serno on history(serno);----
-CREATE INDEX history_ts on history(ts);----
-
 -- Table upload_tokens records tokens granted to users for data transfers
 
 CREATE TABLE IF NOT EXISTS upload_tokens (
