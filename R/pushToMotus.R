@@ -40,7 +40,7 @@ pushToMotus = function(src) {
     ## databases.
     sql("update batches set motusDeviceID=%d", deviceID)
 
-    batches$motusDeviceID = deviceID
+    newBatches$motusDeviceID = deviceID
 
     ## open the motus transfer table
 
