@@ -10,7 +10,8 @@
 #' @param busyTimeout how many total seconds to wait while retrying a
 #'     locked database.  Default: 300 (5 minutes).  Uses \code{pragma busy_timeout}
 #'     to allow for inter-process DB locking.  Only implemented for
-#'     SQLite connections.
+#'     SQLite connections, as it appears unnecessary for MySQL
+#'     connections.
 #'
 #' @return a function, S with class "safeSQL" taking two or more
 #'     parameters:
@@ -58,6 +59,10 @@
 #' queries; this is the case for the server.sqlite database that holds
 #' job information.  The longer accesses required by e.g. the tag
 #' finder are handled by locking the receiver DB via lockSymbol().
+#'
+#' For both MySQL and SQLite connections, queries that fail due
+#' to deadlock-prevention by the database are retried after a random wait
+#' of 0 to 10 seconds.
 #'
 #' @export
 #'
@@ -115,7 +120,16 @@ safeSQL = function(con, busyTimeout = 300) {
                     a = c(a[[1]], lapply(a[-1], function(x) if (is.character(x)) dbEscapeStrings(con=con, x) else x ))
                 }
                 q = do.call(sprintf, a)
-                dbGetQuery(con, q)
+                repeat {
+                    tryCatch(
+                        return(dbGetQuery(con, q)),
+                        error = function(e) {
+                            if (! grepl("Deadlock.*try restarting transaction", as.character(e), perl=TRUE))
+                                stop(e) ## re-throw if error isn't due to a locked database
+                        })
+                    ## failed due to locked database; wait a while and retry
+                    Sys.sleep(10 * runif(1))
+                }
             },
             class = "safeSQL"
         )

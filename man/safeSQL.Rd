@@ -14,7 +14,8 @@ to SQLite database, or MySQLConnection, or dplyr::src}
 \item{busyTimeout}{how many total seconds to wait while retrying a
 locked database.  Default: 300 (5 minutes).  Uses \code{pragma busy_timeout}
 to allow for inter-process DB locking.  Only implemented for
-SQLite connections.}
+SQLite connections, as it appears unnecessary for MySQL
+connections.}
 }
 \value{
 a function, S with class "safeSQL" taking two or more
@@ -68,6 +69,10 @@ safeSQL is meant for multi-process access of a DB with small, fast
 queries; this is the case for the server.sqlite database that holds
 job information.  The longer accesses required by e.g. the tag
 finder are handled by locking the receiver DB via lockSymbol().
+
+For both MySQL and SQLite connections, queries that fail due
+to deadlock-prevention by the database are retried after a random wait
+of 0 to 10 seconds.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
