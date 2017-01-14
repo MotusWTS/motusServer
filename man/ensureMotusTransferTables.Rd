@@ -5,12 +5,9 @@
 \title{Ensure we have the mysql transfer tables for moving SG data to
 motus.}
 \usage{
-ensureMotusTransferTables(src, recreate = c())
+ensureMotusTransferTables(recreate = c())
 }
 \arguments{
-\item{src}{dplyr::src_mysql to motus transfer database, e.g. as returned
-by \link{\code{openMotusDB}}}
-
 \item{recreate}{vector of table names which should be dropped then re-created,
 losing any existing data.  Defaults to empty vector, meaning no tables
 are recreate.}
@@ -18,6 +15,10 @@ are recreate.}
 \description{
 Ensure we have the mysql transfer tables for moving SG data to
 motus.
+}
+\note{
+: assumes \link{\code{openMotusDB()}} has been called, so that
+the global variable MotusDB is set.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}

@@ -47,14 +47,14 @@ getUploadToken = function(user=MOTUS_ADMIN_USERNAME, email=MOTUS_ADMIN_EMAIL, li
     if (user=="Anonymous")
         return(list(token="INVALID; YOU MUST BE LOGGED IN", expiry=structure(0, class=c("POSIXt", "POSIXct"))))
 
-    mtsql = safeSQL(openMotusDB()$con)
+    openMotusDB() ## ensure MotusDB exists
 
     ## check for existing tokens for this user; if there's one still good
     ## for at least 1/2 a lifetime, return it
 
     now = as.numeric(Sys.time())
 
-    old = mtsql("select token, expiry from upload_tokens where username='%s' and email='%s' and expiry - %f >= %f order by expiry desc limit 1",
+    old = MotusDB("select token, expiry from upload_tokens where username='%s' and email='%s' and expiry - %f >= %f order by expiry desc limit 1",
                   user,
                   email,
                   now,
@@ -68,7 +68,7 @@ getUploadToken = function(user=MOTUS_ADMIN_USERNAME, email=MOTUS_ADMIN_EMAIL, li
 
         ## delete expired tokens
 
-        mtsql("delete from upload_tokens where username='%s' and email='%s' and expiry <= %f", user, email, now)
+        MotusDB("delete from upload_tokens where username='%s' and email='%s' and expiry <= %f", user, email, now)
 
         ## generate new token with lots of extra bits so we can remove non-alphanum chars
 
@@ -81,7 +81,7 @@ getUploadToken = function(user=MOTUS_ADMIN_USERNAME, email=MOTUS_ADMIN_EMAIL, li
         token = substr(token, 1, ceiling(numBits / 6))
         expiry = now + lifeSpan * 24 * 3600
 
-        mtsql("insert into upload_tokens (username, email, token, expiry) values ('%s', '%s', '%s', %f)",
+        MotusDB("insert into upload_tokens (username, email, token, expiry) values ('%s', '%s', '%s', %f)",
               user,
               email,
               token,

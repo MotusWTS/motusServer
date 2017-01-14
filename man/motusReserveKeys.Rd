@@ -4,11 +4,9 @@
 \alias{motusReserveKeys}
 \title{Reserve a block of consecutive primary keys in a motus transfer table.}
 \usage{
-motusReserveKeys(src, table, key, n, IDcol, ID)
+motusReserveKeys(table, key, n, IDcol, ID)
 }
 \arguments{
-\item{src}{dplyr src_mysql to motus transfer table database}
-
 \item{table}{name of the table in which to reserve keys.}
 
 \item{key}{name of the key column in table \code{table}.  This
@@ -46,9 +44,7 @@ values for other columns, is inserted into the table.
 \examples{
 
 ## return the first key in a block of 200 reserved in the batches table
-motusReserveKeys(src_mysql(...), "batches", "batchID", 200, "motusRecvID", 1234)
-
-
+motusReserveKeys("batches", "batchID", 200, "motusRecvID", 1234)
 
 }
 \author{

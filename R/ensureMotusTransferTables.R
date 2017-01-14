@@ -1,26 +1,18 @@
 #' Ensure we have the mysql transfer tables for moving SG data to
 #' motus.
 #'
-#' @param src dplyr::src_mysql to motus transfer database, e.g. as returned
-#' by \link{\code{openMotusDB}}
-#'
 #' @param recreate vector of table names which should be dropped then re-created,
 #' losing any existing data.  Defaults to empty vector, meaning no tables
 #' are recreate.
+#'
+#' @note: assumes \link{\code{openMotusDB()}} has been called, so that
+#' the global variable MotusDB is set.
 #'
 #' @export
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-ensureMotusTransferTables = function(src, recreate=c()) {
-    if (! inherits(src, "src_mysql"))
-        stop("src is not a dplyr::src_mysql object")
-    con = src$con
-    if (! inherits(con, "MySQLConnection"))
-        stop("src is not open or is corrupt; underlying db connection invalid")
-
-    ## function to send a single statement to the underlying connection
-    sql = function(...) dbGetQuery(con, sprintf(...))
+ensureMotusTransferTables = function(recreate=c()) {
 
     if (isTRUE(recreate))
         recreate = motusTransferTables
@@ -31,7 +23,7 @@ ensureMotusTransferTables = function(src, recreate=c()) {
         return ()
 
     for (t in recreate)
-        try(sql("drop table %s", t), silent=TRUE)
+        try(MotusDB("drop table %s", t), silent=TRUE)
 
     schema = "motusTransferTableSchema.sql" %>%
         system.file(package="motusServer") %>%
@@ -40,7 +32,7 @@ ensureMotusTransferTables = function(src, recreate=c()) {
         strsplit(";--", fixed=TRUE)
 
     for (s in schema[[1]])
-        sql(s)
+        MotusDB(s)
 
     return ()
 }

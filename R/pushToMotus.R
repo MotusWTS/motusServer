@@ -44,9 +44,7 @@ pushToMotus = function(src) {
 
     ## open the motus transfer table
 
-    mt = openMotusDB()
-    mtcon = mt$con
-    mtsql = function(...) dbGetQuery(mtcon, sprintf(...))
+    mtcon = openMotusDB()$con ## also ensures global MotusDB exists
 
     ## Writing a record to the motus batches table indicates that
     ## batch is ready for transfer, so must be the last thing we do
@@ -54,7 +52,7 @@ pushToMotus = function(src) {
 
     ## So we need to reserve a block of nrow(b) IDs in motus.batches
 
-    firstMotusBatchID = motusReserveKeys(mt, "batches", "batchID", nrow(newBatches), "motusDeviceID", -deviceID)
+    firstMotusBatchID = motusReserveKeys("batches", "batchID", nrow(newBatches), "motusDeviceID", -deviceID)
     offsetBatchID = firstMotusBatchID - newBatches$batchID[1]
 
     ## Transfer tag ambiguities.  This is a two-way process, in that we want to have
@@ -69,7 +67,7 @@ pushToMotus = function(src) {
     if (nrow(ambig) > 0) {
 
         ## 2. join to the master ambiguity table by tagIDs
-        masterAmbig = tbl(mt, "tagAmbig") %>% collect
+        masterAmbig = as.tbl(MotusDB("select * from tagAmbig"))
 
         joinAmbig = ambig %>% left_join (masterAmbig, by=c("motusTagID1", "motusTagID2", "motusTagID3", "motusTagID4", "motusTagID5", "motusTagID6")) %>% collect
 
@@ -80,7 +78,7 @@ pushToMotus = function(src) {
         n = length(newA)
         if (n > 0) {
             ## note use of negative n to reserve negative, descending keys
-            firstMasterAmbigID = motusReserveKeys(mt, "tagAmbig", "ambigID", -n, "motusTagID1", -deviceID)
+            firstMasterAmbigID = motusReserveKeys("tagAmbig", "ambigID", -n, "motusTagID1", -deviceID)
 
             ## fill in new masterAmbigIDs
             joinAmbig$ambigID.y[newA] = seq(from = firstMasterAmbigID, by = -1, length = n)
@@ -98,8 +96,8 @@ pushToMotus = function(src) {
             ## write new tag ambiguities
             ## but work around bug in RMySQL
             dbWriteTable(mtcon, "temptagAmbig", newAmbig, overwrite=TRUE, row.names=FALSE)
-            dbGetQuery(mtcon, "replace into tagAmbig select * from temptagAmbig")
-            dbGetQuery(mtcon, "drop table temptagAmbig")
+            MotusDB("replace into tagAmbig select * from temptagAmbig")
+            MotusDB("drop table temptagAmbig")
         }
 
         ## 4. record the masterAmbigID for each tag ambiguity in the receiver DB
@@ -143,7 +141,7 @@ pushToMotus = function(src) {
         if (runInfo[1,1] > 0) {
 
             ## reserve the required number of runIDs
-            firstMotusRunID = motusReserveKeys(mt, "runs", "runID", runInfo[1,1], "batchIDbegin", -deviceID)
+            firstMotusRunID = motusReserveKeys("runs", "runID", runInfo[1,1], "batchIDbegin", -deviceID)
             offsetRunID = firstMotusRunID - runInfo[1,2]
 
             res = dbSendQuery(con, sprintf("select * from runs where batchIDBegin = %d order by runID", b$batchID))
@@ -164,7 +162,7 @@ pushToMotus = function(src) {
             hitInfo = sql("select count(*), min(hitID) from hits where batchID = %d", b$batchID)
 
             ## reserve the required number of hitIDs
-            firstMotusHitID = motusReserveKeys(mt, "hits", "hitID", hitInfo[1,1], "batchID", -deviceID)
+            firstMotusHitID = motusReserveKeys("hits", "hitID", hitInfo[1,1], "batchID", -deviceID)
             offsetHitID = firstMotusHitID - hitInfo[1,2]
 
             res = dbSendQuery(con, sprintf("select * from hits where batchID = %d order by hitID", b$batchID))
@@ -243,7 +241,7 @@ pushToMotus = function(src) {
     ## To indicate they are complete and ready for transfer, set
     ## tsMotus on these batches.
 
-    mtsql("update batches set tsMotus = 0 where tsMotus = -1 and batchID >= %d and batchID <= %d",
+    MotusDB("update batches set tsMotus = 0 where tsMotus = -1 and batchID >= %d and batchID <= %d",
           offsetBatchID + newBatches$batchID[1],
           offsetBatchID + tail(newBatches$batchID, 1))
 

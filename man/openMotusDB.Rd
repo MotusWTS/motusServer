@@ -14,7 +14,7 @@ openMotusDB(dbname = "motus", host = "localhost", user = "motus")
 \item{user}{user on database; default: "motus"}
 }
 \value{
-object of class dplyr::src_mysql
+object of class \link{\code{safeSQL}}
 }
 \description{
 The motus database holds batches of tag detections intended for the
@@ -24,10 +24,10 @@ that database is stored in the file ~/.secrets/motusSecrets as
 element "dbPasswd".
 }
 \note{
-The src_mysql is stored in the global variable MOTUS_DB, and
+The safeSQL objects is stored in the global variable MotusDB, and
     if that variable already exists, the connection it holds is
     used.  This means the DB connection is normally opened at most
-    once per session.
+    once per session.  It is reopened automatically if it has closed.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}

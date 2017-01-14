@@ -9,8 +9,6 @@
 #' Note: a record with the largest key value for the block, and default
 #' values for other columns, is inserted into the table.
 #'
-#' @param src dplyr src_mysql to motus transfer table database
-#'
 #' @param table name of the table in which to reserve keys.
 #'
 #' @param key name of the key column in table \code{table}.  This
@@ -36,14 +34,11 @@
 #' @examples
 #'
 #' ## return the first key in a block of 200 reserved in the batches table
-#' motusReserveKeys(src_mysql(...), "batches", "batchID", 200, "motusRecvID", 1234)
-#'
-#'
+#' motusReserveKeys("batches", "batchID", 200, "motusRecvID", 1234)
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-motusReserveKeys = function(src, table, key, n, IDcol, ID) {
-    sql = function(...) dbGetQuery(src$con, sprintf(...))
+motusReserveKeys = function(table, key, n, IDcol, ID) {
 
     ## Insert a new record at the last new key value we want in the block.
     ## The entire query, including nested select, is atomic, so if
@@ -51,10 +46,10 @@ motusReserveKeys = function(src, table, key, n, IDcol, ID) {
     ## overlap
 
     if (n > 0) {
-        sql("insert into %s (%s, %s) select ifnull(max(%s),0) + %g, %g from %s",
+        MotusDB("insert into %s (%s, %s) select ifnull(max(%s),0) + %g, %g from %s",
             table, key, IDcol, key, n, ID, table)
     } else if (n < 0) {
-        sql("insert into %s (%s, %s) select ifnull(min(%s),0) + %g, %g from %s",
+        MotusDB("insert into %s (%s, %s) select ifnull(min(%s),0) + %g, %g from %s",
             table, key, IDcol, key, n, ID, table)
     } else {
         stop("must reserve a non-zero number of keys")
@@ -73,10 +68,10 @@ motusReserveKeys = function(src, table, key, n, IDcol, ID) {
     ## MySQL's query optimizer
 
     if (n > 0) {
-        return (sql("select %s from %s where %s=%s order by %s desc limit 1",
+        return (MotusDB("select %s from %s where %s=%s order by %s desc limit 1",
                     key, table, IDcol, ID, key) [[1]] - n + 1)
     } else {
-        return (sql("select %s from %s where %s=%s order by %s limit 1",
+        return (MotusDB("select %s from %s where %s=%s order by %s limit 1",
                     key, table, IDcol, ID, key) [[1]] - n - 1)
     }
 }

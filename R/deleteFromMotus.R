@@ -52,13 +52,11 @@ deleteFromMotus = function(src, reason="not given", monoBN=NULL, tsStart=0, tsEn
 
     ## open the motus transfer table
 
-    mt = openMotusDB()
-    mtcon = mt$con
-    mtsql = function(...) dbGetQuery(mtcon, sprintf(...))
+    openMotusDB()
 
     ## find all batches satisfying the specifications
 
-    bn = mtsql("select batchID from batches where %s tsEnd >= %.14g and tsStart <= %.14g order by batchID",
+    bn = MotusDB("select batchID from batches where %s tsEnd >= %.14g and tsStart <= %.14g order by batchID",
                    if (isSG) sprintf("monoBN=%d and ", monoBN) else "", tsStart, tsEnd) [[1]]
 
     ## mark batches as having been deleted by negating the ID field, but make sure we're not adding a duplicated negated batchID
@@ -74,7 +72,7 @@ deleteFromMotus = function(src, reason="not given", monoBN=NULL, tsStart=0, tsEn
         j = which(diff(bn) > 1)[1]
         if (is.na(j))
             j = length(bn)
-        mtsql("insert into batchDelete (batchIDbegin, batchIDend, ts, reason, tsMotus)
+        MotusDB("insert into batchDelete (batchIDbegin, batchIDend, ts, reason, tsMotus)
                                 values (%d, %d, %f, '%s', 0)",
               bn[1], bn[j], now, gsub("'", "''", reason, fixed=TRUE))
         bn = bn[-(1:j)]

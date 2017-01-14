@@ -12,12 +12,12 @@
 #'
 #' @param user user on database; default: "motus"
 #'
-#' @return object of class dplyr::src_mysql
+#' @return object of class \link{\code{safeSQL}}
 #'
-#' @note The src_mysql is stored in the global variable MOTUS_DB, and
+#' @note The safeSQL objects is stored in the global variable MotusDB, and
 #'     if that variable already exists, the connection it holds is
 #'     used.  This means the DB connection is normally opened at most
-#'     once per session.
+#'     once per session.  It is reopened automatically if it has closed.
 #'
 #' @export
 #'
@@ -26,11 +26,11 @@
 openMotusDB = function(dbname="motus", host="localhost", user="motus") {
     tryCatch(
         ## sanity check on connection
-        dbGetQuery(MOTUS_DB$con, "select 1"),
+        MotusDB("select 1"),
         error = function(e) {
-            ## either MOTUS_DB doesn't exist, or connection has expired
-            MOTUS_DB <<- src_mysql(dbname=dbname, host=host, user=user, password=MOTUS_SECRETS$dbPasswd)
+            ## either MotusDB doesn't exist, or connection has expired
+            MotusDB <<- safeSQL(dbConnect(MySQL(), dbname=dbname, host=host, user=user, password=MOTUS_SECRETS$dbPasswd))
         }
     )
-    return (MOTUS_DB)
+    return (MotusDB)
 }

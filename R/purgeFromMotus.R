@@ -17,13 +17,11 @@
 purgeFromMotus = function(src) {
     deviceID = getMotusDeviceID(src)
 
-    ## open the motus transfer table
+    ## open the motus transfer DB
 
-    mt = openMotusDB()
-    mtcon = mt$con
-    mtsql = function(...) dbGetQuery(mtcon, sprintf(...))
+    openMotusDB()
 
-    bdrop = mtsql("select batchID from batches where motusRecvID=%d", deviceID)
+    bdrop = MotusDB("select batchID from batches where motusRecvID=%d", deviceID)
     if (nrow(bdrop) > 0) {
 
         bdrop = paste(bdrop[[1]], collapse=",")
@@ -32,10 +30,10 @@ purgeFromMotus = function(src) {
         ## while dropping, we must do batches last, and runs after hits.
 
         for (t in c("gps", "runUpdates", "hits", "batchAmbig", "batchProgs", "batchParams"))
-            mtsql("delete from %s where batchID in (%s)", t, bdrop)
+            MotusDB("delete from %s where batchID in (%s)", t, bdrop)
 
-        mtsql("delete from runs where batchIDbegin in (%s)", bdrop)
-        mtsql("delete from batches where batchID in (%s)", bdrop)
+        MotusDB("delete from runs where batchIDbegin in (%s)", bdrop)
+        MotusDB("delete from batches where batchID in (%s)", bdrop)
     }
 
     ## remove any record of having transferred data to motus

@@ -58,6 +58,9 @@ uploadServer = function(tracing = FALSE, fileEvent="CREATE") {
 
     ## killFile = file.path(MOTUS_PATH$INBOX, "killUploads")
 
+    ## ensure MotusDB is safeSQL connection to motus transfer DB
+    openMotusDB()
+
     repeat {
         upfile = feed()    ## this might might wait a long time
 
@@ -78,7 +81,8 @@ uploadServer = function(tracing = FALSE, fileEvent="CREATE") {
 
         ## lookup the email address for this user from the data_uploads.sg_users
         ## table (the database used by ProjectSend as configured on our server)
-        email = dbGetQuery(openMotusDB()$con, paste0("select email from data_uploads.sg_users where name='", parts[1], "'")) [[1]]
+
+        email = MotusDB("select email from data_uploads.sg_users where name='%s'", parts[1]) [[1]]
 
         ## create and enqueue a new upload job
         ## FIXME: change replyTo to match upload user's email
