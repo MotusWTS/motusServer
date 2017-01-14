@@ -2,7 +2,7 @@
 % Please edit documentation in R/dbInsertOrReplace.R
 \name{dbInsertOrReplace}
 \alias{dbInsertOrReplace}
-\title{Save records from a data frame into a db table, replacing 
+\title{Save records from a data frame into a db table, replacing
 existing records when primary keys collide.}
 \usage{
 dbInsertOrReplace(con, name, df)

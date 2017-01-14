@@ -27,9 +27,12 @@ dbInsertOrReplace = function(con, name, df) {
     tmp = basename(tempfile("zztmp"))
 
     ## create a temporary table with the same structure as
-    ## the target
+    ## the target; don't use the 'temporary' keyword
+    ## because this somehow prevents 'drop table' below
+    ## from succeeding - it leaves an empty table in the
+    ## database.
 
-    sql("create temporary table %s as select * from %s limit 0", tmp, name)
+    sql("create table %s as select * from %s limit 0", tmp, name)
 
     ## write all records to the temporary table
 
