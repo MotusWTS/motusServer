@@ -148,9 +148,8 @@ dumpJobDetails = function(res, j, i) {
         replyTo = "none"
 
     log = j$log
-    if (nchar(log) > 10000)
+    if (isTRUE(nchar(log) > 10000))
         log = paste0(substr(log, 1, 5000), "\n   ...\n", substring(log, nchar(log)-5000), "\n")
-
     res$write(sprintf("<h3>Status for job %d</h3><pre><b>Created Date:</b> %s\n<b>Last Activity:</b> %s\n<b>Sender:</b> %s\n<b>Queue: </b>%s\n<b>Summary: </b>%s</pre><h4>Log:</h4><pre>%s\n</pre>",
                       j,
                       format(TS(ctime(j))),
