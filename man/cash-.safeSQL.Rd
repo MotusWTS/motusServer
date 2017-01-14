@@ -2,7 +2,7 @@
 % Please edit documentation in R/safeSQL.R
 \name{$.safeSQL}
 \alias{$.safeSQL}
-\title{provide read access to some safeSQL internals}
+\title{safeSQL method to provide read access to some internals}
 \usage{
 \method{$}{safeSQL}(x, name)
 }
@@ -13,6 +13,6 @@
 : either the database filename, or the db connection
 }
 \description{
-provide read access to some safeSQL internals
+safeSQL method to provide read access to some internals
 }
 

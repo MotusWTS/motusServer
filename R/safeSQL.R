@@ -136,7 +136,7 @@ safeSQL = function(con, busyTimeout = 300) {
     }
 }
 
-#' provide read access to some safeSQL internals
+#' safeSQL method to provide read access to some internals
 #'
 #' @param name item name; must be one of 'db' or 'con'
 #'
@@ -148,4 +148,12 @@ safeSQL = function(con, busyTimeout = 300) {
            con = environment(x)$con,
            NULL
            )
+}
+
+#' safeSQL method for printing
+#'
+#' @return: invisible(NULL)
+
+print.safeSQL = function(x) {
+    cat("Safe SQL object attached to ", x$db, "\nDo ?safeSQL for more details.")
 }
