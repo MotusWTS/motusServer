@@ -10,7 +10,7 @@
 #     syncAttachedReceiver.sh SERNO WAITLO WAITHI
 #
 # If the receiver with the serial number SERNO is indeed attached,
-# we create the empty /sgm/sync/SERNO using touch, generate a random
+# we create the empty /sgm/remote/sync/SERNO using touch, generate a random
 # wait time between WAITLO and WAITHI minutes, then launch an at-job
 # for this script.
 #
@@ -18,12 +18,17 @@
 # the delay occurs *before* the sync job is launched for the first
 # time.
 
-SERNO=$1
-WAITLO=$2
-WAITHI=$3
+## sanitize SERNO by removing everything but alphanumerics and '-'
+SERNO=${1/[^-[:alnum:]]/}
+## sanitize WAITLO, WAITHI by removing non-digits
+WAITLO=${2/[^0-9]/}
+WAITHI=${3/[^0-9]/}
+
 RUNNOW=1
-SYNCFILE=/sgm/remote/sync/$SERNO
-JOBFILE=/sgm/remote/atjobs/$SERNO
+REMOTE=/sgm/remote
+SYNCFILE=$REMOTE/sync/$SERNO
+JOBFILE=$REMOTE/atjobs/$SERNO
+CONNECTION=$REMOTE/connections/${SERNO/SG-/}
 
 # remove any existing at job for this receiver; we don't want sporadic
 # disconnect / reconnect by the receiver to launch multiple
@@ -34,14 +39,7 @@ if [[ -f $JOBFILE ]]; then
     rm -f $JOBFILE
 fi
 
-if [[ -f ~sg_remote/connections/${SERNO/SG-/} ]]; then
-    ## sanitize SERNO by removing everything but alphanumerics and '-'
-    SERNO=${SERNO//[^-[:alnum:]]/}
-
-    ## sanitize WAITLO, WAITHI by removing non-digits
-    WAITLO=${WAITLO//[^0-9]/}
-    WAITHI=${WAITHI//[^0-9]/}
-
+if [[ -f $CONNECTION ]]; then
     ## by default, use WAITLO = 30 minutes, WAITHI = 90  (average of 1 hour)
     if [[ "$WAITLO" == "" ]]; then
         WAITLO=30
