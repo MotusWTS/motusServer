@@ -216,6 +216,8 @@ child.Copse = function(C, t, n) {
     C[[C$sql(paste("select id from", C$table, "where pid=", t, "limit 1 offset", n-1))[[1]] ]]
 }
 
+#' @export
+
 children.Copse = function(C, t) {
     if (! inherits(t, "Twig"))
         stop("t must be a Twig")
@@ -421,6 +423,8 @@ print.Twig = function(x, ...) {
     cat("Twig(s) with id(s)", paste(x, collapse=","), "from table", C$table, "in database", C$sql$db, "\n")
 }
 
+#' @export
+
 names.Twig = function(T) {
     C = copse(T)
     C$sql(paste("select key from", C$table, "as t1, json_each(data) where t1.id=", T[1]))[[1]]
@@ -602,7 +606,8 @@ ctime.Twig = function(T) {
 #' @export
 
 blob.Twig = function(T) {
-    unclass(toJSON(get("data", envir=parent.env(T), inherits=FALSE), auto_unbox=TRUE, digits=NA))
+    C = copse(T)
+    fromJSON(C$sql(paste("select data from", C$table, "where id=", T))[[1]])
 }
 
 #' @export
