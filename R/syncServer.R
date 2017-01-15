@@ -1,10 +1,13 @@
 #' watch for attached receivers and sync files from them
 #'
-#' Watch for new files in \code{MOTUS_PATH$SYNC}.  When a
-#' file is found, it's assumed the name is the serial number
-#' of an attached receiver.  New files from that receiver are
-#' fetched with rsync, and a job to process them is enqueued
-#' on a priority processServer.
+#' Watch for new files in \code{MOTUS_PATH$SYNC}.  When a file is
+#' found, it's assumed the name is the serial number of an attached
+#' receiver, and a 'syncReceiver' job is queued for that receiver, if
+#' there isn't already an unfinished one for it. The syncReceiver job
+#' is queued via /sgm/priority, bypassing jobs running from uploaded
+#' data or manually on the server.  This is to provide relatively low
+#' latency for both users watching online receivers, and because the
+#' internet connection to the receiver might be intermittent.
 #'
 #' @param tracing logical scalar, default FALSE.  If TRUE, enter
 #'     debug browser before handling each new file upload.
@@ -22,6 +25,8 @@
 #' by each attached receiver.  The last step of the shell script is
 #' to cause its own relaunch after a random time interval, via an
 #' 'at' job.
+#'
+#' @seealso \link{\code{handleSyncReceiver}}
 #'
 #' @export
 #'
@@ -51,8 +56,11 @@ syncServer = function(tracing = FALSE, fileEvent="CLOSE_WRITE") {
         if (tracing)
             browser()
 
-        j = newJob("syncReceiver", .parentPath=MOTUS_PATH$INCOMING, .enqueue=FALSE, serno=serno, queue="0")
-        moveJob(j, MOTUS_PATH$PRIORITY)
+        ## only create the job if there isn't already an unfinished syncReceiver job for this SG
+        if (length(Jobs[type=='syncReceiver' & done==0 & .$serno==R(serno)]) == 0) {
+            j = newJob("syncReceiver", .parentPath=MOTUS_PATH$INCOMING, .enqueue=FALSE, serno=serno, queue="0")
+            moveJob(j, MOTUS_PATH$PRIORITY)
+        }
     }
     motusLog("Sync server stopped")
     quit(save="no")

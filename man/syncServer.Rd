@@ -19,11 +19,14 @@ This function does not return; it is meant for use in an R
     script run in the background.
 }
 \description{
-Watch for new files in \code{MOTUS_PATH$SYNC}.  When a
-file is found, it's assumed the name is the serial number
-of an attached receiver.  New files from that receiver are
-fetched with rsync, and a job to process them is enqueued
-on a priority processServer.
+Watch for new files in \code{MOTUS_PATH$SYNC}.  When a file is
+found, it's assumed the name is the serial number of an attached
+receiver, and a 'syncReceiver' job is queued for that receiver, if
+there isn't already an unfinished one for it. The syncReceiver job
+is queued via /sgm/priority, bypassing jobs running from uploaded
+data or manually on the server.  This is to provide relatively low
+latency for both users watching online receivers, and because the
+internet connection to the receiver might be intermittent.
 }
 \note{
 this depends on some other process placing uploaded files into
@@ -35,5 +38,8 @@ to cause its own relaunch after a random time interval, via an
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}
+\seealso{
+\link{\code{handleSyncReceiver}}
 }
 
