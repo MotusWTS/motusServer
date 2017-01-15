@@ -231,7 +231,7 @@ queueStatusApp = function(env) {
 
     ## for each tagfinder process, show its status and queue length
 
-    for (p in c(1:8, 101)) {
+    for (p in c(1:8, 101:104)) {
         pc = as.character(p)
         running = p %in% qr
         jj = ServerDB("select distinct t1.id from jobs as t1 join jobs as t2 on t1.id = t2.stump where t1.pid is null and t1.queue=:p and t2.done=0", p=pc)[[1]]
