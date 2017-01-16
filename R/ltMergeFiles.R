@@ -168,6 +168,6 @@ ltMergeFiles = function(files, dbdir=MOTUS_PATH$RECV) {
     }
 
     ## delete all remaining files
-    file.remove(rv$ff)
+    toTrash(ff)
     return (rv)
 }

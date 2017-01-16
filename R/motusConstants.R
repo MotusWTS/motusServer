@@ -134,6 +134,7 @@ MOTUS_PATH = list(
     TAGS             = "/sgm/tags/",                 ## ??
     TAGREG_CLEANUP   = "/sgm/tagregCleanup.R",       ## script to provided tag registration cleanups downstream from motus
     TMP              = "/sgm/tmp",                   ## intermediate storage; persistent across reboots
+    TRASH            = "/sgm/trash",                 ## files to be deleted once we know they've been processed
     UPLOADS          = "/sgm/uploads"                ## target in which the ProjectSend server makes hardlinks to its newly-uploaded files
                                                      ## must be writable by the user running the ProjectSend webserver (probably www-data)
 )

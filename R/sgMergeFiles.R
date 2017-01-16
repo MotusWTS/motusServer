@@ -307,6 +307,9 @@ sgMergeFiles = function(files, dbdir = MOTUS_PATH$RECV) {
 
     file.rename(useFiles, file.path(MOTUS_PATH$FILE_REPO, allf$Fserno[keep], format(allf$Fts[keep], "%Y-%m-%d"), basename(useFiles)))
 
+    ## remove remaining files
+    toTrash(ff[!isLink])
+
     return (list(
         info = structure(allf %>%
                          transmute(
