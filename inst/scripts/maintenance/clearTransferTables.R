@@ -38,5 +38,6 @@ for (serno in allSerno) {
     sql = safeSQL(getRecvSrc(serno))
     cat("Emptying motusTX table for receiver", serno, "\n")
     sql("delete from motusTX")
+    sql("update tagAmbig set masterAmbigID=null")
     sql(.CLOSE=TRUE)
 }
