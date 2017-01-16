@@ -30,6 +30,8 @@ CREATE TABLE IF NOT EXISTS batches (
 
 );----
 
+CREATE INDEX batches_tsMotus on batches(tsMotus);----
+
 -- GPS fixes are recorded separately from tag detections.
 
 CREATE TABLE IF NOT EXISTS gps (
@@ -48,7 +50,7 @@ CREATE TABLE IF NOT EXISTS gps (
 -- end in another, later batch.  The separation of detections into
 -- batches does not affect the assignment of detections to runs.
 -- Two fields in "runs" can need updating when subsequent batches
--- are processed: batchIDend, and len;
+-- are processed: batchIDend, and len
 
 CREATE TABLE IF NOT EXISTS runs (
     runID BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT, -- identifier of run; unique for this receiver
@@ -65,6 +67,7 @@ CREATE TABLE IF NOT EXISTS runs (
 );----
 
 CREATE INDEX runs_motusTagID ON runs(motusTagID);----
+CREATE INDEX runs_batchIDbegin ON runs(batchIDbegin);----
 
 -- Because runs can span multiple batches, we need a way to
 -- update some of their fields:
@@ -84,6 +87,8 @@ CREATE TABLE IF NOT EXISTS runUpdates (
     PRIMARY KEY (runID, batchID)              -- only one update per run per batch
 );----
 
+CREATE INDEX runUpdates_runID ON runUpdates(runID);----
+CREATE INDEX runUpdates_batchID ON runUpdates(batchID);----
 
 -- Hits are detections of tags.  They are grouped in two ways:
 -- by runs (consecutive detections of a single tag by a single antenna)
@@ -94,20 +99,20 @@ CREATE TABLE IF NOT EXISTS hits (
     hitID BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT, -- unique ID of this hit
     runID BIGINT NOT NULL REFERENCES runs,            -- ID of run this hit belongs to
     batchID INTEGER NOT NULL REFERENCES batches,      -- ID of batch this hit belongs to
-    ts FLOAT(53) NOT NULL,                            -- timestamp (centre of first pulse in detection);
+    ts FLOAT(53) NOT NULL,                            -- timestamp (centre of first pulse in detection)
                                                       -- unix-style: seconds since 1 Jan 1970 GMT
-    sig FLOAT(24) NOT NULL,                           -- signal strength, in units appropriate to device;
+    sig FLOAT(24) NOT NULL,                           -- signal strength, in units appropriate to device
                                                       -- e.g.; for SG/funcube; dB (max); for Lotek: raw
                                                       -- integer in range 0..255
     sigSD FLOAT(24),                                  -- standard deviation of signal strength, in device
                                                       -- units (NULL okay; e.g. Lotek)
     noise FLOAT(24),                                  -- noise level, in device units (NULL okay; e.g. Lotek)
     freq FLOAT(24),                                   -- frequency offset, in kHz (NULL okay; e.g. Lotek)
-    freqSD FLOAT(24),                                 -- standard deviation of freq, in kHz (NULL okay;
+    freqSD FLOAT(24),                                 -- standard deviation of freq, in kHz (NULL okay
                                                       -- e.g. Lotek)
-    slop FLOAT(24),                                   -- discrepancy of pulse timing, in msec (NULL okay;
+    slop FLOAT(24),                                   -- discrepancy of pulse timing, in msec (NULL okay
                                                       -- e.g. Lotek)
-    burstSlop FLOAT (24)                              -- discrepancy of burst timing, in msec (NULL okay;
+    burstSlop FLOAT (24)                              -- discrepancy of burst timing, in msec (NULL okay
                                                       -- e.g. Lotek)
 );----
 
@@ -136,7 +141,8 @@ CREATE TABLE IF NOT EXISTS tagAmbig (
     tsMotus FLOAT(53) NOT NULL DEFAULT -1  -- timestamp this record received by motus
 );----
 
-CREATE UNIQUE INDEX tagAmbig_motusTagID ON tagAmbig(motusTagID1, motusTagID2, motusTagID3, motusTagID4, motusTagID5, motusTagID6);
+CREATE UNIQUE INDEX tagAmbig_motusTagID ON tagAmbig(motusTagID1, motusTagID2, motusTagID3, motusTagID4, motusTagID5, motusTagID6);----
+CREATE INDEX tagAmbig_tsMotus ON tagAmbig(tsMotus);----
 
 -- Table batchProgs records values of progVersion and progBuildTS by batchID.
 -- Note that receiver version of this table store these values incrementally (noting
@@ -154,6 +160,7 @@ CREATE TABLE IF NOT EXISTS batchProgs (
     PRIMARY KEY (batchID, progName)          -- only one version of a given program per batch
 );----
 
+CREATE INDEX batchProgs_batchID ON batchProgs(batchID);----
 
 CREATE TABLE IF NOT EXISTS batchParams (
 -- This table indicates what parameter values were used to run a btach.
@@ -168,6 +175,8 @@ CREATE TABLE IF NOT EXISTS batchParams (
     paramVal FLOAT(53) NOT NULL,               -- value of parameter
     PRIMARY KEY (batchID, progName, paramName) -- only one value of a given parameter per program per batch
 );----
+
+CREATE INDEX batchParams_batchID ON batchParams(batchID);----
 
 CREATE TABLE IF NOT EXISTS pulseCounts (
 -- This table records antenna activity.  Neither Lotek nor SG
@@ -184,6 +193,8 @@ CREATE TABLE IF NOT EXISTS pulseCounts (
     PRIMARY KEY (batchID, ant, hourBin)      -- a single count for each batchID, antenna, and hourBin
 );----
 
+CREATE INDEX pulseCounts_batchID ON pulseCounts(batchID);----
+
 -- Sometimes we will want to entirely replace a bunch of batches with
 -- new ones.  Really, we just delete the old batches, and insert
 -- new ones (or not).  This table records deletions.  We will guarantee
@@ -195,10 +206,12 @@ CREATE TABLE IF NOT EXISTS pulseCounts (
 CREATE TABLE IF NOT EXISTS batchDelete (
     batchIDbegin INT PRIMARY KEY UNIQUE NOT NULL REFERENCES batches,-- first batch to be deleted
     batchIDend INT NOT NULL REFERENCES batches,                     -- last batch to be deleted
-    ts FLOAT(53) NOT NULL,                                          -- timestamp when this batch deletion record was added;
-    reason TEXT,                                                    -- human-readable explanation for why a batch was deleted;
-    tsMotus FLOAT(53) NOT NULL DEFAULT -1                           -- timestamp when this record transferred to motus;
+    ts FLOAT(53) NOT NULL,                                          -- timestamp when this batch deletion record was added
+    reason TEXT,                                                    -- human-readable explanation for why a batch was deleted
+    tsMotus FLOAT(53) NOT NULL DEFAULT -1                           -- timestamp when this record transferred to motus
 );----
+
+CREATE INDEX batchDelete_batchIDend ON batchDelete(batchIDend);----
 
 CREATE TABLE IF NOT EXISTS sg_import_log (
     batchID INT PRIMARY KEY UNIQUE NOT NULL REFERENCES batches,
