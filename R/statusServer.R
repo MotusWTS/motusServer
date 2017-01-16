@@ -98,9 +98,10 @@ for (var j=1; j <= numJobs; ++j) {
 }
 </script>
 '));
+    showSync = ifelse(isTRUE(req$GET()[['sync']]==1), '=', '<>')
     user = as.character(req$GET()[['user']])[1]
     if (! is.na(user) && user != "admin" && user != "stuart" && user != "zoe" && user != "phil") {
-        jj = ServerDB("select id from jobs where user=:user and pid is null order by id desc", user=user)[[1]]
+        jj = ServerDB(sprintf("select id from jobs where user=:user and pid is null and type %s 'syncReceiver' order by id desc", showSync), user=user)[[1]]
     } else {
         n = as.integer(req$GET()[['n']])[1]
         if (! isTRUE(n > 0 && n <= 500))
@@ -111,13 +112,13 @@ for (var j=1; j <= numJobs; ++j) {
         if (k == 0)
             k = ServerDB("select max (id) from jobs where pid is null")[[1]]
         if (k > 0) {
-            jj = ServerDB("select id from jobs where pid is null and id <= :k order by mtime desc limit :n", k=k, n=n)[[1]]
+            jj = ServerDB(sprintf("select id from jobs where pid is null and id <= :k and type %s 'syncReceiver' order by mtime desc limit :n", showSync), k=k, n=n)[[1]]
         } else {
-            jj = ServerDB("select id from jobs where pid is null and id >= :k order by mtime desc limit :n", k=-k, n=n)[[1]]
+            jj = ServerDB(sprintf("select id from jobs where pid is null and id >= :k and type %s 'syncReceiver' order by mtime desc limit :n", showSync), k=-k, n=n)[[1]]
         }
     }
     if (length(jj) == 0) {
-        jj = ServerDB(sprintf("select id from jobs where pid is null order by mtime %s limit :n", if (k > 0) "desc" else ""), n=n) [[1]]
+        jj = ServerDB(sprintf("select id from jobs where pid is null and type %s 'syncReceiver' order by mtime %s limit :n", showSync, if (k > 0) "desc" else ""), n=n) [[1]]
     }
 
     info = ServerDB(" select t1.id, coalesce(json_extract(t1.data, '$.replyTo[0]'), json_extract(t1.data, '$.replyTo')), t1.type, t1.ctime, t1.mtime, min(t2.done) as done from jobs as t1 left outer join jobs as t2 on t1.id=t2.stump where t1.id in (:jj) group by t1.id order by t1.mtime desc", jj=jj)
