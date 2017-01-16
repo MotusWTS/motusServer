@@ -43,7 +43,7 @@ handleNewFiles = function(j) {
     tj = topJob(j)
     originalSubjobs = children(tj)
     originalDirs = list.dirs(jobPath(j), recursive=FALSE)
-    all = dir(originalDirs, recursive=TRUE, full.names=TRUE)
+    all = dir(originalDirs, recursive=TRUE, full.names=TRUE, all.files=TRUE)
 
     ## delete junk files
     junk = grep(MOTUS_JUNKFILE_REGEX, all, perl=TRUE)
