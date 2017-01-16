@@ -177,7 +177,7 @@ MOTUS_FILE_ATTACHMENT_REGEX = paste0("(?i)\\.(?<suffix>",
 ## regex to match receiver serial numbers (adapted from sgFilenameRegex, which differs
 ## in not using the 'SG-' prefix).
 
-MOTUS_SG_SERNO_REGEX = "(?<serno>SG-[0-9A-Z]{4}(?:RPi2|BBBK|BB)[0-9A-Z]{4,6}(_[0-9])?)"
+MOTUS_SG_SERNO_REGEX = "(?i)(?<serno>SG-[0-9A-Z]{4}(?:RPi2|BBBK|BB)[0-9A-Z]{4,6}(_[0-9])?)"
 
 ## deprecated: path to db for looking up proj, site by serial number
 ## and timestamp or bootnumber. This is for generating output in the
