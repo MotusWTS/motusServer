@@ -55,7 +55,7 @@ sgFindTags = function(src, tagDB, resume=TRUE, par = NULL, mbn) {
         ## start the child;
         bcmd = paste(cmd, pars, if (resume) "--resume", paste0("--bootnum=", bn), "--src_sqlite", tagDB, src$path, " 2>&1 ")
 
-        motusLog("Running %s", bcmd)
+        cat("  => ", bcmd, "\n")
 
         safeSys(bcmd, quote=FALSE)
     }
