@@ -157,14 +157,14 @@ ltMergeFiles = function(files, dbdir=MOTUS_PATH$RECV) {
         ## unlock the receiver and drop the source
         lockSymbol(x$recv, lock=FALSE)
         rm(src)
-        gc(2)
+        gc()
     }
 
     ## save any files used in the receiver's folder in the file repo
     for (recv in unique(rv$serno)) {
         move = subset(rv, serno==recv & use)$fullname
         if (length(move) > 0)
-            moveFilesUniquely(move, file.path(MOTUS_PATH$FILE_REPO, serno))
+            moveFilesUniquely(move, file.path(MOTUS_PATH$FILE_REPO, recv))
     }
 
     ## delete all remaining files
