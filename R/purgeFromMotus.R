@@ -21,7 +21,7 @@ purgeFromMotus = function(src) {
 
     openMotusDB()
 
-    bdrop = MotusDB("select batchID from batches where motusRecvID=%d", deviceID)
+    bdrop = MotusDB("select batchID from batches where motusDeviceID=%d", deviceID)
     if (nrow(bdrop) > 0) {
 
         bdrop = paste(bdrop[[1]], collapse=",")
@@ -29,7 +29,7 @@ purgeFromMotus = function(src) {
         ## drop related records from tables.  To maintain referential integrity
         ## while dropping, we must do batches last, and runs after hits.
 
-        for (t in c("gps", "runUpdates", "hits", "batchAmbig", "batchProgs", "batchParams"))
+        for (t in c("gps", "runUpdates", "hits", "batchProgs", "batchParams"))
             MotusDB("delete from %s where batchID in (%s)", t, bdrop)
 
         MotusDB("delete from runs where batchIDbegin in (%s)", bdrop)
