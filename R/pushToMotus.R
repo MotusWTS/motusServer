@@ -145,6 +145,13 @@ pushToMotus = function(src) {
             offsetRunID = firstMotusRunID - runInfo[1,2]
 
             res = dbSendQuery(con, sprintf("select * from runs where batchIDBegin = %d order by runID", b$batchID))
+
+            ## grab runs from this batch, substituting any ambiguous tag IDs with their master (global) version:
+            res = dbSendQuery(con, sprintf("select runID, batchIDbegin, batchIDend,
+                                            ifnull(t2.masterAmbigID, t1.motusTagID) as motusTagID, ant, len
+                                            from runs as t1 left join tagAmbig as t2 on t1.motusTagID=t2.ambigID
+                                            where t1.batchIDBegin = %d order by t1.runID", b$batchID))
+
             repeat {
                 runs = dbFetch(res, CHUNK_ROWS)
                 if (nrow(runs) == 0)
