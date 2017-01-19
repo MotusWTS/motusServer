@@ -22,6 +22,9 @@ are avoided
    \item any folder containing a file named "syslog(.[0-9](.gz)?)?"
 is enqueued as a new subjob of type "logs"
 
+   \item any folder containing a file named "tagreg.txt" is enqueued
+as a new subjob of type "registerTags"
+
    \item any files that don't look like sensorgnome data files,
 i.e. that don't have names ending in ".gz" or ".txt.gz", and which
 aren't shortened names with a tilde ("~") character are moved into
