@@ -23,7 +23,7 @@
 #'
 #' @note this depends on some other process placing uploaded files into
 #' the folder \code{MOTUS_PATH$UPLOADS}.  We're using a patched version of
-#' \link{http://http://www.projectsend.org}
+#' \link{http://www.projectsend.org}
 #' whose last task for an uploaded file is to create a hardlink to it
 #' in \code{MOTUS_PATH$UPLOADS}, and this generates a "CREATE" event.
 #'
