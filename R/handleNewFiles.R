@@ -67,11 +67,13 @@ handleNewFiles = function(j) {
 
     syslog = grep("^syslog(\\.[0-9](\\.gz)?)?$", basename(all), perl=TRUE)
     if (length(syslog)) {
-        for (d in unique(dirname(all[syslog]))) {
+        dirs = unique(dirname(all[syslog]))
+        for (d in dirs) {
             sj = newSubJob(tj, "logs", .makeFolder=TRUE)
             moveDirContents(d, jobPath(sj)) ## files will be moved before this process can run the newly queued job
         }
-        all = all[ - syslog ]
+        all = all[! dirname(all) %in% dirs ]
+    }
     }
 
     ## look for files that don't look like sensorgnome data files
