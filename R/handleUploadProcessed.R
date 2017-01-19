@@ -17,7 +17,7 @@ handleUploadProcessed = function(j) {
 
     email(tj$replyTo[1], paste0("motus job ", tj, ": processing complete"),
               paste0("Thank-you for the data upload.\nWe have processed your file
-and the summary of results is:\n\n", j$summary, "\n\nYou can see the detailed log here:
+and the summary of results is:\n\n", tj$summary, "\n\nYou can see the detailed log here:
 
    https://sensorgnome.org/My_Job_Status
 
