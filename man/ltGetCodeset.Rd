@@ -4,11 +4,14 @@
 \alias{ltGetCodeset}
 \title{Return the database of canonical parameters for a Lotek codeset.}
 \usage{
-ltGetCodeset(codeSet = c("Lotek4", "Lotek3"))
+ltGetCodeset(codeSet = c("Lotek4", "Lotek3"), pathOnly = FALSE)
 }
 \arguments{
 \item{codeSet:}{character scalar; only "Lotek3" or "Lotek4"
 are permitted so far.}
+
+\item{pathOnly:}{logical scalar; if TRUE, return only the path
+to the .sqlite database containing the codeset.  Default: FALSE}
 }
 \value{
 a dplyr data_frame with these columns:

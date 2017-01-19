@@ -6,6 +6,9 @@
 #' @param codeSet: character scalar; only "Lotek3" or "Lotek4"
 #' are permitted so far.
 #'
+#' @param pathOnly: logical scalar; if TRUE, return only the path
+#' to the .sqlite database containing the codeset.  Default: FALSE
+#'
 #' @return a dplyr data_frame with these columns:
 #'
 #' \itemize{
@@ -34,10 +37,13 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-ltGetCodeset = function(codeSet = c("Lotek4", "Lotek3")) {
+ltGetCodeset = function(codeSet = c("Lotek4", "Lotek3"), pathOnly=FALSE) {
     codeSet = match.arg(codeSet)
 
     fn = sprintf("/home/sg/ramfs/%s.sqlite", codeSet)
+
+    if (pathOnly)
+        return(fn)
 
     if (Sys.getenv("USER") %in%  c("root", "sg") && file.exists(fn)) {
         con = dbConnect(SQLite(), fn)
