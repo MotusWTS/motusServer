@@ -10,7 +10,7 @@ suffixFile: temp file for data.frame attributes (class, names, rownames)
 
 This description is inferred from the file src/main/serialize.c in the R source:
 
-`
+```
   RDS_data_frame            = RDS_header
                               data_frame
 
@@ -95,4 +95,4 @@ This description is inferred from the file src/main/serialize.c in the R source:
                             N                  ## length
                             i1, ..., iN        ## 4-byte signed integers
                             attr_list (levels) ## list of attributes for dataframe;
-`
+```
