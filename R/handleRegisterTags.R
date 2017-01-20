@@ -129,6 +129,7 @@ handleRegisterTags = function(j) {
     ## process each wave file to look for tag detections
     numReg = 0
     numFail = 0
+    numNoBISD = 0
     for (i in seq(along=wavFiles)) {
         ## return a data.frame of (ts, id, dfreq, sig, noise)
         tags = wavFindTags(wavFiles[i], codeSetFile)
@@ -156,24 +157,30 @@ handleRegisterTags = function(j) {
         }
         tags = tags[tags$id == id]
         bi = diff(sort(tags$ts))
-        ## allow a maximum BI standard deviation of 5 ms
-        maxBISD = 0.005
-        ## allow for possibly missed bursts by retrying with
-        tries = 0L
-        maxTries = 5L
-        while (tries < maxTries)  {
-            meanbi = mean(bi)
-            bi.sd = sd(bi)
-            if (bi.sd <= maxBISD)
-                break
-            tries = tries + 1L
-            ## adjust bi by accounting for missed bursts at the current estimate of bi
-            bi = bi / round(bi / meanbi)
-        }
-        if (bi.sd > maxBISD) {
-            jobLog(j, paste0("Unable to get a good estimate of burst interval for tag id ", id, " in file ", f,
-                                  "\nPlease re-record this tag and re-upload"))
-            next
+        meanbi = mean(bi)
+        if (length(bi) == 1) {
+            jobLog(j, paste0("Warning: only 2 bursts detected for tag ", id, " so I can't estimate burst interval error.\nThis registration might not be accurate.\n"))
+            numNoBISD = numNoBISD + 1
+        } else {
+            ## allow a maximum BI standard deviation of 5 ms
+            maxBISD = 0.005
+            ## allow for possibly missed bursts by retrying with
+            tries = 0L
+            maxTries = 5L
+            while (tries < maxTries)  {
+                meanbi = mean(bi)
+                bi.sd = sd(bi)
+                if (bi.sd <= maxBISD)
+                    break
+                tries = tries + 1L
+                ## adjust bi by accounting for missed bursts at the current estimate of bi
+                bi = bi / round(bi / meanbi)
+            }
+            if (bi.sd > maxBISD) {
+                jobLog(j, paste0("Unable to get a good estimate of burst interval for tag id ", id, " in file ", f,
+                                 "\nPlease re-record this tag and re-upload"))
+                next
+            }
         }
         dfreq = mean(tags$freq)
         dfreq.sd = sd(tags$freq)
@@ -228,6 +235,9 @@ handleRegisterTags = function(j) {
             numFail = numFail + 1
         }
     }
-    jobLog(j, paste0("Registered ", numReg, " tags with motus.", if (numFail > 0) paste0("\nWarning: another ", numFail, " tags failed to register")), summary=TRUE)
+    jobLog(j, paste0("Registered ", numReg, " tags with motus.",
+                     if (numFail > 0) paste0("\nWarning: another ", numFail, " tags failed to register"),
+                     if (numNoBISD > 0) paste0("\nWarning: another ", numNoBISD, " tags had no estimate of BI error;\ntheir registrations might be faulty")
+                     ), summary=TRUE)
     return(TRUE)
 }
