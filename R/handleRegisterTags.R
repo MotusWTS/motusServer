@@ -182,6 +182,7 @@ handleRegisterTags = function(j) {
         if (length(bi) == 1) {
             jobLog(j, paste0("Warning: only 2 bursts detected for tag ", id, " so I can't estimate burst interval error.\nThis registration might not be accurate.\n"))
             numNoBISD = numNoBISD + 1
+            bi.sd = 0
         } else {
             ## allow a maximum BI standard deviation of 5 ms
             maxBISD = 0.005
