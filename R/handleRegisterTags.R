@@ -241,7 +241,7 @@ handleRegisterTags = function(j) {
 
         tag = paste0(id, ":", round(meanbi, 2))
         if (length(rv) > 0 && rv$responseCode == "success-import" && ! is.null(rv$tagID)) {
-            jobLog(j, paste0("Success: tag ", tag, " was registered as motus tag ID ", rv$tagID))
+            jobLog(j, paste0("Success: tag ", tag, " was registered as motus tag ", rv$tagID, " under project ", projectID))
             if (! is.null(species) || ! is.null(deployDate)) {
                 ## try register a deployment on the given species and/or date
                 rv2 = motusDeployTag(tagID=as.integer(rv$tagID), speciesID=species, projectID=projectID, tsStart=as.numeric(deployDate))
