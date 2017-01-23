@@ -294,6 +294,11 @@ cleanTagRegistrations = function(m, s, cleanBI = FALSE) {
     ## remove duplicates, which are due to multiple deployments
     nodups = subset(clean, ! duplicated(tagID))
 
+    ## clean up the nominal frequency, which has issues upstream:
+    nodups$nomFreq = round(nodups$nomFreq, 3)          ## upstream problems with conversion from lower-precision float
+    nodups$nomFreq[nodups$nomFreq==166.376] == 166.38  ## from my own registration mistakes
+
+
     dbWriteTable(s$con, "tags", nodups %>% as.data.frame, overwrite=TRUE)
 
     ## now create events table
