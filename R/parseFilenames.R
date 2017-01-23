@@ -14,13 +14,14 @@
 #' \enumerate{
 #'  \item "prefix":  human readable short site name
 #'  \item "serno":  receiver serial number; "SG-" followed by 12 alphanumeric characters e.g. 1315BBBK2156, or possibly with an appended "_N" where N is 1, 2, ...
-#'  for disentangling serial number collisions.
+#'  for disentangling serial number collisions.  Alphabetic characters are converted to upper case.
 #'  \item "bootnum":  boot count (integer)
+#'  \item "tsString": timestamp in YYYY-MM-DDTHH-MM-SS.SSSS format
 #'  \item "ts":  timestamp embedded in name (double, with class \code{c("POSIXt", "POSIXct")} )
 #'  \item "tsCode":  timestamp code ('P' means before GPS fix, 'Z' means accurate to 1e-6 s, 'Y' to 1e-5s, 'X' to 1e-4s, ..., 'T' to 1s)
 #'  \item "port":  port number, if this file is associated with a single port (e.g. a .WAV file); NA if all ports
-#'  \item "extension":  character extension of uncompressed file; e.g. ".txt"
-#'  \item "comp":  character; file compression type, if any:  "", or ".gz"
+#'  \item "extension":  character extension of uncompressed file; e.g. ".txt"; lower case
+#'  \item "comp":  character; file compression type, if any:  "", or ".gz"; lower case
 #'
 #' }
 #' @note Returns NULL if no filenames match regex; otherwise, return value has rows
@@ -29,6 +30,8 @@
 #' @note To resolve the collision between the CTRiver/Sugarloaf and Motus/PointLepreau receivers which
 #' both have serial number 1614BBBK1911, we give Sugarloaf an additional "_1".  This change is also
 #' effected by renaming the files on disk.
+#'
+#' @note case of filename components is matched insensitively, but values are storde
 #'
 #' @export
 
@@ -46,7 +49,7 @@ parseFilenames = function(f, base=basename(f), checkDOS=TRUE) {
     if (checkDOS)
         rv = fixDOSfilenames(f, rv)
 
-    rv$ts = ymd_hms(rv$ts)
+    rv$ts = ymd_hms(rv$tsString)
 
     ## fix only known (as of Sept. 2016) serial number collision
 
@@ -56,6 +59,7 @@ parseFilenames = function(f, base=basename(f), checkDOS=TRUE) {
         file.rename(f[fix], sub("1614BBBK1911", "1614BBBK1911_1", f[fix], fixed=TRUE))
     }
 
+    ## fix cases
     ## Thanks to read.csv semantics in splitToDF, if none of the files
     ## was a .gz, then column the 'comp' column is logical NA,
     ## but if any of the files was a .gz, those which weren't have

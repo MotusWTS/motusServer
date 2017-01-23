@@ -108,18 +108,25 @@ sgMergeFiles = function(files, dbdir = MOTUS_PATH$RECV) {
     ## bind parsed filename components
     allf = allf %>% bind_cols(pfc) %>% as.tbl  ## make sure it's a tbl; bind_cols wasn't behaving as doc'd
 
-    ## add columns used in the return value:
+    ## fix case of components and add status fields
 
     allf = allf %>%
         mutate (
-            name     = stri_replace_all(basename, "",  regex="\\.(bz2|gz)$"),
-            done     = FALSE,
-            partial  = FALSE,
-            nsize    = NA,
-            small    = FALSE,
-            new      = FALSE,
-            use      = FALSE,
-            corrupt  = FALSE
+            Fserno     = toupper(Fserno),
+            FtsString  = toupper(FtsString),
+            FtsCode    = toupper(FtsCode),
+            Fport      = tolower(Fport),
+            Fextension = tolower(Fextension),
+            Fcomp      = tolower(Fcomp),
+            Fname      = paste0(Fprefix, '-', Fserno,'-', Fbootnum, '-', FtsString, FtsCode, '-', Fport, Fextension),
+            iname     = tolower(Fname),
+            done      = FALSE,
+            partial   = FALSE,
+            nsize     = NA,
+            small     = FALSE,
+            new       = FALSE,
+            use       = FALSE,
+            corrupt   = FALSE
         )
 
     ## work with files from each receiver separately
@@ -161,7 +168,8 @@ sgMergeFiles = function(files, dbdir = MOTUS_PATH$RECV) {
 
         ## existing files in database
 
-        oldf = tbl(src, "files")
+        oldf = tbl(src, "files") %>% collect(n=Inf) %>% mutate (iname = tolower(name))
+
 
         ## grab latest file timestamp for each boot session
 
@@ -170,7 +178,7 @@ sgMergeFiles = function(files, dbdir = MOTUS_PATH$RECV) {
         newf = newf %>%
 
     ## join against existing files
-        left_join(oldf, by="name", copy=TRUE) %>%
+        left_join(oldf, by="iname", copy=TRUE) %>%
 
             ## Mark files for which an existing complete copy is in the database
             ## (note that isDone == NA means the file is not there at all)
