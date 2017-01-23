@@ -33,6 +33,15 @@ as well as one or more recording files with names like \code{tagXXX.wav}
 where \code{XXX} is the manufacturer's tag ID, typically 1 to 3 digits.
 When there are recordings of tags with the same ID but different burst intervals,
 the 2nd, 3rd, and so on such tags are given names like \code{tagXXX.1.wav, tagXXX.2.wav, ...}
+}
+\note{
+By default, we assume each tag was recorded at 4 kHz below
+    its nominal frequency; e.g.  at 166.376 MHz for a nominal
+    166.38 MHz tag.  If that's not true, the filename should
+    include a portion of the form \code{@XXX.XXX} giving the
+    frequency at which it was recorded;
+    e.g. \code{tag134@166.372.wav} indicates a tag recorded at
+    166.372 MHz, rather than the default.
 
 Called by \code{\link{processServer}}.
 }

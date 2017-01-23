@@ -4,7 +4,6 @@
 #' text file of metadata.  This function processes the recordings and
 #' pushes the valid ones to motus.org
 #'
-#'
 #' @details
 #' The job folder must contain a file called tagreg.txt with these lines:
 #'
@@ -21,6 +20,14 @@
 #' where \code{XXX} is the manufacturer's tag ID, typically 1 to 3 digits.
 #' When there are recordings of tags with the same ID but different burst intervals,
 #' the 2nd, 3rd, and so on such tags are given names like \code{tagXXX.1.wav, tagXXX.2.wav, ...}
+#'
+#' @note By default, we assume each tag was recorded at 4 kHz below
+#'     its nominal frequency; e.g.  at 166.376 MHz for a nominal
+#'     166.38 MHz tag.  If that's not true, the filename should
+#'     include a portion of the form \code{@XXX.XXX} giving the
+#'     frequency at which it was recorded;
+#'     e.g. \code{tag134@166.372.wav} indicates a tag recorded at
+#'     166.372 MHz, rather than the default.
 #'
 #' Called by \code{\link{processServer}}.
 #'
@@ -117,10 +124,24 @@ handleRegisterTags = function(j) {
     if (length(errs) > 0)
         stop(paste(errs, collapse="\n"))
 
-    wavFiles = dir(p, recursive=TRUE, pattern="^tag[0-9]+(\\.[0-9])?.wav$", ignore.case=TRUE, full.names=TRUE)
+    wavFiles = dir(p, recursive=TRUE, pattern="^tag[0-9]+(\\.[0-9])?(@[.0-9]+).wav$", ignore.case=TRUE, full.names=TRUE)
 
     ## extract data.frame of tag IDs as character strings
-    ids = splitToDF("(?i)tag(?<id>[0-9]+(?:\\.[0-9])?).wav$", basename(wavFiles), guess=FALSE)[[1]]
+    info = splitToDF("(?i)tag(?<id>[0-9]+(?:\\.[0-9])?)(@(?<fcdfreq>[0-9]+\\.[0-9]*))?.wav$", basename(wavFiles), guess=FALSE)
+    ids = info$id
+    fcdfreqs = as.numeric(info$fcdfreq)
+
+    ## ignore freq if user just gave us the nominal frequency
+    if (all(fcdfreqs == nomFreq)) {
+        jobLog(j, paste0("Please note: your filenames all have '@", sprintf("%.3f", nomFreq), "'.\n",
+                      "The '@XXX.XXX' in filenames is for telling us the funcube listening frequency\n",
+                      "rather than the nominal tag frequency, which is given in tagreg.txt file.\n",
+                      "So I'm ignoring these, and assuming you set your funcube to ", sprintf("%.3f", nomFreq - 0.004), " MHz\n",
+                      "which is what we recommend.  If that's not true, please email ", MOTUS_ADMIN_EMAIL, " with details.\n"))
+        fcdfreqs = rep(NA, length(fcdfreqs))
+    }
+    ## set fcdfreq to default 4 kHz below nominal where not supplied
+    fcdfreqs[is.na(fcdfreqs)] = nomFreq - 0.004
 
     ## get appropriate codeset DB and codeset DB file
     codeSetFile = ltGetCodeset(codeSet, pathOnly=TRUE)
@@ -155,7 +176,7 @@ handleRegisterTags = function(j) {
             jobLog(j, paste0("Only 1 detection of id ", id, " found in file ", f, ", so I can't estimate burst interval."))
             next
         }
-        tags = tags[tags$id == id]
+        tags = tags[tags$id == id,]
         bi = diff(sort(tags$ts))
         meanbi = mean(bi)
         if (length(bi) == 1) {
@@ -195,7 +216,8 @@ handleRegisterTags = function(j) {
                 manufacturer = "Lotek",
                 type = "ID",
                 codeSet = codeSet,
-                offsetFreq = dfreq,
+                ## we want offset frequency relative to nominal, not to the recording listening frequency
+                offsetFreq = dfreq + 1000 * (fcdfreqs[i] - nomFreq),
                 period = meanbi,
                 periodSD = bi.sd,
                 pulseLen = 2.5,
