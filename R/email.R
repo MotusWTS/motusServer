@@ -16,6 +16,10 @@
 #' @param ... parameters for replacing \code{sprintf} formatting codes
 #'     in \code{msg}
 #'
+#' @param attachment named list of attachments; the list items are paths
+#'     to files to attach, and the list names are the corresponding labels
+#'     as they will be seen by the recipient.  Default: NULL
+#'
 #' @return invisible(NULL)
 #'
 #' @seealso \link{\code{sprintf}} for formatting codes.
@@ -24,13 +28,18 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-email = function(to, subj, msg, ...) {
+email = function(to, subj, msg, ..., attachment=NULL) {
     if (length(list(...)) > 0)
         msg = sprintf(msg, ...)
     date = format(Sys.time(), MOTUS_TIMESTAMP_FORMAT)
     embargo = file.exists("/sgm/EMBARGO_OUT")
+    if (is.null(attachment)) {
+        body = msg
+    } else {
+        body = c(list(msg), lapply(seq(along=attachment), function(i) mime_part( attachment[i], names(attachment)[i])))
+    }
     if (! embargo)
-        sendmail(MOTUS_OUTGOING_EMAIL_ADDRESS, to, subj, msg)
+        sendmail(MOTUS_OUTGOING_EMAIL_ADDRESS, to, subj, body=body)
     msgFile = file.path(if (embargo) MOTUS_PATH$OUTBOX_EMBARGOED else MOTUS_PATH$OUTBOX, paste0(date, ".txt.bz2"))
     f = bzfile(msgFile, "wb")
     writeLines(

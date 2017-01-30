@@ -84,7 +84,10 @@ handleNewFiles = function(j) {
     if (length(tagreg)) {
         dirs = unique(dirname(all[tagreg]))
         for (d in dirs) {
-            sj = newSubJob(tj, "registerTags", .makeFolder=TRUE)
+            ## Note: make this a subjob of the topjob.  We want to process tag registrations
+            ## (a quick job) before sending the user a confirmation email.
+
+            sj = newSubJob(j, "registerTags", .makeFolder=TRUE)
             moveDirContents(d, jobPath(sj)) ## files will be moved before this process can run the newly queued job
         }
         all = all[! dirname(all) %in% dirs ]

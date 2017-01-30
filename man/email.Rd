@@ -4,7 +4,7 @@
 \alias{email}
 \title{Send an email message.}
 \usage{
-email(to, subj, msg, ...)
+email(to, subj, msg, ..., attachment = NULL)
 }
 \arguments{
 \item{to}{email address of recipient}
@@ -18,6 +18,10 @@ from \code{...}.  Otherwise, it is used as-is.}
 
 \item{...}{parameters for replacing \code{sprintf} formatting codes
 in \code{msg}}
+
+\item{attachment}{named list of attachments; the list items are paths
+to files to attach, and the list names are the corresponding labels
+as they will be seen by the recipient.  Default: NULL}
 }
 \value{
 invisible(NULL)

@@ -14,6 +14,9 @@ TRUE always.
 }
 \description{
 Sends a message to the uploader giving the status of processing.
+If \code{topJob(j)} has an item named \code{emailAttachment},
+then that is a list of named file attachments which will be
+included in the summary message.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}

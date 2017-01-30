@@ -1,6 +1,9 @@
 #' handler for completion of processing of an uploaded file
 #'
 #' Sends a message to the uploader giving the status of processing.
+#' If \code{topJob(j)} has an item named \code{emailAttachment},
+#' then that is a list of named file attachments which will be
+#' included in the summary message.
 #'
 #' @param j the job
 #'
@@ -27,7 +30,7 @@ Regards,
 
 The people at motus.org / sensorgnome.org
 "
-))
+), attachment = tj$emailAttachment)
 
     return(TRUE)
 }

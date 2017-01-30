@@ -106,6 +106,7 @@ handleRegisterTags = function(j) {
 
     ## date for calculating dateBin
     dateBinTS = if (is.null(deployDate)) regTS else deployDate
+    dateBin = sprintf("%4d-%1d", year(dateBinTS), ceiling(month(dateBinTS)/3))
 
     codeSet = "Lotek4"
     if (! is.null(meta$codeSet)) {
@@ -124,7 +125,7 @@ handleRegisterTags = function(j) {
     if (length(errs) > 0)
         stop(paste(errs, collapse="\n"))
 
-    wavFiles = dir(p, recursive=TRUE, pattern="^tag[0-9]+(\\.[0-9])?(@[.0-9]+).wav$", ignore.case=TRUE, full.names=TRUE)
+    wavFiles = dir(p, recursive=TRUE, pattern="^.*tag[0-9]+(\\.[0-9])?(@[.0-9]+).wav$", ignore.case=TRUE, full.names=TRUE)
 
     ## extract data.frame of tag IDs as character strings
     info = splitToDF("(?i)tag(?<id>[0-9]+(?:\\.[0-9])?)(@(?<fcdfreq>[0-9]+\\.[0-9]*))?.wav$", basename(wavFiles), guess=FALSE)
@@ -231,7 +232,7 @@ handleRegisterTags = function(j) {
                 paramType = 1,
                 ts = as.numeric(regTS),
                 nomFreq = nomFreq,
-                dateBin = sprintf("%4d-%1d", year(dateBinTS), ceiling(month(dateBinTS)/3)),
+                dateBin = dateBin,
                 model = tagModel
             ),
             error = function(e) {
@@ -262,5 +263,11 @@ handleRegisterTags = function(j) {
                      if (numFail > 0) paste0("\nWarning: another ", numFail, " tags failed to register"),
                      if (numNoBISD > 0) paste0("\nWarning: another ", numNoBISD, " tags had no estimate of BI error;\ntheir registrations might be faulty")
                      ), summary=TRUE)
+
+    ## generate on-board tag database and mark it as an attachment to this job's completion email
+    dbFile = createRecvTagDB(projectID, dateBin)
+    topJob(j)$attachment = structure(dbFile, names=basename(dbFile))
+    jobLog(j, "\nThe on-board database for your recent tags is attached.\nInstructions for installing it on a sensorgnome are here:\n   https://sensorgnome.org/VHF_Tag_Registration/Uploading_the_tags_database_file_to_your_SensorGnome\n", summary=TRUE)
+
     return(TRUE)
 }
