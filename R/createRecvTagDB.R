@@ -51,6 +51,9 @@ createRecvTagDB = function(projectID, dateBin, path = MOTUS_PATH$TAGS) {
     ## attach output database on disk
     dbGetQuery(con, sprintf("attach database '%s' as d", dbFile))
 
+    ## in case we've tried doing this before
+    dbGetQuery(con, "drop table if exists d.tags")
+
     ## create output database table from temp table
     dbGetQuery(con, sprintf("create table d.tags as select '%s' as proj , mfgID as id,round( nomFreq, 3) as tagFreq,round(nomFreq-0.004,3)as fcdFreq, param1 as g1, param2 as g2, param3 as  g3,period as bi, offsetFreq as dfreq , param4 as `g1.sd`, param5 as `g2.sd`, param6 as `g3.sd`, periodSD as `bi.sd`, 0.0 as `dfreq.sd`, 'uploaded file' as filename, codeSet as codeset from tags", label))
 
