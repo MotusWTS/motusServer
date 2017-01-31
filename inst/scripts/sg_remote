@@ -53,14 +53,14 @@ os.umask(002)
 # .ssh/authorized_keys corresponding to the key used to log into
 # the current session
 
-serno = os.environ['SG_SERNO']
+serno = os.environ['SG_SERNO'].upper()
 
 # if the client used the factory key, the serno is 'new'
 
 ff = open("/sgm/logs/sg_remote_log.txt", "a")
 ff.write("%d,%s\n" % (time.time(), serno))
 
-if serno == "new":
+if serno == "NEW":
     # new login; ask the client for the serial number
 
     serno = sys.stdin.readline(13).rstrip()
