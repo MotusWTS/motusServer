@@ -33,13 +33,11 @@ email = function(to, subj, msg, ..., attachment=NULL) {
         msg = sprintf(msg, ...)
     date = format(Sys.time(), MOTUS_TIMESTAMP_FORMAT)
     embargo = file.exists("/sgm/EMBARGO_OUT")
-    if (is.null(attachment)) {
-        body = msg
-    } else {
-        body = c(list(msg), lapply(seq(along=attachment), function(i) mime_part( attachment[i], names(attachment)[i])))
+    if (! is.null(attachment)) {
+        msg = c(list(msg), lapply(seq(along=attachment), function(i) mime_part( attachment[i], names(attachment)[i])))
     }
     if (! embargo)
-        sendmail(MOTUS_OUTGOING_EMAIL_ADDRESS, to, subj, body=body)
+        sendmail(MOTUS_OUTGOING_EMAIL_ADDRESS, to, subj, msg=msg)
     msgFile = file.path(if (embargo) MOTUS_PATH$OUTBOX_EMBARGOED else MOTUS_PATH$OUTBOX, paste0(date, ".txt.bz2"))
     f = bzfile(msgFile, "wb")
     writeLines(
