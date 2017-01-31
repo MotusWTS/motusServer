@@ -196,7 +196,7 @@ handleRegisterTags = function(j) {
             while (tries < maxTries)  {
                 meanbi = mean(bi)
                 bi.sd = sd(bi)
-                if (bi.sd <= maxBISD)
+                if (isTRUE(bi.sd <= maxBISD))
                     break
                 tries = tries + 1L
                 ## adjust bi by accounting for missed bursts at the current estimate of bi
