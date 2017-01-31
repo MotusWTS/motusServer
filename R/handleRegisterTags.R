@@ -148,6 +148,9 @@ handleRegisterTags = function(j) {
     codeSetFile = ltGetCodeset(codeSet, pathOnly=TRUE)
     codeSetDB =  ltGetCodeset(codeSet,  pathOnly=FALSE)
 
+    ## 2017-Jan-30 FIXME: remove provWarn cruft once upstream re-enables provisional deployment
+    provWarn = FALSE
+
     ## process each wave file to look for tag detections
     numReg = 0
     numFail = 0
@@ -199,7 +202,7 @@ handleRegisterTags = function(j) {
                 ## adjust bi by accounting for missed bursts at the current estimate of bi
                 bi = bi / round(bi / meanbi)
             }
-            if (bi.sd > maxBISD) {
+            if (! isTRUE(bi.sd  <= maxBISD)) {
                 jobLog(j, paste0("Unable to get a good estimate of burst interval for tag id ", id, " in file ", f,
                                  "\nPlease re-record this tag and re-upload"))
                 next
@@ -244,14 +247,21 @@ handleRegisterTags = function(j) {
         if (length(rv) > 0 && rv$responseCode == "success-import" && ! is.null(rv$tagID)) {
             jobLog(j, paste0("Success: tag ", tag, " was registered as motus tag ", rv$tagID, " under project ", projectID))
             if (! is.null(species) || ! is.null(deployDate)) {
-                ## try register a deployment on the given species and/or date
-                rv2 = motusDeployTag(tagID=as.integer(rv$tagID), speciesID=species, projectID=projectID, tsStart=as.numeric(deployDate))
-                msg = "with a deployment"
-                if (! is.null(deployDate))
-                    msg = paste0(msg, " to start ", meta$deployDate)
-                if (! is.null(species))
-                    msg = paste0(msg, " on a ", meta$species)
-                jobLog(j, msg)
+                ## as of 2017 Jan 30; disabled pending upstream changes at motus.org
+                if (! provWarn) {
+                    jobLog(j, "You specified a provisional deployment date and/or species,\nbut this functionality is currently disabled.\n", summary=TRUE)
+                    provWarn = TRUE
+                }
+                if (FALSE) { ## FIXME: re-enable when supported
+                    ## try register a deployment on the given species and/or date
+                    rv2 = motusDeployTag(tagID=as.integer(rv$tagID), speciesID=species, projectID=projectID, tsStart=as.numeric(deployDate))
+                    msg = "with a deployment"
+                    if (! is.null(deployDate))
+                        msg = paste0(msg, " to start ", meta$deployDate)
+                    if (! is.null(species))
+                        msg = paste0(msg, " on a ", meta$species)
+                    jobLog(j, msg)
+                }
             }
             numReg = numReg + 1
         } else {
