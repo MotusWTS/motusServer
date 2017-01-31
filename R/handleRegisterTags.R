@@ -276,7 +276,8 @@ handleRegisterTags = function(j) {
 
     ## generate on-board tag database and mark it as an attachment to this job's completion email
     dbFile = createRecvTagDB(projectID, dateBin)
-    topJob(j)$attachment = structure(dbFile, names=basename(dbFile))
+    tj = topJob(j)
+    tj$attachment = structure(dbFile, names=basename(dbFile))
     jobLog(j, "\nThe on-board database for your recent tags is attached.\nInstructions for installing it on a sensorgnome are here:\n   https://sensorgnome.org/VHF_Tag_Registration/Uploading_the_tags_database_file_to_your_SensorGnome\n", summary=TRUE)
 
     return(TRUE)
