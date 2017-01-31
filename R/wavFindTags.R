@@ -57,6 +57,8 @@ wavFindTags = function(f, tdb,
 
     rv = tryCatch({
         x = read.csv(textConnection(safeSys(cmd, quote=FALSE)), as.is=TRUE)
+        ## filter noisy detections
+        x = subset(x, freq.sd < 0.1)
         x$id = as.integer(gsub("(Lotek#)|(@.*)", "", x$fullID))
         x
     },
