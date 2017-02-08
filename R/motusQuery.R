@@ -1,19 +1,19 @@
 #' Send a query to the motus API
 #'
-#' @param API: one of the MOTUS_API_... constants
+#' @param API one of the MOTUS_API_... constants
 #'
-#' @param params: named list of API-specific parameters
+#' @param params named list of API-specific parameters
 #'
-#' @param requestType: "post" or "get"
+#' @param requestType "post" or "get"
 #'
-#' @param show: if TRUE, print the request to the console before submitting to motus
+#' @param show if TRUE, print the request to the console before submitting to motus
 #'
-#' @param json; if TRUE, return results as JSON-format string; otherwise, as R list
+#' @param json if TRUE, return results as JSON-format string; otherwise, as R list
 #'
-#' @param serno; serial number of receiver from which request is being
+#' @param serno serial number of receiver from which request is being
 #'     sent; if NULL, the default, uses MOTUS_SECRETS$serno.
 #'
-#' @param masterKey; if NULL (the default), use key from the
+#' @param masterKey if NULL (the default), use key from the
 #'     MOTUS_SECRETS object.  Otherwise, \code{masterKey} is the name
 #'     of a file to read the secret key from.
 #'

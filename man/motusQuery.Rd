@@ -8,20 +8,20 @@ motusQuery(API, params = NULL, requestType = "post", show = FALSE,
   json = FALSE, serno = NULL, masterKey = NULL)
 }
 \arguments{
-\item{API:}{one of the MOTUS_API_... constants}
+\item{API}{one of the MOTUS_API_... constants}
 
-\item{params:}{named list of API-specific parameters}
+\item{params}{named list of API-specific parameters}
 
-\item{requestType:}{"post" or "get"}
+\item{requestType}{"post" or "get"}
 
-\item{show:}{if TRUE, print the request to the console before submitting to motus}
+\item{show}{if TRUE, print the request to the console before submitting to motus}
 
-\item{json;}{if TRUE, return results as JSON-format string; otherwise, as R list}
+\item{json}{if TRUE, return results as JSON-format string; otherwise, as R list}
 
-\item{serno;}{serial number of receiver from which request is being
+\item{serno}{serial number of receiver from which request is being
 sent; if NULL, the default, uses MOTUS_SECRETS$serno.}
 
-\item{masterKey;}{if NULL (the default), use key from the
+\item{masterKey}{if NULL (the default), use key from the
 MOTUS_SECRETS object.  Otherwise, \code{masterKey} is the name
 of a file to read the secret key from.}
 }
