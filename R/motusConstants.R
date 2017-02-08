@@ -4,8 +4,8 @@
 #'
 
 MOTUS_API_ENTRY_POINTS          = 'http://motus.org/data/api/entrypoints.jsp'
-MOTUS_API_REGISTER_TAG          = 'http://motus.org/data/api/v1.0/registertag.jsp'
-MOTUS_API_DEPLOY_TAG            = 'http://motus.org/data/api/v1.0/deploytag.jsp'
+MOTUS_API_REGISTER_TAG          = 'https://motus.org/api/tag/register'
+MOTUS_API_DEPLOY_TAG            = 'https://motus.org/api/tag/deploy'
 MOTUS_API_REGISTER_PROJECT      = 'http://motus.org/data/api/v1.0/registerproject.jsp'
 MOTUS_API_REGISTER_RECEIVER     = 'http://motus.org/data/api/v1.0/registersensor.jsp'
 MOTUS_API_LIST_PROJECTS         = 'http://motus.org/data/api/v1.0/listprojects.jsp'

@@ -247,21 +247,14 @@ handleRegisterTags = function(j) {
         if (length(rv) > 0 && rv$responseCode == "success-import" && ! is.null(rv$tagID)) {
             jobLog(j, paste0("Success: tag ", tag, " was registered as motus tag ", rv$tagID, " under project ", projectID))
             if (! is.null(species) || ! is.null(deployDate)) {
-                ## as of 2017 Jan 30; disabled pending upstream changes at motus.org
-                if (! provWarn) {
-                    jobLog(j, "You specified a provisional deployment date and/or species,\nbut this functionality is currently disabled.\n", summary=TRUE)
-                    provWarn = TRUE
-                }
-                if (FALSE) { ## FIXME: re-enable when supported
-                    ## try register a deployment on the given species and/or date
-                    rv2 = motusDeployTag(tagID=as.integer(rv$tagID), speciesID=species, projectID=projectID, tsStart=as.numeric(deployDate))
-                    msg = "with a deployment"
-                    if (! is.null(deployDate))
-                        msg = paste0(msg, " to start ", meta$deployDate)
-                    if (! is.null(species))
-                        msg = paste0(msg, " on a ", meta$species)
-                    jobLog(j, msg)
-                }
+                ## try register a deployment on the given species and/or date
+                rv2 = motusDeployTag(tagID=as.integer(rv$tagID), speciesID=species, projectID=projectID, tsStartAnticipated=as.numeric(deployDate))
+                msg = "with a deployment"
+                if (! is.null(deployDate))
+                    msg = paste0(msg, " to start ", meta$deployDate)
+                if (! is.null(species))
+                    msg = paste0(msg, " on a ", meta$species)
+                jobLog(j, msg)
             }
             numReg = numReg + 1
         } else {
