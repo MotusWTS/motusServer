@@ -221,7 +221,8 @@ else:
         open ( "/tmp/sshd_sg_log.txt", "a").write("Rejection @%.3f from %s\n" % (time.time(), serno, ))
         exit(3)
 
-    conn = sqlite3.connect(STREAMS_PATH + '/' + serno + '.sqlite')
+    db_name = STREAMS_PATH + '/' + serno + '.sqlite'
+    conn = sqlite3.connect(db_name)
 
     conn.execute('pragma journal_mode=WAL;')
     conn.executescript('''
@@ -311,6 +312,11 @@ create index if not exists unknown_ts on unknown ( serverts );
 
     conn.execute('insert into connections values (?, ?)', (time.time(), 1))
     conn.commit()
+	# sqlite masks process umask against its own compile-time value 0f 0644
+	# so force g+w on db files
+	os.chmod(db_name, 0664)
+	os.chmod(db_name + "-shm", 0664)
+	os.chmod(db_name + "-wal", 0664)
 
 	# ignore SIGCHILD so the following spawned process won't stick around as defunct
 	signal.signal(signal.SIGCLD, signal.SIG_IGN)
