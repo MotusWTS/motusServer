@@ -1,0 +1,267 @@
+#!/bin/bash
+# update a remote SG
+# The SG must be connected to the server and have its designated tunnel port
+# mapped back to its own local ssh port (22).
+#
+# This script updates files on the root and boot partitions of the remote SG.
+# Optionally, it can also:
+#   - download files not already on the server
+#   - remove all data files, including those hidden in the flash memory
+#     at /media/internal_SD_card if the latter has been mounted over by
+#     an actual SD card.
+#   - update the firmware of any attached funcubes to 48 kHz
+# Unless you specify the dry-run [-i] option, the script logs activities to
+#   /SG/receivers/logs/SG-XXXXXXXXXXXX.log.txt
+# and any files downloaded are placed in a tar archive in
+#   /SG/incoming/SG-XXXXXXXXXXXX_new_data_files_archive.tar
+#
+
+DRYRUN=""
+GETDATA=""
+DELDATA=""
+FCDREPRO=""
+SKIPRSYNC=""
+SKIPREBOOT=""
+ISRESCUE=""
+
+if [[ ! -d root || ! -d boot ]]; then
+    cat <<EOF
+You need to be in directory with subdirectories 'root' and 'boot'
+which contain the files for the root and boot partitions of
+an SG.  e.g. Do 'cd /home/john/proj/bbb_images_2014' then run
+this script.
+
+EOF
+    exit 3
+fi
+
+while [[ "$1" != "" ]]; do
+    if [[ "$1" == "-i" ]]; then
+        DRYRUN="--dry-run"
+    elif [[ "$1" == "-g" ]]; then
+        GETDATA=1
+    elif [[ "$1" == "-d" ]]; then
+        DELDATA=1
+    elif [[ "$1" == "-f" ]]; then
+        FCDREPRO=1
+    elif [[ "$1" == "-s" ]]; then
+        SKIPRSYNC=1
+    elif [[ "$1" == "-n" ]]; then
+        SKIPREBOOT=1
+    elif [[ "$1" == "-r" ]]; then
+        ISRESCUE=1
+    else
+        break;
+    fi
+    shift;
+done;
+if [[ ! "$1" =~ ^[0-9]+$ ]]; then
+    cat <<EOF
+Usage: nohup rsync_image_dir_to_remote_SG.sh [-i] [-g] [-d] [-f] [-s] TUNNEL_PORT
+where TUNNEL_PORT is the port number on which the remote SG has established
+a mapping back to its port 22.  To find port numbers, run 'sgwho'.
+
+You must run this command from a directory where 'boot' and 'root' are
+the top-level directories corresponding to each SG partition.
+
+If you specify '-i', rsync is done as a dry run, which just prints the
+list of files that would be changed.
+
+If you specify '-g', all data files on the remote SG which are not already
+on the server are downloaded to /SG/INCOMING
+
+If you specify '-d', all data files on the remote SG are deleted.  This
+means the remote directory /media/ is cleared.  Also, any attached disks
+which were mounted there are reformated as VFAT volumes.
+
+If you specify '-f', all funcubedongle ProPlus on the remote SG are reprogrammed
+to the 48kHz firmware.
+
+If you specify '-s', the script does not update the remote SG's software.
+
+If you specify '-n', the script does not reboot the remote SG after other
+operations finish.  Reprogramming the funcubedongles and/or updating software
+should normally be followed by a reboot.
+
+If you specify '-r', the remote SG is assumed to have booted from a rescue
+SD card, and rsync is performed on the internal flash memory, rather than
+the SD card.
+
+You should run this script using 'nohup' to prevent the ssh connection
+from dying during long-running operations.
+
+EOF
+
+    exit 1;
+fi
+
+PORT=$1
+SERNO=`sqlite3 /sgm/remote/receivers.sqlite "select serno from receivers where tunnelPort = $PORT"`
+if [[ "$SERNO" == "" ]]; then
+    echo No SG has been registered with that tunnel port.
+    exit 3
+fi
+SG=SG-$SERNO
+
+LOGFILE=/SG/receivers/logs/$SG.log.txt
+
+if [[ "$DRYRUN" == "" ]]; then
+    exec >>$LOGFILE 2>&1
+fi
+
+echo === `date` - update of remote SG $SERNO on port $PORT
+SSHOPTS="-p $PORT -o StrictHostKeyChecking=no"
+
+ALLFILES=/SG/allfiles.sqlite
+
+PASSWD=root
+
+if [[ "$GETDATA" || "$DELDATA" ]]; then
+    ## first, get files in any mounted medium
+    PORTFILES=/tmp/${SG}_files.txt
+    PORTFILESQL=${PORTFILES/txt/sqlite};
+    PORTFILESNEEDED=${PORTFILES/.txt/_needed.txt};
+    rm -f $PORTFILES $PORTFILESQL $PORTFILESNEEDED
+    PORTFILESARCHIVE=/SG/INCOMING/${SG}_new_data_files_archive.tar;
+    echo name,path,size > $PORTFILES
+    read -d '' CMD <<EOF
+mkdir /tmp/tmproot
+mount /dev/root /tmp/tmproot
+ln -s /tmp/tmproot/media/internal_SD_card /media/tmp
+EOF
+    sshpass -p $PASSWD ssh -T $SSHOPTS root@localhost "$CMD" 2>/dev/null
+    sshpass -p $PASSWD ssh -T $SSHOPTS root@localhost 'find /media -type f -printf %f,%p,%s\\n' >> $PORTFILES 2>/dev/null
+    sqlite3 $PORTFILESQL <<EOF
+drop table if exists files;
+.separator ','
+.import '$PORTFILES' files
+create index files_name on files(name);
+EOF
+    sqlite3 $ALLFILES > $PORTFILESNEEDED <<EOF
+attach database '$PORTFILESQL' as db1;
+select t1.path from db1.files as t1 left outer join files as t2 on t1.name=t2.name where t2.name is null or t1.size > t2.size;
+EOF
+    if [[ $GETDATA ]]; then
+        if [[ $DRYRUN ]]; then
+            echo === These files would be downloaded:
+            cat $PORTFILESNEEDED
+        else
+            ## download needed files given the list of names
+            echo Downloading missing data files.
+            cat $PORTFILESNEEDED | sshpass -p $PASSWD ssh -T $SSHOPTS root@localhost 'tar -cvf- -T /dev/stdin' > $PORTFILESARCHIVE 2>/dev/null
+        fi
+    fi
+fi
+
+if [[ "$DRYRUN" ]]; then
+    echo === This would shut down the vamp-alsa-host, node, master.sh, samba, and chronyc processes.
+else
+    echo === Killing the vamp-alsa-host, node, master.sh, samba, and chronyc processes.
+    read -d '' CMD <<EOF
+(sleep 15; killall -KILL ssh; /home/bone/proj/bonedongle/scripts/maintain_ssh_tunnel) &
+disown %1
+killall -KILL vamp-alsa-host node master.sh;
+/etc/init.d/samba stop;
+killall chronyc
+EOF
+    sshpass -p $PASSWD ssh -q -T $SSHOPTS root@localhost  2>/dev/null "$CMD"
+    sleep 15;  ## ensure the tunnel gets re-established before continuing
+fi
+
+if [[ $DELDATA ]]; then
+    FILECOUNT=`wc -l $PORTFILES | awk '{print $1}'`
+    if [[ $DRYRUN ]]; then
+        echo === This would delete $FILECOUNT raw data files from the remote SG
+        echo === and reformat any internal SD card.
+    else
+        echo === Deleting $FILECOUNT raw data files from the remote SG.
+        read -d '' CMD <<EOF
+rm -rf /media/*/*;
+umount /tmp/tmproot;
+rmdir /tmp/tmproot;
+datamount=`mount | awk '/\/media\/internal_SD_card/{print $1}'`;
+if [ "$datamount" != "" ]; then
+  umount $datamount;
+  echo === Reformatting micro SD card.
+  mkfs -t vfat $datamount;
+  mount $datamount /media/internal_SD_card;
+fi
+EOF
+        sshpass -p $PASSWD ssh -q -T $SSHOPTS root@localhost  2>/dev/null "$CMD"
+    fi
+
+    sshpass -p $PASSWD ssh -T $SSHOPTS root@localhost 2>/dev/null "rm -f /media/tmp"
+fi
+
+if [[ ! "$SKIPRSYNC" ]]; then
+    if [[ "$ISRESCUE" ]] ; then
+        sshpass -p $PASSWD ssh -T $SSHOPTS root@localhost 'mkdir /tmp/introot /tmp/intboot; mount /dev/mmcblk1p1 /tmp/intboot; mount /dev/mmcblk1p2 /tmp/introot;'
+        REMOTEROOT="/tmp/introot/";
+        REMOTEBOOT="/tmp/intboot/";
+    else
+        REMOTEROOT="/";
+        REMOTEBOOT="/boot/uboot/";
+    fi
+
+    if [[ $DRYRUN ]]; then
+        echo === The following files would be updated on the boot partition:
+    else
+        echo === Updating these files on the boot partition:
+    fi
+
+    sudo rsync $DRYRUN -e "sshpass -p $PASSWD ssh $SSHOPTS"  -rptcv --exclude "deployment.*" --exclude "SG_tag_database.*" boot/ root@localhost:$REMOTEBOOT
+
+    if [[ $DRYRUN ]]; then
+        echo === The following files would be updated on the root partition:
+    else
+        echo === Updating these files on the root partition:
+    fi
+
+    sudo rsync $DRYRUN -e "sshpass -p $PASSWD ssh $SSHOPTS"  -acv --exclude "etc/bootcount" --exclude "media/**" --exclude "var/log/**" --exclude "tmp/**" --exclude "proc/**" --exclude "sys/**" --exclude "run/**" --exclude "dev/**" --exclude "boot/uboot/**" --exclude "usr/include/**" --exclude "var/cache/**"  --exclude "lost+found/**" root/ root@localhost:$REMOTEROOT
+
+    if [[ "$ISRESCUE" ]] ; then
+        sshpass -p $PASSWD ssh -T $SSHOPTS root@localhost 'umount /tmp/introot; umount /tmp/intboot; rmdir /tmp/introot /tmp/intboot;'
+    fi
+fi
+if [[ $FCDREPRO ]]; then
+    if [[ $DRYRUN ]]; then
+        read -d '' CMD <<EOF
+             FCDS=\`/usr/bin/fcd -l | awk 'BEGIN{FS=";"}/FCD Pro Plus/{sub("enum: ", "", \$2);print \$2}'\`;
+             for fcd in \$FCDS; do
+               echo === This would update Funcube Pro Plus -e \$fcd firmware to 48kHz sampling:
+               echo === /usr/bin/fcd -e \$fcd -f /home/bone/proj/fcd/firmware/FCD2.20.03.48.pro.bin
+             done;
+EOF
+        sshpass -p $PASSWD ssh -q -T $SSHOPTS root@localhost  "$CMD" 2>/dev/null
+
+    else
+        read -d '' CMD <<EOF
+             FCDS=\`/usr/bin/fcd -l | awk 'BEGIN{FS=";"}/FCD Pro Plus/{sub("enum: ", "", \$2);print \$2}'\`;
+             for fcd in \$FCDS; do
+               echo Updating Funcube Pro Plus -e \$fcd firmware to 48kHz sampling:
+               /usr/bin/fcd -e \$fcd -f /home/bone/proj/fcd/firmware/FCD2.20.03.48.pro.bin
+               sleep 5
+             done;
+EOF
+        sshpass -p $PASSWD ssh -q -T  $SSHOPTS root@localhost  "$CMD" 2>/dev/null
+    fi
+fi
+
+if [[ "$SKIPREBOOT" ]]; then
+    if [[ "$DRYRUN" ]]; then
+        echo === This would restart the samba and SG master processes.
+    else
+        echo === Restarting samba and SG master processes.
+        read -d '' CMD <<EOF
+             (/etc/init.d/samba start; /etc/init.d/sensorgnome-master start &)
+EOF
+        sshpass -p $PASSWD ssh -f -T -q $SSHOPTS root@localhost "$CMD" 2>/dev/null
+    fi
+else
+    if [[ "$DRYRUN" ]]; then
+        echo === This would reboot the system.
+    else
+        echo === Rebooting the system.
+        sshpass -p $PASSWD ssh -q -T $SSHOPTS root@localhost reboot 2>/dev/null
+    fi
+fi
