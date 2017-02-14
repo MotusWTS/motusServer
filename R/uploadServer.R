@@ -50,13 +50,11 @@ uploadServer = function(tracing = FALSE, fileEvent="CREATE") {
     on.exit(feed(TRUE), add=TRUE)
 
     ## the kill file; must be in the same folder as passed to getFeeder,
-    ## so that creating the killFile causes a return from feed() below:
+    ## so that creating the killFile causes a return from feed() below.
+    ## Note: files uploaded by users are prepended with USERNAME:TIMESTAMP:
+    ## so users can't kill this server by uploading a file called "kill".
 
-    ## We don't want to let users kill this server by upload a file with this name,
-    ## so the killFile functionality is disabled for this server, preventing graceful
-    ## termination when the server is waiting for inotifywait to report a new upload
-
-    ## killFile = file.path(MOTUS_PATH$INBOX, "killUploads")
+    killFile = file.path(MOTUS_PATH$UPLOAD, "kill")
 
     ## ensure MotusDB is safeSQL connection to motus transfer DB
     openMotusDB()
@@ -64,9 +62,8 @@ uploadServer = function(tracing = FALSE, fileEvent="CREATE") {
     repeat {
         upfile = feed()    ## this might might wait a long time
 
-        ## disabled killFile functionality (see above)
-        ## if (upfile == killFile)
-        ##     break
+        if (upfile == killFile)
+            break
 
         if (tracing)
             browser()

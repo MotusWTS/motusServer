@@ -21,7 +21,7 @@ and only after the full file contents are available.}
 This function does not return; it is meant for use in an R
     script run in the background.  After each subjob is handled,
     the function checks for the existence of a file called
-    \code{MOTUS_PATH$INBOX/killE}.  If that file is found,
+    \code{MOTUS_PATH$UPLOADS/kill}.  If that file is found,
     the function calls quit(save="no").  The file will also
     be detected within the call to feed() when the queue
     is empty, because it is located in the watched folder.
@@ -31,11 +31,11 @@ Watch for new files in \code{MOTUS_PATH$UPLOADS};
 and when a new file is found, queue a job to process it.
 }
 \note{
-this depends on some other process placing uploaded files into
-the folder \code{MOTUS_PATH$UPLOADS}.  We're using a patched version of
-\link{http://www.projectsend.org}
-whose last task for an uploaded file is to create a hardlink to it
-in \code{MOTUS_PATH$UPLOADS}, and this generates a "CREATE" event.
+this depends on some other process placing uploaded files
+    into the folder \code{MOTUS_PATH$UPLOADS}.  We're using a
+    patched version of \link{http://www.projectsend.org} whose last
+    task for an uploaded file is to create a hardlink to it in
+    \code{MOTUS_PATH$UPLOADS}, and this generates a "CREATE" event.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
