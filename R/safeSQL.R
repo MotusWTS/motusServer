@@ -107,7 +107,7 @@ safeSQL = function(con, busyTimeout = 300) {
     } else {
 
         ########## MySQL ########
-
+        dbGetQuery(con, "set character set 'utf8'")
         structure(
             function(..., .CLOSE=FALSE) {
                 if (.CLOSE) {
@@ -120,6 +120,7 @@ safeSQL = function(con, busyTimeout = 300) {
                     a = c(a[[1]], lapply(a[-1], function(x) if (is.character(x)) dbEscapeStrings(con=con, x) else x ))
                 }
                 q = do.call(sprintf, a)
+                Encoding(q) = "UTF-8"
                 repeat {
                     tryCatch(
                         return(dbGetQuery(con, q)),
