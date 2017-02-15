@@ -204,9 +204,11 @@ CREATE TABLE batches (
                                               -- covered by batch; unix-style:
                                               -- seconds since 1 Jan 1970 GMT
     numHits BIGINT,                           -- count of hits in this batch
-    ts FLOAT(53)                              -- timestamp when this batch record was
+    ts FLOAT(53),                             -- timestamp when this batch record was
                                               -- added; unix-style: seconds since 1
                                               -- Jan 1970 GMT
+    motusUserID INT,                          -- user who uploaded the data leading to this batch
+    motusProjectID INT                        -- user-selected motus project ID for this batch
 );
 ")
     }

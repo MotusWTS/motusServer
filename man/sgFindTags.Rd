@@ -31,7 +31,11 @@ the boot count.}
 from the \code{files} table in the receiver's sqlite database.}
 }
 \value{
-the batch number and the number of tag detections in the stream.
+a list with these items
+\itemize{
+  \item batchID the batch number
+  \item numHits the number of unfiltered tag detections in the stream.
+}
 }
 \description{
 A stream is the ordered sequence of raw data files from a receiver

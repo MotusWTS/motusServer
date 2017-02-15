@@ -30,7 +30,11 @@
 #' @param mbn integer monotonic boot number(s); this is the monoBN field
 #'     from the \code{files} table in the receiver's sqlite database.
 #'
-#' @return the batch number and the number of tag detections in the stream.
+#' @return a list with these items
+#' \itemize{
+#'   \item batchID the batch number
+#'   \item numHits the number of unfiltered tag detections in the stream.
+#' }
 #'
 #' @export
 #'

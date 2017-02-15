@@ -16,16 +16,16 @@
 #' @return This function does not return; it is meant for use in an R
 #'     script run in the background.  After each subjob is handled,
 #'     the function checks for the existence of a file called
-#'     \code{MOTUS_PATH$INBOX/killE}.  If that file is found,
+#'     \code{MOTUS_PATH$UPLOADS/kill}.  If that file is found,
 #'     the function calls quit(save="no").  The file will also
 #'     be detected within the call to feed() when the queue
 #'     is empty, because it is located in the watched folder.
 #'
-#' @note this depends on some other process placing uploaded files into
-#' the folder \code{MOTUS_PATH$UPLOADS}.  We're using a patched version of
-#' \link{http://www.projectsend.org}
-#' whose last task for an uploaded file is to create a hardlink to it
-#' in \code{MOTUS_PATH$UPLOADS}, and this generates a "CREATE" event.
+#' @note this depends on some other process placing uploaded files
+#'     into the folder \code{MOTUS_PATH$UPLOADS}.  We're using a
+#'     patched version of \link{http://www.projectsend.org} whose last
+#'     task for an uploaded file is to create a hardlink to it in
+#'     \code{MOTUS_PATH$UPLOADS}, and this generates a "CREATE" event.
 #'
 #' @export
 #'
@@ -77,13 +77,14 @@ uploadServer = function(tracing = FALSE, fileEvent="CREATE") {
         parts = strsplit(basename(upfile), ":", fixed=TRUE)[[1]]
 
         ## lookup the email address for this user from the data_uploads.sg_users
-        ## table (the database used by ProjectSend as configured on our server)
+        ## table (the database used by ProjectSend as configured on our server), and
+        ## get the project the user chose to assign the file to.
 
-        email = MotusDB("select email from data_uploads.sg_users where name='%s'", parts[1]) [[1]]
+        id.email = MotusDB("select id, email from data_uploads.sg_users where user='%s'", parts[1])
+        motusProjectID = MotusDB("select motus_project_ID from data_uploads.sg_files where url = '%s'", file.path(parts[1], basename(upfile)))
 
         ## create and enqueue a new upload job
-        ## FIXME: change replyTo to match upload user's email
-        j = newJob("uploadFile", .parentPath=MOTUS_PATH$INCOMING, replyTo=email, valid=TRUE, .enqueue=FALSE)
+        j = newJob("uploadFile", .parentPath=MOTUS_PATH$INCOMING, replyTo=id.email[[2]], motusUserID=id.email[[1]], motusProjectID = motusProjectID, valid=TRUE, .enqueue=FALSE)
 
         ## record receipt within the job's log
         jobLog(j, paste("File uploaded:", parts[3]), summary=TRUE)

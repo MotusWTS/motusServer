@@ -12,8 +12,11 @@
 #' @param par list of parameters to the filtertags code.  Defaults
 #' to NULL;
 #'
-#' @return the number of tag detections in the stream.
-#'
+#' @return a list with these items
+#' \itemize{
+#'   \item batchID the batch number
+#'   \item numHits the number of unfiltered tag detections in the stream.
+#' }
 #' @export
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}

@@ -15,7 +15,11 @@ ltFindTags(src, tagDB, par = NULL)
 to NULL;}
 }
 \value{
-the number of tag detections in the stream.
+a list with these items
+\itemize{
+  \item batchID the batch number
+  \item numHits the number of unfiltered tag detections in the stream.
+}
 }
 \description{
 This function searches for sequences of tag detections
