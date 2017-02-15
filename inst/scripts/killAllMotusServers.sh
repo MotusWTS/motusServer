@@ -37,7 +37,7 @@ if [[ "$1" == "-g" ]]; then
     GRACEFUL="-g"
 fi
 
-/sgm/bin/killMotusEmailServer.sh $GRACEFUL
+## DISABLED: /sgm/bin/killMotusEmailServer.sh $GRACEFUL
 /sgm/bin/killMotusUploadServer.sh
 /sgm/bin/killMotusStatusServer.sh
 /sgm/bin/killMotusSyncServer.sh

@@ -11,7 +11,7 @@ Usage: runAllMotusServers.sh [-h] [N]
 
 Run all motus servers by invoking these scripts:
 
-   - runMotusEmailServer.sh
+## DISABLED:  - runMotusEmailServer.sh
 
    - runMotusUploadServer.sh
 
@@ -41,7 +41,7 @@ fi
 
 ## use 'setsid' to launch each server in its own process group
 
-setsid /sgm/bin/runMotusEmailServer.sh &
+## DISABLED: setsid /sgm/bin/runMotusEmailServer.sh &
 setsid /sgm/bin/runMotusUploadServer.sh &
 setsid /sgm/bin/runMotusStatusServer.sh &
 
