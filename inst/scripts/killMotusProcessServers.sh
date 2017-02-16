@@ -37,9 +37,8 @@ fi
 
 for i in $PNUMS; do
     KILLFILE=/sgm/queue/0/kill$i
-    if [[ $GRACEFUL ]]; then
-        touch $KILLFILE
-    else
+    touch $KILLFILE
+    if [[ ! $GRACEFUL ]]; then
         PID=`cat /sgm/processServer$i.pid`
         if [[ "$PID" != "" ]]; then
             pkill -g $PID
