@@ -60,7 +60,10 @@ handleSGfindtags = function(j) {
         ## be present in the top job (typically an "uploadFile" job)
 
         tj = topJob(j)
-        dbGetQuery(src$con, sprintf("update batches set motusUserID=%d, motusProjectID=%d where batchID=%d", tj$motusUserID, tj$motusProjectID, rv$batchID))
+        muid = tj$motusUserID
+        mpid = tj$motusProjectID
+        if (! is.null(muid) && ! is.null(mpid))
+            dbGetQuery(src$con, sprintf("update batches set motusUserID=%d, motusProjectID=%d where batchID=%d", muid, mpid, rv$batchID))
     }
 
     closeRecvSrc(src)
