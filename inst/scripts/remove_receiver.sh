@@ -2,7 +2,10 @@
 #
 # remove_receiver.sh: remove a receiver's registration and any uploaded
 # data.
-# [-f] : force
+#
+# Usage: remove_receiver.sh [-f] [-y] SERNO
+# [-f] : force, even if no public key found for given SERNO
+# [-y] : don't ask for confirmation
 # $1: serial number
 #
 
@@ -10,6 +13,11 @@ RECEIVER_DB=/sgm/remote/receivers.sqlite
 
 if [[ "$1" == "-f" ]]; then
     FORCE=1
+    shift
+fi
+
+if [[ "$1" == "-y" ]]; then
+    YES=1
     shift
 fi
 
@@ -28,21 +36,23 @@ EOF
     exit 1
 fi
 
-echo This will remove all traces, including registration and uploaded
-echo data, of receiver with serial number $SERNO
-echo
-echo Actually, all of these are simply saved into different locations.
-echo Old data are moved to ~sg_remote/deleted_streams
-echo and old database entries are moved to the deleted_receivers table.
-echo
-echo -n 'Are you sure ? (y/N) '
+if [[ ! "$YES" ]]; then
+    echo This will remove all traces, including registration and uploaded
+    echo data, of receiver with serial number $SERNO
+    echo
+    echo Actually, all of these are simply saved into different locations.
+    echo Old data are moved to ~sg_remote/deleted_streams
+    echo and old database entries are moved to the deleted_receivers table.
+    echo
+    echo -n 'Are you sure ? (y/N) '
 
-read RESP
+    read RESP
 
-RESP=${RESP:0:1}
+    RESP=${RESP:0:1}
 
-if [[ "$RESP" != "y" && "$RESP" != "Y" ]]; then
-    exit 3
+    if [[ "$RESP" != "y" && "$RESP" != "Y" ]]; then
+        exit 3
+    fi
 fi
 
 if [[ ! -f "/home/sg_remote/.ssh/id_dsa_sg_$SERNO" && ! "$FORCE" ]]; then
