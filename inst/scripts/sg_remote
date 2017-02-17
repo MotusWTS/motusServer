@@ -69,9 +69,6 @@ if serno == "NEW":
 
     serno = sys.stdin.readline(13).rstrip()
 
-	# kludge to allow specific device to connect during 3.18 kernel work
-	if serno == "":
-		serno = "2313BBBK3402"
     # the serial number is supposed to be a string of 12 alphanumeric
     # chars (we read the trailing byte)
 
@@ -102,7 +99,6 @@ if serno == "NEW":
         ff.write("Failed with keyfile_name %s\n" % (keyfile_name, ))
         ff.close()
         exit(2)
-
 
 	# open the master DB as a file, so we can lock it
 	dbf = open(MASTER_SQLITE_DB_LOCK, "w")
