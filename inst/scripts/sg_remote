@@ -138,7 +138,7 @@ if serno == "NEW":
 		# check whether we've already generated a key because we've
 		# processed data from this receiver
 
-		alt_keyfile_name = ALT_KEYFILE_NAME + "id_dsa_sg_" + serno
+		alt_keyfile_name = ALT_KEYPATH + "id_dsa_sg_" + serno
 
 		if os.path.exists(alt_keyfile_name):
 			# move the existing keys to the new location
