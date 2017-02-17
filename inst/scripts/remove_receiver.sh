@@ -66,10 +66,11 @@ DEST=/home/sg_remote/.ssh/deleted
 
 mv /home/sg_remote/.ssh/id_dsa_sg_$SERNO $DEST/${DATE}:id_dsa_sg_$SERNO
 mv /home/sg_remote/.ssh/id_dsa_sg_$SERNO.pub $DEST/${DATE}:id_dsa_sg_$SERNO.pub
+mv /home/sg_remote/.ssh/id_dsa_sg_$SERNO.openssl.pub $DEST/${DATE}:id_dsa_sg_$SERNO.openssl.pub
 
 echo deleting uploaded data
 
-cd /home/sg_remote/streams
+cd /sgm/remote/streams
 
 for f in $SERNO.sqlite*; do
     mv $f deleted/${DATE}:$f
