@@ -35,6 +35,10 @@ SSH_DIR = '/home/sg_remote/.ssh/'
 MASTER_SQLITE_DB = '/sgm/remote/receivers.sqlite'
 MASTER_SQLITE_DB_LOCK = '/sgm/remote/receivers.sqlite.lockfile'
 
+# path to folder holding keys generated for receivers never connected
+# to the server, but for which data were processed
+ALT_KEYPATH = '/sgm/crypto'
+
 STREAMS_PATH = '/sgm/remote/streams'
 
 # valid serial numbers look like this:
@@ -135,14 +139,23 @@ if serno == "NEW":
 	        ff.close()
 	        exit(2)
 
-	    # generate a pub/priv keypair
+		# check whether we've already generated a key because we've
+		# processed data from this receiver
 
-	    subprocess.check_output([
-			"ssh-keygen",
-			"-t", "dsa",
-			"-f", keyfile_name,
-			"-N", ""
-		])
+		alt_keyfile_name = ALT_KEYFILE_NAME + "id_dsa_sg_" + serno
+
+		if os.path.exists(alt_keyfile_name):
+			# move the existing keys to the new location
+			os.rename(alt_keyfile_name, keyfile_name)
+			os.rename(alt_keyfile_name + ".pub", keyfile_name + ".pub")
+		else:
+			# generate a pub/priv keypair
+			subprocess.check_output([
+				"ssh-keygen",
+				"-t", "dsa",
+				"-f", keyfile_name,
+				"-N", ""
+			])
 
 	    # export an openssl-compatible version of the public key
 		# for use in signature verification
