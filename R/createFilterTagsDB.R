@@ -36,6 +36,7 @@ createFilterTagsDB = function(tsRange, outFile) {
     tags = meta("select t3.label as proj, t2.mfgID as id, t2.nomFreq as tagFreq, t2.period as bi from tagDeps as t1 join tags as t2 on t1.tagID=t2.tagID join projs as t3 on t1.projectID=t3.id where t1.tsEnd >= :ts1 and t1.tsStart <= :ts2", ts1=tsRange[1], ts2=tsRange[2])
 
     tags = subset(tags, ! duplicated(paste(id, round(bi,3))))
+    tags$id = as.numeric(tags$id)
     write.csv(tags, outFile, row.names=FALSE)
 
     return(nrow(tags))
