@@ -84,6 +84,9 @@ All timestamps must be in the form returned by \code{Sys.time()}
 and by the \code{ymd(), ymd_hms(),..} functions from the \code{lubridate}
 package.  i.e. they are numbers representing seconds elapsed since the start of
 1 Jan. 1970, GMT.
+
+For timestamps in the future, this function uses the \code{tsAnticipatedStart} parameter
+to the motus /tags/deploy API.  For timestamps in the past, it uses \code{tsStart}.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
