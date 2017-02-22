@@ -17,6 +17,9 @@
 #'     MOTUS_SECRETS object.  Otherwise, \code{masterKey} is the name
 #'     of a file to read the secret key from.
 #'
+#' @param ... if present, additional CURL options; these are guaranteed to
+#' override any values set by this function's code.
+#'
 #' @return the result of sending the request to the motus API.  The
 #'     result is a JSON-format character scalar if \code{json} is
 #'     \code{TRUE}; otherwise it is an R list with named components,
@@ -27,9 +30,13 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-motusQuery = function (API, params = NULL, requestType="post", show=FALSE, json=FALSE, serno=NULL, masterKey=NULL) {
+motusQuery = function (API, params = NULL, requestType="post", show=FALSE, json=FALSE, serno=NULL, masterKey=NULL, ...) {
     curl = getCurlHandle()
-    curlSetOpt(.opts=list(verbose=0, header=0, failonerror=0), curl=curl)
+    .opts = list(verbose=0, header=0, failonerror=0)
+    moreOpts = list(...)
+    for (i in seq(along=moreOpts))
+        .opts[[names(moreOpts)[i]]] = moreOpts[[i]]
+    curlSetOpt(.opts=.opts, curl=curl)
     # params is a named list of parameters which will be passed along in the JSON query
 
     DATE = Sys.time()
