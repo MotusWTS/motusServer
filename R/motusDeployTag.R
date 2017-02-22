@@ -5,7 +5,7 @@
 #'
 #' @param projectID numeric ID of motus project for which this tag is
 #'     being deployed.
-#' 
+#'
 #' @param status Status from one of the possible following values:
 #'     pending, deploy, terminate. "pending" indicates that the
 #'     deployment record isn’t ready to be finalized for deployment
@@ -24,7 +24,7 @@
 #'     deferred time lag (deferTime), this is the time at which the
 #'     tag is activated, so that the time when the tag is
 #'     expected to be active is given by tsStart + deferTime.
-#' 
+#'
 #' @param tsEnd [optional] Timestamp for end of deployment. Required
 #'     for status=terminate.
 #'
@@ -32,7 +32,7 @@
 #'     tsStart). Some tags are capable of deferred activation - they
 #'     don't start transmitting until some (possibly large) number of
 #'     seconds after activation.
-#' 
+#'
 #' @param speciesID [optional] Numeric ID (integer) of the species on
 #'     which the tag is being deployed. You can obtain this value by
 #'     using \code{motusListSpecies()} to search by name or code.
@@ -41,7 +41,7 @@
 #'
 #' @param markerType [optional] Type of marker
 #'     (e.g. "metal band”, "color band”)
-#' 
+#'
 #' @param markerNumber [optional] Marker number or descriptor
 #'     (e.g. "1234-56789” or "L:Red/Blue,R:Metal 1234-56789”)
 #'
@@ -61,7 +61,7 @@
 #'     This will be formatted as a JSON string then inserted into the
 #'     \code{properties} field of the database.  FIXME: for now,
 #'     it goes into the comments field.
-#' 
+#'
 #' @param ts [optional] Time at which deployment information
 #'     was generated.  Defaults to time at which function is called.
 #'
@@ -70,11 +70,14 @@
 #' package.  i.e. they are numbers representing seconds elapsed since the start of
 #' 1 Jan. 1970, GMT.
 #'
+#' @note For timestamps in the future, this function uses the \code{tsAnticipatedStart} parameter
+#' to the motus /tags/deploy API.  For timestamps in the past, it uses \code{tsStart}.
+#'
 #' @export
-#' 
+#'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-motusDeployTag = 
+motusDeployTag =
     function(
              tagID,
              projectID,
@@ -107,6 +110,8 @@ motusDeployTag =
                 assign(n, as.numeric(v))
         }
 
+        now = as.numeric(Sys.time())
+
         status = match.arg(status)
         if (! is.null(properties))
             properties = c(list(), properties, comments=comments)
@@ -119,15 +124,22 @@ motusDeployTag =
                 stop("Multiple species matching:", speciesID)
             speciesID = newSpeciesID
         }
-        
+
         motusQuery(
             MOTUS_API_DEPLOY_TAG,
             requestType="post",
-            list(
-                tagID        = tagID,
-                projectID    = projectID,
-                status       = status,
-                tsStart      = tsStart,
+            c(
+                list(
+                    tagID        = tagID,
+                    projectID    = projectID,
+                    status       = status
+                ),
+
+                if (tsStart > now)
+                    list(tsStartAnticipated = tsStart)
+                else
+                    list(tsStart = tsStart)
+               ,
                 tsEnd        = tsEnd,
                 deferTime    = deferTime,
                 speciesID    = speciesID,
@@ -141,5 +153,6 @@ motusDeployTag =
                 ## properties   = properties,
                 comments     = if(length(properties) == 0) NULL else as.character(toJSON(properties, auto_unbox=TRUE)),
                 ts           = ts
-            ))
+            )
+        )
     }
