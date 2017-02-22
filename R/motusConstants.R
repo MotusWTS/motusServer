@@ -3,20 +3,21 @@
 #' API entry points:
 #'
 
-MOTUS_API_ENTRY_POINTS          = 'http://motus.org/data/api/entrypoints.jsp'
-MOTUS_API_REGISTER_TAG          = 'https://motus.org/api/tag/register'
-MOTUS_API_DEPLOY_TAG            = 'https://motus.org/api/tag/deploy'
-MOTUS_API_REGISTER_PROJECT      = 'http://motus.org/data/api/v1.0/registerproject.jsp'
-MOTUS_API_REGISTER_RECEIVER     = 'http://motus.org/data/api/v1.0/registersensor.jsp'
-MOTUS_API_LIST_PROJECTS         = 'http://motus.org/data/api/v1.0/listprojects.jsp'
-MOTUS_API_RECEIVER_STATUS       = 'http://motus.org/data/api/v1.0/listreceiverstatus.jsp'
-MOTUS_API_LIST_TAGS             = 'http://motus.org/data/api/v1.0/listtags.jsp'
-MOTUS_API_LIST_SENSORS          = 'http://motus.org/data/api/v1.0/listsensors.jsp'
-MOTUS_API_LIST_SENSOR_DEPS      = 'http://motus.org/data/api/v1.0/listsensordeployments.jsp'
-MOTUS_API_LIST_SPECIES          = 'http://motus.org/data/api/v1.0/listspecies.jsp'
-MOTUS_API_SEARCH_TAGS           = 'http://motus.org/data/api/v1.0/searchtags.jsp'
-MOTUS_API_DEBUG                 = 'http://motus.org/data/api/v1.0/debug.jsp'
-MOTUS_API_DELETE_TAG_DEPLOYMENT = 'http://motus.org/data/api/v1.0/deletetagdeployment.jsp'
+MOTUS_API_ENTRY_POINTS          = "http://motus.org/data/api/entrypoints.jsp"
+MOTUS_API_REGISTER_TAG          = "https://motus.org/api/tag/register"
+MOTUS_API_DEPLOY_TAG            = "https://motus.org/api/tag/deploy"
+MOTUS_API_USER_VALIDATE         = "https://motus.org/api/user/validate"
+MOTUS_API_REGISTER_PROJECT      = "http://motus.org/data/api/v1.0/registerproject.jsp"
+MOTUS_API_REGISTER_RECEIVER     = "http://motus.org/data/api/v1.0/registersensor.jsp"
+MOTUS_API_LIST_PROJECTS         = "http://motus.org/data/api/v1.0/listprojects.jsp"
+MOTUS_API_RECEIVER_STATUS       = "http://motus.org/data/api/v1.0/listreceiverstatus.jsp"
+MOTUS_API_LIST_TAGS             = "http://motus.org/data/api/v1.0/listtags.jsp"
+MOTUS_API_LIST_SENSORS          = "http://motus.org/data/api/v1.0/listsensors.jsp"
+MOTUS_API_LIST_SENSOR_DEPS      = "http://motus.org/data/api/v1.0/listsensordeployments.jsp"
+MOTUS_API_LIST_SPECIES          = "http://motus.org/data/api/v1.0/listspecies.jsp"
+MOTUS_API_SEARCH_TAGS           = "http://motus.org/data/api/v1.0/searchtags.jsp"
+MOTUS_API_DEBUG                 = "http://motus.org/data/api/v1.0/debug.jsp"
+MOTUS_API_DELETE_TAG_DEPLOYMENT = "http://motus.org/data/api/v1.0/deletetagdeployment.jsp"
 
 # a list of field names which must be formatted as floats so that
 # the motus API recognizes them correctly.  This means that if they
@@ -24,7 +25,7 @@ MOTUS_API_DELETE_TAG_DEPLOYMENT = 'http://motus.org/data/api/v1.0/deletetagdeplo
 # field value.  We do this before sending any query.  This is
 # only required due to motus using a crappy JSON parser.
 
-MOTUS_FLOAT_FIELDS = c("tsStart", "tsEnd", "regStart", "regEnd",
+MOTUS_FLOAT_FIELDS = c("tsStart", "tsStartAnticipated", "tsEnd", "regStart", "regEnd",
 "offsetFreq", "period", "periodSD", "pulseLen", "param1", "param2",
 "param3", "param4", "param5", "param6", "ts", "nomFreq", "deferTime", "lat", "lon", "elev")
 
