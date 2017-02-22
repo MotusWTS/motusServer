@@ -34,7 +34,7 @@
 
 wavFindTags = function(f, tdb,
                        pdpars=list(minsnr=5, minfreq=0, maxfreq=24, plen=2.5),
-                       tfpars=list(min_dfreq=-24, max_dfreq=24, signal_slop=30, frequency_slop=2, pulses_to_confirm=4, pulse_slop=2, max_skipped_bursts=3, default_freq=166.376)
+                       tfpars=list(min_dfreq=-24, max_dfreq=24, signal_slop=30, frequency_slop=0.5, pulses_to_confirm=4, pulse_slop=2, max_skipped_bursts=3, default_freq=166.376)
                        ){
 
     tmpf = tempfile(rep("file", 2))
