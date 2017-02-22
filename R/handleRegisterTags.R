@@ -125,7 +125,7 @@ handleRegisterTags = function(j) {
     if (length(errs) > 0)
         stop(paste(errs, collapse="\n"))
 
-    wavFiles = dir(p, recursive=TRUE, pattern="^.*tag[0-9]+(\\.[0-9])?(@[.0-9]+).wav$", ignore.case=TRUE, full.names=TRUE)
+    wavFiles = dir(p, recursive=TRUE, pattern="^.*tag[0-9]+(\\.[0-9])?(@[.0-9]+)?.wav$", ignore.case=TRUE, full.names=TRUE)
 
     ## extract data.frame of tag IDs as character strings
     info = splitToDF("(?i)tag(?<id>[0-9]+(?:\\.[0-9])?)(@(?<fcdfreq>[0-9]+\\.[0-9]*))?.wav$", basename(wavFiles), guess=FALSE)
