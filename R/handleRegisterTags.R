@@ -264,7 +264,7 @@ handleRegisterTags = function(j) {
     }
     jobLog(j, paste0("Registered ", numReg, " tags with motus.",
                      if (numFail > 0) paste0("\nWarning: another ", numFail, " tags failed to register"),
-                     if (numNoBISD > 0) paste0("\nWarning: another ", numNoBISD, " tags had no estimate of BI error;\ntheir registrations might be faulty")
+                     if (numNoBISD > 0) paste0("\nWarning: ", numNoBISD, " tags had no estimate of BI error;\ntheir registrations might be faulty")
                      ), summary=TRUE)
 
     ## generate on-board tag database and mark it as an attachment to this job's completion email
