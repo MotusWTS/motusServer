@@ -67,7 +67,7 @@ ff.write("%d,%s\n" % (time.time(), serno))
 if serno == "NEW":
     # new login; ask the client for the serial number
 
-    serno = sys.stdin.readline(13).rstrip()
+    serno = sys.stdin.readline(13).rstrip().upper()
 
     # the serial number is supposed to be a string of 12 alphanumeric
     # chars (we read the trailing byte)
