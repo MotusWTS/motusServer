@@ -74,6 +74,9 @@ uploadServer = function(tracing = FALSE, fileEvent="CREATE") {
         ##    USER:YYYY-mm-ddTHH-MM-SS:filename
         ## where USER is the authenticated username of the uploader, and the string between ':' is the upload timestamp.
 
+        ## change ownership of the file using a sudo-able script
+        safeSys("sudo", "/sgm/bin/chown_sg_www-data.sh", upfile)
+
         parts = strsplit(basename(upfile), ":", fixed=TRUE)[[1]]
 
         ## lookup the email address for this user from the data_uploads.sg_users
