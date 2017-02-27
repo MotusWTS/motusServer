@@ -2,36 +2,32 @@
 % Please edit documentation in R/getYearProjSite.R
 \name{getYearProjSite}
 \alias{getYearProjSite}
-\title{Get the project and site folders, given a year and receiver serial number.}
+\title{Get project and site names, given receiver serial numbers and timeranges}
 \usage{
-getYearProjSite(serno, ts = NULL, bootnum = NULL)
+getYearProjSite(serno, tsLo, tsHi)
 }
 \arguments{
 \item{serno}{character vector of serial numbers}
 
-\item{ts}{numeric vector with non-NA entries wherever \code{serno}
-is a Lotek receiver. Can be \code{NULL}, the default, if all
-\code{serno} are SensorGnomes.}
+\item{tsLo}{numeric vector of start times}
 
-\item{bootnum}{integer vector with non-NA entries wherever
-\code{serno} is a SensorGnome.  Can be \code{NULL}, the
-default, if all \code{serno} are Lotek receivers.}
+\item{tsHi}{numeric vector of end times}
 }
 \value{
 a data.frame with these columns:
 \itemize{
 \item serno receiver serial number
-\item year integer
-\item proj project folder in /SG/year, or NA if none found
-\item site site subfolder in /SG/year/proj, or NA if none found
-\item tsStart timestamp at which this year/proj/site begins (or NA if SG)
-\item bootnumStart boot session at which this year/proj/site begins (or NA if Lotek)
+\item year integer year deployment began
+\item proj name of project
+\item site name of receiver deployment
+\item tsStart timestamp at which this deployment begins
+\item tsEnd timestamp at which this deployment ends
 }
 }
 \description{
-This is a deprecated function to help process data files in the old
-sensorgnome YEAR/PROJECT/SITE hierarchy.  Sites are looked up
-by bootnum for sensorgnomes, and by timestamp for Lotek receivers.
+This is meant to provide project and site labels for plots and summary files.
+For each receiver in the input, all deployments that overlap the specified
+time range are returned.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}

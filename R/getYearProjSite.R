@@ -1,27 +1,23 @@
-#' Get the project and site folders, given a year and receiver serial number.
+#' Get project and site names, given receiver serial numbers and timeranges
 #'
-#' This is a deprecated function to help process data files in the old
-#' sensorgnome YEAR/PROJECT/SITE hierarchy.  Sites are looked up
-#' by bootnum for sensorgnomes, and by timestamp for Lotek receivers.
+#' This is meant to provide project and site labels for plots and summary files.
+#' For each receiver in the input, all deployments that overlap the specified
+#' time range are returned.
 #'
 #' @param serno character vector of serial numbers
 #'
-#' @param ts numeric vector with non-NA entries wherever \code{serno}
-#'     is a Lotek receiver. Can be \code{NULL}, the default, if all
-#'     \code{serno} are SensorGnomes.
+#' @param tsLo numeric vector of start times
 #'
-#' @param bootnum integer vector with non-NA entries wherever
-#'     \code{serno} is a SensorGnome.  Can be \code{NULL}, the
-#'     default, if all \code{serno} are Lotek receivers.
+#' @param tsHi numeric vector of end times
 #'
 #' @return a data.frame with these columns:
 #' \itemize{
 #' \item serno receiver serial number
-#' \item year integer
-#' \item proj project folder in /SG/year, or NA if none found
-#' \item site site subfolder in /SG/year/proj, or NA if none found
-#' \item tsStart timestamp at which this year/proj/site begins (or NA if SG)
-#' \item bootnumStart boot session at which this year/proj/site begins (or NA if Lotek)
+#' \item year integer year deployment began
+#' \item proj name of project
+#' \item site name of receiver deployment
+#' \item tsStart timestamp at which this deployment begins
+#' \item tsEnd timestamp at which this deployment ends
 #' }
 #'
 #'
@@ -29,61 +25,37 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-getYearProjSite = function(serno, ts=NULL, bootnum=NULL) {
+getYearProjSite = function(serno, tsLo, tsHi) {
 
     ## convert NULL to NA for data_frame, which can't handle former
 
-    if (is.null(ts))
-        ts = NA
-    if (is.null(bootnum))
-        bootnum = NA
-
     serts = data_frame(serno   = serno,
-                       ts      = ts,
-                       bootnum = bootnum,
+                       tsLo    = tsLo,
+                       tsHi    = tsHi,
                        year    = as.integer(NA),
                        proj    = as.character(NA),
                        site    = as.character(NA),
                        tsStart = NA,
-                       bootnumStart = NA
+                       tsEnd   = NA
                        )
 
-    isLotek = grepl("^Lotek-", serno, perl=TRUE)
-    lotek = subset(serts, isLotek)
-    sg = subset(serts, ! isLotek)
-
     ## use a temporary database to do this as a join query
-    con = dbConnect(RSQLite::SQLite(), ":memory:")
-    sql = function(...) dbGetQuery(con, sprintf(...))
+    meta = safeSQL(getMotusMetaDB())
 
-    sql("attach database '%s' as d", MOTUS_RECV_MAP_DB)
-    sql("pragma busy_timeout=10000")
+    ## look up sites by serial number and timestamp
 
-    ## look up Lotek sites by serial number and timestamp
+    dbWriteTable(meta$con, "temp.serts", serts %>% as.data.frame, row.names=FALSE)
 
-    if (nrow(lotek) > 0) {
-        dbWriteTable(con, "lotek", lotek %>% as.data.frame, row.names=FALSE)
+    ## get latest row (largest tsHi) that is still no later than ts for each receiver
+    #### old version allowing for missing tsStart but valid tsEnd:
+    #### rv = meta(sprintf("select t1.serno as serno, 0 as year, t4.label as proj, t2.name as site, (t2.tsStart * (t2.tsStart >= %14f) + (t2.tsEnd - 6 * 30 * 24 * 3600) * (t2.tsStart < %14f)) as tsStart from temp.serts as t1 left outer join recvDeps as t2 on t1.serno = t2.serno and t2.tsStart = (select max(t3.tsStart) from recvDeps as t3 where t3.serno=t2.serno and t3.tsStart <= t1.tsLo) left join projs as t4 on t2.projectID=t4.id", MOTUS_SG_EPOCH, MOTUS_SG_EPOCH))
 
-        ## get latest row (largest tsHi) that is still no later than ts for each receiver
-        sql("create table reslotek as select t1.serno as serno, 0 as year, t2.Project as proj, t2.Site as site, (t2.tsLo * (t2.tsLo >= %14f) + (t2.tsHi - 6 * 30 * 24 * 3600) * (t2.tsLo < %14f)) as tsStart, null as bootnumStart from lotek as t1 left outer join d.map as t2 on t1.serno = t2.Serno and t2.tsLo = (select max(t3.tsLo) from d.map as t3 where t3.Serno=t2.Serno and t3.tsLo <= t1.ts)", MOTUS_SG_EPOCH, MOTUS_SG_EPOCH)
+    rv = meta(sprintf("select t1.serno as serno, 0 as year, t3.label as proj, t2.name as site, t2.tsStart as tsStart, t2.tsEnd as tsEnd from temp.serts as t1 left outer join recvDeps as t2 on t1.serno = t2.serno and t2.tsStart <= t1.tsHi and (t2.tsEnd is null or t2.tsEnd >= t1.tsLo) left join projs as t3 on t2.projectID=t3.id", MOTUS_SG_EPOCH, MOTUS_SG_EPOCH))
 
-        lotek = sql("select * from reslotek")
+    ## for some reason, the above leads to a character column if there's an NA anywhere in it
+    rv$tsStart = as.numeric(rv$tsStart)
+    rv$year = as.integer(year(structure(rv$tsStart, class=class(Sys.time()))))
 
-        ## for some reason, the above leads to a character column if there's an NA anywhere in it
-        lotek$tsStart = as.numeric(lotek$tsStart)
-        lotek$year = as.integer(year(structure(lotek$tsStart, class=class(Sys.time()))))
-    }
-
-    ## look up sensorgnome sites by serial number and boot number
-
-    if (nrow(sg) > 0) {
-        dbWriteTable(con, "sg", sg %>% as.data.frame, row.names=FALSE)
-
-        ## get latest row (largest boot) that is still no later than bootnum for each receiver
-        sql("create table ressg as select t1.serno as serno, t2.Year as year, t2.Project as proj, t2.Site as site, null as tsStart, t2.BootnumLo as bootnumStart from sg as t1 left outer join d.bootnumMap as t2 on t1.serno = t2.Serno and t2.BootnumLo = (select max(t3.BootnumLo) from d.bootnumMap as t3 where t3.Serno=t2.Serno and t3.BootnumLo <= t1.bootnum)")
-
-        sg = sql("select * from ressg")
-    }
-    dbDisconnect(con)
-    return(rbind(lotek, sg))
+    meta(.CLOSE=TRUE)
+    return(rv)
 }
