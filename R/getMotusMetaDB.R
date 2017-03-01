@@ -229,7 +229,14 @@ getMotusMetaDB = function() {
     recv = recv %>% as.data.frame
     ## workaround until upstream changes format of serial numbers for Lotek receivers
     recv$serno = sub("(SRX600|SRX800|SRX-DL)", "Lotek", perl=TRUE, recv$serno)
+
     dbWriteTable(s$con, "recvDeps", recv, overwrite=TRUE, row.names=FALSE)
+
+    ## End any unterminated receiver deployments on receivers which have a later deployment.
+    ## The earlier deployment is ended 1 second before the (earliest) later one begins.
+
+    dbGetQuery(s$con, "update recvDeps set tsEnd = (select min(t2.tsStart) - 1 from recvDeps as t2 where t2.tsStart > recvDeps.tsStart and recvDeps.serno=t2.serno) where tsEnd is null and tsStart is not null");
+
     dbWriteTable(s$con, "antDeps", ant %>% as.data.frame, overwrite=TRUE, row.names=FALSE)
 
     ## GPS fix table; initially, this contains only a single fix for
