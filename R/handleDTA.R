@@ -38,7 +38,7 @@ handleDTA = function(j) {
         }
         newSubJob(j, "LtFindtags", serno=f$serno[1], tsStart=min(f$ts[f$dataNew]))
         newSubJob(topJob(j), "exportData", serno=f$serno[1])
-        newSubJob(topJob(j), "oldExport", serno=f$serno[1], ts=c(min(f$ts), max(f$tsLast)))
+        newSubJob(topJob(j), "plotData", serno=f$serno[1], ts=c(min(f$ts), max(f$tsLast)))
     }
 
     info %>% group_by(serno) %>% do (ignore = runReceiver(.))

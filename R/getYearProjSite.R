@@ -1,14 +1,29 @@
-#' Get project and site names, given receiver serial numbers and timeranges
+#' Get project and site names, given a receiver serial number and a time range
+#' or bootnum range.
 #'
-#' This is meant to provide project and site labels for plots and summary files.
-#' For each receiver in the input, all deployments that overlap the specified
-#' time range are returned.
+#' This is meant to provide project and site labels for plots and
+#' summary files.  Either a time range (tsLo, tsHi) or a boot number
+#' range (bnLo, bnHi) must be provided, but not both.
+#'
+#' If a time range is provided, all deployments that overlap the
+#' specified time range are returned, and the range of timestamps for
+#' these deployments is returned in the tsStart, tsEnd fields.
+#'
+#' If a boot session range is provided, all deployments that include
+#' the specified boot session range are returned, and the range of
+#' boot sessions from these is returned in the bnStart, bnEnd fields.
+#' It is assumed the caller has obtained a lock on that receiver's DB,
+#' via \code{lockSymbol(serno)}.
+#'
+#' In either case, if the receiver is a SensorGnome, the return value includes
+#' valid bnStart and bnEnd - the range of boot sessions corresponding to
+#' the corresponding receiver deployment.
 #'
 #' @param serno character vector of serial numbers
 #'
-#' @param tsLo numeric vector of start times
+#' @param ts numeric vector of length 2; start and end time
 #'
-#' @param tsHi numeric vector of end times
+#' @param bn integer vector of length 2; start and end boot session numbers
 #'
 #' @return a data.frame with these columns:
 #' \itemize{
@@ -16,46 +31,91 @@
 #' \item year integer year deployment began
 #' \item proj name of project
 #' \item site name of receiver deployment
+#' \item projID id of project
 #' \item tsStart timestamp at which this deployment begins
 #' \item tsEnd timestamp at which this deployment ends
+#' \item bnStart boot number at which this deployment begins
+#' \item bnEnd boot number at which this deployment ends
 #' }
+#' Returns NULL if there were no matching deployment records.
 #'
+#' @seealso \link{\code{lockSymbol}}
 #'
 #' @export
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-getYearProjSite = function(serno, tsLo, tsHi) {
+getYearProjSite = function(serno, ts=NULL, bn=NULL) {
 
-    ## convert NULL to NA for data_frame, which can't handle former
+    ## check for SG
+    isSG = grepl("^SG-", serno)
+    if (isSG) {
+        rdb = safeSQL(getRecvSrc(serno))
+    }
+    ## if bn range specified, convert to a timestamp range
 
-    serts = data_frame(serno   = serno,
-                       tsLo    = tsLo,
-                       tsHi    = tsHi,
-                       year    = as.integer(NA),
-                       proj    = as.character(NA),
-                       site    = as.character(NA),
-                       tsStart = NA,
-                       tsEnd   = NA
-                       )
+    if (!is.null(bn)) {
+        if (!isSG)
+            stop("Trying to look up Lotek receiver metadata by boot number; use ts instead")
+        tr = rdb("select min(tsBegin) as tsLo, max(tsEnd) as tsHi from batches where monoBN between :lo and :hi and tsBegin >= :valid",
+                 lo = bn[1], hi = bn[2], valid=MOTUS_SG_EPOCH)
+        if (nrow(tr) == 0)
+            return (NULL)
+        ts = unlist(tr)
+    } else {
+        if (is.null(ts))
+            return(NULL)
+        bn = c(NA, NA)
+    }
+
+    info = data.frame(serno   = serno,
+                      tsLo    = ts[1],
+                      tsHi    = ts[2],
+                      bnLo    = bn[1],
+                      bnHi    = bn[2],
+                      year    = as.integer(NA),
+                      proj    = as.character(NA),
+                      site    = as.character(NA),
+                      tsStart = NA,
+                      tsEnd   = NA,
+                      bnStart = NA,
+                      bnEnd   = NA,
+                      stringsAsFactors=FALSE
+                      )
 
     ## use a temporary database to do this as a join query
     meta = safeSQL(getMotusMetaDB())
 
-    ## look up sites by serial number and timestamp
+    dbWriteTable(meta$con, "temp.info", info %>% as.data.frame, row.names=FALSE)
 
-    dbWriteTable(meta$con, "temp.serts", serts %>% as.data.frame, row.names=FALSE)
+    ## look up deployments by serial number and timestamp
 
-    ## get latest row (largest tsHi) that is still no later than ts for each receiver
-    #### old version allowing for missing tsStart but valid tsEnd:
-    #### rv = meta(sprintf("select t1.serno as serno, 0 as year, t4.label as proj, t2.name as site, (t2.tsStart * (t2.tsStart >= %14f) + (t2.tsEnd - 6 * 30 * 24 * 3600) * (t2.tsStart < %14f)) as tsStart from temp.serts as t1 left outer join recvDeps as t2 on t1.serno = t2.serno and t2.tsStart = (select max(t3.tsStart) from recvDeps as t3 where t3.serno=t2.serno and t3.tsStart <= t1.tsLo) left join projs as t4 on t2.projectID=t4.id", MOTUS_SG_EPOCH, MOTUS_SG_EPOCH))
+    ## get latest row (largest tsHi) that is still no later than ts for the receiver
 
-    rv = meta(sprintf("select t1.serno as serno, 0 as year, t3.label as proj, t2.name as site, t2.tsStart as tsStart, t2.tsEnd as tsEnd from temp.serts as t1 left outer join recvDeps as t2 on t1.serno = t2.serno and t2.tsStart <= t1.tsHi and (t2.tsEnd is null or t2.tsEnd >= t1.tsLo) left join projs as t3 on t2.projectID=t3.id", MOTUS_SG_EPOCH, MOTUS_SG_EPOCH))
+    rv = meta(sprintf("select t1.serno as serno, 0 as year, t3.id as projID, t3.label as proj, t2.name as site, t2.tsStart as tsStart, t2.tsEnd as tsEnd, null as bnStart, null as bnEnd from temp.info as t1 join recvDeps as t2 on t1.serno = t2.serno and t2.tsStart <= t1.tsHi and (t2.tsEnd is null or t2.tsEnd >= t1.tsLo) left join projs as t3 on t2.projectID=t3.id", MOTUS_SG_EPOCH, MOTUS_SG_EPOCH))
 
     ## for some reason, the above leads to a character column if there's an NA anywhere in it
     rv$tsStart = as.numeric(rv$tsStart)
     rv$year = as.integer(year(structure(rv$tsStart, class=class(Sys.time()))))
 
+    if (isSG) {
+        ## now fill in which range of boot sessions the deployment(s) cover (or overlap)
+        ## a boot session overlaps a deployment if it begins before the deployment ends and ends
+        ## after the deployment begins.
+        for (i in seq(along=rv$serno)) {
+            rv[i, c("bnStart", "bnEnd")] = unlist(rdb("select min(monoBN) as bnLo, max(monoBN) as bnHi from batches where (:tsHi is null or tsBegin <= :tsHi) and tsEnd >= :tsLo",
+                      tsLo = rv$tsStart[i], tsHi = rv$tsEnd[i]))
+        }
+        rdb(.CLOSE=TRUE)
+    }
+
+    ## again, why are some of these of class "character"
+    rv$bnStart = as.integer(rv$bnStart)
+    rv$bnEnd = as.integer(rv$bnEnd)
+
     meta(.CLOSE=TRUE)
-    return(rv)
+    if (nrow(rv) > 1)
+        return(rv)
+    else
+        return(NULL)
 }

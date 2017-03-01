@@ -75,7 +75,7 @@ handleRerunReceiver = function(j) {
             now = as.numeric(Sys.time())
             ts = c(now - 24 * 365.25 * 3600, now)
         }
-    } else if (!exportOnly) {
+    } else {
         ## for an SG, get all boot sessions within the range, or all if null
         ## We only do this if we'll be running the tag finder, as
         src = getRecvSrc(serno)
@@ -108,7 +108,7 @@ handleRerunReceiver = function(j) {
     ## queue data export
 
     newSubJob(topJob(j), "exportData", serno=serno)
-    newSubJob(topJob(j), "oldExport", serno=serno, monoBN=range(monoBN), ts=range(ts))
+    newSubJob(topJob(j), "plotData", serno=serno, monoBN=range(monoBN), ts=range(ts))
 
     return(TRUE)
 }

@@ -248,7 +248,7 @@ min(t1.ts) as ts,
 0 as freq,
 0 as sig
 from gps as t1 join batches as t2 on t1.batchID=t2.batchID where t2.monoBN between %d and %d group by round(t1.ts/3600-1800)",
-monoBN[1], monoBN[2]))
+monoBNlo, monoBNhi))
     }
     gps$fullID = as.factor(gps$fullID)
 
@@ -280,7 +280,7 @@ t1.hourBin * 3600 + 1800 as ts,
 0 as freq,
 0 as sig
 from pulseCounts as t1 join batches as t2 on t1.batchID=t2.batchID where t2.monoBN between %d and %d group by t1.ant, t1.hourBin",
-monoBN[1], monoBN[2]))
+monoBNlo, monoBNhi))
     }
     pulses$fullID = as.factor(pulses$fullID)
 
@@ -296,8 +296,8 @@ min(tsBegin) as ts,
 1 as n,
 0 as freq,
 0 as sig
-from batches where monoBN >= %d and tsBegin >= 1262304000 group by monoBN",
-monoBN[1]))
+from batches where monoBN between %d and %d and tsBegin >= 1262304000 group by monoBN",
+monoBNlo, monoBNhi))
         reboots$fullID = as.factor(reboots$fullID)
     } else {
         reboots = NULL

@@ -2,16 +2,17 @@
 % Please edit documentation in R/getYearProjSite.R
 \name{getYearProjSite}
 \alias{getYearProjSite}
-\title{Get project and site names, given receiver serial numbers and timeranges}
+\title{Get project and site names, given a receiver serial number and a time range
+or bootnum range.}
 \usage{
-getYearProjSite(serno, tsLo, tsHi)
+getYearProjSite(serno, ts = NULL, bn = NULL)
 }
 \arguments{
 \item{serno}{character vector of serial numbers}
 
-\item{tsLo}{numeric vector of start times}
+\item{ts}{numeric vector of length 2; start and end time}
 
-\item{tsHi}{numeric vector of end times}
+\item{bn}{integer vector of length 2; start and end boot session numbers}
 }
 \value{
 a data.frame with these columns:
@@ -20,16 +21,38 @@ a data.frame with these columns:
 \item year integer year deployment began
 \item proj name of project
 \item site name of receiver deployment
+\item projID id of project
 \item tsStart timestamp at which this deployment begins
 \item tsEnd timestamp at which this deployment ends
+\item bnStart boot number at which this deployment begins
+\item bnEnd boot number at which this deployment ends
 }
+Returns NULL if there were no matching deployment records.
 }
 \description{
-This is meant to provide project and site labels for plots and summary files.
-For each receiver in the input, all deployments that overlap the specified
-time range are returned.
+This is meant to provide project and site labels for plots and
+summary files.  Either a time range (tsLo, tsHi) or a boot number
+range (bnLo, bnHi) must be provided, but not both.
+}
+\details{
+If a time range is provided, all deployments that overlap the
+specified time range are returned, and the range of timestamps for
+these deployments is returned in the tsStart, tsEnd fields.
+
+If a boot session range is provided, all deployments that include
+the specified boot session range are returned, and the range of
+boot sessions from these is returned in the bnStart, bnEnd fields.
+It is assumed the caller has obtained a lock on that receiver's DB,
+via \code{lockSymbol(serno)}.
+
+In either case, if the receiver is a SensorGnome, the return value includes
+valid bnStart and bnEnd - the range of boot sessions corresponding to
+the corresponding receiver deployment.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}
+\seealso{
+\link{\code{lockSymbol}}
 }
 
