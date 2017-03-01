@@ -303,9 +303,11 @@ connectedReceiversApp = function(env) {
 
     ## get latest project/site names for any receivers
     YEAR = format(Sys.time(), "%Y")
-    con = dbConnect(RSQLite::SQLite(), "/SG/receiver_map.sqlite")
-    projSite = dbGetQuery(con, "select t1.Serno as Serno, t1.Project as Project, t1.Site as Site from map as t1 left outer join map as t2 on t1.Serno=t2.Serno and t1.tsHi < t2.tsHi where t2.tsHi is null  order by t1.Serno")
-    dbDisconnect(con)
+    meta = safeSQL(getMotusMetaDB())
+    ## get most recent project, site for each receiver deployment
+    projSite = meta(sprintf("select t1.serno as Serno, t3.label as Project, t1.name as Site from recvDeps as t1 left join recvDeps as t2 on t1.serno=t2.serno and t1.tsStart < t2.tsStart join projs as t3 on t1.projectID=t3.id where t1.serno in ('%s') and t2.serno is null", paste0("SG-", recv, collapse="','")))
+    meta(.CLOSE=TRUE)
+
     rownames(projSite)=substring(projSite$Serno, 4)
 
     ## get wiki user ID for each project
