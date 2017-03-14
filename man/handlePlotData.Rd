@@ -24,8 +24,6 @@ plot data from a receiver
 Generate unified status / data plots and datasets for a receiver.
 If the top-level job has a motusProjectID field, then this function plots
 only the data for receiver deployments belonging to that project.
-TODO:  If the top-level job has a motusUserID field, then the plots and datasets
-are uploaded to the user's folder on the uploads/downloads site.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}

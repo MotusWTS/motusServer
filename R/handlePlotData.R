@@ -3,8 +3,6 @@
 #' @details Generate unified status / data plots and datasets for a receiver.
 #' If the top-level job has a motusProjectID field, then this function plots
 #' only the data for receiver deployments belonging to that project.
-#' TODO:  If the top-level job has a motusUserID field, then the plots and datasets
-#' are uploaded to the user's folder on the uploads/downloads site.
 #'
 #' @param j the job, with these fields:
 #' \itemize{
@@ -90,6 +88,10 @@ handlePlotData = function(j) {
         print(rv$plot)
         dev.off()
 
+        targDir = file.path(MOTUS_PATH$WWW, info$projID[i])
+        file.symlink(plotfilename, targDir)
+        file.symlink(pdfname, targDir)
+        file.symlink(datafilename, targDir)
         jobLog(j, paste0("Exported hourly dataset (and plot) to:  ", basename(datafilename), "(.png/.pdf)"))
     }
     closeRecvSrc(src)

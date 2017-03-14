@@ -114,7 +114,7 @@ getYearProjSite = function(serno, ts=NULL, bn=NULL) {
     rv$bnEnd = as.integer(rv$bnEnd)
 
     meta(.CLOSE=TRUE)
-    if (nrow(rv) > 1)
+    if (nrow(rv) > 0)
         return(rv)
     else
         return(NULL)

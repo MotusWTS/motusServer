@@ -100,7 +100,7 @@ for (var j=1; j <= numJobs; ++j) {
 '));
     showSync = ifelse(isTRUE(req$GET()[['sync']]==1), '=', '<>')
     user = as.character(req$GET()[['user']])[1]
-    if (! is.na(user) && user != "admin" && user != "stuart" && user != "zoe" && user != "phil") {
+    if (! is.na(user) && user != "admin" && user != "stuart" && user != "zoe" && user != "phil" && user != "andre") {
         jj = ServerDB(sprintf("select id from jobs where user=:user and pid is null and type %s 'syncReceiver' order by id desc", showSync), user=user)[[1]]
     } else {
         n = as.integer(req$GET()[['n']])[1]
@@ -305,16 +305,11 @@ connectedReceiversApp = function(env) {
     YEAR = format(Sys.time(), "%Y")
     meta = safeSQL(getMotusMetaDB())
     ## get most recent project, site for each receiver deployment
-    projSite = meta(sprintf("select t1.serno as Serno, t3.label as Project, t1.name as Site from recvDeps as t1 left join recvDeps as t2 on t1.serno=t2.serno and t1.tsStart < t2.tsStart join projs as t3 on t1.projectID=t3.id where t1.serno in ('%s') and t2.serno is null", paste0("SG-", recv, collapse="','")))
+    projSite = meta(sprintf("select t1.serno as Serno, t3.label as Project, t1.name as Site, t3.id as projectID from recvDeps as t1 left join recvDeps as t2 on t1.serno=t2.serno and t1.tsStart < t2.tsStart join projs as t3 on t1.projectID=t3.id where t1.serno in ('%s') and t2.serno is null", paste0("SG-", recv, collapse="','")))
     meta(.CLOSE=TRUE)
 
     rownames(projSite)=substring(projSite$Serno, 4)
 
-    ## get wiki user ID for each project
-    con = dbConnect(RSQLite::SQLite(), "/SG/motus_sg.sqlite")
-    projWiki = dbGetQuery(con, "select projCode, SGWikiUser from projectMap")
-    dbDisconnect(con)
-    projWiki = structure(projWiki$SGWikiUser, names=projWiki$projCode)
 
     Now = Sys.time()
     now = as.numeric(Now)
@@ -323,7 +318,7 @@ connectedReceiversApp = function(env) {
 <br>This table generated at %s
 <br>
 <table rows=%d cols=%d border=1>
-<tr><th>Serial No.<br>Click for SG<br>Web Interface</th><th>Tunnel Port</th><th>Lat/Lon<br>Click for Map</th><th>Project, Site<br>Click for Wiki Page</th><th>Boot<br>Count</th><th>Connected<br>Since</th><th>Ants with Hits<br>Latest Hour</th><th>Latest Hit on Tag<br>Known to Receiver</th><th>When</th><th>Hits Today</th><th>Total Hits</th><th>Live User</th></tr>",
+<tr><th>Serial No.<br>Click for SG<br>Web Interface</th><th>Tunnel Port</th><th>Lat/Lon<br>Click for Map</th><th>Project, Site<br>Click for Download Page</th><th>Boot<br>Count</th><th>Connected<br>Since</th><th>Ants with Hits<br>Latest Hour</th><th>Latest Hit on Tag<br>Known to Receiver</th><th>When</th><th>Hits Today</th><th>Total Hits</th><th>Live User</th></tr>",
 format(Now, "%Y %b %d %H:%M:%S GMT"),
 1 + length(recv), 10)
 
@@ -425,6 +420,7 @@ format(Now, "%Y %b %d %H:%M:%S GMT"),
             }
 
             ps = projSite[recv[i], c("Project", "Site")]
+
             if (is.na(ps[[1]])) {
                 ps = c("?", "?")
             } else {
@@ -433,12 +429,8 @@ format(Now, "%Y %b %d %H:%M:%S GMT"),
             latLon = paste(round(gps$lat, 3), round(gps$lon, 3), sep=",")
             latLonURL = sprintf("https://google.com/search?q=%.6f,%.6f", gps$lat, gps$lon)
 
-            wikiUser = projWiki[ps[1]]
-            if (! is.na(wikiUser)) {
-                psURL = Utils$escape(sprintf("User:%s/%s", wikiUser, ps[2]))
-            } else {
-                psURL = ""
-            }
+
+            psURL = sprintf("https://sensorgnome.org/download/%d", projSite[recv[i], "projectID"])
             tbl[i] = sprintf('<tr><td style="background-color: %s">%s</td><td style="text-align:center">%s</td><td style="text-align:center"><a href="%s">%s</a></td><td style="text-align:center"><a href="%s">%s</a></td><td style="text-align:center">%d</td><td style="text-align:center">%s</td><td style="text-align:center">%s</td><td style="text-align:center">%s</td><td style="text-align:center">%s</td><td style="text-align:center">%.0f</td><td style="text-align:center">%.0f</td><td style="text-align:center">%s</td></tr>',
                              if (recv[i] %in% connRecv) "#80ff80" else "#ff8080",
                              anchor,
