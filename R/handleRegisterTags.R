@@ -45,7 +45,7 @@ handleRegisterTags = function(j) {
     meta = list(motusProjID=NULL, tagModel=NULL, nomFreq=NULL, species=NULL, deployDate=NULL, codeSet=NULL)
     lcMetaNames = tolower(names(meta))
     p = jobPath(j)
-    metaFile = dir(p, recursive=TRUE, pattern="tagreg.txt", ignore.case=TRUE, full.names=TRUE)
+    metaFile = dir(p, recursive=TRUE, pattern=".*tagreg.txt", ignore.case=TRUE, full.names=TRUE)
     if (length(metaFile) == 0)
         stop("Missing tagreg.txt metadata file")
 
@@ -129,7 +129,7 @@ handleRegisterTags = function(j) {
 
     ## extract data.frame of tag IDs as character strings
     info = splitToDF("(?i)tag(?<id>[0-9]+(?:\\.[0-9])?)(@(?<fcdfreq>[0-9]+\\.[0-9]*))?.wav$", basename(wavFiles), guess=FALSE)
-    ids = info$id
+    ids = as.character(as.numeric(info$id))
     fcdfreqs = as.numeric(info$fcdfreq)
 
     ## ignore freq if user just gave us the nominal frequency
