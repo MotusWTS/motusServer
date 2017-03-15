@@ -22,7 +22,7 @@ are avoided
    \item any folder containing a file named "syslog(.[0-9](.gz)?)?"
 is enqueued as a new subjob of type "logs"
 
-   \item any folder containing a file named "tagreg.txt" is enqueued
+   \item any folder containing a file whose name matches ".*tagreg.txt$" is enqueued
 as a new subjob of type "registerTags"
 
    \item any files that don't look like sensorgnome data files,
