@@ -77,17 +77,18 @@ uploadServer = function(tracing = FALSE, fileEvent="CREATE") {
         ## change ownership of the file using a sudo-able script
         safeSys("sudo", "/sgm/bin/chown_sg_www-data.sh", upfile)
 
-        parts = strsplit(basename(upfile), ":", fixed=TRUE)[[1]]
+        bname = basename(upfile)
+        parts = strsplit(bname, ":", fixed=TRUE)[[1]]
 
         ## lookup the email address for this user from the data_uploads.sg_users
         ## table (the database used by ProjectSend as configured on our server), and
         ## get the project the user chose to assign the file to.
 
         id.email = MotusDB("select id, email from data_uploads.sg_users where user='%s'", parts[1])
-        motusProjectID = MotusDB("select motus_project_ID from data_uploads.sg_files where url = '%s'", file.path(parts[1], basename(upfile)))
+        motusProjectID = MotusDB("select motus_project_ID from data_uploads.sg_files where url = '%s'", file.path(parts[1], bname))
 
         ## create and enqueue a new upload job
-        j = newJob("uploadFile", .parentPath=MOTUS_PATH$INCOMING, replyTo=id.email[[2]], motusUserID=id.email[[1]], motusProjectID = motusProjectID, valid=TRUE, .enqueue=FALSE)
+        j = newJob("uploadFile", .parentPath=MOTUS_PATH$INCOMING, replyTo=id.email[[2]], motusUserID=id.email[[1]], motusProjectID = motusProjectID, valid=TRUE, .enqueue=FALSE, filename=bname)
 
         ## record receipt within the job's log
         jobLog(j, paste("File uploaded:", parts[3]), summary=TRUE)
@@ -96,7 +97,7 @@ uploadServer = function(tracing = FALSE, fileEvent="CREATE") {
         dir.create(jpath)
         ## move file to the job's dir
 
-        file.rename(upfile, file.path(jpath, basename(upfile)))
+        file.rename(upfile, file.path(jpath, bname))
 
         ## move the job to the mail queue, since it's the email server that processes
         ## unpacking archives and sanity checks on new files
