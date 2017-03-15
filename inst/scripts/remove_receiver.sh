@@ -9,7 +9,7 @@
 # $1: serial number
 #
 
-RECEIVER_DB=/sgm/remote/receivers.sqlite
+RECEIVER_DB=/sgm/server.sqlite
 
 if [[ "$1" == "-f" ]]; then
     FORCE=1
@@ -88,7 +88,7 @@ done
 
 echo deleting record from receivers database...
 
-echo "insert into deleted_receivers select $DATE,* from receivers where serno=='$SERNO';delete from receivers where serno=='$SERNO';" | sqlite3 $RECEIVER_DB
+echo "pragma busy_timeout=30000; insert into deleted_receivers select $DATE,* from receivers where serno=='$SERNO';delete from receivers where serno=='$SERNO';" | sqlite3 $RECEIVER_DB
 
 echo deleting connection indicator
 

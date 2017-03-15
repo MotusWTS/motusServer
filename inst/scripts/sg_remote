@@ -32,8 +32,7 @@ signal.signal(signal.SIGINT, handler)
 SSH_DIR = '/home/sg_remote/.ssh/'
 
 # all other paths go into the /sgm hierarchy
-MASTER_SQLITE_DB = '/sgm/remote/receivers.sqlite'
-MASTER_SQLITE_DB_LOCK = '/sgm/remote/receivers.sqlite.lockfile'
+MASTER_SQLITE_DB = '/sgm/server.sqlite'
 
 # path to folder holding keys generated for receivers never connected
 # to the server, but for which data were processed
@@ -100,32 +99,20 @@ if serno == "NEW":
         ff.close()
         exit(2)
 
-	# open the master DB as a file, so we can lock it
-	dbf = open(MASTER_SQLITE_DB_LOCK, "w")
     try:
-	# wait for an exclusive lock on the DB
-		fcntl.lockf(dbf.fileno(), fcntl.LOCK_EX)
-		ff.write("Got lock\n")
-		conn = sqlite3.connect(MASTER_SQLITE_DB, isolation_level="EXCLUSIVE")
+		conn = sqlite3.connect(MASTER_SQLITE_DB)
 
 		curs = conn.cursor()
 
-	    # create the receivers table if it does not already exist
-	    if curs.execute('select count(*) from sqlite_master where type="table" and name="receivers"').fetchone()[0] == 0:
-	        curs.execute('''
-  	create table receivers (
-	    serno        text unique primary key, -- only one entry per receiver
-	    creationdate real,                    -- timestamp when this entry was created
-	    tunnelport   integer unique,          -- port used on server for reverse tunnel back to sensorgnome
-	    pubkey       text,                    -- unique public/private key pair used by sensorgnome to login to server
-	    privkey      text,
-	    verified     integer default 0        -- has this receiver record been validated (do we know it's not a phony e.g. an attack on the server?).  No data from the receiver's database should be used anywhere until this field is true (non-zero)
-	)
-	''')
+		## set a 30 second busy timeout handler
+		curs.execute('pragma busy_timeout=30000');
 
 	    # generate a port number for tunnelling back into the receiver
 
-	    port = curs.execute('select 1+max(tunnelport) from receivers').fetchone()[0]
+	    curs.execute('insert into receivers (serno, tunnelport) values (:serno, (select 1 + max(tunnelport) from receivers))', {
+			"serno": serno})
+	    port = curs.execute('select tunnelport from receivers where serno=:serno', {
+			"serno": serno}).fetchone()[0]
 	    if port == None:
 	        port = MIN_TUNNEL_PORT
 	    elif port >= MAX_TUNNEL_PORT:
@@ -177,13 +164,13 @@ if serno == "NEW":
 	    pub_key_file.close()
 
 	    # add a record for this sensorgnome
-	    curs.execute('insert into receivers values (:serno, :creationdate, :tunnelport, :pubkey, :privkey, :verified)', {
-	            "serno": serno,
+	    curs.execute('update receivers set creationdate=:creationdate, pubkey=:pubkey, privkey=:privkey, verified=:verified where serno=:serno)', {
 	            "creationdate": time.time(),
 	            "tunnelport": port,
 	            "pubkey": pub_key,
 	            "privkey": priv_key,
-	            "verified": 1    ## FIXME: change this to zero once compudata testing is complete
+	            "verified": 1,    ## FIXME: change this to zero once compudata testing is complete
+	            "serno": serno
 	            })
 
 	    auth_key_file = open(SSH_DIR + "authorized_keys", "a")
@@ -210,12 +197,6 @@ if serno == "NEW":
     except Exception:
         exctype, value = sys.exc_info()[:2]
         ff.write("Got exception: type=%s, value=%s\n" % (exctype, value));
-
-    # release the DB lock
-    fcntl.lockf(dbf.fileno(), fcntl.LOCK_UN)
-    ff.write("Unlocked\n")
-    ff.close()
-    dbf.close()
 
     exit(0)
 

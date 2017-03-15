@@ -26,7 +26,7 @@ WAITHI=${3/[^0-9]/}
 
 RUNNOW=1
 REMOTE=/sgm/remote
-RECEIVERDB=$REMOTE/receivers.sqlite
+RECEIVERDB=/sgm/server.sqlite
 SYNCFILE=$REMOTE/sync/$SERNO
 JOBFILE=$REMOTE/atjobs/$SERNO
 BARE_SERNO=${SERNO/SG-/}
@@ -55,7 +55,7 @@ BADPORT[1215BBBK1796]=40600
 
 if [[ ${BADPORT[$BARE_SERNO} ]]; then
     # see whether the tunnel port is the old, colliding one; i.e. <= 40600
-    PORT=`sqlite3 $RECEIVERDB "select tunnelport from receiver where serno='$BARE_SERNO'"`
+    PORT=`sqlite3 $RECEIVERDB "pragma busy_timeout=30000; select tunnelport from receivers where serno='$BARE_SERNO'"`
     if [[ ! "$PORT" ]]; then
         # this is a receiver which needs a new tunnel port
         # the easiest way to achieve this is to remove existing credentials
