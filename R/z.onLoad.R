@@ -5,6 +5,7 @@
 #' \item set numeric output precision to 14 digits, for timestamp formatting
 #' \item secrets load credentials for accessing databases and servers
 #' \item open log file for output
+#' \item open the server DB
 #' }
 #'
 #' @return return invisible(NULL)
@@ -32,6 +33,8 @@
     }, error = function(e) {
         MOTUS_MAINLOG <<- stdout()
     })
+
+    ensureServerDB()
 
     invisible(NULL)
 }
