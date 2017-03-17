@@ -93,11 +93,11 @@ handleRegisterTags = function(j) {
         }
     }
 
-    deployDate = NULL
+    deployDate = NA
     if (! is.null(meta$deployDate)) {
         deployDate = ymd(meta$deployDate)
         if (is.na(deployDate)) {
-            errs = c(errs, paste0("Could not parse deployment date: ", meta$deployDate, "\nShould be in form YYYY-MM-DD"))
+            jobLog(j, paste0("Warning: could not parse deployment date: ", meta$deployDate, "\nShould be in form YYYY-MM-DD.\n"))
         }
     }
 
@@ -105,7 +105,7 @@ handleRegisterTags = function(j) {
     regTS = Sys.time()
 
     ## date for calculating dateBin
-    dateBinTS = if (is.null(deployDate)) regTS else deployDate
+    dateBinTS = if (is.na(deployDate)) regTS else deployDate
     dateBin = sprintf("%4d-%1d", year(dateBinTS), ceiling(month(dateBinTS)/3))
 
     codeSet = "Lotek4"
@@ -246,7 +246,7 @@ handleRegisterTags = function(j) {
         tag = paste0(id, ":", round(meanbi, 2))
         if (length(rv) > 0 && rv$responseCode == "success-import" && ! is.null(rv$tagID)) {
             jobLog(j, paste0("Success: tag ", tag, " was registered as motus tag ", rv$tagID, " under project ", projectID))
-            if (! is.null(species) || ! is.null(deployDate)) {
+            if (! is.null(species) && ! is.na(deployDate)) {
                 ## try register a deployment on the given species and/or date
                 rv2 = motusDeployTag(tagID=as.integer(rv$tagID), speciesID=species, projectID=projectID, tsStart=as.numeric(deployDate))
                 msg = "with a deployment"
