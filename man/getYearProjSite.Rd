@@ -5,7 +5,7 @@
 \title{Get project and site names, given a receiver serial number and a time range
 or bootnum range.}
 \usage{
-getYearProjSite(serno, ts = NULL, bn = NULL)
+getYearProjSite(serno, ts = NULL, bn = NULL, motusProjectID = NULL)
 }
 \arguments{
 \item{serno}{character vector of serial numbers}
@@ -13,6 +13,9 @@ getYearProjSite(serno, ts = NULL, bn = NULL)
 \item{ts}{numeric vector of length 2; start and end time}
 
 \item{bn}{integer vector of length 2; start and end boot session numbers}
+
+\item{motusProjectID}{integer scalar; motus project ID to use in case no deployments found
+for this receiver.}
 }
 \value{
 a data.frame with these columns:

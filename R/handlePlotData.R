@@ -34,7 +34,7 @@ handlePlotData = function(j) {
 
     on.exit(lockSymbol(serno, lock=FALSE))
 
-    info = getYearProjSite(serno, ts=ts, bn=monoBN)
+    info = getYearProjSite(serno, ts=ts, bn=monoBN, motusProjectID)
 
     if (is.null(info)) {
         jobLog(j, paste0("Warning: no deployments found for receiver ", serno, " and ts ",

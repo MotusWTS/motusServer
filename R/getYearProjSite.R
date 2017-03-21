@@ -25,6 +25,9 @@
 #'
 #' @param bn integer vector of length 2; start and end boot session numbers
 #'
+#' @param motusProjectID integer scalar; motus project ID to use in case no deployments found
+#' for this receiver.
+#'
 #' @return a data.frame with these columns:
 #' \itemize{
 #' \item serno receiver serial number
@@ -45,7 +48,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-getYearProjSite = function(serno, ts=NULL, bn=NULL) {
+getYearProjSite = function(serno, ts=NULL, bn=NULL, motusProjectID=NULL) {
 
     ## check for SG
     isSG = grepl("^SG-", serno)
@@ -116,6 +119,41 @@ getYearProjSite = function(serno, ts=NULL, bn=NULL) {
     meta(.CLOSE=TRUE)
     if (nrow(rv) > 0)
         return(rv)
-    else
+    if (is.null(motusProjectID))
         return(NULL)
+    ## generate a provisional deployment for the given project
+    ## get project name
+    meta = safeSQL(getMotusMetaDB())
+    proj = meta(sprintf("select label from projs where id=%d", motusProjectID))[[1]]
+    meta(.CLOSE=TRUE)
+
+    if (isSG) {
+        recv = safeSQL(getRecvSrc(serno))
+        info = recv(sprintf("select min(tsBegin), max(tsEnd) from batches where monoBN between %d and %d", bn[1], bn[2]))
+        recv(.CLOSE=TRUE)
+        return (data.frame(
+            serno = serno,
+            year = year(structure(info[1,1], class=class(Sys.time()))),
+            proj = proj,
+            site = "(unregistered deployment)",
+            projID = motusProjectID,
+            tsStart = info[1, 1],
+            tsEnd = info[1, 2],
+            bnStart = bn[1],
+            bnEnd = bn[2],
+            stringsAsFactors = FALSE))
+
+    } else {
+        return (data.frame(
+            serno = serno,
+            year = year(structure(ts[1], class=class(Sys.time()))),
+            proj = proj,
+            site = "(unregistered deployment)",
+            projID = motusProjectID,
+            tsStart = ts[1],
+            tsEnd = ts[2],
+            bnStart = NA,
+            bnEnd = NA,
+            stringsAsFactors = FALSE))
+    }
 }
