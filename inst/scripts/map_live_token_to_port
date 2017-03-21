@@ -24,7 +24,7 @@ import subprocess
 
 NUM_PROXY_PORTS = 5 ## must match number of Proxy entries in /etc/apache2/sites-available/live-sensorgnome
 PROXY_PORT_BASE = 50000 ## proxy port base;
-MASTER_RECEIVER_DB = '/sgm/remote/receivers.sqlite'  ## master database of receivers
+MASTER_RECEIVER_DB = '/sgm/server.sqlite'  ## master server database, includes receivers table
 
 ## ports used are PROXY_PORT_BASE + 1, PROXY_PORT_BASE + 2, ... PROXY_PORT_BASE + NUM_PROXY_PORTS
 
@@ -39,6 +39,7 @@ conn.commit()
 rcon = sqlite3.connect(MASTER_RECEIVER_DB)
 rcon.row_factory = sqlite3.Row
 rcurs = rcon.cursor()
+rcurs.execute('pragma busy_timeout=30000')
 
 ##debug = open("/tmp/mapfault.txt", "w")
 ##faulthandler.enable(debug, True)
