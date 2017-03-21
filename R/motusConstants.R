@@ -122,7 +122,11 @@ MOTUS_PATH = list(
     RECV             = "/sgm/recv/",                 ## receiver databases
     RECVLOG          = "/sgm/recvlog/",              ## logfiles from receivers
     REFS             = "/sgm/refs/",                 ## links to receiver DBs by year, projCode, siteCode
-    REMOTE           = "/sgm/remote/",               ## items dealing with remote attached receivers
+
+    REMOTE           = structure("/sgm/remote/",     ## items dealing with remote attached receivers
+                       owner="sg:sg_remote",
+                       perm="g+rwx"),
+
     REMOTE_ATJOBS    = "/sgm/remote/atjobs/",        ## at-job IDs for syncReceiver jobs, by receiver serial number
     REMOTE_CONNECTIONS = "/sgm/remote/connections/", ## empty files whose names are serial numbers of connected receivers
     REMOTE_LIVE      = "/sgm/remote/live.sqlite",    ## DB of live client connections to receivers via our web server
@@ -135,9 +139,17 @@ MOTUS_PATH = list(
     TAGREG_CLEANUP   = "/sgm/tagregCleanup.R",       ## script to provided tag registration cleanups downstream from motus
     TMP              = "/sgm/tmp/",                  ## intermediate storage; persistent across reboots
     TRASH            = "/sgm/trash/",                ## files to be deleted once we know they've been processed
-    UPLOADS          = "/sgm/uploads/",              ## target in which the ProjectSend server makes hardlinks to its newly-uploaded files
+
+    UPLOADS          = structure("/sgm/uploads/",    ## target in which the ProjectSend server makes hardlinks to its newly-uploaded files
+                       owner="sg:www-data",
+                       perm="g+rwx"),
                                                      ## must be writable by the user running the ProjectSend webserver (probably www-data)
-    WWW              = "/sgm/www/"                   ## File hierarchy to be served by apache to authenticated motus users
+    USERAUTH         = structure("/sgm/userauth/",   ## folder to store sqlite database of user authentication cached from motus.org
+                       owner="sg:www-data",          ## this folder needs to have group set to "www-data" and have permissions g+rwx so that
+                       perm="g+rwx"),                ## Apache web server's mod_auth_external can read/write to it.
+
+    WWW              = structure("/sgm/www/",        ## File hierarchy to be served by apache to authenticated motus users
+                       owner="www-data:www-data")
 )
 
 ## main logfile name

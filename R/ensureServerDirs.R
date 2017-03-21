@@ -77,7 +77,16 @@ ensureServerDirs = function() {
         showWarnings = FALSE  ## ignore warnings of existing dirs
     ))
 
+    ## fix ownership / permission for any
     ## create symlinks to package scripts
+
+    for (i in seq(along=MOTUS_PATH)) {
+        a = attributes(MOTUS_PATH[[i]])
+        if (! is.null(a$perm))
+            safeSys("chmod", a$perm, MOTUS_PATH[[i]])
+        if (! is.null(a$owner))
+            safeSys("sudo", "chown", a$owner, MOTUS_PATH[[i]])
+    }
 
     instDir = system.file("scripts", package="motusServer")
     suppressWarnings(file.symlink(dir(instDir, full.names=TRUE), file.path(MOTUS_PATH$BIN, dir(instDir))))
