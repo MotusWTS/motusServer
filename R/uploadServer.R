@@ -44,7 +44,7 @@ uploadServer = function(tracing = FALSE, fileEvent="CREATE") {
     ## get a feed of uploads; the last file event on an upload is "attrib",
     ## so we watch for that.
 
-    feed = getFeeder(MOTUS_PATH$UPLOAD, messages = fileEvent, tracing=tracing)
+    feed = getFeeder(MOTUS_PATH$UPLOADS, messages = fileEvent, tracing=tracing)
 
     ## kill off the inotifywait process when we exit this function
     on.exit(feed(TRUE), add=TRUE)
@@ -54,7 +54,7 @@ uploadServer = function(tracing = FALSE, fileEvent="CREATE") {
     ## Note: files uploaded by users are prepended with USERNAME:TIMESTAMP:
     ## so users can't kill this server by uploading a file called "kill".
 
-    killFile = file.path(MOTUS_PATH$UPLOAD, "kill")
+    killFile = file.path(MOTUS_PATH$UPLOADS, "kill")
 
     ## ensure MotusDB is safeSQL connection to motus transfer DB
     openMotusDB()
