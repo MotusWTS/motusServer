@@ -15,9 +15,18 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 handleExportData = function(j) {
-    src = getRecvSrc(j$serno)
+    serno = j$serno
+    lockSymbol(serno)
+
+    ## make sure we unlock the receiver DB when this function exits, even on error
+    ## NB: the runMotusProcessServer script also drops any locks held by a given
+    ## processServer after the latter exits.
+
+    on.exit(lockSymbol(serno, lock=FALSE))
+
+    src = getRecvSrc(serno)
     pushToMotus(src)
     closeRecvSrc(src)
-    jobLog(j, paste("Pushed new batches from", j$serno, "to motus."))
+    jobLog(j, paste("Pushed new batches from", serno, "to motus."))
     return (TRUE)
 }
