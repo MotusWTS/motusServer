@@ -44,7 +44,7 @@ processServer = function(N, tracing=FALSE) {
 
     ensureServerDirs()
 
-    motusLog("Process server started for queue %d", N)
+    motusLog("Process server started for queue %d with PGID=%d", N, getPGID())
 
     loadJobs(N)
 
