@@ -18,7 +18,12 @@
 handleUploadProcessed = function(j) {
     tj = topJob(j)
 
-    email(tj$replyTo[1], paste0("motus job ", tj, ": processing complete"),
+    replyTo = tj$replyTo[1]
+    if (length(replyTo) == 0) {
+        jobLog(j, "No replyTo address, so not sending summary email")
+        return (FALSE)
+    }
+    email(replyTo, paste0("motus job ", tj, ": processing complete"),
               paste0("Thank-you for the data upload.\nWe have processed your file
 and the summary of results is:\n\n", tj$summary, "\n\nYou can see the detailed log here:
 
