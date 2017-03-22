@@ -3,6 +3,8 @@
 #' @param files either a character vector of full paths to files, or the full
 #' path to a directory, which will be searched recursively for .DTA files.
 #'
+#' @param j job, whose ID will be recorded for any new / changed DTAfile record
+#'
 #' @param dbdir path to folder with existing receiver databases; defaults
 #' to \code{MOTUS_PATH$RECV}
 #'
@@ -32,7 +34,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-ltMergeFiles = function(files, dbdir=MOTUS_PATH$RECV) {
+ltMergeFiles = function(files, j, dbdir=MOTUS_PATH$RECV) {
     if (! isTRUE(is.character(files) && all(file.exists(files)))) {
         warning("invalid or non-existent input files specified")
         return()
@@ -112,15 +114,16 @@ ltMergeFiles = function(files, dbdir=MOTUS_PATH$RECV) {
             ## write file record
             dbGetPreparedQuery(
                 con,
-                "insert into DTAfiles (name, size, tsBegin, tsEnd, tsDB, hash, contents) values (:name, :size, :tsBegin, :tsEnd, :tsDB, :hash, :contents)",
+                "insert into DTAfiles (name, size, tsBegin, tsEnd, tsDB, hash, contents, motusJobID) values (:name, :size, :tsBegin, :tsEnd, :tsDB, :hash, :contents, :motusJobID)",
                 data_frame(
-                    name     = bname,
-                    size     = length(blob),
-                    tsBegin  = min(x$tags$ts),
-                    tsEnd    = max(x$tags$ts),
-                    tsDB     = as.numeric(Sys.time()),
-                    hash     = fhash,
-                    contents = list(comp) ## NB: make list, else dataframe replicates entire row for each byte!
+                    name       = bname,
+                    size       = length(blob),
+                    tsBegin    = min(x$tags$ts),
+                    tsEnd      = max(x$tags$ts),
+                    tsDB       = as.numeric(Sys.time()),
+                    hash       = fhash,
+                    contents   = list(comp), ## NB: make list, else dataframe replicates entire row for each byte!
+                    motusJobID = as.integer(j)
                 ) %>% as.data.frame
             )
             rv$use[i] = TRUE

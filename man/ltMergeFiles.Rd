@@ -4,11 +4,13 @@
 \alias{ltMergeFiles}
 \title{Merge a batch of Lotek .DTA files with an existing database.}
 \usage{
-ltMergeFiles(files, dbdir = MOTUS_PATH$RECV)
+ltMergeFiles(files, j, dbdir = MOTUS_PATH$RECV)
 }
 \arguments{
 \item{files}{either a character vector of full paths to files, or the full
 path to a directory, which will be searched recursively for .DTA files.}
+
+\item{j}{job, whose ID will be recorded for any new / changed DTAfile record}
 
 \item{dbdir}{path to folder with existing receiver databases; defaults
 to \code{MOTUS_PATH$RECV}}

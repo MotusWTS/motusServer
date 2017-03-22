@@ -21,7 +21,7 @@
 
 handleSGfiles = function(j) {
 
-    r = sgMergeFiles(jobPath(j))
+    r = sgMergeFiles(jobPath(j), j)
 
     if (isTRUE(topJob(j)$mergeOnly > 0))
         return(TRUE)

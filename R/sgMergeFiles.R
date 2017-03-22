@@ -9,6 +9,8 @@
 #'     the full path to a directory, which will be searched
 #'     recursively for raw sensorgnome data files.
 #'
+#' @param j job, whose ID will be recorded with records of new / changed files.
+#'
 #' @param dbdir path to folder with existing receiver databases
 #' Default: \code{MOTUS_PATH$RECV}
 #'
@@ -42,7 +44,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-sgMergeFiles = function(files, dbdir = MOTUS_PATH$RECV) {
+sgMergeFiles = function(files, j, dbdir = MOTUS_PATH$RECV) {
     if (! isTRUE(is.character(files) && all(file.exists(files))))
         stop("invalid or non-existent input files specified")
     if (file.info(files[1])$isdir) {
@@ -239,17 +241,18 @@ sgMergeFiles = function(files, dbdir = MOTUS_PATH$RECV) {
                     ## not yet in database
                     dbGetPreparedQuery(
                         con,
-                        "insert into files (name, size, bootnum, monoBN, ts, tscode, tsDB, isDone) values (:name, :size, :bootnum, :monoBN, :ts, :tscode, :tsDB, :isDone)",
+                        "insert into files (name, size, bootnum, monoBN, ts, tscode, tsDB, isDone, motusJobID) values (:name, :size, :bootnum, :monoBN, :ts, :tscode, :tsDB, :isDone, :motusJobID)",
 
                         data.frame(
-                            name     = newf$name[i],
-                            size     = attr(fcon, "len"),
-                            bootnum  = newf$Fbootnum[i],
-                            monoBN   = newf$Fbootnum[i],
-                            ts       = newf$Fts[i],
-                            tscode   = newf$FtsCode[i],
-                            tsDB     = now,
-                            isDone   = newf$Fcomp[i]==".gz",  ## incomplete compressed files are dropped above
+                            name             = newf$name[i],
+                            size             = attr(fcon, "len"),
+                            bootnum          = newf$Fbootnum[i],
+                            monoBN           = newf$Fbootnum[i],
+                            ts               = newf$Fts[i],
+                            tscode           = newf$FtsCode[i],
+                            tsDB             = now,
+                            isDone           = newf$Fcomp[i]==".gz",  ## incomplete compressed files are dropped above
+                            motusJobID       = as.integer(j),
                             stringsAsFactors = FALSE
                         )
                     )
@@ -261,11 +264,12 @@ sgMergeFiles = function(files, dbdir = MOTUS_PATH$RECV) {
                 } else {
                     dbGetPreparedQuery(
                         con,
-                        "update files set size=:size, isDone=:isDone where fileID=:fileID ",
+                        "update files set size=:size, isDone=:isDone, motusJobID=:motusJobID where fileID=:fileID ",
                         data.frame(
-                            size     = attr(fcon, "len"),
-                            isDone   = newf$Fcomp[i] == ".gz",  ## incomplete compressed files are dropped above
-                            fileID   = newf$fileID[i]
+                            size       = attr(fcon, "len"),
+                            isDone     = newf$Fcomp[i] == ".gz",  ## incomplete compressed files are dropped above
+                            motusJobID = as.integer(j),
+                            fileID     = newf$fileID[i]
                         )
                     )
                     dbGetPreparedQuery(

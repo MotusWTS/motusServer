@@ -62,7 +62,7 @@ handleLtFindtags = function(j) {
             muid = "null"
         if (length(mpid) == 0)
             mpid = "null"
-        dbGetQuery(src$con, sprintf("update batches set motusUserID=%s, motusProjectID=%s where batchID=%d", muid, mpid, rv$batchID))
+        dbGetQuery(src$con, sprintf("update batches set motusUserID=%s, motusProjectID=%s, motusJobID=%d where batchID=%d", muid, mpid, as.integer(j), rv$batchID))
     }
 
     closeRecvSrc(src)

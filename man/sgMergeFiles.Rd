@@ -4,12 +4,14 @@
 \alias{sgMergeFiles}
 \title{Merge a batch of raw SG files with their receiver database(s).}
 \usage{
-sgMergeFiles(files, dbdir = MOTUS_PATH$RECV)
+sgMergeFiles(files, j, dbdir = MOTUS_PATH$RECV)
 }
 \arguments{
 \item{files}{either a character vector of full paths to files, or
 the full path to a directory, which will be searched
 recursively for raw sensorgnome data files.}
+
+\item{j}{job, whose ID will be recorded with records of new / changed files.}
 
 \item{dbdir}{path to folder with existing receiver databases
 Default: \code{MOTUS_PATH$RECV}}
