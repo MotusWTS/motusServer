@@ -28,7 +28,8 @@ CREATE TABLE IF NOT EXISTS batches (
     ts FLOAT(53) NOT NULL,                               -- timestamp this batch record added
     tsMotus FLOAT(53) NOT NULL DEFAULT -1,               -- timestamp this record received by motus
     motusUserID INT,                                     -- user who uploaded the data leading to this batch
-    motusProjectID INT                                   -- user-selected motus project ID for this batch
+    motusProjectID INT,                                  -- user-selected motus project ID for this batch
+    motusJobID INT                                       -- processing job which created this batch
 
 );----
 

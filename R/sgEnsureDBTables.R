@@ -60,7 +60,8 @@ monoBN   integer,                      -- monotonic boot number: corrects issues
 ts       double,                       -- timestamp from filename (time at which file was created)
 tscode   character(1),                 -- timestamp code: 'P'=prior to GPS fix; 'Z' = after GPS fix
 tsDB     double,                       -- timestamp when file was read into this database
-isDone   integer                       -- if non-zero, this was a complete, valid compressed file, so will never be updated.
+isDone   integer,                      -- if non-zero, this was a complete, valid compressed file, so will never be updated.
+motusJobID integer                     -- job whose processing added/updated this file.
 )
 ");
 
@@ -90,7 +91,8 @@ tsEnd    double,                                   -- latest timestamp in file
 tsDB     double,                                   -- timestamp when file was read into this database
 hash     text unique,                              -- because Lotek filenames are arbitrary and user-created,
                                                    -- we ensure uniqueness in the DB via SHA-512 hash of uncompressed contents
-contents BLOB                                      -- contents of file; bzip2-compressed text contents of file
+contents BLOB,                                     -- contents of file; bzip2-compressed text contents of file
+motusJobID integer                                 -- job whose processing added/updated this file.
 )
 ");
 
@@ -208,7 +210,8 @@ CREATE TABLE batches (
                                               -- added; unix-style: seconds since 1
                                               -- Jan 1970 GMT
     motusUserID INT,                          -- user who uploaded the data leading to this batch
-    motusProjectID INT                        -- user-selected motus project ID for this batch
+    motusProjectID INT,                       -- user-selected motus project ID for this batch
+    motusJobID INT                            -- job whose processing generated this batch
 );
 ")
     }
