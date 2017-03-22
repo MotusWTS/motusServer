@@ -144,7 +144,12 @@ makeReceiverPlot = function(recv, meta=NULL, title="", condense=3600, ts = NULL,
 
     if (isLotek) {
         if (! is.null(ts)) {
-            tags = tags %>% filter_ (~ts >= ts[1] & ts <= ts[2])
+            ts = unname(ts)
+            if (is.na(ts[2])) {
+                ts[2] = as.numeric(Sys.time())
+            }
+            myts = ts
+            tags = tags %>% filter_ (~ts >= myts[1] & ts <= myts[2])
         }
     } else {
         if (! is.null(monoBN)) {
