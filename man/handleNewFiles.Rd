@@ -16,7 +16,7 @@ various types of known files are queued, like so:
 \itemize{
 
    \item any .DTA (Lotek) files are moved into a new temporary
-directory and queued as a subjob of type "DTA"; name collisions
+directory and queued as a subjob of type "LtFiles"; name collisions
 are avoided
 
    \item any folder containing a file named "syslog(.[0-9](.gz)?)?"

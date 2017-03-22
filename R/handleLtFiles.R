@@ -1,4 +1,4 @@
-#' handle a folder of .DTA files
+#' handle a folder of Lotek .DTA files
 #'
 #' Called by \code{\link{processServer}} for a file or folder added
 #' to the queue.  Merges files into receiver DBs, then queues
@@ -17,7 +17,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-handleDTA = function(j) {
+handleLtFiles = function(j) {
 
     ## merge files into receiver database(s)
 
