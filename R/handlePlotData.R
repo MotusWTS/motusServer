@@ -89,7 +89,7 @@ handlePlotData = function(j) {
         print(rv$plot)
         dev.off()
 
-        targDir = file.path(MOTUS_PATH$WWW, info$projID[i])
+        targDir = getProjDir(info$projID[i])
         file.symlink(plotfilename, targDir)
         file.symlink(pdfname, targDir)
         file.symlink(datafilename, targDir)
