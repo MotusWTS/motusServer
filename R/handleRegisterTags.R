@@ -80,15 +80,20 @@ handleRegisterTags = function(j) {
         errs = c(errs, paste0("Likely invalid tag nominal frequency: ", nomFreq, "; should be in the VHF range 100...200 MHz for motus"))
     }
 
-    species = NULL
+    speciesID = NULL
     if (! is.null(meta$species)) {
-        species = as.integer(meta$species)
-        if (is.na(species)) {
-            sp = motusListSpecies(qstr=meta$species, qlng="CD")
+        species = strsplit(meta$species, "[^a-zA-Z0-9]+", perl=TRUE)[[1]]
+        if (length(species) > 1) {
+            jobLog(j, "Warning: more than one species specified; only using the first", summary=TRUE)
+            species = species[1]
+        }
+        speciesID = as.integer(species)
+        if (is.na(speciesID)) {
+            sp = motusListSpecies(qstr=species, qlng="CD")
             if (length(sp) == 0) {
-                errs = c(errs, paste0("Unknown species code: ", meta$species))
+                jobLog(j, paste("Warning: ignoring unknown species code:", species), summary=TRUE)
             } else {
-                species = sp$id[[1]]
+                speciesID = sp$id[[1]]
             }
         }
     }
@@ -246,14 +251,14 @@ handleRegisterTags = function(j) {
         tag = paste0(id, ":", round(meanbi, 2))
         if (length(rv) > 0 && rv$responseCode == "success-import" && ! is.null(rv$tagID)) {
             jobLog(j, paste0("Success: tag ", tag, " was registered as motus tag ", rv$tagID, " under project ", projectID))
-            if (! is.null(species) && ! is.na(deployDate)) {
+            if (! is.null(speciesID) && ! is.na(deployDate)) {
                 ## try register a deployment on the given species and/or date
-                rv2 = motusDeployTag(tagID=as.integer(rv$tagID), speciesID=species, projectID=projectID, tsStart=as.numeric(deployDate))
+                rv2 = motusDeployTag(tagID=as.integer(rv$tagID), speciesID=speciesID, projectID=projectID, tsStart=as.numeric(deployDate))
                 msg = "with a deployment"
                 if (! is.null(deployDate))
                     msg = paste0(msg, " to start ", meta$deployDate)
-                if (! is.null(species))
-                    msg = paste0(msg, " on a ", meta$species)
+                if (! is.null(speciesID))
+                    msg = paste0(msg, " on a ", species)
                 jobLog(j, msg)
             }
             numReg = numReg + 1
