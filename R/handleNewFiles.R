@@ -78,9 +78,9 @@ handleNewFiles = function(j) {
         all = all[! dirname(all) %in% dirs ]
     }
 
-    ## look for folders containing a file ending in 'tagreg.txt'
+    ## look for folders containing a tag registration manifest file
 
-    tagreg = grep("(?i)tagreg.txt$", basename(all), perl=TRUE)
+    tagreg = grep(MOTUS_TAGREG_MANIFEST_REGEXP, basename(all), ignore.case=TRUE)
     if (length(tagreg)) {
         dirs = unique(dirname(all[tagreg]))
         for (d in dirs) {

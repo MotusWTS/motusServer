@@ -231,3 +231,7 @@ MOTUS_JUNKFILE_REGEX = "(__MACOSX/|System Volume Information/|._.DS_Store)"
 
 ## the earliest valid date from a sensorgnome (= as.numeric(ymd("2010-01-01")))
 MOTUS_SG_EPOCH = 1262304000
+
+## regular expression for recognizing a tag registration manifest file
+## which should be matched case-insensitively
+MOTUS_TAGREG_MANIFEST_REGEXP = ".*tagreg.*\\.txt$"

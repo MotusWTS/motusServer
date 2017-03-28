@@ -45,7 +45,7 @@ handleRegisterTags = function(j) {
     meta = list(motusProjID=NULL, tagModel=NULL, nomFreq=NULL, species=NULL, deployDate=NULL, codeSet=NULL)
     lcMetaNames = tolower(names(meta))
     p = jobPath(j)
-    metaFile = dir(p, recursive=TRUE, pattern=".*tagreg.txt", ignore.case=TRUE, full.names=TRUE)
+    metaFile = dir(p, recursive=TRUE, pattern=MOTUS_TAGREG_MANIFEST_REGEXP, ignore.case=TRUE, full.names=TRUE)
     if (length(metaFile) == 0)
         stop("Missing tagreg.txt metadata file")
 
