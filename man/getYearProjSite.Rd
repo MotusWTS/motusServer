@@ -30,7 +30,10 @@ a data.frame with these columns:
 \item bnStart boot number at which this deployment begins
 \item bnEnd boot number at which this deployment ends
 }
-Returns NULL if there were no matching deployment records.
+Returns NULL if neither bn nor ts is specified.
+
+If there were no matching deployment records, and no motus project
+is given, then the catch-all project 0 is used.
 }
 \description{
 This is meant to provide project and site labels for plots and

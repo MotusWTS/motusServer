@@ -40,7 +40,10 @@
 #' \item bnStart boot number at which this deployment begins
 #' \item bnEnd boot number at which this deployment ends
 #' }
-#' Returns NULL if there were no matching deployment records.
+#' Returns NULL if neither bn nor ts is specified.
+#'
+#' If there were no matching deployment records, and no motus project
+#' is given, then the catch-all project 0 is used.
 #'
 #' @seealso \link{\code{lockSymbol}}
 #'
@@ -119,23 +122,28 @@ getYearProjSite = function(serno, ts=NULL, bn=NULL, motusProjectID=NULL) {
     meta(.CLOSE=TRUE)
     if (nrow(rv) > 0)
         return(rv)
-    if (is.null(motusProjectID))
-        return(NULL)
+
+    if (length(motusProjectID) == 0)
+        motusProjectID = 0L
+
     ## generate a provisional deployment for the given project
     ## get project name
     meta = safeSQL(getMotusMetaDB())
-    proj = meta(sprintf("select label from projs where id=%d", motusProjectID))[[1]]
+    if (motusProjectID > 0)
+        proj = meta(sprintf("select label from projs where id=%d", motusProjectID))[[1]]
+    else
+        proj = "no_project"
     meta(.CLOSE=TRUE)
 
     if (isSG) {
         recv = safeSQL(getRecvSrc(serno))
-        info = recv(sprintf("select min(tsBegin), max(tsEnd) from batches where monoBN between %d and %d", bn[1], bn[2]))
+        info = recv(sprintf("select min(tsBegin), max(tsEnd) from batches where monoBN between %d and %d and tsBegin > %18f and tsEnd > %18f",bn[1], bn[2], MOTUS_SG_EPOCH, MOTUS_SG_EPOCH))
         recv(.CLOSE=TRUE)
         return (data.frame(
             serno = serno,
             year = year(structure(info[1,1], class=class(Sys.time()))),
             proj = proj,
-            site = "(unregistered deployment)",
+            site = "unregistered_deployment",
             projID = motusProjectID,
             tsStart = info[1, 1],
             tsEnd = info[1, 2],
