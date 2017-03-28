@@ -57,7 +57,7 @@ while(isTRUE(substr(ARGS[1], 1, 1) == "-")) {
     ARGS = ARGS[-1]
 }
 
-serno = ARGS[1]
+serno = sub("\\.motus$", "", perl=TRUE, ARGS[1])
 if (is.na(serno)) stop("You must specify a receiver serial number.")
 
 ARGS = ARGS[-1]
