@@ -427,7 +427,7 @@ format(Now, "%Y %b %d %H:%M:%S GMT"),
             latLonURL = sprintf("https://google.com/search?q=%.6f,%.6f", gps$lat, gps$lon)
 
 
-            psURL = sprintf("https://sensorgnome.org/download/%d", projSite[recv[i], "projectID"])
+            psURL = getDownloadURL(projSite[recv[i], "projectID"])
             tbl[i] = sprintf('<tr><td style="background-color: %s">%s</td><td style="text-align:center">%s</td><td style="text-align:center"><a href="%s">%s</a></td><td style="text-align:center"><a href="%s">%s</a></td><td style="text-align:center">%d</td><td style="text-align:center">%s</td><td style="text-align:center">%s</td><td style="text-align:center">%s</td><td style="text-align:center">%s</td><td style="text-align:center">%.0f</td><td style="text-align:center">%.0f</td><td style="text-align:center">%s</td></tr>',
                              if (recv[i] %in% connRecv) "#80ff80" else "#ff8080",
                              anchor,

@@ -283,7 +283,7 @@ handleRegisterTags = function(j) {
     dbFile = createRecvTagDB(projectID, dateBin, getProjDir(projectID))
     tj = topJob(j)
     tj$attachment = structure(list(dbFile), names=basename(dbFile))
-    jobLog(j, sprintf("\nThe on-board database for your recent tags is available here:\n    https://sensorgnome.org/download/%d\n\nInstructions for installing it on a sensorgnome are here:\n   https://sensorgnome.org/VHF_Tag_Registration/Uploading_the_tags_database_file_to_your_SensorGnome\n", projectID), summary=TRUE)
+    jobLog(j, sprintf("\nThe on-board database for your recent tags is available here:\n    %s\n\nInstructions for installing it on a sensorgnome are here:\n   https://sensorgnome.org/VHF_Tag_Registration/Uploading_the_tags_database_file_to_your_SensorGnome\n", getDownloadURL(projectID)), summary=TRUE)
 
     return(TRUE)
 }

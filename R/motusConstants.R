@@ -235,3 +235,6 @@ MOTUS_SG_EPOCH = 1262304000
 ## regular expression for recognizing a tag registration manifest file
 ## which should be matched case-insensitively
 MOTUS_TAGREG_MANIFEST_REGEXP = ".*tagreg.*\\.txt$"
+
+## sprintf-format string for URL of downloadable files; %d is for projectID
+MOTUS_DOWNLOAD_URL_FMT = "https://sensorgnome.org/download/%d"

@@ -93,11 +93,9 @@ handlePlotData = function(j) {
         file.symlink(plotfilename, targDir)
         file.symlink(pdfname, targDir)
         file.symlink(datafilename, targDir)
-        jobLog(j, paste0("Exported hourly dataset (and plot) to:  ", basename(datafilename), "(.png/.pdf)"))
+        jobLog(j, paste0("Exported hourly dataset (and plot) to:  ", basename(datafilename), "(.png/.pdf)",
+                         "\nYou can download these here: ", getDownloadURL(info$projID[i])))
     }
     closeRecvSrc(src)
-
-    ## TODO: make links to files in users's downloads folder
-    ## jobLog(j, paste0('Uploaded hourly data and plot to wiki page here: <a href="', wikiLink, '">', wikiLink, '</a>'), summary=TRUE)
     return (TRUE)
 }
