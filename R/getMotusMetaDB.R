@@ -192,6 +192,10 @@ getMotusMetaDB = function() {
     ## rename "code" column to "label"
     names(p)[match("code", names(p))] = "label"
 
+    ## fill in *something* for missing project labels (first 3 words with underscores)
+    fix = is.na(p$label)
+    p$label[fix] = sapply(strsplit(gsub(" - ", " ", p$name[fix]), " ", fixed=TRUE), function(n) paste(head(n, 3), collapse="_"))
+
     dbWriteTable(s$con, "projs", p, overwrite=TRUE, row.names=FALSE)
 
     ## add a fullID label for each tagDep
