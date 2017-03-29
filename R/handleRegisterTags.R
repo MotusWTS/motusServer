@@ -49,7 +49,7 @@ handleRegisterTags = function(j) {
     if (length(metaFile) == 0)
         stop("Missing tagreg.txt metadata file")
 
-    keyVal = splitToDF("(?<key>[[:alnum:]]+):[[:space:]]*(?<value>.*)", getFileAsText(metaFile), guess=FALSE)
+    keyVal = splitToDF("(?<key>[[:alnum:]]+):[[:space:]]*(?<value>[^[:space:]]*)", getFileAsText(metaFile), guess=FALSE)
     ## convert to named list, ignoring case of key values
     userMeta = list()
     userMeta[tolower(keyVal$key)] = keyVal$val
