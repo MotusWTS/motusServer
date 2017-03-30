@@ -419,7 +419,7 @@ format(Now, "%Y %b %d %H:%M:%S GMT"),
             ps = projSite[recv[i], c("Project", "Site")]
 
             if (is.na(ps[[1]])) {
-                ps = c("?", "?")
+                ps = c("unregistered deployment")
             } else {
                 ps = as.character(ps)
             }

@@ -9,5 +9,7 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 getDownloadURL = function(projectID) {
+    if (!isTRUE(projectID > 0))
+        projectID = 0
     sprintf(MOTUS_DOWNLOAD_URL_FMT, projectID)
 }
