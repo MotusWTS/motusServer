@@ -53,7 +53,7 @@ BADPORT[1215BBBK1778]=40598
 BADPORT[1315BBBK0110]=40599
 BADPORT[1215BBBK1796]=40600
 
-if [[ ${BADPORT[$BARE_SERNO} ]]; then
+if [[ ${BADPORT[$BARE_SERNO]} ]]; then
     # see whether the tunnel port is the old, colliding one; i.e. <= 40600
     PORT=`sqlite3 $RECEIVERDB "pragma busy_timeout=30000; select tunnelport from receivers where serno='$BARE_SERNO'"`
     if [[ ! "$PORT" ]]; then
