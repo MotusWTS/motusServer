@@ -24,7 +24,7 @@ import subprocess
 
 NUM_PROXY_PORTS = 5 ## must match number of Proxy entries in /etc/apache2/sites-available/live-sensorgnome
 PROXY_PORT_BASE = 50000 ## proxy port base;
-MASTER_RECEIVER_DB = '/sgm/server.sqlite'  ## master server database, includes receivers table
+MASTER_RECEIVER_DB = '/sgm/remote/receivers.sqlite'  ## master server database, includes receivers table
 
 ## ports used are PROXY_PORT_BASE + 1, PROXY_PORT_BASE + 2, ... PROXY_PORT_BASE + NUM_PROXY_PORTS
 

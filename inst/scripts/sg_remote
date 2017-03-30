@@ -32,7 +32,7 @@ signal.signal(signal.SIGINT, handler)
 SSH_DIR = '/home/sg_remote/.ssh/'
 
 # all other paths go into the /sgm hierarchy
-MASTER_SQLITE_DB = '/sgm/server.sqlite'
+MASTER_SQLITE_DB = '/sgm/remote/receivers.sqlite'
 
 # path to folder holding keys generated for receivers never connected
 # to the server, but for which data were processed
@@ -64,6 +64,7 @@ ff = open("/sgm/logs/sg_remote_log.txt", "a")
 ff.write("%d,%s\n" % (time.time(), serno))
 
 if serno == "NEW":
+	print ("GOT NEW")
     # new login; ask the client for the serial number
 
     serno = sys.stdin.readline(13).rstrip().upper()
@@ -100,8 +101,10 @@ if serno == "NEW":
         exit(2)
 
     try:
+		print ("About to try to connect to %s\n" % (MASTER_SQLITE_DB))
 		conn = sqlite3.connect(MASTER_SQLITE_DB)
 
+		print ("Connected.\n")
 		curs = conn.cursor()
 
 		## set a 30 second busy timeout handler
@@ -111,8 +114,10 @@ if serno == "NEW":
 
 	    curs.execute('insert into receivers (serno, tunnelport) values (:serno, (select 1 + max(tunnelport) from receivers))', {
 			"serno": serno})
+		print ("inserted\n")
 	    port = curs.execute('select tunnelport from receivers where serno=:serno', {
 			"serno": serno}).fetchone()[0]
+		print ("selected\n")
 	    if port == None:
 	        port = MIN_TUNNEL_PORT
 	    elif port >= MAX_TUNNEL_PORT:
@@ -163,6 +168,7 @@ if serno == "NEW":
 	    pub_key = ''.join(pub_key_file.readlines()) # probably a single line
 	    pub_key_file.close()
 
+		print ("about to add receiver")
 	    # add a record for this sensorgnome
 	    curs.execute('update receivers set creationdate=:creationdate, pubkey=:pubkey, privkey=:privkey, verified=:verified where serno=:serno)', {
 	            "creationdate": time.time(),

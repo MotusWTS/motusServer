@@ -81,7 +81,7 @@ MOTUS_BADFILE_ARCHIVE = "bad_files.zip.NOAUTO"
 #'@export
 
 MOTUS_PATH = list(
-    ROOT             = "/sgm/",
+    ROOT             = "/sgm",
     BIN              = "/sgm/bin/",                  ## executable scripts
     CACHE            = "/sgm/cache/",                ## recent results of large queries from motus.org
     CRYPTO           = "/sgm/crypto/",               ## public/private keypairs for ssh etc. by receivers
@@ -219,6 +219,9 @@ MOTUS_ADMIN_USERNAME = "john"
 
 ## the database used to record server activity
 MOTUS_SERVER_DB = "/sgm/server.sqlite"
+
+## the database to hold info on remote receivers
+MOTUS_REMOTE_RECV_DB = file.path(MOTUS_PATH$REMOTE, "receivers.sqlite")
 
 ## the table used to record locks on arbitrary symbols
 MOTUS_SYMBOLIC_LOCK_TABLE = "symLocks"

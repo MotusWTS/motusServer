@@ -22,8 +22,11 @@ symbol TEXT UNIQUE PRIMARY KEY,
 owner INTEGER
 )" ,
 MOTUS_SYMBOLIC_LOCK_TABLE))
+
+    ServerDB(sprintf("ATTACH DATABASE '%s' as remote", MOTUS_REMOTE_RECV_DB))
+
     ServerDB('
-CREATE TABLE IF NOT EXISTS receivers (
+CREATE TABLE IF NOT EXISTS remote.receivers (
     serno        text unique primary key, -- only one entry per receiver
     creationdate real,                    -- timestamp when this entry was created
     tunnelport   integer unique,          -- port used on server for reverse tunnel back to sensorgnome
@@ -32,7 +35,7 @@ CREATE TABLE IF NOT EXISTS receivers (
     verified     integer default 0);      -- has receiver been verified?
 ')
     ServerDB('
-CREATE TABLE IF NOT EXISTS "deleted_receivers" (
+CREATE TABLE IF NOT EXISTS remote.deleted_receivers (
     ts           real,                    -- deletion timestamp
     serno        text,                    -- possibly multiple entries per receiver
     creationdate real,                    -- timestamp when this entry was created

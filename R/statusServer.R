@@ -285,7 +285,7 @@ connectedReceiversApp = function(env) {
     ## get list of receiver serial numbers by port
 
     if (length(ports) > 0) {
-        portByRecv = ServerDB(sprintf("select tunnelport,serno from receivers where tunnelport in (%s)", paste(ports, collapse=",")))
+        portByRecv = ServerDB(sprintf("select tunnelport,serno from remote.receivers where tunnelport in (%s)", paste(ports, collapse=",")))
         rownames(portByRecv) = portByRecv$serno
     } else {
         portByRecv = NULL
@@ -466,7 +466,7 @@ allReceiversApp = function(env) {
     f = dir(MOTUS_PATH$REMOTE_STREAMS, pattern=".*\\.sqlite$", full.names=TRUE)
     recv_with_db = sub(".sqlite$", "", basename(f))
 
-    recv = ServerDB("select * from receivers where verified=1 order by serno")
+    recv = ServerDB("select * from remote.receivers where verified=1 order by serno")
 
     recv$connNow = file.exists(file.path(MOTUS_PATH$REMOTE_CONNECTIONS, recv$serno))
 

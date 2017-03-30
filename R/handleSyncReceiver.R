@@ -29,7 +29,7 @@ handleSyncReceiver = function(j) {
         dir.create(repoDir)
 
     ## get the port number (drop the "SG-" prefix from serno)
-    port = ServerDB("select tunnelport from receivers where serno=:serno", serno=substring(serno, 4))[[1]]
+    port = ServerDB("select tunnelport from remote.receivers where serno=:serno", serno=substring(serno, 4))[[1]]
 
     ## ignore request if there's no tunnel port known for this serial number
     if (! isTRUE(port > 0)) {
