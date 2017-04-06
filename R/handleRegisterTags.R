@@ -202,17 +202,20 @@ handleRegisterTags = function(j) {
         } else {
             ## allow a maximum BI standard deviation of 5 ms
             maxBISD = 0.005
-            ## allow for possibly missed bursts by retrying with
             tries = 0L
             maxTries = 5L
             while (tries < maxTries)  {
-                meanbi = mean(bi)
                 bi.sd = sd(bi)
                 if (isTRUE(bi.sd <= maxBISD))
                     break
+                ## allow for possibly missed bursts by retrying with successively
+                ## refined estimates of BI; start with the median, as mean
+                ## can easily prevent convergence in the presence of missing bursts.
+                if (tries == 0)
+                    meanbi = median(bi)
                 tries = tries + 1L
-                ## adjust bi by accounting for missed bursts at the current estimate of bi
                 bi = bi / round(bi / meanbi)
+                meanbi = mean(bi)
             }
             if (! isTRUE(bi.sd  <= maxBISD)) {
                 jobLog(j, paste0("Unable to get a good estimate of burst interval for tag id ", id, " in file ", f,
