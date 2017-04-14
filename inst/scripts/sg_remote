@@ -170,7 +170,7 @@ if serno == "NEW":
 
 		print ("about to add receiver")
 	    # add a record for this sensorgnome
-	    curs.execute('update receivers set creationdate=:creationdate, pubkey=:pubkey, privkey=:privkey, verified=:verified where serno=:serno)', {
+	    curs.execute('update receivers set creationdate=:creationdate, pubkey=:pubkey, privkey=:privkey, verified=:verified where serno=:serno', {
 	            "creationdate": time.time(),
 	            "tunnelport": port,
 	            "pubkey": pub_key,
