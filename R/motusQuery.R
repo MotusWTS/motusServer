@@ -76,22 +76,32 @@ motusQuery = function (API, params = NULL, requestType="post", show=FALSE, json=
 
     log = file("~/motus_query_log.txt", "a")
     cat(format(Sys.time()), ",", requestType, ",", API, ",", JSON, "\n", file=log)
-    tryCatch({
-        if (requestType == "post")
-            RESP = postForm(API, json=JSON, style="post", curl=curl)
-        else
-            RESP = getForm(API, json=JSON, curl=curl)
-        if (json)
-            return (RESP)
-        if (grepl("^[ \r\n]*$", RESP))
-            return(list())
-        rv = fromJSON(RESP)
-        cat(capture.output(RESP), "\n", file=log)
-        if (! is.null(rv$data))
-            return(rv$data)
-        return(rv)
-    }, error=function(e) {
-        cat("ERROR: ", as.character(e), "\n", file=log)
-        stop ("MotusQuery failed with error; ", as.character(e))
-    })
+    retries = 0
+    repeat {
+        tryCatch({
+            if (requestType == "post")
+                RESP = postForm(API, json=JSON, style="post", curl=curl)
+            else
+                RESP = getForm(API, json=JSON, curl=curl)
+            if (json)
+                return (RESP)
+            if (grepl("^[ \r\n]*$", RESP))
+                return(list())
+            rv = fromJSON(RESP)
+            if (retries > 0)
+                cat("Query was retried ", retries, " times due to gnuTLS issues\n", file=log)
+            cat(capture.output(RESP), "\n", file=log)
+            if (! is.null(rv$data))
+                return(rv$data)
+            return(rv)
+        }, error=function(e) {
+            if (any(grepl("TLS packet with unexpected length", as.character(e)))) {
+                Sys.sleep(5)
+                retries = retries + 1
+                next
+            }
+            cat("ERROR: ", as.character(e), "\n", file=log)
+            stop ("MotusQuery failed with error; ", as.character(e))
+        })
+    }
 }
