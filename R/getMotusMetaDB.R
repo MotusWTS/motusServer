@@ -1,6 +1,12 @@
 #' Get the motus database of metadata for tags, receivers, projects,
 #' and species.
 #'
+#' @details If the current copy is more than one day old, we try retrieve
+#' a more up to date version from motus.org via their API.
+#' For each table X, if the appropriate query fails, we leave X as-is.
+#' If the query succeeds succeed, then X is renamed to X_old (after deleting
+#' table X_old, if it exists), and the results of the query are written to X.
+#'
 #' @return a path to an sqlite database usable by the \code{tagview} function
 #' It will have these tables:
 #'
@@ -146,7 +152,6 @@
 getMotusMetaDB = function() {
     ## location we store a cached copy of the motus tag DB
     cachedDB = "/sgm/cache/motus_meta_db.sqlite"
-    oldCachedDB = "/sgm/cache/motus_meta_db_old.sqlite"
 
     ## try to lock the cachedDB (by trying to lock its name)
     lockSymbol(cachedDB)
@@ -158,8 +163,7 @@ getMotusMetaDB = function() {
     on.exit(lockSymbol(cachedDB, lock=FALSE))
 
 
-    ## if either the cached copy doesn't exist, or it is more than 1 day old,
-    ## grab it again
+    ## if the cached DB exists and is less than 1 day old, do nothing
 
     if (file.exists(cachedDB) && diff(as.numeric(c(file.info(cachedDB)$mtime, Sys.time()))) <= 24 * 3600) {
         return (cachedDB)
@@ -170,100 +174,121 @@ getMotusMetaDB = function() {
     s = src_sqlite(cachedDB, TRUE)
     dbGetQuery(s$con, "pragma busy_timeout=300000")
 
-    ## if all tables are already present; save this as the older version
-    if (all(c("tags", "tagDeps", "events", "species", "projs", "recvDeps", "antDeps", "recvGPS") %in% src_tbls(s))) {
-        dbDisconnect(s$con)
-        file.rename(cachedDB, oldCachedDB) ## overwrites any existing old copy
-        s = src_sqlite(cachedDB, TRUE)
-        dbGetQuery(s$con, "pragma busy_timeout=300000")
+    ## convenience function to backup existing table T to T_old
+    bkup = function(T) {
+        try(silent=TRUE, {
+            dbGetQuery(s$con, paste0("drop table ", T, "_old"))
+        })
+        try(silent=TRUE, {
+            dbGetQuery(s$con, paste0("alter table ", T, " rename to ", T, "_old"))
+        })
     }
 
     ## grab tags
-    t = motusSearchTags()
+    try(silent=TRUE, {
+        t = motusSearchTags()
 
-    ## clean up tag registrations (only runs on server with access to full Lotek codeset)
-    ## creates tables "tags" and "events" from the first parameter
+        ## clean up tag registrations (only runs on server with access to full Lotek codeset)
+        ## creates tables "tags" and "events" from the first parameter
 
-    t = cleanTagRegistrations(t, s)
+        t = cleanTagRegistrations(t, s)
 
-    ## grab projects
-    p =  motusListProjects()
+        ## grab projects
+        p =  motusListProjects()
 
-    ## rename "code" column to "label"
-    names(p)[match("code", names(p))] = "label"
+        ## rename "code" column to "label"
+        names(p)[match("code", names(p))] = "label"
 
-    ## fill in *something* for missing project labels (first 3 words with underscores)
-    fix = is.na(p$label)
-    p$label[fix] = sapply(strsplit(gsub(" - ", " ", p$name[fix]), " ", fixed=TRUE), function(n) paste(head(n, 3), collapse="_"))
+        ## fill in *something* for missing project labels (first 3 words with underscores)
+        fix = is.na(p$label)
+        p$label[fix] = sapply(strsplit(gsub(" - ", " ", p$name[fix]), " ", fixed=TRUE), function(n) paste(head(n, 3), collapse="_"))
 
-    dbWriteTable(s$con, "projs", p, overwrite=TRUE, row.names=FALSE)
+        bkup("projs")
+        dbWriteTable(s$con, "projs", p, overwrite=TRUE, row.names=FALSE)
 
-    ## add a fullID label for each tagDep
-    t$fullID = sprintf("%s#%s:%.1f@%g", p$label[match(t$projectID, p$id)], t$mfgID, t$period, t$nomFreq)
+        ## add a fullID label for each tagDep
+        t$fullID = sprintf("%s#%s:%.1f@%g", p$label[match(t$projectID, p$id)], t$mfgID, t$period, t$nomFreq)
+        t = t[, c(1:2, match("deployID", names(t)): ncol(t))]
 
-    ## write just the deployment portion of the records to tagDeps
-    dbWriteTable(s$con, "tagDeps", t[, c(1:2, match("deployID", names(t)): ncol(t))], overwrite=TRUE, row.names=FALSE)
+        bkup("tagDeps")
+        ## write just the deployment portion of the records to tagDeps
+        dbWriteTable(s$con, "tagDeps", t, overwrite=TRUE, row.names=FALSE)
+    })
 
     ## grab species
-    dbWriteTable(s$con, "species", motusListSpecies(), overwrite=TRUE, row.names=FALSE)
+    try(silent=TRUE, {
+        t = motusListSpecies()
+        bkup("species")
+        dbWriteTable(s$con, "species", t, row.names=FALSE)
+    })
 
     ## grab receivers
-    recv = data_frame()
-    ant = data_frame()
+    try(silent=TRUE, {
+        recv = data_frame()
+        ant = data_frame()
 
-    ## Note: because the motus query isn't returning fields for which there's no data,
-    ## we have to explicitly construct NAs
-    for(pid in p$id) {
-        if (pid == 0)
-            next
-        r = motusListSensorDeps(projectID=pid)
-        if (isTRUE(nrow(r) > 0)) {
-            if ("antennas" %in% names(r)) {
-                for (i in 1:nrow(r)) {
-                    if (! is.null(r$antennas[[i]])) {
-                        ant = bind_rows(ant, cbind(deployID=r$deployID[[i]], r$antennas[[i]]))
+        ## Note: because the motus query isn't returning fields for which there's no data,
+        ## we have to explicitly construct NAs
+        for(pid in p$id) {
+            if (pid == 0)
+                next
+            r = motusListSensorDeps(projectID=pid)
+            if (isTRUE(nrow(r) > 0)) {
+                if ("antennas" %in% names(r)) {
+                    for (i in 1:nrow(r)) {
+                        if (! is.null(r$antennas[[i]])) {
+                            ant = bind_rows(ant, cbind(deployID=r$deployID[[i]], r$antennas[[i]]))
+                        }
                     }
                 }
+                r$projectID = pid
+                r$antennas = NULL
+                recv = bind_rows(recv, r)
             }
-            r$projectID = pid
-            r$antennas = NULL
-            recv = bind_rows(recv, r)
         }
-    }
-    recv = recv %>% as.data.frame
-    ## workaround until upstream changes format of serial numbers for Lotek receivers
-    recv$serno = sub("(SRX600|SRX800|SRX-DL)", "Lotek", perl=TRUE, recv$serno)
+        recv = recv %>% as.data.frame
+        ## workaround until upstream changes format of serial numbers for Lotek receivers
+        recv$serno = sub("(SRX600|SRX800|SRX-DL)", "Lotek", perl=TRUE, recv$serno)
 
-    dbWriteTable(s$con, "recvDeps", recv, overwrite=TRUE, row.names=FALSE)
+        bkup("recvDeps")
+        dbWriteTable(s$con, "recvDeps", recv, overwrite=TRUE, row.names=FALSE)
 
-    ## End any unterminated receiver deployments on receivers which have a later deployment.
-    ## The earlier deployment is ended 1 second before the (earliest) later one begins.
+        ## End any unterminated receiver deployments on receivers which have a later deployment.
+        ## The earlier deployment is ended 1 second before the (earliest) later one begins.
 
-    dbGetQuery(s$con, "update recvDeps set tsEnd = (select min(t2.tsStart) - 1 from recvDeps as t2 where t2.tsStart > recvDeps.tsStart and recvDeps.serno=t2.serno) where tsEnd is null and tsStart is not null");
+        dbGetQuery(s$con, "update recvDeps set tsEnd = (select min(t2.tsStart) - 1 from recvDeps as t2 where t2.tsStart > recvDeps.tsStart and recvDeps.serno=t2.serno) where tsEnd is null and tsStart is not null");
 
-    dbWriteTable(s$con, "antDeps", ant %>% as.data.frame, overwrite=TRUE, row.names=FALSE)
+        bkup("antDeps")
+        dbWriteTable(s$con, "antDeps", ant %>% as.data.frame, overwrite=TRUE, row.names=FALSE)
+    })
+
 
     ## GPS fix table; initially, this contains only a single fix for
     ## each receiver deployment but we'll eventually be filling in
     ## additional fixes for mobile receivers.
 
-    dbWriteTable(s$con, "recvGPS",
-                 recv %>% transmute (
-                              deviceID=deviceID,
-                              ts = tsStart,
-                              lat = latitude,
-                              lon = longitude,
-                              elev = 0 ),
-                 overwrite=TRUE, row.names=FALSE)
+    try(silent=TRUE, {
+        gps = recv %>% transmute (
+                           deviceID=deviceID,
+                           ts = tsStart,
+                           lat = latitude,
+                           lon = longitude,
+                           elev = 0 )
+
+        bkup("gps")
+        dbWriteTable(s$con, "recvGPS", gps, row.names=FALSE)
+    })
 
     ## DEPRECATED: copy paramOverrides table from paramOverrides database until there's a motus
     ## API call to fetch these
-    sql = ensureParamOverridesTable()
-    dbWriteTable(s$con, "paramOverrides", sql("select * from paramOverrides"), overwrite=TRUE, row.names=FALSE)
+    try(silent=TRUE, {
+        sql = ensureParamOverridesTable()
+        t = sql("select * from paramOverrides")
+        bkup("paramOverrides")
+        dbWriteTable(s$con, "paramOverrides", t, row.names=FALSE)
+    })
+
     sql(.CLOSE=TRUE)
-
     dbDisconnect(s$con)
-
     return (cachedDB)
-
 }

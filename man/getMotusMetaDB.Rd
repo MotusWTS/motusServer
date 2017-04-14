@@ -149,6 +149,13 @@ which the fixtureType is "Ship".
 Get the motus database of metadata for tags, receivers, projects,
 and species.
 }
+\details{
+If the current copy is more than one day old, we try retrieve
+a more up to date version from motus.org via their API.
+For each table X, if the appropriate query fails, we leave X as-is.
+If the query succeeds succeed, then X is renamed to X_old (after deleting
+table X_old, if it exists), and the results of the query are written to X.
+}
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
