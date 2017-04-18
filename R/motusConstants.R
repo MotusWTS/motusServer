@@ -136,6 +136,7 @@ MOTUS_PATH = list(
     SYNC             = "/sgm/remote/sync/",          ## when an empty file having a receiver serial number as its name is placed here,
                                                      ## the receiver is sync'd remotely
     TAGS             = "/sgm/tags/",                 ## ??
+    TAG_PROJ         = "/sgm/tag_proj/",             ## sqlite databases for all tag projects
     TAGREG_CLEANUP   = "/sgm/tagregCleanup.R",       ## script to provided tag registration cleanups downstream from motus
     TMP              = "/sgm/tmp/",                  ## intermediate storage; persistent across reboots
     TRASH            = "/sgm/trash/",                ## files to be deleted once we know they've been processed
