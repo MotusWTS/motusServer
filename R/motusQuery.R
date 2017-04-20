@@ -77,7 +77,7 @@ motusQuery = function (API, params = NULL, requestType="post", show=FALSE, json=
     log = file("~/motus_query_log.txt", "a")
     cat(format(Sys.time()), ",", requestType, ",", API, ",", JSON, "\n", file=log)
     retries = 0
-    repeat {
+    while(retries < 5) {
         tryCatch({
             if (requestType == "post")
                 RESP = postForm(API, json=JSON, style="post", curl=curl)
@@ -97,11 +97,12 @@ motusQuery = function (API, params = NULL, requestType="post", show=FALSE, json=
         }, error=function(e) {
             if (any(grepl("TLS packet with unexpected length", as.character(e)))) {
                 Sys.sleep(5)
-                retries = retries + 1
-                next
             }
-            cat("ERROR: ", as.character(e), "\n", file=log)
-            stop ("MotusQuery failed with error; ", as.character(e))
+            if (retries > 5) {
+                cat("ERROR: ", as.character(e), "\n", file=log)
+                stop ("MotusQuery failed with error; ", as.character(e))
+            }
         })
+        retries <- retries + 1
     }
 }
