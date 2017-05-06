@@ -68,9 +68,8 @@ fixDOSfilenames = function(f, info) {
         ## we try to generate as many of these fields (from sgFilenameRegex) as possible:
         ## prefix, serno, bootnum, ts, tscode, port, extension, comp
 
-        ## get the context; those files in the tree rooted two levels up
-        contextRE = paste0("^", dirname(f[i]))
-        context = grep(contextRE, f, perl=TRUE)
+        ## get the context; those files in the same folder
+        context = which(dirname(f) == dirname(f[i]))
 
         ## which files match by first two characters and have valid serial numbers?
         matches = context[twoChar[context] == twoChar[i] & ! is.na(info$serno[context])]
@@ -103,7 +102,7 @@ fixDOSfilenames = function(f, info) {
                 if (ts < 946684800) ## this is the beaglebone epoch
                     ts = ts + 946684800
                 ## use this as the file timestamp
-                info$ts[i] = format(structure(ts, class=c("POSIXt", "POSIXct")), MOTUS_SG_TIMESTAMP_FORMAT)
+                info$tsString[i] = format(structure(ts, class=c("POSIXt", "POSIXct")), MOTUS_SG_TIMESTAMP_FORMAT)
 
                 ## assign tsCode as "P" if timestamp is pre-GPS; otherwise, "Z"
                 info$tsCode[i] = if(ts < 1262304000) "P" else "Z"
