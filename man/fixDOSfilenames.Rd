@@ -4,13 +4,16 @@
 \alias{fixDOSfilenames}
 \title{Correct DOS-style 8.3 filenames into (almost) their original full filenames.}
 \usage{
-fixDOSfilenames(f, info)
+fixDOSfilenames(f, info, onDisk = FALSE)
 }
 \arguments{
 \item{f}{vector of full paths to files}
 
 \item{info}{data frame of split filename components, which are the
 named capture groups in \link{\code{sgFilenameRegex}}}
+
+\item{onDisk;}{logical scalar; if TRUE, also rename the file on disk
+default: FALSE}
 }
 \value{
 info, with corrections to those rows representing DOS-style

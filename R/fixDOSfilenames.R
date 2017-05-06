@@ -26,6 +26,9 @@
 #' @param info data frame of split filename components, which are the
 #'     named capture groups in \link{\code{sgFilenameRegex}}
 #'
+#' @param onDisk; logical scalar; if TRUE, also rename the file on disk
+#' default: FALSE
+#'
 #' @return info, with corrections to those rows representing DOS-style
 #'     filenames whose receiver can be deduced.
 #'
@@ -53,7 +56,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-fixDOSfilenames = function(f, info) {
+fixDOSfilenames = function(f, info, onDisk=FALSE) {
     ## which filenames are short, if any
     base = basename(f)
     dos = grep(MOTUS_DOS_FILENAME_REGEX, base, perl=TRUE)
@@ -111,6 +114,17 @@ fixDOSfilenames = function(f, info) {
             info$port[i] = "all"
             info$extension[i] = ".txt"
             info$comp = if (toupper(substring(base[i], nchar(base[i]) - 1)) == "GZ") ".gz" else ""
+            if (onDisk) {
+                file.rename(f[i], file.path(dirname(f[i]), sprintf("%s-%s-%06d-%s%s-%s%s%s",
+                                                                 info$prefix[i],
+                                                                 info$serno[i],
+                                                                 info$bootnum[i],
+                                                                 info$tsString[1],
+                                                                 info$tsCode[i],
+                                                                 info$port[i],
+                                                                 info$extension[i],
+                                                                 info$comp[i])))
+            }
         }
     }
     return(info)
