@@ -40,6 +40,10 @@ handleSanityCheck = function(j) {
     chk[chk == 4 & ignore] = 0
     ch4 = ch4[! ignore]
 
+    ## we might no longer have any problem files
+    if (all(chk == 0))
+        return(TRUE)
+
     if (length(ch4) > 0) {
         jobLog(j, c(paste("Error: these", length(ch4), "archives are corrupt:"),
                     "(perhaps your folder has not finished syncing?)", paste0("   ", basename(ch4))))
@@ -49,9 +53,11 @@ handleSanityCheck = function(j) {
         jobLog(j, c(paste("Warning: these", length(ch2), "files are empty:"),
                     paste0("   ", basename(ch2))))
     }
+
     if (any(chk == 0)) {
         jobLog(j, paste("Processing will continue with the remaining", sum(chk==0), "files."))
     }
+
     ## write names of bad files to a temporary location so we can tar them;
 
     tmpf = tempfile()
