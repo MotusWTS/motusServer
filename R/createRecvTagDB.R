@@ -15,7 +15,7 @@
 #'     'project_XXX_YYYY-Q_(YYYY-Q)?_tag_database.sqlite' where XXX is
 #'     the projectID, and the one or two YYYY-Q parts give the dateBin
 #'     or range of dateBins of the tags included.  Default:
-#'     \code{MOTUS_PATH$TAGS}
+#'     \code{\link{getProjDir}(projectID)}
 #'
 #' @return the full path to the tag database, or NULL if no tags were written.
 #'
@@ -23,7 +23,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-createRecvTagDB = function(projectID, dateBin, path = MOTUS_PATH$TAGS) {
+createRecvTagDB = function(projectID, dateBin, path = getProjDir(projectID)) {
 
     dateBinRange = range(dateBin)
 

@@ -5,7 +5,7 @@
 \title{create a receiver tag database, for use by the sensorgnome on-board
 tag detector}
 \usage{
-createRecvTagDB(projectID, dateBin, path = MOTUS_PATH$TAGS)
+createRecvTagDB(projectID, dateBin, path = getProjDir(projectID))
 }
 \arguments{
 \item{projectID}{integer motus project ID}
@@ -20,7 +20,7 @@ will be called
 'project_XXX_YYYY-Q_(YYYY-Q)?_tag_database.sqlite' where XXX is
 the projectID, and the one or two YYYY-Q parts give the dateBin
 or range of dateBins of the tags included.  Default:
-\code{MOTUS_PATH$TAGS}}
+\code{\link{getProjDir}(projectID)}}
 }
 \value{
 the full path to the tag database, or NULL if no tags were written.
