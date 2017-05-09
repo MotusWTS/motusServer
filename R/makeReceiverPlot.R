@@ -169,7 +169,7 @@ makeReceiverPlot = function(recv, meta=NULL, title="", condense=3600, ts = NULL,
 
     ## group by antenna, tag, and time bin
 
-    tags = tags %>% group_by(ant, fullID, bin)
+    tags = tags %>% group_by(ant, tagID, bin)
 
     ## summarize detections in group into a data.frame
 
@@ -177,25 +177,26 @@ makeReceiverPlot = function(recv, meta=NULL, title="", condense=3600, ts = NULL,
     ## avg(x), and max(x) are all just x
 
     tags = tags %>% summarize(ts=min(ts), n=length(ts),
-        freq=avg(freq), sig=max(sig), motusID=motusTagID, mfgID=mfgID, proj=label) %>% collect %>% as.data.frame
+        freq=avg(freq), sig=max(sig), fullID=fullID, mfgID=mfgID, proj=label) %>% collect %>% as.data.frame
 
     ## drop ".0" suffix from Ids, as it is wrong (FIXME: this should be done in getMotusMetaDB())
 
     fixup = which(grepl(".0@", tags$fullID, fixed=TRUE))
-    tags$fullID[fixup] = sub(".0@", "@", tags$fullID[fixup], fixed=TRUE)
+    if (length(fixup))
+        tags$fullID[fixup] = sub(".0@", "@", tags$fullID[fixup], fixed=TRUE)
 
     ## append motus ID
-    tags$fullID = sprintf("%s M.%d", tags$fullID, tags$motusID)
+    tags$fullID = sprintf("%s M.%d", tags$fullID, tags$tagID)
 
     ## make into a factor, sorting levels by project label, and then increasing mfgID
     tags$fullID = factor(tags$fullID, levels = unique(tags$fullID[order(tags$proj, as.numeric(tags$mfgID))]))
 
     ## for ambiguous tags, add items to the y-axis label
-    mID = unique(tags$motusID)
+    mID = unique(tags$tagID)
 
     xlabExtra = ""
     heightExtra = 0
-    if (any(mID < 0)) {
+    if (isTRUE(any(mID < 0))) {
         aID = mID[mID < 0]
         ambig = dbGetQuery(recv$con, paste0("
 select ambigID, motusTagID1, motusTagID2, motusTagID3, motusTagID4, motusTagID5, motusTagID6
@@ -216,7 +217,7 @@ from tagAmbig where ambigID in (", paste0(aID, collapse=","), ")"))
     ## remove fields we no longer need, so we don't have to pad the
     ## pulse and boot pseudo-tag records
 
-    tags$mfgID = tags$proj = tags$motusID = NULL
+    tags$mfgID = tags$proj = tags$tagID = NULL
 
     ## if all frequencies are the same, remove from fullID and append to axis label
 
