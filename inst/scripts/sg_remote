@@ -21,10 +21,15 @@ import fcntl
 import io
 import signal
 
+flag_file = ""
+
 # handle SIGTERM so we remove the connection object via the atexit handler
 def handler(signum, frame):
+	if flag_file != "":
+		os.remove(flag_file)
 	sys.exit(1)
 
+signal.signal(signal.SIGQUIT, handler)
 signal.signal(signal.SIGTERM, handler)
 signal.signal(signal.SIGINT, handler)
 
@@ -328,10 +333,7 @@ create index if not exists unknown_ts on unknown ( serverts );
 
         # check for remote hang-up
         if len(x) == 0:
-            time.sleep(1)
-			continue
-		#	ff.write("%d,%s,empty input\n" % (time.time(), serno))
-        #    exit(1)
+            exit(1)
 
         # strip trailing whitespace and check for clean characters
         # (if someone pushes us bogus data after a fake registration, we don't
