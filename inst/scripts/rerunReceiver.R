@@ -80,6 +80,7 @@ jobLog(j, paste0("Rerunning receiver ", serno, " with monoBN=", paste(monoBN, co
 
 j$queue = "0"
 
+safeSys("sudo", "chown", "sg:sg", j$path)
 if (priority) {
     moveJob(j, MOTUS_PATH$PRIORITY)
     cat("Job", unclass(j), "has been entered into the priority queue\n")
