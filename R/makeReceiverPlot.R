@@ -317,7 +317,14 @@ monoBNlo, monoBNhi))
 
     class(tags$ts) = c("POSIXt", "POSIXct")
 
-    dayseq = seq(from=round(min(tags$ts), "days"), to=round(max(tags$ts),"days"), by=24*3600)
+    if (nrow(tags) > 0) {
+        dayseq = seq(from=round(min(tags$ts), "days"), to=round(max(tags$ts),"days"), by=24*3600)
+    } else {
+        if (is.null(ts)) {
+            ts = unlist(dbGetQuery(con, sprintf("select min(tsBegin), max(tsEnd) from batches where monoBN between %s and %s", monoBN[1], monoBN[2])))
+        }
+        dayseq = seq(from=round(min(ts), "days"), to=round(max(ts),"days"), by=24*3600)
+    }
 
     ylab = paste0("Full Tag ID", ylabExtra)
     numTags = length(unique(tags$fullID))
