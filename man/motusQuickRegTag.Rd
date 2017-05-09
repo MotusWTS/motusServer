@@ -5,7 +5,7 @@
 \title{Quickly register a tag with motus}
 \usage{
 motusQuickRegTag(projectID, mfgID, period, dateBin, codeSet = 4,
-  model = NULL, tsStart = NULL, species = NULL, ...)
+  model = NULL, tsStart = NULL, species = NULL, nomFreq = 166.38, ...)
 }
 \arguments{
 \item{projectID:}{integer scalar; motus internal project ID;

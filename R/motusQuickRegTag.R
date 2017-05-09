@@ -68,6 +68,7 @@ motusQuickRegTag = function(projectID,
                             model=NULL,
                             tsStart=NULL,
                             species=NULL,
+                            nomFreq=166.38,
                             ...
                             ) {
     if (is.character(projectID)) {
@@ -100,12 +101,14 @@ motusQuickRegTag = function(projectID,
     }
 
     pip = allMotusTags$period[abs(allMotusTags$period - period) <= 0.05]
-    periodSD = sd(pip)
-    if (periodSD > 0.003)
-        stop("Estimate for period from database has sd > 1 ms")
-
-    period = mean(pip)
-
+    if (length(pip) > 1) {
+        periodSD = sd(pip)
+        if (periodSD > 0.003)
+            stop("Estimate for period from database has sd > 3 ms")
+        period = mean(pip)
+    } else {
+        periodSD = 0
+    }
     pulseLen = 2.5
 
     db = subset(ltGetCodeset(codeSet), id==floor(as.numeric(mfgID)))
@@ -117,7 +120,6 @@ motusQuickRegTag = function(projectID,
     paramType = 1
 
     ts = as.numeric(Sys.time())
-    nomFreq = 166.38
 
     pars = list(
         projectID    = projectID,
