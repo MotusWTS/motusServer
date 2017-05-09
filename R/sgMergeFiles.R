@@ -299,7 +299,7 @@ sgMergeFiles = function(files, j, dbdir = MOTUS_PATH$RECV) {
         if (nrow(minNewTS) > 0) {
             compare = minNewTS %>% left_join (maxOldTS, by=c(Fbootnum="monoBN"))
 
-            resumable = c(resumable, structure(is.na(compare$maxOldTS) | compare$minNewTS >= compare$maxOldTS, names = paste(compare$recv, compare$Fbootnum)))
+            resumable = c(resumable, structure((! is.na(compare$maxOldTS)) & compare$minNewTS >= compare$maxOldTS, names = paste(compare$recv, compare$Fbootnum)))
         }
         lockSymbol(recv, lock=FALSE)
     }
