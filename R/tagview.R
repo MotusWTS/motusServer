@@ -170,9 +170,43 @@ tagview = function(db, dbMeta=db, mobile=NULL, keep=FALSE) {
     }
 
     map = getMap(db)
+
+    ## in the following query, we list fields for table5 (tagDeps) explicitly, so that we can
+    ## correct a null fullID when no matching deployment record is found for a tag
+
     query = paste0("
 CREATE", if (! keep) " TEMPORARY" else "", " VIEW bfj AS SELECT
-t1.*, t2.*, t3.*, t4.*, t5.*, t6.*, t7.*, t8.*, t9.*, t10.*, t11.* FROM
+t1.*,
+t2.*,
+t3.*,
+t4.*,
+t5.tagID,
+t5.projectID,
+t5.deployID,
+t5.status,
+t5.tsStart,
+t5.tsEnd,
+t5.deferSec,
+t5.speciesID,
+t5.markerNumber,
+t5.markerType,
+t5.latitude,
+t5.longitude,
+t5.elevation,
+t5.comments,
+t5.id,
+t5.bi,
+t5.tsStartCode,
+t5.tsEndCode,
+ifnull(t5.fullID, printf('?proj?-%d#%s:%.1f', t4.projectID, t4.mfgID, t4.period)) as fullID,
+t6.*,
+t7.*,
+t8.*,
+t9.*,
+t10.*,
+t11.*
+
+FROM
 
 hits AS t1
 
