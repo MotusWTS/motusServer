@@ -112,6 +112,14 @@ int sqlite3_fileio_init(
   return rc;
 }
 
+#ifdef DEBUG
+static void recorded_free ( void * p) {
+  fprintf(stderr, "F: %p\n", p);
+  free(p);
+};
+#endif
+
+
 static void compressFunc (sqlite3_context *context, int argc, sqlite3_value **argv ) {
   // JMB: unlike the original function, we don't store uncompressed size, as this is
   // already in our table as a separate field
@@ -123,9 +131,17 @@ static void compressFunc (sqlite3_context *context, int argc, sqlite3_value **ar
   inBuf = (unsigned char *) sqlite3_value_blob(argv[0]);
   nOut = 600 + nIn * 1.01;
   outBuf = malloc( nOut );
+#ifdef DEBUG
+  fprintf(stderr, "A: %p\n", outBuf);
+#endif
   BZ2_bzBuffToBuffCompress( outBuf, &nOut, inBuf, nIn, 9, 0, 0);
-  sqlite3_result_blob(context, outBuf, nOut, free);
+#ifdef DEBUG
+    sqlite3_result_blob(context, outBuf, nOut, recorded_free);
+#else
+    sqlite3_result_blob(context, outBuf, nOut, free);
+#endif
 }
+
 
 static void uncompressFunc ( sqlite3_context *context, int argc, sqlite3_value **argv ) {
   // JMB: unlike the original function, this function requires a second parameter
@@ -141,15 +157,20 @@ static void uncompressFunc ( sqlite3_context *context, int argc, sqlite3_value *
   inBuf = (unsigned char *) sqlite3_value_blob(argv[0]);
   nOut = sqlite3_value_int(argv[1]);
   outBuf = malloc( nOut );
+#ifdef DEBUG
+  fprintf(stderr, "A: %p\n", outBuf);
+#endif
   rc = BZ2_bzBuffToBuffDecompress(outBuf, &nOut, inBuf, nIn, 0, 0);
   if ( rc!=BZ_OK ) {
     free(outBuf);
   } else {
+#ifdef DEBUG
+    sqlite3_result_blob(context, outBuf, nOut, recorded_free);
+#else
     sqlite3_result_blob(context, outBuf, nOut, free);
+#endif
   }
 }
-
-
 
 int sqlite3_extension_init(
                            sqlite3 *db,
