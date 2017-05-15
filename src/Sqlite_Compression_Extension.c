@@ -155,6 +155,9 @@ static void uncompressFunc ( sqlite3_context *context, int argc, sqlite3_value *
   assert( argc==2 );
   nIn = sqlite3_value_bytes(argv[0]);
   inBuf = (unsigned char *) sqlite3_value_blob(argv[0]);
+#ifdef DEBUG
+  fprintf(stderr, "A: %p\n", inBuf);
+#endif
   nOut = sqlite3_value_int(argv[1]);
   outBuf = malloc( nOut );
 #ifdef DEBUG
