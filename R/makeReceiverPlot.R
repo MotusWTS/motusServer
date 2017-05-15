@@ -285,8 +285,9 @@ t1.hourBin * 3600 + 1800 as ts,
 1 as n,
 0 as freq,
 0 as sig
-from pulseCounts as t1 join batches as t2 on t1.batchID=t2.batchID where t2.monoBN between %d and %d group by t1.ant, t1.hourBin",
+from pulseCounts as t1 join batches as t2 on t1.batchID=t2.batchID where t2.monoBN between %d and %d and t1.hourBin >= t2.tsBegin/3600 and t1.hourBin <= t2.tsEnd / 3600 group by t1.ant, t1.hourBin",
 monoBNlo, monoBNhi))
+
     }
     pulses$fullID = as.factor(pulses$fullID)
 
