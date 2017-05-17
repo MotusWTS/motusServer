@@ -64,7 +64,7 @@ while True:
 
 	res = curs.execute('select user, token from user_tokens where token = :token', {"token": token}).fetchone()
 	if res != None:
-		if serno.find('RPi2') >= 0:
+		if serno[4:7].upper() == "RPI":
 			web_server = 'localhost'
 		else:
 			web_server = '192.168.7.2'
