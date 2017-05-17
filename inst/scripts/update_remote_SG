@@ -195,9 +195,9 @@ fi
 
 if [[ ! "$SKIPRSYNC" ]]; then
     if [[ "$ISRESCUE" ]] ; then
-        sshpass -p $PASSWD ssh -T $SSHOPTS root@localhost 'mkdir /tmp/introot /tmp/intboot; mount /dev/mmcblk1p1 /tmp/intboot; mount /dev/mmcblk1p2 /tmp/introot;'
-        REMOTEROOT="/tmp/introot/";
-        REMOTEBOOT="/tmp/intboot/";
+        sshpass -p $PASSWD ssh -T $SSHOPTS root@localhost 'mkdir /tmp/tmpintroot /tmp/tmpintboot; mount /dev/mmcblk1p1 /tmp/tmpintboot; mount /dev/mmcblk1p2 /tmp/tmpintroot;'
+        REMOTEROOT="/tmp/tmpintroot/";
+        REMOTEBOOT="/tmp/tmpintboot/";
     else
         REMOTEROOT="/";
         REMOTEBOOT="/boot/uboot/";
@@ -220,7 +220,7 @@ if [[ ! "$SKIPRSYNC" ]]; then
     sudo rsync $DRYRUN -e "sshpass -p $PASSWD ssh $SSHOPTS"  -acv --exclude "etc/bootcount" --exclude "media/**" --exclude "var/log/**" --exclude "tmp/**" --exclude "proc/**" --exclude "sys/**" --exclude "run/**" --exclude "dev/**" --exclude "boot/uboot/**" --exclude "usr/include/**" --exclude "var/cache/**"  --exclude "lost+found/**" root/ root@localhost:$REMOTEROOT
 
     if [[ "$ISRESCUE" ]] ; then
-        sshpass -p $PASSWD ssh -T $SSHOPTS root@localhost 'umount /tmp/introot; umount /tmp/intboot; rmdir /tmp/introot /tmp/intboot;'
+        sshpass -p $PASSWD ssh -T $SSHOPTS root@localhost 'umount /tmp/tmpintroot; umount /tmp/tmpintboot; rmdir /tmp/tmpintroot /tmp/tmpintboot;'
     fi
 fi
 if [[ $FCDREPRO ]]; then
