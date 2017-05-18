@@ -71,8 +71,8 @@ authenticate_user = function(env) {
 
     ## return summary table of latest top jobs, with clickable expansion for details
     ## parameters:
-    ##   - U: username
-    ##   - P: plaintext password
+    ##   - username: motus user name
+    ##   - password: motus password (plaintext)
 
     req = Rook::Request$new(env)
     res = Rook::Response$new()
@@ -80,8 +80,8 @@ authenticate_user = function(env) {
     if (tracing)
         browser()
     json <- req$GET()[['json']] %>% fromJSON()
-    username <- json$U
-    password <- json$P
+    username <- json$username
+    password <- json$password
 
     res$header("Cache-control", "no-cache")
     res$header("Content-Type", "application/json")
@@ -110,7 +110,8 @@ authenticate_user = function(env) {
                token = rv$token,
                expiry = rv$expiry,
                userID = rv$userID,
-               projects = rv$projects %>% toJSON %>% unclass)
+               projects = rv$projects %>% toJSON (auto_unbox=TRUE) %>% unclass
+               )
     }
     res$write(toJSON(rv, auto_unbox=TRUE))
     res$finish()
