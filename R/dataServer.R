@@ -1,4 +1,4 @@
-#' reply to http requests for information on the processing queue
+#' serve http requests for tag detection data
 #'
 #' @param port integer; local port on which to listen for requests
 #' Default: 0xda7a
@@ -14,8 +14,6 @@
 
 dataServer = function(port=0xda7a, tracing=FALSE) {
 
-    library(motusServer)  ## FIXME: remove this once being used from within the motusServer package
-
     library(Rook)
     library(hwriter)
     library(RCurl)
@@ -28,7 +26,7 @@ dataServer = function(port=0xda7a, tracing=FALSE) {
     ## lifetime of authorization token: 3 days
     OPT_AUTH_LIFE <<- 3 * 24 * 3600
 
-    ## number of random bits in authorization token
+    ## number of random bits in authorization token;
     ## gets rounded up to nearest multiple of 8
     OPT_TOKEN_BITS <<- 33 * 8
 
@@ -49,7 +47,7 @@ dataServer = function(port=0xda7a, tracing=FALSE) {
 
     ## add each function below as an app
 
-    for (f in allApps)
+    for (f in allDataApps)
         SERVER$add(RhttpdApp$new(app = get(f), name = f))
 
     motusLog("Data server started")
@@ -64,15 +62,29 @@ dataServer = function(port=0xda7a, tracing=FALSE) {
 
 ## a string giving the list of apps for this server
 
-allApps = c("authenticate_user")
+allDataApps = c("authenticate_user")
 
 #' authenticate_user return a list of projects and receivers the user is authorized to receive data for
+#'
+#' This is an app used by the Rook server launched by \code{\link{dataServer}}
+#' Params are passed as a url-encoded field named 'json' in the http GET request.
+#' The return value is a JSON-formatted string
+#'
+#' @param  user motus user name
+#' @param password motus password (plaintext)
+#'
+#' @return a list with these items:
+#' \itemize{
+#' \item token character scalar token used in subsequent API calls
+#' \item expiry numeric timestamp at which \code{token} expires
+#' \item userID integer user ID of user at motus
+#' \item projects list of projects user has access to; indexed by integer projectID, values are project names
+#' \item receivers FIXME: will be list of receivers user has access to
+#' }
+#'
+
 authenticate_user = function(env) {
 
-    ## return summary table of latest top jobs, with clickable expansion for details
-    ## parameters:
-    ##   - username: motus user name
-    ##   - password: motus password (plaintext)
 
     req = Rook::Request$new(env)
     res = Rook::Response$new()
@@ -80,7 +92,7 @@ authenticate_user = function(env) {
     if (tracing)
         browser()
     json <- req$GET()[['json']] %>% fromJSON()
-    username <- json$username
+    username <- json$user
     password <- json$password
 
     res$header("Cache-control", "no-cache")
@@ -93,10 +105,9 @@ authenticate_user = function(env) {
         type = "csv"),
         auto_unbox = TRUE)
 
-    resp = getForm(motusServer:::MOTUS_API_USER_VALIDATE, json=motusReq, curl=CURL) %>% fromJSON
-    if (!isTRUE(is.finite(resp$userID))) {
-        rv = list(error="authentication failed")
-    } else {
+    rv = NULL
+    tryCatch({
+        resp = getForm(motusServer:::MOTUS_API_USER_VALIDATE, json=motusReq, curl=CURL) %>% fromJSON
         ## generate a new authentication token for this user
         rv = list(
             token = unclass(RCurl::base64(readBin("/dev/urandom", raw(), n=ceiling(OPT_TOKEN_BITS / 8)))),
@@ -104,15 +115,20 @@ authenticate_user = function(env) {
             userID = resp$userID,
             projects = resp$projects,
             receivers = NULL
-        )  ## FIXME
+        )
 
+        ## add the auth info to the database for lookup by token
         AUTHDB("replace into auth (token, expiry, userID, projects) values (:token, :expiry, :userID, :projects)",
                token = rv$token,
                expiry = rv$expiry,
                userID = rv$userID,
                projects = rv$projects %>% toJSON (auto_unbox=TRUE) %>% unclass
                )
-    }
+    },
+    error = function(e) {
+        rv <<- list(error="authentication with motus failed")
+    })
+
     res$write(toJSON(rv, auto_unbox=TRUE))
     res$finish()
 }
