@@ -19,6 +19,7 @@ dataServer = function(port=0xda7a, tracing=FALSE) {
     library(RCurl)
     library(jsonlite)
 
+    ## open the "motus transfer" database, putting a safeSQL object in the global MotusDB
     openMotusDB()
 
     ## options for this server:
@@ -62,7 +63,7 @@ dataServer = function(port=0xda7a, tracing=FALSE) {
 
 ## a string giving the list of apps for this server
 
-allDataApps = c("authenticate_user")
+allDataApps = c("authenticate_user", "batches_for_tag_project")
 
 #' authenticate_user return a list of projects and receivers the user is authorized to receive data for
 #'
@@ -70,10 +71,10 @@ allDataApps = c("authenticate_user")
 #' Params are passed as a url-encoded field named 'json' in the http GET request.
 #' The return value is a JSON-formatted string
 #'
-#' @param  user motus user name
+#' @param user motus user name
 #' @param password motus password (plaintext)
 #'
-#' @return a list with these items:
+#' @return a JSON list with these items:
 #' \itemize{
 #' \item token character scalar token used in subsequent API calls
 #' \item expiry numeric timestamp at which \code{token} expires
@@ -81,10 +82,12 @@ allDataApps = c("authenticate_user")
 #' \item projects list of projects user has access to; indexed by integer projectID, values are project names
 #' \item receivers FIXME: will be list of receivers user has access to
 #' }
+#' if the user is authorized.  Otherwise, return a JSON list with a single item
+#' called "error".
+#'
 #'
 
 authenticate_user = function(env) {
-
 
     req = Rook::Request$new(env)
     res = Rook::Response$new()
@@ -129,6 +132,75 @@ authenticate_user = function(env) {
         rv <<- list(error="authentication with motus failed")
     })
 
+    res$write(toJSON(rv, auto_unbox=TRUE))
+    res$finish()
+}
+
+#' validate a request by looking up its token, failing gracefully
+#' @param authToken authorization token
+#' @param projectID (optional)
+#'
+#' @return if \code{authToken} represents a valid unexpired token, and projectID is
+#' a project for which the user is authorized, returns
+#' a list with these items:
+#' \itemize{
+#' \item userID integer user ID
+#' }
+#' Otherwise, send a JSON-formatted reply with the single item "error": "authorization failed"
+#' and call stop(), which ends processing of the current request.
+
+validate_request = function(req, res) {
+    authToken = req$GET()[["authToken"]]
+    projectID = req$GET()[["projectID"]] %>% as.integer
+    now = as.numeric(Sys.time())
+    rv = AUTHDB("select userID, (select group_concat(key, ',') from json_each(projects)) as projects from auth where token=:token and expiry > :now",
+                token = authToken,
+                now = now)
+    okay = TRUE
+    if (! isTRUE(nrow(rv) > 0)) {
+        ## authToken invalid or expired
+        okay = FALSE
+    } else  {
+        rv = list(userID=rv$userID, projects = scan(text=rv$projects, sep=","))
+        if (!isTRUE(is.null(projectID) || isTRUE(projectID %in% rv$projects))) {
+            ## user not authorized for project
+            okay = FALSE
+        }
+    }
+    if (! okay) {
+        res$write(toJSON(list(error="authorization failed"), auto_unbox=TRUE))
+        res$finish()
+        stop("authorization failure; token=", authToken, "projectID=", if (is.null(projectID)) "null" else projectID)
+    }
+    return(rv)
+}
+
+#' get batches for a tag project
+#'
+#' @param projectID integer project ID
+#' @param ts numeric timestamp
+#'
+#' @return
+
+batches_for_tag_project = function(env) {
+
+    MAX_BATCHES_PER_REQUEST = 10000
+    req = Rook::Request$new(env)
+    res = Rook::Response$new()
+
+    if (tracing)
+        browser()
+    projectID = req$GET()[['projectID']] %>% as.integer
+    auth = validate_auth(req, res, projectID)
+
+    ts = req$GET()[['ts']] %>% as.real
+
+    meta = safeSQL(getMotusMetaDB())
+
+    projTags = meta("select distinct tagID from tags where projectID = :projectID", projectID=projectID)
+    dbCreateTable(environment(MotusDB)$con, "create temporary table tempProjectTagIDs (tagID integer unique primary key)")
+    dbWriteTable(environment(MotusDB)$con, "tempProjectTagIDs", projTags, row.names=FALSE)
+    rv = MotusDB("select batchID from batches as t1 join runs as t2 on t1.batchID=t2.batchIDbegin join tempProjectTagIDs as t3 on t2.motusTagID=t3.tagID where t1.tsSG>%f", ts)
     res$write(toJSON(rv, auto_unbox=TRUE))
     res$finish()
 }
