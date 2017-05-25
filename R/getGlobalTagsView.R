@@ -25,11 +25,10 @@
 #'                    recv sp                     label gain    dbm
 #'   22510 SG-3214BBBK8680    USask 161  :6.1 @ 166.38     0 -115.4
 #'
-#' @note: the following fixups must be made to data returned by this view
-#' to match the original columns.  The fixups have to be made after calling
-#' collect() and then as.data.frame() on the view returned by this function.
+#' @note: various fixups must be made to data returned by this view
+#' to match the original columns.  These are done by \code{\link{exportGlobalTags}}.
 #'
-#'     posInRun <- fixPosInRun(X) where X is the data.frame
+#'     posInRun <- runningCount(X) where X is the data.frame
 #'
 #'     proj <- as.factor(proj)
 #'
@@ -44,6 +43,8 @@
 #'     id <- as.integer(id)
 #'
 #'     label <-as.factor(paste0("M." + label))
+#'
+#'     class(ts) <- class(Sys.time())
 #'
 #' @export
 #'
