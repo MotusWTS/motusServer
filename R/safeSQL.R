@@ -142,6 +142,8 @@ safeSQL = function(con, busyTimeout = 300) {
 #' @param name item name; must be one of 'db' or 'con'
 #'
 #' @return: either the database filename, or the db connection
+#'
+#' @export
 
 `$.safeSQL` = function(x, name) {
     switch(substitute(name),
@@ -154,6 +156,8 @@ safeSQL = function(con, busyTimeout = 300) {
 #' safeSQL method for printing
 #'
 #' @return: invisible(NULL)
+#'
+#' @export
 
 print.safeSQL = function(x) {
     cat("Safe SQL object attached to ", x$db, "\nDo ?safeSQL for more details.")
