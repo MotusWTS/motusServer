@@ -14,7 +14,7 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 #'
 
-makeTagProjDB = function(projectID=83, maxHits=NULL) {
+makeTagProjDB = function(projectID, maxHits=NULL) {
 
     ## open the transfer tables
     db = openMotusDB()
@@ -24,7 +24,7 @@ makeTagProjDB = function(projectID=83, maxHits=NULL) {
     mdb = safeSQL(getMotusMetaDB())
 
     ## get all motusTagIDs for that project
-    mids = mdb("select tagID from tags where projectID = 83 and dateBin >= '2016' order by tagID")
+    mids = mdb("select distinct tagID from tags where projectID = 83 and dateBin >= '2016' order by tagID")
 
     dbGetQuery(con, "create temporary table if not exists temp_tagIDs (tagID integer primary key)")
     dbWriteTable(con, "temp_tagIDs", mids, append=TRUE, row.names=FALSE)
@@ -81,9 +81,9 @@ or t1.motusTagID6 = t2.tagID")
     ## get tag project database
     s = getTagProjSrc(projectID=83)
 
-    dbWriteTable(s$con, "batches", batches[, grep("motusJobID", names(batches), invert=TRUE, value=TRUE)], append=TRUE, row.names=FALSE)
-    dbWriteTable(s$con, "runs", runs, append=TRUE, row.names=FALSE)
-    dbWriteTable(s$con, "hits", hits, append=TRUE, row.names=FALSE)
+    dbWriteTable(s$con, "batches", batches[, grep("motusJobID", names(batches), invert=TRUE, value=TRUE)], overwrite=TRUE, row.names=FALSE)
+    dbWriteTable(s$con, "runs", runs, overwrite=TRUE, row.names=FALSE)
+    dbWriteTable(s$con, "hits", hits, overwrite=TRUE, row.names=FALSE)
 
     return(s)
 }
