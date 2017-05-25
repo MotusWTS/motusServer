@@ -5,7 +5,7 @@
 \title{create an sqlite database of all detections of tags from a motus project and
 the associated metadata for both tags and receivers}
 \usage{
-makeTagProjDB(projectID = 83, maxHits = NULL)
+makeTagProjDB(projectID, maxHits = NULL)
 }
 \arguments{
 \item{projectID}{integer scalar motus project ID}

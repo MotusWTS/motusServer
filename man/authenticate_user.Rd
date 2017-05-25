@@ -12,7 +12,7 @@ authenticate_user(env)
 \item{password}{motus password (plaintext)}
 }
 \value{
-a list with these items:
+a JSON list with these items:
 \itemize{
 \item token character scalar token used in subsequent API calls
 \item expiry numeric timestamp at which \code{token} expires
@@ -20,6 +20,8 @@ a list with these items:
 \item projects list of projects user has access to; indexed by integer projectID, values are project names
 \item receivers FIXME: will be list of receivers user has access to
 }
+if the user is authorized.  Otherwise, return a JSON list with a single item
+called "error".
 }
 \description{
 This is an app used by the Rook server launched by \code{\link{dataServer}}
