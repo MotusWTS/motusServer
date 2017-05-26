@@ -146,9 +146,10 @@ safeSQL = function(con, busyTimeout = 300) {
 #' @export
 
 `$.safeSQL` = function(x, name) {
+    con = environment(x)$con
     switch(substitute(name),
-           db = environment(x)$con@dbname,
-           con = environment(x)$con,
+           db = if(inherits(con, "MySQLConnection")) con@db else con@dbname,
+           con = con,
            NULL
            )
 }
@@ -160,5 +161,5 @@ safeSQL = function(con, busyTimeout = 300) {
 #' @export
 
 print.safeSQL = function(x) {
-    cat("Safe SQL object attached to ", x$db, "\nDo ?safeSQL for more details.")
+    cat("Safe SQL object attached to ", x$db, "\nDo ?safeSQL for more details.\n")
 }
