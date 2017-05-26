@@ -137,8 +137,11 @@ authenticate_user = function(env) {
 }
 
 #' validate a request by looking up its token, failing gracefully
-#' @param authToken authorization token
-#' @param projectID (optional)
+#' @param json named list with at least these items:
+#' \itemize{
+#' \item authToken authorization token
+#' \item projectID (optional) projectID
+#' }
 #'
 #' @return if \code{authToken} represents a valid unexpired token, and projectID is
 #' a project for which the user is authorized, returns
@@ -149,9 +152,12 @@ authenticate_user = function(env) {
 #' Otherwise, send a JSON-formatted reply with the single item "error": "authorization failed"
 #' and call stop(), which ends processing of the current request.
 
-validate_request = function(req, res) {
-    authToken = req$GET()[["authToken"]]
-    projectID = req$GET()[["projectID"]] %>% as.integer
+validate_request = function(json, res) {
+    res$header("Cache-control", "no-cache")
+    res$header("Content-Type", "application/json")
+
+    authToken = json$authToken
+    projectID = json$projectID
     now = as.numeric(Sys.time())
     rv = AUTHDB("select userID, (select group_concat(key, ',') from json_each(projects)) as projects from auth where token=:token and expiry > :now",
                 token = authToken,
@@ -161,8 +167,8 @@ validate_request = function(req, res) {
         ## authToken invalid or expired
         okay = FALSE
     } else  {
-        rv = list(userID=rv$userID, projects = scan(text=rv$projects, sep=","))
-        if (!isTRUE(is.null(projectID) || isTRUE(projectID %in% rv$projects))) {
+        rv = list(userID=rv$userID, projects = scan(text=rv$projects, sep=",", quiet=TRUE))
+        if (length(projectID) > 0 && ! isTRUE(projectID %in% rv$projects)) {
             ## user not authorized for project
             okay = FALSE
         }
@@ -170,7 +176,7 @@ validate_request = function(req, res) {
     if (! okay) {
         res$write(toJSON(list(error="authorization failed"), auto_unbox=TRUE))
         res$finish()
-        stop("authorization failure; token=", authToken, "projectID=", if (is.null(projectID)) "null" else projectID)
+        stop("authorization failure; token=", authToken, "projectID=", if (length(projectID)==0) "null" else projectID)
     }
     return(rv)
 }
@@ -180,7 +186,7 @@ validate_request = function(req, res) {
 #' @param projectID integer project ID
 #' @param ts numeric timestamp
 #'
-#' @return
+#' @return a data frame with the same schema as the batches table, but JSON-encoded as a list of columns
 
 batches_for_tag_project = function(env) {
 
@@ -190,17 +196,21 @@ batches_for_tag_project = function(env) {
 
     if (tracing)
         browser()
-    projectID = req$GET()[['projectID']] %>% as.integer
-    auth = validate_auth(req, res, projectID)
+    json <- req$GET()[['json']] %>% fromJSON()
+    projectID = json$projectID
+    auth = validate_request(json, res)
 
-    ts = req$GET()[['ts']] %>% as.real
+    ts = json$ts %>% as.numeric
 
     meta = safeSQL(getMotusMetaDB())
 
     projTags = meta("select distinct tagID from tags where projectID = :projectID", projectID=projectID)
-    dbCreateTable(environment(MotusDB)$con, "create temporary table tempProjectTagIDs (tagID integer unique primary key)")
-    dbWriteTable(environment(MotusDB)$con, "tempProjectTagIDs", projTags, row.names=FALSE)
-    rv = MotusDB("select batchID from batches as t1 join runs as t2 on t1.batchID=t2.batchIDbegin join tempProjectTagIDs as t3 on t2.motusTagID=t3.tagID where t1.tsSG>%f", ts)
+    tmpTab = paste0("tempTagIDs", projectID)
+    MotusDB(paste0("create temporary table if not exists ", tmpTab, " (tagID integer unique primary key)"))
+    MotusDB(paste0("delete from ", tmpTab))
+    con = MotusDB$con
+    dbWriteTable(con, tmpTab, projTags, row.names=FALSE, append=TRUE)
+    rv = MotusDB(paste0("select batchID, motusDeviceID, monoBN, tsBegin, tsEnd, numHits, ts from batches where batchID in (select distinct t1.batchID from batches as t1 join runs as t2 on t1.batchID=t2.batchIDbegin join ", tmpTab, " as t3 on t2.motusTagID=t3.tagID where t1.ts>%f) order by batchID"), ts)
     res$write(toJSON(rv, auto_unbox=TRUE))
     res$finish()
 }

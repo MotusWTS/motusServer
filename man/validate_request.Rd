@@ -4,12 +4,14 @@
 \alias{validate_request}
 \title{validate a request by looking up its token, failing gracefully}
 \usage{
-validate_request(req, res)
+validate_request(json, res)
 }
 \arguments{
-\item{authToken}{authorization token}
-
-\item{projectID}{(optional)}
+\item{json}{named list with at least these items:
+\itemize{
+\item authToken authorization token
+\item projectID (optional) projectID
+}}
 }
 \value{
 if \code{authToken} represents a valid unexpired token, and projectID is

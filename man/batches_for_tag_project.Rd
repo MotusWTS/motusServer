@@ -11,6 +11,9 @@ batches_for_tag_project(env)
 
 \item{ts}{numeric timestamp}
 }
+\value{
+a data frame with the same schema as the batches table, but JSON-encoded as a list of columns
+}
 \description{
 get batches for a tag project
 }
