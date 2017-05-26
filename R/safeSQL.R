@@ -1,6 +1,6 @@
 #' Return a function that safely performs sql queries on a connection.
 #'
-#' This uses dbGetPreparedQuery (for RSQLite) or dbEscapeStrings
+#' This uses dbGetPreparedQuery (for RSQLite) or dbQuoteStrings
 #' (for MySQL).  It should prevent e.g. SQL injection attacks.
 #'
 #' @param con RSQLite connection to database, as returned by
@@ -117,7 +117,7 @@ safeSQL = function(con, busyTimeout = 300) {
                 a = list(...)
                 if (length(a) > 1) {
                     ## there are some paramters to the query, so escape those which are strings
-                    a = c(a[[1]], lapply(a[-1], function(x) if (is.character(x)) dbEscapeStrings(con=con, x) else x ))
+                    a = c(a[[1]], lapply(a[-1], function(x) if (is.character(x)) dbQuoteString(con=con, x) else x ))
                 }
                 q = do.call(sprintf, a)
                 Encoding(q) = "UTF-8"

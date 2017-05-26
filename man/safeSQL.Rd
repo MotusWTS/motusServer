@@ -50,7 +50,7 @@ database connection, disabling further use of this function.
 }
 }
 \description{
-This uses dbGetPreparedQuery (for RSQLite) or dbEscapeStrings
+This uses dbGetPreparedQuery (for RSQLite) or dbQuoteStrings
 (for MySQL).  It should prevent e.g. SQL injection attacks.
 }
 \note{
