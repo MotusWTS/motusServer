@@ -24,9 +24,9 @@ makeTagProjDB = function(projectID, maxHits=NULL) {
     mdb = safeSQL(getMotusMetaDB())
 
     ## get all motusTagIDs for that project
-    mids = mdb("select distinct tagID from tags where projectID = 83 and dateBin >= '2016' order by tagID")
+    mids = mdb("select distinct tagID from tags where projectID = :projectID order by tagID", projectID=projectID)
 
-    dbGetQuery(con, "create temporary table if not exists temp_tagIDs (tagID integer primary key)")
+    db("create temporary table temp_tagIDs (tagID integer primary key)")
     dbWriteTable(con, "temp_tagIDs", mids, append=TRUE, row.names=FALSE)
 
     ## get all motusTagIDs which might be ambiguous with these tags
@@ -45,6 +45,7 @@ or t1.motusTagID6 = t2.tagID")
 
     ## get all batches these runs come from
     bids = unique(c(runs$batchIDbegin, runs$batchIDend))
+    bids = bids[! is.na(bids)]
     batches = db(sprintf("select * from batches where batchID in (%s)", paste(bids, collapse=",")))
 
     ## fixup any errant motusDeviceIDs
@@ -70,20 +71,23 @@ or t1.motusTagID6 = t2.tagID")
 
     con = environment(db)$con
 
-    dbGetQuery(con, "create temporary table temp_runIDs (runID integer primary key)")
+    db("create temporary table temp_runIDs (runID integer primary key)")
     dbWriteTable(con, "temp_runIDs", runs[,c("runID"), drop = FALSE], append=TRUE, row.names=FALSE)
 
     if (is.null(maxHits))
-        hits = dbGetQuery(con, "select t1.* from hits as t1 join temp_runIDs as t2 on t1.runID=t2.runID")
+        hits = db("select t1.* from hits as t1 join temp_runIDs as t2 on t1.runID=t2.runID")
     else
-        hits = dbGetQuery(con, paste0("select t1.* from hits as t1 join temp_runIDs as t2 on t1.runID=t2.runID limit ", maxHits ))
+        hits = db(paste0("select t1.* from hits as t1 join temp_runIDs as t2 on t1.runID=t2.runID limit ", maxHits ))
 
     ## get tag project database
-    s = getTagProjSrc(projectID=83)
+    s = getTagProjSrc(projectID=projectID)
 
     dbWriteTable(s$con, "batches", batches[, grep("motusJobID", names(batches), invert=TRUE, value=TRUE)], overwrite=TRUE, row.names=FALSE)
     dbWriteTable(s$con, "runs", runs, overwrite=TRUE, row.names=FALSE)
     dbWriteTable(s$con, "hits", hits, overwrite=TRUE, row.names=FALSE)
+
+    db("drop table temp_runIDs")
+    db("drop table temp_tagIDs")
 
     return(s)
 }
