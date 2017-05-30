@@ -21,7 +21,7 @@ a list with these items:
 \item userID integer user ID
 }
 Otherwise, send a JSON-formatted reply with the single item "error": "authorization failed"
-and call stop(), which ends processing of the current request.
+and return NULL.
 }
 \description{
 validate a request by looking up its token, failing gracefully

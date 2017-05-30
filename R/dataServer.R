@@ -22,6 +22,14 @@ dataServer = function(port=0xda7a, tracing=FALSE) {
     ## open the "motus transfer" database, putting a safeSQL object in the global MotusDB
     openMotusDB()
 
+    ## assign global MotusCon to be the low-level connection behind MotusDB, as some
+    ## functions must us that
+
+    MotusCon <<- MotusDB$con
+
+    ## assign global MetaDB to be a safeSQL connection to the cached motus metadatabase
+    MetaDB <<- safeSQL(getMotusMetaDB())
+
     ## options for this server:
 
     ## lifetime of authorization token: 3 days
@@ -34,26 +42,28 @@ dataServer = function(port=0xda7a, tracing=FALSE) {
     tracing <<- tracing
 
     ## save server in a global variable in case we are tracing
+    ## (weird assignment is because "Server" is already bound in Rook package,
+    ## which is on our search path)
 
-    SERVER <<- Rhttpd$new()
+    .GlobalEnv$Server = Rhttpd$new()
 
-    CURL <<- getCurlHandle()
+    Curl <<- getCurlHandle()
 
     ## get user auth database
 
-    AUTHDB <<- safeSQL(file.path(MOTUS_PATH$USERAUTH, "data_user_auth.sqlite"))
-    AUTHDB("create table if not exists auth (token TEXT UNIQUE PRIMARY KEY, expiry REAL, userID INTEGER, projects TEXT, receivers TEXT)")
-    AUTHDB("create index if not exists auth_expiry on auth (expiry)")
-    AUTHDB("create unique index if not exists auth_userID on auth (userID)")
+    AuthDB <<- safeSQL(file.path(MOTUS_PATH$USERAUTH, "data_user_auth.sqlite"))
+    AuthDB("create table if not exists auth (token TEXT UNIQUE PRIMARY KEY, expiry REAL, userID INTEGER, projects TEXT, receivers TEXT)")
+    AuthDB("create index if not exists auth_expiry on auth (expiry)")
+    AuthDB("create unique index if not exists auth_userID on auth (userID)")
 
     ## add each function below as an app
 
     for (f in allDataApps)
-        SERVER$add(RhttpdApp$new(app = get(f), name = f))
+        Server$add(RhttpdApp$new(app = get(f), name = f))
 
     motusLog("Data server started")
 
-    SERVER$start(port = port)
+    Server$start(port = port)
 
     if (! tracing) {
         ## sleep while awaiting requests
@@ -98,8 +108,7 @@ authenticate_user = function(env) {
     username <- json$user
     password <- json$password
 
-    res$header("Cache-control", "no-cache")
-    res$header("Content-Type", "application/json")
+    sendHeader(res)
 
     motusReq = toJSON(list(
         date = format(Sys.time(), "%Y%m%d%H%M%S"),
@@ -110,7 +119,7 @@ authenticate_user = function(env) {
 
     rv = NULL
     tryCatch({
-        resp = getForm(motusServer:::MOTUS_API_USER_VALIDATE, json=motusReq, curl=CURL) %>% fromJSON
+        resp = getForm(motusServer:::MOTUS_API_USER_VALIDATE, json=motusReq, curl=Curl) %>% fromJSON
         ## generate a new authentication token for this user
         rv = list(
             token = unclass(RCurl::base64(readBin("/dev/urandom", raw(), n=ceiling(OPT_TOKEN_BITS / 8)))),
@@ -121,7 +130,7 @@ authenticate_user = function(env) {
         )
 
         ## add the auth info to the database for lookup by token
-        AUTHDB("replace into auth (token, expiry, userID, projects) values (:token, :expiry, :userID, :projects)",
+        AuthDB("replace into auth (token, expiry, userID, projects) values (:token, :expiry, :userID, :projects)",
                token = rv$token,
                expiry = rv$expiry,
                userID = rv$userID,
@@ -132,7 +141,7 @@ authenticate_user = function(env) {
         rv <<- list(error="authentication with motus failed")
     })
 
-    res$write(toJSON(rv, auto_unbox=TRUE))
+    res$body = memCompress(toJSON(rv, auto_unbox=TRUE), "gzip")
     res$finish()
 }
 
@@ -150,16 +159,14 @@ authenticate_user = function(env) {
 #' \item userID integer user ID
 #' }
 #' Otherwise, send a JSON-formatted reply with the single item "error": "authorization failed"
-#' and call stop(), which ends processing of the current request.
+#' and return NULL.
 
 validate_request = function(json, res) {
-    res$header("Cache-control", "no-cache")
-    res$header("Content-Type", "application/json")
 
     authToken = json$authToken
     projectID = json$projectID
     now = as.numeric(Sys.time())
-    rv = AUTHDB("select userID, (select group_concat(key, ',') from json_each(projects)) as projects from auth where token=:token and expiry > :now",
+    rv = AuthDB("select userID, (select group_concat(key, ',') from json_each(projects)) as projects from auth where token=:token and expiry > :now",
                 token = authToken,
                 now = now)
     okay = TRUE
@@ -174,12 +181,24 @@ validate_request = function(json, res) {
         }
     }
     if (! okay) {
-        res$write(toJSON(list(error="authorization failed"), auto_unbox=TRUE))
+        sendHeader(res)
+        res$body = memCompress(toJSON(list(error="authorization failed"), auto_unbox=TRUE), "gzip")
         res$finish()
-        stop("authorization failure; token=", authToken, "projectID=", if (length(projectID)==0) "null" else projectID)
     }
     return(rv)
 }
+
+#' send the header for a reply of a given mime type
+#' @param res Rook::Response object
+#' @param mimeType character scalar mime type; default: "application/x-bzip2"
+#' @return no return value
+#'
+sendHeader = function(res) {
+    res$header("Cache-control", "no-cache")
+    res$header("Content-Type", "application/json")
+    res$header("Content-Encoding", "gzip")
+}
+
 
 #' get batches for a tag project
 #'
@@ -196,21 +215,22 @@ batches_for_tag_project = function(env) {
 
     if (tracing)
         browser()
-    json <- req$GET()[['json']] %>% fromJSON()
-    projectID = json$projectID
+    json = req$GET()[['json']] %>% fromJSON()
     auth = validate_request(json, res)
+    if (is.null(auth))
+        return()
 
+    sendHeader(res)
+
+    projectID = json$projectID
     ts = json$ts %>% as.numeric
 
-    meta = safeSQL(getMotusMetaDB())
-
-    projTags = meta("select distinct tagID from tags where projectID = :projectID", projectID=projectID)
+    projTags = MetaDB("select distinct tagID from tags where projectID = :projectID", projectID=projectID)
     tmpTab = paste0("tempTagIDs", projectID)
     MotusDB(paste0("create temporary table if not exists ", tmpTab, " (tagID integer unique primary key)"))
     MotusDB(paste0("delete from ", tmpTab))
-    con = MotusDB$con
-    dbWriteTable(con, tmpTab, projTags, row.names=FALSE, append=TRUE)
-    rv = MotusDB(paste0("select batchID, motusDeviceID, monoBN, tsBegin, tsEnd, numHits, ts from batches where batchID in (select distinct t1.batchID from batches as t1 join runs as t2 on t1.batchID=t2.batchIDbegin join ", tmpTab, " as t3 on t2.motusTagID=t3.tagID where t1.ts>%f) order by batchID"), ts)
-    res$write(toJSON(rv, auto_unbox=TRUE))
+    dbWriteTable(MotusCon, tmpTab, projTags, row.names=FALSE, append=TRUE)
+    rv = MotusDB(paste0("select t3.batchID, t3.motusDeviceID, t3.monoBN, t3.tsBegin, t3.tsEnd, t3.numHits, t3.ts from ", tmpTab, " as t1 join runs as t2 on t1.tagID=t2.motusTagID join batches as t3 on t2.batchIDbegin=t3.batchID where t3.ts > ", ts, " group by t3.batchID order by t3.batchID limit ", MAX_BATCHES_PER_REQUEST))
+    res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
     res$finish()
 }
