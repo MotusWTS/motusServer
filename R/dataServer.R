@@ -73,7 +73,7 @@ dataServer = function(port=0xda7a, tracing=FALSE) {
 
 ## a string giving the list of apps for this server
 
-allDataApps = c("authenticate_user", "batches_for_tag_project")
+allDataApps = c("authenticate_user", "batches_for_tag_project", "batches_for_receiver_project")
 
 #' authenticate_user return a list of projects and receivers the user is authorized to receive data for
 #'
@@ -188,10 +188,12 @@ validate_request = function(json, res) {
     return(rv)
 }
 
-#' send the header for a reply of a given mime type
+#' send the header for a reply
 #' @param res Rook::Response object
-#' @param mimeType character scalar mime type; default: "application/x-bzip2"
 #' @return no return value
+#'
+#' @details the reply will always be a gzip-compressed JSON-encoded value.
+#' We also disable caching.
 #'
 sendHeader = function(res) {
     res$header("Cache-control", "no-cache")
@@ -224,13 +226,75 @@ batches_for_tag_project = function(env) {
 
     projectID = json$projectID
     ts = json$ts %>% as.numeric
+    if (!isTRUE(is.finite(ts)))
+        ts = 0
 
     projTags = MetaDB("select distinct tagID from tags where projectID = :projectID", projectID=projectID)
     tmpTab = paste0("tempTagIDs", projectID)
     MotusDB(paste0("create temporary table if not exists ", tmpTab, " (tagID integer unique primary key)"))
     MotusDB(paste0("delete from ", tmpTab))
     dbWriteTable(MotusCon, tmpTab, projTags, row.names=FALSE, append=TRUE)
-    rv = MotusDB(paste0("select t3.batchID, t3.motusDeviceID, t3.monoBN, t3.tsBegin, t3.tsEnd, t3.numHits, t3.ts from ", tmpTab, " as t1 join runs as t2 on t1.tagID=t2.motusTagID join batches as t3 on t2.batchIDbegin=t3.batchID where t3.ts > ", ts, " group by t3.batchID order by t3.batchID limit ", MAX_BATCHES_PER_REQUEST))
+    query = sprintf("\
+select t3.batchID, t3.motusDeviceID, t3.monoBN, t3.tsBegin, t3.tsEnd, t3.numHits, t3.ts \
+  from %s as t1 join runs as t2 on t1.tagID=t2.motusTagID join batches as t3 on t2.batchIDbegin=t3.batchID \
+  where t3.ts > %f group by t3.batchID order by t3.batchID limit %d",
+tmpTab, ts, MAX_BATCHES_PER_REQUEST)
+
+    rv = MotusDB(query)
+    res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
+    res$finish()
+}
+
+#' get batches for a receiver project
+#'
+#' @param projectID integer project ID
+#' @param ts numeric timestamp
+#'
+#' @return a data frame with the same schema as the batches table, but JSON-encoded as a list of columns
+
+batches_for_receiver_project = function(env) {
+
+    MAX_BATCHES_PER_REQUEST = 10000
+    req = Rook::Request$new(env)
+    res = Rook::Response$new()
+
+    if (tracing)
+        browser()
+    json = req$GET()[['json']] %>% fromJSON()
+    auth = validate_request(json, res)
+    if (is.null(auth))
+        return()
+
+    sendHeader(res)
+
+    projectID = json$projectID
+    ts = json$ts %>% as.numeric
+    if (!isTRUE(is.finite(ts)))
+        ts = 0
+
+    ## get a table of receiver deployments for this project
+
+    ## If a deployment has no tsEnd specified, we look for the start
+    ## of the next chronological deployment, and use that (minus 1
+    ## second).  This prevents users from obtaining data for later
+    ## deployments of their receivers by other projects by simply
+    ## specifying no tsEnd for their own deployment.
+
+    recvDeps = MetaDB("select deviceID, tsStart, ifnull(tsEnd, (select max(t1.tsStart)-1 from recvDeps as t1 where t1.deviceID=deviceID and t1.tsStart > tsStart)) as tsEnd from recvDeps where projectID=:projectID", projectID=projectID)
+    tmpTab = paste0("tempRecvDeps", projectID)
+    MotusDB(paste0("create temporary table if not exists ", tmpTab, " (deviceID integer, tsStart float(53), tsEnd float(53))"))
+    MotusDB(paste0("delete from ", tmpTab))
+    dbWriteTable(MotusCon, tmpTab, recvDeps, row.names=FALSE, append=TRUE)
+
+    ## pull out appropriate batches
+
+    query = sprintf("\
+select t2.batchID, t2.motusDeviceID, t2.monoBN, t2.tsBegin, t2.tsEnd, t2.numHits, t2.ts from %s as t1 \
+       join batches as t2 on t1.deviceID=t2.motusDeviceID where t2.ts > %f \
+       and ((t1.tsEnd is null and t2.tsBegin >= t1.tsStart)
+            or not (t2.tsEnd <= t1.tsStart or t2.tsBegin >= t1.tsEnd)) limit %d",
+tmpTab, ts, MAX_BATCHES_PER_REQUEST)
+    rv = MotusDB(query)
     res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
     res$finish()
 }
