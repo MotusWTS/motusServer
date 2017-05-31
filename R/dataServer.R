@@ -73,7 +73,7 @@ dataServer = function(port=0xda7a, tracing=FALSE) {
 
 ## a string giving the list of apps for this server
 
-allDataApps = c("authenticate_user", "batches_for_tag_project", "batches_for_receiver_project")
+allDataApps = c("authenticate_user", "batches_for_tag_project", "batches_for_receiver_project", "runs_for_tag_project")
 
 #' authenticate_user return a list of projects and receivers the user is authorized to receive data for
 #'
@@ -182,8 +182,8 @@ validate_request = function(json, res) {
     }
     if (! okay) {
         sendHeader(res)
-        res$body = memCompress(toJSON(list(error="authorization failed"), auto_unbox=TRUE), "gzip")
-        res$finish()
+        sendError(res, "authorization failed")
+        rv = NULL
     }
     return(rv)
 }
@@ -199,6 +199,17 @@ sendHeader = function(res) {
     res$header("Cache-control", "no-cache")
     res$header("Content-Type", "application/json")
     res$header("Content-Encoding", "gzip")
+}
+
+#' send an error as the reply
+#' @param res Rook::Response object
+#' @param error character vector with error message(s)
+#' @return no return value
+#'
+#' @details
+
+sendError = function(res, error) {
+    res$body = memCompress(toJSON(list(error=error), auto_unbox=TRUE), "gzip")
 }
 
 
@@ -220,7 +231,7 @@ batches_for_tag_project = function(env) {
     json = req$GET()[['json']] %>% fromJSON()
     auth = validate_request(json, res)
     if (is.null(auth))
-        return()
+        return(res$finish())
 
     sendHeader(res)
 
@@ -263,7 +274,7 @@ batches_for_receiver_project = function(env) {
     json = req$GET()[['json']] %>% fromJSON()
     auth = validate_request(json, res)
     if (is.null(auth))
-        return()
+        return(res$finish())
 
     sendHeader(res)
 
@@ -294,6 +305,57 @@ select t2.batchID, t2.motusDeviceID, t2.monoBN, t2.tsBegin, t2.tsEnd, t2.numHits
        and ((t1.tsEnd is null and t2.tsBegin >= t1.tsStart)
             or not (t2.tsEnd <= t1.tsStart or t2.tsBegin >= t1.tsEnd)) limit %d",
 tmpTab, ts, MAX_BATCHES_PER_REQUEST)
+    rv = MotusDB(query)
+    res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
+    res$finish()
+}
+
+#' get runs by tag project from a batch
+#'
+#' @param projectID integer project ID
+#' @param batchID integer batchID
+#' @param runID integer ID of largest run already obtained
+#'
+#' @return a data frame with the same schema as the runs table, but JSON-encoded as a list of columns
+
+runs_for_tag_project = function(env) {
+
+    MAX_BATCHES_PER_REQUEST = 10000
+    req = Rook::Request$new(env)
+    res = Rook::Response$new()
+
+    if (tracing)
+        browser()
+    json = req$GET()[['json']] %>% fromJSON()
+    auth = validate_request(json, res)
+    if (is.null(auth))
+        return(res$finish())
+
+    sendHeader(res)
+
+    projectID = json$projectID %>% as.integer
+    batchID = json$batchID %>% as.integer
+    runID = json$runID %>% as.integer
+
+    if (!isTRUE(is.finite(projectID) && is.finite(batchID) && is.finite(runID))) {
+        sendError("invalid parameter(s)")
+        return(res$finish())
+    }
+
+    # regenerate a list of tag IDs for this project
+    projTags = MetaDB("select distinct tagID from tags where projectID = :projectID", projectID=projectID)
+    tmpTab = paste0("tempTagIDs", projectID)
+    MotusDB(paste0("create temporary table if not exists ", tmpTab, " (tagID integer unique primary key)"))
+    MotusDB(paste0("delete from ", tmpTab))
+    dbWriteTable(MotusCon, tmpTab, projTags, row.names=FALSE, append=TRUE)
+
+    ## pull out appropriate runs
+
+    query = sprintf("\
+select t2.runID, t2.batchIDbegin, t2.batchIDend, t2.motusTagID, t2.ant, t2.len from batches as t1 \
+       join runs as t2 on t2.batchIDbegin=t1.batchID join %s as t3 on t2.motusTagID=t3.tagID where \
+       t1.batchID = %d and t2.runID > %d limit %d",
+tmpTab, batchID, runID, MAX_BATCHES_PER_REQUEST)
     rv = MotusDB(query)
     res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
     res$finish()
