@@ -43,7 +43,7 @@ validateEmail = function(msg) {
     ## the translated query is: SELECT * FROM `upload_tokens` WHERE (`token` = 'XXXXXXX' AS "token")
 
     openMotusDB() ## ensure we have MotusDB
-    x = MotusDB("select * from upload_tokens where token='%s'", tok)
+    x = MotusDB("select * from upload_tokens where token=%s", tok)
 
     if(nrow(x) == 0)
         return(NULL)

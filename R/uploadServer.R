@@ -84,8 +84,8 @@ uploadServer = function(tracing = FALSE, fileEvent="CREATE") {
         ## table (the database used by ProjectSend as configured on our server), and
         ## get the project the user chose to assign the file to.
 
-        id.email = MotusDB("select id, email from data_uploads.sg_users where user='%s'", parts[1])
-        motusProjectID = MotusDB("select motus_project_ID from data_uploads.sg_files where url = '%s'", file.path(parts[1], bname))
+        id.email = MotusDB("select id, email from data_uploads.sg_users where user=%s", parts[1])
+        motusProjectID = MotusDB("select motus_project_ID from data_uploads.sg_files where url = %s", file.path(parts[1], bname))
 
         ## create and enqueue a new upload job
         j = newJob("uploadFile", .parentPath=MOTUS_PATH$INCOMING, replyTo=id.email[[2]], motusUserID=id.email[[1]], motusProjectID = motusProjectID, valid=TRUE, .enqueue=FALSE, filename=bname)
