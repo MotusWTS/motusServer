@@ -47,10 +47,10 @@ motusReserveKeys = function(table, key, n, IDcol, ID) {
 
     if (n > 0) {
         MotusDB("insert into %s (%s, %s) select ifnull(max(%s),0) + %g, %g from %s",
-            table, key, IDcol, key, n, ID, table)
+            table, key, IDcol, key, n, ID, table, .QUOTE=FALSE)
     } else if (n < 0) {
         MotusDB("insert into %s (%s, %s) select ifnull(min(%s),0) + %g, %g from %s",
-            table, key, IDcol, key, n, ID, table)
+            table, key, IDcol, key, n, ID, table, .QUOTE=FALSE)
     } else {
         stop("must reserve a non-zero number of keys")
     }
@@ -69,9 +69,9 @@ motusReserveKeys = function(table, key, n, IDcol, ID) {
 
     if (n > 0) {
         return (MotusDB("select %s from %s where %s=%s order by %s desc limit 1",
-                    key, table, IDcol, ID, key) [[1]] - n + 1)
+                    key, table, IDcol, ID, key, .QUOTE=FALSE) [[1]] - n + 1)
     } else {
         return (MotusDB("select %s from %s where %s=%s order by %s limit 1",
-                    key, table, IDcol, ID, key) [[1]] - n - 1)
+                    key, table, IDcol, ID, key, .QUOTE=FALSE) [[1]] - n - 1)
     }
 }
