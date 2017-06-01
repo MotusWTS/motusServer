@@ -61,7 +61,7 @@ handleNewFiles = function(j) {
 
     dta = grep("(?i)\\.DTA$", all, perl=TRUE)
     if (length(dta)) {
-        sj = newSubJob(tj, "LtFiles", .makeFolder=TRUE)
+        sj = newSubJob(j, "LtFiles", .makeFolder=TRUE)
         moveFilesUniquely(all[dta], jobPath(sj))
         all = all[ - dta]
     }
@@ -72,7 +72,7 @@ handleNewFiles = function(j) {
     if (length(syslog)) {
         dirs = unique(dirname(all[syslog]))
         for (d in dirs) {
-            sj = newSubJob(tj, "logs", .makeFolder=TRUE)
+            sj = newSubJob(j, "logs", .makeFolder=TRUE)
             moveDirContents(d, jobPath(sj)) ## files will be moved before this process can run the newly queued job
         }
         all = all[! dirname(all) %in% dirs ]
@@ -84,9 +84,6 @@ handleNewFiles = function(j) {
     if (length(tagreg)) {
         dirs = unique(dirname(all[tagreg]))
         for (d in dirs) {
-            ## Note: make this a subjob of the topjob.  We want to process tag registrations
-            ## (a quick job) before sending the user a confirmation email.
-
             sj = newSubJob(j, "registerTags", .makeFolder=TRUE)
             moveDirContents(d, jobPath(sj)) ## files will be moved before this process can run the newly queued job
         }
@@ -99,7 +96,7 @@ handleNewFiles = function(j) {
 
     unknown = grep("(\\.txt(\\.gz)?$)|~", all, perl=TRUE, invert=TRUE)
     if (length(unknown)) {
-        sj = newSubJob(tj, "unknownFiles", .makeFolder=TRUE)
+        sj = newSubJob(j, "unknownFiles", .makeFolder=TRUE)
         moveFiles(all[unknown], jobPath(sj))
         all = all[ - unknown ]
     }
@@ -113,7 +110,7 @@ handleNewFiles = function(j) {
     ## trees for this top job.
 
     if (length(all)) {
-        sj = newSubJob(tj, "SGfiles", .makeFolder = TRUE)
+        sj = newSubJob(j, "SGfiles", .makeFolder = TRUE)
         for (jj in originalSubjobs) {
             job = Jobs[[jj]]  ## 'in' discards class attribute...
             if (jobHasFolder(job))
