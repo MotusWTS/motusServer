@@ -93,8 +93,10 @@ handlePlotData = function(j) {
         file.symlink(plotfilename, targDir)
         file.symlink(pdfname, targDir)
         file.symlink(datafilename, targDir)
+        url = getDownloadURL(info$projID[i])
         jobLog(j, paste0("Exported hourly dataset (and plot) to:  ", basename(datafilename), "(.png/.pdf)",
-                         "\nYou can download these here: ", getDownloadURL(info$projID[i])))
+                         "\nYou can download these here: ", url))
+        jobProduced(j, file.path(url, basename(c(plotfilename, pdfname, datafilename))))
     }
     closeRecvSrc(src)
     return (TRUE)
