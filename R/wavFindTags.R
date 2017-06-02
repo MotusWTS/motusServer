@@ -25,6 +25,9 @@
 #' \item sig; signal strength in dB max
 #' }
 #'
+#' @param maxFreqSD maximum freqsd of returned detections; default: 0.1
+#' kHz
+#'
 #' @note uses external programs vamp-host and find_tags_unifile, and
 #' library lotek-plugins.so
 #'
@@ -34,7 +37,7 @@
 
 wavFindTags = function(f, tdb,
                        pdpars=list(minsnr=8, minfreq=0, maxfreq=24, plen=2.5),
-                       tfpars=list(min_dfreq=-24, max_dfreq=24, signal_slop=30, frequency_slop=0.2, pulses_to_confirm=4, pulse_slop=1.5, max_skipped_bursts=3, default_freq=166.376)
+                       tfpars=list(min_dfreq=-24, max_dfreq=24, signal_slop=30, frequency_slop=0.2, pulses_to_confirm=4, pulse_slop=1.5, max_skipped_bursts=3, default_freq=166.376), maxFreqSD=0.1
                        ){
 
     tmpf = tempfile(rep("file", 2))
@@ -58,7 +61,7 @@ wavFindTags = function(f, tdb,
     rv = tryCatch({
         x = read.csv(textConnection(safeSys(cmd, quote=FALSE)), as.is=TRUE)
         ## filter noisy detections
-        x = subset(x, freq.sd < 0.1)
+        x = subset(x, freq.sd <= maxFreqSD)
         x$id = as.integer(gsub("(Lotek#)|(@.*)", "", x$fullID))
         x
     },
