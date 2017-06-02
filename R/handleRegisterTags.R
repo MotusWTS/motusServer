@@ -220,6 +220,7 @@ handleRegisterTags = function(j) {
             if (! isTRUE(bi.sd  <= maxBISD)) {
                 jobLog(j, paste0("Unable to get a good estimate of burst interval for tag id ", id, " in file ", f,
                                  "\nPlease re-record this tag and re-upload"))
+                numFail = numFail + 1
                 next
             }
         }
