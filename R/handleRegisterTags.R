@@ -145,7 +145,7 @@ handleRegisterTags = function(j) {
     fcdfreqs = as.numeric(info$fcdfreq)
 
     ## ignore freq if user just gave us the nominal frequency
-    if (isTRUE(all(fcdfreqs == nomFreq))) {
+    if (isTRUE(length(fcdfreqs) > 0 && all(fcdfreqs == nomFreq))) {
         jobLog(j, paste0("Please note: your filenames all have '@", sprintf("%.3f", nomFreq), "'.\n",
                       "The '@XXX.XXX' in filenames is for telling us the funcube listening frequency\n",
                       "rather than the nominal tag frequency, which is given in tagreg.txt file.\n",
