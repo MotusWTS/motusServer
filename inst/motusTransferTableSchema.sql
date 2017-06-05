@@ -246,3 +246,21 @@ CREATE TABLE IF NOT EXISTS upload_tokens (
        email CHAR(128),                            -- email address of user on sensorgnome.org
        expiry FLOAT(53)                            -- unix timestamp when this token expires
 );----
+
+CREATE TABLE IF NOT EXISTS tag_deployments (
+       projectID INT NOT NULL,     -- motus project ID
+       motusTagID INT NOT NULL,    -- motus tag ID
+       tsStart FLOAT(53) NOT NULL, -- unix timestamp of start of deployment
+       tsEnd FLOAT(53) NOT NULL,   -- unix timestamp of end of deployment
+       INDEX i_projectID (projectID),
+       INDEX i_motusTagID (motusTagID)
+);----
+
+CREATE TABLE IF NOT EXISTS receiver_deployments (
+       projectID INT NOT NULL,     -- motus project ID
+       deviceID INT NOT NULL,      -- motus tag ID
+       tsStart FLOAT(53) NOT NULL, -- unix timestamp of start of deployment
+       tsEnd FLOAT(53) NOT NULL,   -- unix timestamp of end of deployment
+       INDEX i_projectID (projectID),
+       INDEX i_deviceID (deviceID)
+);----

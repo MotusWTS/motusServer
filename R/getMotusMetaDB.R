@@ -213,6 +213,17 @@ getMotusMetaDB = function() {
         bkup("tagDeps")
         ## write just the deployment portion of the records to tagDeps
         dbWriteTable(s$con, "tagDeps", t, overwrite=TRUE, row.names=FALSE)
+
+        ## End any unterminated deployments of tags which have a later deployment.
+        ## The earlier deployment is ended 1 second before the (earliest) later one begins.
+
+        dbGetQuery(s$con, "update tagDeps set tsEnd = (select min(t2.tsStart) - 1 from tagDeps as t2 where t2.tsStart > tagDeps.tsStart and tagDeps.tagID=t2.tagID) where tsEnd is null and tsStart is not null");
+
+        ## replace slim copy of tag deps in mysql database
+        MotusDB("delete from tag_deployments")
+        dbWriteTable(MotusDB$con, "tag_deployments", dbGetQuery(s$con, "select projectID, tagID as motusTagID, tsStart, tsEnd from tagDeps order by projectID, tagID"),
+                     append=TRUE, row.names=FALSE)
+
     })
 
     ## grab species
@@ -257,6 +268,11 @@ getMotusMetaDB = function() {
         ## The earlier deployment is ended 1 second before the (earliest) later one begins.
 
         dbGetQuery(s$con, "update recvDeps set tsEnd = (select min(t2.tsStart) - 1 from recvDeps as t2 where t2.tsStart > recvDeps.tsStart and recvDeps.serno=t2.serno) where tsEnd is null and tsStart is not null");
+
+        ## update slim copy of receiver deps in mysql database
+        MotusDB("delete from receiver_deployments")
+        dbWriteTable(MotusDB$con, "receiver_deployments", dbGetQuery(s$con, "select projectID, deviceID, tsStart, tsEnd from recvDeps order by projectID, deviceID"),
+                     append=TRUE, row.names=FALSE)
 
         bkup("antDeps")
         dbWriteTable(s$con, "antDeps", ant %>% as.data.frame, overwrite=TRUE, row.names=FALSE)
