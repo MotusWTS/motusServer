@@ -57,20 +57,30 @@ handleRegisterTags = function(j) {
     ## extra tag models, noted above, not yet supported upstream
     extraTagModels = list (
         "ANTC-M1-1" = "NTQB-1",
+        "ANTCW-M1-1" = "NTQB-1",
         "ANTC-M2-1" = "NTQB-2",
+        "ANTCW-M2-1" = "NTQB-2",
         "ANTC-M3-2" = "NTQB-3-2",
+        "ANTCW-M3-2" = "NTQB-3-2",
         "ANTC-M4-2S" = "NTQB-4-2",
         "ANTC-M4-2L" = "NTQBW-4-2",
         "ANTC-M6-1" = "NTQB-6-1",
+        "ANTCW-M6-1" = "NTQB-6-1",
         "ANTC-M6-2" = "NTQB-6-2",
+        "ANTCW-M6-2" = "NTQB-6-2",
         "ANTC-1-1" = "NTQB-1",
+        "ANTCW-1-1" = "NTQB-1",
         "ANTC-2-1" = "NTQB-2",
+        "ANTCW-2-1" = "NTQB-2",
         "ANTC-3-2" = "NTQB-3-2",
+        "ANTCW-3-2" = "NTQB-3-2",
         "ANTC-4-2" = "NTQB-4-2",
         "ANTC-4-2S" = "NTQB-4-2",
         "ANTC-4-2L" = "NTQBW-4-2",
         "ANTC-6-1" = "NTQB-6-1",
-        "ANTC-6-2" = "NTQB-6-2"
+        "ANTCW-6-1" = "NTQB-6-1",
+        "ANTC-6-2" = "NTQB-6-2",
+        "ANTCW-6-2" = "NTQB-6-2"
     )
 
     meta = list(motusProjID=NULL, tagModel=NULL, nomFreq=NULL, species=NULL, deployDate=NULL, codeSet=NULL)
@@ -302,8 +312,8 @@ handleRegisterTags = function(j) {
             if (! is.null(newTagModel)) {
                 tmpCon = file("/sgm/tagnotes.txt", "a")
                 writeLines(
-                    sprintf("update tags set model='%s' where tagID=%d; --replacing placeholder model '%s'\n",
-                            newTagModel, as.integer(rv$tagID), tagModel),
+                    sprintf("update tags set model='%s' where id=%d; -- %s: replacing placeholder model '%s'",
+                            newTagModel, as.integer(rv$tagID), format(Sys.time(), "%Y-%m-%d %H:%M:%OS3"), tagModel),
                     tmpCon)
                 close(tmpCon)
             }
