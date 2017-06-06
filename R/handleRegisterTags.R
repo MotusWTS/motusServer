@@ -29,6 +29,17 @@
 #'     e.g. \code{tag134@166.372.wav} indicates a tag recorded at
 #'     166.372 MHz, rather than the default.
 #'
+#' @note 2017-06-06 ANTC-M tags will be registered as NTQB- models like so:
+#'     ANTC-M1-1     NTQB-1
+#'     ANTC-M2-1     NTQB-2
+#'     ANTC-M3-2     NTQB-3-2
+#'     ANTC-M4-2S    NTQB-4-2
+#'     ANTC-M4-2L    NTQBW-4-2
+#'     ANTC-M6-1     NTQB-6-1
+#'     ANTC-M6-2     NTQB-6-2
+#' but with an entry appended to /sgm/tagnotes.txt giving the database query required on motus.org
+#' to correct the model once it is supported there.
+
 #' Called by \code{\link{processServer}}.
 #'
 #' @param j the job
@@ -42,6 +53,18 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 handleRegisterTags = function(j) {
+
+    ## extra tag models, noted above, not yet supported upstream
+    extraTagModels = list (
+        "ANTC-M1-1" = "NTQB-1",
+        "ANTC-M2-1" = "NTQB-2",
+        "ANTC-M3-2" = "NTQB-3-2",
+        "ANTC-M4-2S" = "NTQB-4-2",
+        "ANTC-M4-2L" = "NTQBW-4-2",
+        "ANTC-M6-1" = "NTQB-6-1",
+        "ANTC-M6-2" = "NTQB-6-2"
+    )
+
     meta = list(motusProjID=NULL, tagModel=NULL, nomFreq=NULL, species=NULL, deployDate=NULL, codeSet=NULL)
     lcMetaNames = tolower(names(meta))
     p = jobPath(j)
@@ -78,8 +101,14 @@ handleRegisterTags = function(j) {
     }
 
     tagModel = meta$tagModel
+    newTagModel = NULL
     if (! isTRUE(tagModel %in% rownames(tagLifespanPars))) {
-        errs = c(errs, paste0("Invalid tag model: ", tagModel, "; must be one of:\n", paste(rownames(tagLifespanPars), collapse=", ")))
+        if (tagModel %in% names(extraTagModels)) {
+            newTagModel = tagModel
+            tagModel = extraTagModels[[tagModel]]
+        } else {
+            errs = c(errs, paste0("Invalid tag model: ", tagModel, "; must be one of:\n", paste(c(rownames(tagLifespanPars), extraTagModels), collapse=", ")))
+        }
     }
 
     nomFreq = as.numeric(meta$nomFreq)
@@ -262,6 +291,14 @@ handleRegisterTags = function(j) {
         tag = paste0(id, ":", round(meanbi, 2))
         if (length(rv) > 0 && rv$responseCode == "success-import" && ! is.null(rv$tagID)) {
             jobLog(j, paste0("Success: tag ", tag, " was registered as motus tag ", rv$tagID, " under project ", projectID))
+            if (! is.null(newTagModel)) {
+                tmpCon = file("/sgm/tagnotes.txt", "a")
+                writeLines(
+                    sprintf("update tags set model='%s' where tagID=%d; --replacing placeholder model '%s'\n",
+                            newTagModel, as.integer(rv$tagID), tagModel),
+                    tmpCon)
+                close(tmpCon)
+            }
             if (! is.null(speciesID) && ! is.na(deployDate)) {
                 ## try register a deployment on the given species and/or date
                 rv2 = motusDeployTag(tagID=as.integer(rv$tagID), speciesID=speciesID, projectID=projectID, tsStart=as.numeric(deployDate))
