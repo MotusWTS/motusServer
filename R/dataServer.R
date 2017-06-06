@@ -73,7 +73,15 @@ dataServer = function(port=0xda7a, tracing=FALSE) {
 
 ## a string giving the list of apps for this server
 
-allDataApps = c("authenticate_user", "batches_for_tag_project", "batches_for_receiver_project", "runs_for_tag_project", "runs_for_batch", "hits_for_tag_project_in_batch")
+allDataApps = c("authenticate_user",
+ "batches_for_tag_project",
+ "batches_for_receiver_project",
+ "runs_for_tag_project",
+ "runs_for_receiver_project",
+ "hits_for_tag_project",
+ "hits_for_receiver_project",
+ "gps_for_receiver_project"
+ )
 
 #' authenticate_user return a list of projects and receivers the user is authorized to receive data for
 #'
@@ -233,7 +241,7 @@ batches_for_tag_project = function(env) {
 
     sendHeader(res)
 
-    projectID = json$projectID
+    projectID = json$projectID %>% as.integer
     ts = json$ts %>% as.numeric
     if (!isTRUE(is.finite(ts)))
         ts = 0
@@ -262,7 +270,7 @@ where
 group by
    t3.batchID
 order by
-   order by t3.ts
+   t3.ts
 limit %d",
 projectID, ts, MAX_BATCHES_PER_REQUEST)
 
@@ -293,7 +301,7 @@ batches_for_receiver_project = function(env) {
 
     sendHeader(res)
 
-    projectID = json$projectID
+    projectID = json$projectID %>% as.integer
     ts = json$ts %>% as.numeric
     if (!isTRUE(is.finite(ts)))
         ts = 0
@@ -381,14 +389,10 @@ where
    t1.batchID = %d
    and t2.runID > %d
    and t3.projectID = %d
-   and t1.tsBegin <= t3.tsEnd
-   and t3.tsStart <= t1.tsEnd
+   and t4.ts <= t3.tsEnd
+   and t4.ts >= t3.tsStart
 group by
    t2.runID
-having
-   min(t4.ts) <= t3.tsEnd
-   and t3.tsStart <= max(t4.ts)
-
 order by
    t2.runID
 limit %d",
@@ -405,11 +409,8 @@ batchID, runID, projectID, MAX_RUNS_PER_REQUEST)
 #' @param runID integer ID of largest run already obtained
 #'
 #' @return a data frame with the same schema as the runs table, but JSON-encoded as a list of columns
-#'
-#' @note authorization is explicity: we check that the specified batch belongs
-#' to the specified project.
 
-runs_for_batch = function(env) {
+runs_for_receiver_project = function(env) {
 
     MAX_RUNS_PER_REQUEST = 10000
     req = Rook::Request$new(env)
@@ -468,11 +469,11 @@ batchID, runID, projectID, MAX_RUNS_PER_REQUEST)
 #' @param batchID integer batchID
 #' @param hitID integer ID of largest hit already obtained
 #'
-#' @return a data frame with the same schema as the runs table, but JSON-encoded as a list of columns
+#' @return a data frame with the same schema as the hits table, but JSON-encoded as a list of columns
 
-hits_for_tag_project_in_batch = function(env) {
+hits_for_tag_project = function(env) {
 
-    MAX_RUNS_PER_REQUEST = 10000
+    MAX_HITS_PER_REQUEST = 50000
     req = Rook::Request$new(env)
     res = Rook::Response$new()
 
@@ -487,9 +488,76 @@ hits_for_tag_project_in_batch = function(env) {
 
     projectID = json$projectID %>% as.integer
     batchID = json$batchID %>% as.integer
-    runID = json$runID %>% as.integer
+    hitID = json$hitID %>% as.integer
 
-    if (!isTRUE(is.finite(projectID) && is.finite(batchID) && is.finite(runID))) {
+    if (!isTRUE(is.finite(projectID) && is.finite(batchID) && is.finite(hitID))) {
+        sendError("invalid parameter(s)")
+        return(res$finish())
+    }
+
+    ## pull out appropriate hits
+
+    query = sprintf("
+select
+   t4.hitID,
+   t4.runID,
+   t4.batchID,
+   t4.ts,
+   t4.sig,
+   t4.sigSD,
+   t4.noise,
+   t4.freq,
+   t4.freqSD,
+   t4.slop,
+   t4.burstSlop
+from
+   batches as t1
+   join runs as t2 on t2.batchIDbegin=t1.batchID
+   join hits as t4 on t4.runID=t2.runID
+   join tag_deployments as t3 on t2.motusTagID=t3.motusTagID
+where
+   t1.batchID = %d
+   and t4.hitID > %d
+   and t3.projectID = %d
+   and t4.ts <= t3.tsEnd
+   and t4.ts >= t3.tsStart
+order by
+   t4.hitID
+limit %d",
+batchID, hitID, projectID, MAX_HITS_PER_REQUEST)
+    rv = MotusDB(query)
+    res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
+    res$finish()
+}
+
+#' get hits by receiver project from a batch (i.e. all hits from the batch)
+#'
+#' @param projectID integer project ID
+#' @param batchID integer batchID
+#' @param hitID integer ID of largest hit already obtained
+#'
+#' @return a data frame with the same schema as the hits table, but JSON-encoded as a list of columns
+
+hits_for_receiver_project = function(env) {
+
+    MAX_HITS_PER_REQUEST = 50000
+    req = Rook::Request$new(env)
+    res = Rook::Response$new()
+
+    if (tracing)
+        browser()
+    json = req$GET()[['json']] %>% fromJSON()
+    auth = validate_request(json, res)
+    if (is.null(auth))
+        return(res$finish())
+
+    sendHeader(res)
+
+    projectID = json$projectID %>% as.integer
+    batchID = json$batchID %>% as.integer
+    hitID = json$hitID %>% as.integer
+
+    if (!isTRUE(is.finite(projectID) && is.finite(batchID) && is.finite(hitID))) {
         sendError("invalid parameter(s)")
         return(res$finish())
     }
@@ -510,19 +578,80 @@ select
    t2.slop,
    t2.burstSlop
 from
-   batches as t1
+   receiver_deployments as t3
+   join batches as t1 on t3.deviceID = t1.motusDeviceID
    join hits as t2 on t2.batchID=t1.batchID
-   join tag_deployments as t3 on t2.motusTagID=t3.motusTagID
 where
    t1.batchID = %d
    and t3.projectID = %d
    and t2.hitID > %d
-   and t2.ts >= t3.tsStart
-   and t2.ts <= t3.tsEnd
+   and ((t3.tsEnd is null and t1.tsBegin >= t3.tsStart)
+     or (t1.tsBegin <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
 order by
    t2.hitID
 limit %d",
-batchID, hitID, projectID, MAX_RUNS_PER_REQUEST)
+batchID, projectID, hitID, MAX_HITS_PER_REQUEST)
+    rv = MotusDB(query)
+    res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
+    res$finish()
+}
+
+#' get all GPS fixes from a batch
+#'
+#' @param projectID integer project ID
+#' @param batchID integer batchID
+#' @param ts numeric timestamp of latest fix already obtained
+#'
+#' @return a data frame with the same schema as the gps table, but JSON-encoded as a list of columns
+
+gps_for_receiver_project = function(env) {
+
+    MAX_GPS_PER_REQUEST = 10000
+    req = Rook::Request$new(env)
+    res = Rook::Response$new()
+
+    if (tracing)
+        browser()
+    json = req$GET()[['json']] %>% fromJSON()
+    auth = validate_request(json, res)
+    if (is.null(auth))
+        return(res$finish())
+
+    sendHeader(res)
+
+    projectID = json$projectID %>% as.integer
+    batchID = json$batchID %>% as.integer
+    ts = json$ts %>% as.numeric
+
+    if (!isTRUE(is.finite(projectID) && is.finite(batchID) && is.finite(ts))) {
+        sendError("invalid parameter(s)")
+        return(res$finish())
+    }
+
+    ## pull out appropriate gps records
+
+    query = sprintf("
+select
+    t2.ts,
+    t2.gpsts,
+    t2.batchID,
+    t2.lat,
+    t2.lon,
+    t2.alt
+from
+   receiver_deployments as t3
+   join batches as t1 on t3.deviceID = t1.motusDeviceID
+   join gps as t2 on t2.batchID=t1.batchID
+where
+   t1.batchID = %d
+   and t3.projectID = %d
+   and t2.ts > %f
+   and ((t3.tsEnd is null and t1.tsBegin >= t3.tsStart)
+     or (t1.tsBegin <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
+order by
+   t2.ts
+limit %d",
+batchID, projectID, ts, MAX_GPS_PER_REQUEST)
     rv = MotusDB(query)
     res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
     res$finish()
