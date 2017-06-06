@@ -62,7 +62,15 @@ handleRegisterTags = function(j) {
         "ANTC-M4-2S" = "NTQB-4-2",
         "ANTC-M4-2L" = "NTQBW-4-2",
         "ANTC-M6-1" = "NTQB-6-1",
-        "ANTC-M6-2" = "NTQB-6-2"
+        "ANTC-M6-2" = "NTQB-6-2",
+        "ANTC-1-1" = "NTQB-1",
+        "ANTC-2-1" = "NTQB-2",
+        "ANTC-3-2" = "NTQB-3-2",
+        "ANTC-4-2" = "NTQB-4-2",
+        "ANTC-4-2S" = "NTQB-4-2",
+        "ANTC-4-2L" = "NTQBW-4-2",
+        "ANTC-6-1" = "NTQB-6-1",
+        "ANTC-6-2" = "NTQB-6-2"
     )
 
     meta = list(motusProjID=NULL, tagModel=NULL, nomFreq=NULL, species=NULL, deployDate=NULL, codeSet=NULL)
