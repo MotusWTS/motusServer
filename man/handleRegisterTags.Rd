@@ -43,16 +43,6 @@ By default, we assume each tag was recorded at 4 kHz below
     e.g. \code{tag134@166.372.wav} indicates a tag recorded at
     166.372 MHz, rather than the default.
 
-2017-06-06 ANTC-M tags will be registered as NTQB- models like so:
-    ANTC-M1-1     NTQB-1
-    ANTC-M2-1     NTQB-2
-    ANTC-M3-2     NTQB-3-2
-    ANTC-M4-2S    NTQB-4-2
-    ANTC-M4-2L    NTQBW-4-2
-    ANTC-M6-1     NTQB-6-1
-    ANTC-M6-2     NTQB-6-2
-but with an entry appended to /sgm/tagnotes.txt giving the database query required on motus.org
-to correct the model once it is supported there.
 Called by \code{\link{processServer}}.
 }
 \author{
