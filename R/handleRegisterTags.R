@@ -79,6 +79,10 @@ handleRegisterTags = function(j) {
     }
 
     tagModel = meta$tagModel
+
+    ## invoices sometimes don't show the "M" in the ANTC models
+    if (grepl("^ANTCW?-[0-9]", tagModel))
+        tagModel = sub("^(ANTCW?-)", "\\1M", tagModel, perl=TRUE)
     if (! isTRUE(tagModel %in% rownames(tagLifespanPars))) {
         errs = c(errs, paste0("Invalid tag model: ", tagModel, "; must be one of:\n", paste(c(rownames(tagLifespanPars), extraTagModels), collapse=", ")))
     }
