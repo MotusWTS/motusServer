@@ -19,6 +19,7 @@ a project for which the user is authorized, returns
 a list with these items:
 \itemize{
 \item userID integer user ID
+\item projects integer vector of project IDs user has permission to
 }
 Otherwise, send a JSON-formatted reply with the single item "error": "authorization failed"
 and return NULL.

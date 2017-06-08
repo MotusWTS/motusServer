@@ -80,7 +80,9 @@ allDataApps = c("authenticate_user",
  "runs_for_receiver_project",
  "hits_for_tag_project",
  "hits_for_receiver_project",
- "gps_for_receiver_project"
+ "gps_for_tag_project",
+ "gps_for_receiver_project",
+ "metadata_for_tags"
  )
 
 #' authenticate_user return a list of projects and receivers the user is authorized to receive data for
@@ -165,6 +167,7 @@ authenticate_user = function(env) {
 #' a list with these items:
 #' \itemize{
 #' \item userID integer user ID
+#' \item projects integer vector of project IDs user has permission to
 #' }
 #' Otherwise, send a JSON-formatted reply with the single item "error": "authorization failed"
 #' and return NULL.
@@ -596,6 +599,76 @@ batchID, projectID, hitID, MAX_HITS_PER_REQUEST)
     res$finish()
 }
 
+#' get all GPS fixes from a batch "near" to detections of tags from a project.
+#'
+#' @param projectID integer project ID of tags of interest
+#' @param batchID integer batchID
+#' @param ts numeric timestamp of latest fix already obtained
+#'
+#' @return a data frame with the same schema as the gps table, but JSON-encoded as a list of columns
+
+gps_for_tag_project = function(env) {
+
+    MAX_GPS_PER_REQUEST = 10000
+    req = Rook::Request$new(env)
+    res = Rook::Response$new()
+
+    if (tracing)
+        browser()
+    json = req$GET()[['json']] %>% fromJSON()
+    auth = validate_request(json, res)
+    if (is.null(auth))
+        return(res$finish())
+
+    sendHeader(res)
+
+    projectID = json$projectID %>% as.integer
+    batchID = json$batchID %>% as.integer
+    ts = json$ts %>% as.numeric
+
+    if (!isTRUE(is.finite(projectID) && is.finite(batchID) && is.finite(ts))) {
+        sendError("invalid parameter(s)")
+        return(res$finish())
+    }
+
+    ## pull out appropriate gps records
+
+    query = sprintf("
+select
+    t.ts,
+    t.gpsts,
+    t.batchID,
+    t.lat,
+    t.lon,
+    t.alt
+from
+   gps as t
+   join (
+      select
+         distinct 3600 * (floor(t2.ts / 3600) + dt.dt) as hour
+      from
+         runs as t3
+         join tag_deployments as t4 on t4.motusTagID=t3.motusTagID
+         join hits as t2 on t2.runID = t3.runID
+         join (select -1 as dt union select 0 as dt union select 1 as dt) as dt
+      where
+         t3.batchIDbegin = %d
+         and t4.projectID = %d
+      order by
+         hour
+    ) as t2 on t.ts >= t2.hour and t.ts < t2.hour + 3600
+where
+   t.batchID = %d
+   and t.ts > %f
+order by
+   t.ts
+limit %d",
+batchID, projectID, batchID, ts, MAX_GPS_PER_REQUEST)
+    rv = MotusDB(query)
+    res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
+    res$finish()
+}
+
 #' get all GPS fixes from a batch
 #'
 #' @param projectID integer project ID
@@ -654,5 +727,123 @@ limit %d",
 batchID, projectID, ts, MAX_GPS_PER_REQUEST)
     rv = MotusDB(query)
     res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
+    res$finish()
+}
+
+#' get metadata for tags
+#'
+#' @param projectID integer project ID
+#' @param motusTagIDs integer vector of tag IDs for which metadata are sought
+#'
+#' @return a data frame with the same schema as the batches table, but JSON-encoded as a list of columns
+
+metadata_for_tags = function(env) {
+
+    MAX_BATCHES_PER_REQUEST = 10000
+    req = Rook::Request$new(env)
+    res = Rook::Response$new()
+
+    if (tracing)
+        browser()
+    json = req$GET()[['json']] %>% fromJSON()
+    auth = validate_request(json, res)
+    if (is.null(auth))
+        return(res$finish())
+
+    sendHeader(res)
+
+    projectID = json$projectID %>% as.integer
+    motusTagIDs = json$motusTagIDs %>% as.integer
+
+    if (!isTRUE(is.finite(projectID) && all(is.finite(motusTagIDs)))) {
+        sendError("invalid parameter(s)")
+        return(res$finish())
+    }
+
+    ## determine which projects have tag deployments overlapping with public
+    ## metadata (among the given tagIDs)
+
+    MetaDB("create temporary table if not exists tempQueryTagIDs (tagID integer)")
+    MetaDB("delete from tempQueryTagIDs")
+    dbWriteTable(MetaDB$con, "tempQueryTagIDs", data.frame(tagID=motusTagIDs), append=TRUE, row.names=FALSE)
+    projs = MetaDB("
+select
+   distinct projectID
+from
+   tempQueryTagIds as t1
+   join tagDeps as t2 on t1.tagID = t2.tagID
+   join projs as t3 on t2.projectID = t3.id
+where
+   t3.tagsPermissions = 2
+") [[1]]
+    ## append projects user has access to via motus permissions
+    projs = unique(c(projs, auth$projects))
+
+    ## select all deployments of these tags from the permitted projects
+
+    query = sprintf("
+select
+   t1.tagID,
+   t1.deployID,
+   t1.projectID,
+   t1.tsStart,
+   t1.tsEnd,
+   t1.deferSec,
+   t1.speciesID,
+   t1.markerType,
+   t1.markerNumber,
+   t1.latitude,
+   t1.longitude,
+   t1.elevation,
+   t1.comments
+from
+   tagDeps as t1
+where
+   t1.projectID in (%s)
+   and t1.tagID in (%s)
+", paste(projs, collapse=","), paste(motusTagIDs, collapse=","))
+
+    tagDeps = MetaDB(query)
+
+    speciesIDs = unique(tagDeps$speciesID)
+    speciesIDs = speciesIDs[! is.na(speciesIDs)]
+
+    query = sprintf("
+select
+   t1.tagID,
+   t1.projectID,
+   t1.mfgID,
+   t1.type,
+   t1.codeSet,
+   t1.manufacturer,
+   t1.model,
+   t1.lifeSpan,
+   t1.nomFreq,
+   t1.offsetFreq,
+   t1.bi,
+   t1.pulseLen
+from
+   tags as t1
+where
+   t1.tagID in (%s)
+", paste(tagDeps$tagID, collapse=","))
+
+    tags = MetaDB(query)
+
+    query = sprintf("
+select
+   t1.id,
+   t1.english,
+   t1.french,
+   t1.scientific,
+   t1.\"group\"
+from
+   species as t1
+where
+   t1.id in (%s)
+", paste(speciesIDs, collapse=","))
+
+    species = MetaDB(query)
+    res$body = memCompress(toJSON(list(tags=tags, tagDeps=tagDeps, species=species), auto_unbox=TRUE, dataframe="columns"), "gzip")
     res$finish()
 }
