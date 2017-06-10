@@ -82,13 +82,15 @@ allDataApps = c("authenticate_user",
  "hits_for_receiver_project",
  "gps_for_tag_project",
  "gps_for_receiver_project",
- "metadata_for_tags"
+ "metadata_for_tags",
+ "metadata_for_receivers",
+ "tags_for_ambiguities"
  )
 
 #' authenticate_user return a list of projects and receivers the user is authorized to receive data for
 #'
 #' This is an app used by the Rook server launched by \code{\link{dataServer}}
-#' Params are passed as a url-encoded field named 'json' in the http GET request.
+#' Params are passed as a url-encoded field named 'json' in the http POST request.
 #' The return value is a JSON-formatted string
 #'
 #' @param user motus user name
@@ -114,7 +116,7 @@ authenticate_user = function(env) {
 
     if (tracing)
         browser()
-    json <- req$GET()[['json']] %>% fromJSON()
+    json <- req$POST()[['json']] %>% fromJSON()
     username <- json$user
     password <- json$password
 
@@ -237,7 +239,7 @@ batches_for_tag_project = function(env) {
 
     if (tracing)
         browser()
-    json = req$GET()[['json']] %>% fromJSON()
+    json = req$POST()[['json']] %>% fromJSON()
     auth = validate_request(json, res)
     if (is.null(auth))
         return(res$finish())
@@ -255,7 +257,7 @@ batches_for_tag_project = function(env) {
     query = sprintf("
 select
    t3.batchID,
-   t3.motusDeviceID,
+   t3.motusDeviceID as deviceID,
    t3.monoBN,
    t3.tsBegin,
    t3.tsEnd,
@@ -297,7 +299,7 @@ batches_for_receiver_project = function(env) {
 
     if (tracing)
         browser()
-    json = req$GET()[['json']] %>% fromJSON()
+    json = req$POST()[['json']] %>% fromJSON()
     auth = validate_request(json, res)
     if (is.null(auth))
         return(res$finish())
@@ -317,7 +319,7 @@ batches_for_receiver_project = function(env) {
     query = sprintf("
 select
    t2.batchID,
-   t2.motusDeviceID,
+   t2.motusDeviceID as deviceID,
    t2.monoBN,
    t2.tsBegin,
    t2.tsEnd,
@@ -356,7 +358,7 @@ runs_for_tag_project = function(env) {
 
     if (tracing)
         browser()
-    json = req$GET()[['json']] %>% fromJSON()
+    json = req$POST()[['json']] %>% fromJSON()
     auth = validate_request(json, res)
     if (is.null(auth))
         return(res$finish())
@@ -421,7 +423,7 @@ runs_for_receiver_project = function(env) {
 
     if (tracing)
         browser()
-    json = req$GET()[['json']] %>% fromJSON()
+    json = req$POST()[['json']] %>% fromJSON()
     auth = validate_request(json, res)
     if (is.null(auth))
         return(res$finish())
@@ -482,7 +484,7 @@ hits_for_tag_project = function(env) {
 
     if (tracing)
         browser()
-    json = req$GET()[['json']] %>% fromJSON()
+    json = req$POST()[['json']] %>% fromJSON()
     auth = validate_request(json, res)
     if (is.null(auth))
         return(res$finish())
@@ -549,7 +551,7 @@ hits_for_receiver_project = function(env) {
 
     if (tracing)
         browser()
-    json = req$GET()[['json']] %>% fromJSON()
+    json = req$POST()[['json']] %>% fromJSON()
     auth = validate_request(json, res)
     if (is.null(auth))
         return(res$finish())
@@ -615,7 +617,7 @@ gps_for_tag_project = function(env) {
 
     if (tracing)
         browser()
-    json = req$GET()[['json']] %>% fromJSON()
+    json = req$POST()[['json']] %>% fromJSON()
     auth = validate_request(json, res)
     if (is.null(auth))
         return(res$finish())
@@ -685,7 +687,7 @@ gps_for_receiver_project = function(env) {
 
     if (tracing)
         browser()
-    json = req$GET()[['json']] %>% fromJSON()
+    json = req$POST()[['json']] %>% fromJSON()
     auth = validate_request(json, res)
     if (is.null(auth))
         return(res$finish())
@@ -732,30 +734,73 @@ batchID, projectID, ts, MAX_GPS_PER_REQUEST)
 
 #' get metadata for tags
 #'
-#' @param projectID integer project ID
 #' @param motusTagIDs integer vector of tag IDs for which metadata are sought
 #'
-#' @return a data frame with the same schema as the batches table, but JSON-encoded as a list of columns
+#' @return a list with these items
+#'
+#'
+#' \itemize{
+#'    \item tags; a list with these vector items:
+#'    \itemize{
+#'       \item tagID; integer tag ID
+#'       \item projectID; integer project ID (who registered the tag)
+#'       \item mfgID; character manufacturer tag ID
+#'       \item type; character "ID" or "BEEPER"
+#'       \item codeSet; character e.g. "Lotek3", "Lotek4"
+#'       \item manufacturer; character e.g. "Lotek"
+#'       \item model; character e.g. "NTQB-3-1"
+#'       \item lifeSpan; integer estimated tag lifeSpan, in days
+#'       \item nomFreq; numeric nominal frequency of tag, in MHz
+#'       \item offsetFreq; numeric estimated offset frequency of tag, in kHz
+#'       \item bi; numeric burst interval or period of tag, in seconds
+#'       \item pulseLen; numeric length of tag pulses, in ms (not applicable to all tags)
+#'    }
+#'    \item tagDeps; a list with these vector items:
+#'    \itemize{
+#'       \item tagID; integer motus tagID
+#'       \item deployID; integer tag deployment ID (internal to motus)
+#'       \item projectID; integer motus ID of project deploying tag
+#'       \item tsStart; numeric timestamp of start of deployment
+#'       \item tsEnd; numeric timestamp of end of deployment
+#'       \item deferSec; integer deferred activation period, in seconds (0 for most tags).
+#'       \item speciesID; integer motus species ID code
+#'       \item markerType; character type of marker on organism; e.g. leg band
+#'       \item markerNumber; character details of marker; e.g. leg band code
+#'       \item latitude; numeric deployment location, degrees N (negative is S)
+#'       \item longitude; numeric deployment location, degrees E (negative is W)
+#'       \item elevation; numeric deployment location, metres ASL
+#'       \item comments; character possibly JSON-formatted list of additional metadata
+#'    }
+#'    \item species; a list with these vector items:
+#'    \itemize{
+#'       \item id; integer species ID,
+#'       \item english; character; English species name
+#'       \item french; character; French species name
+#'       \item scientific; character; scientific species name
+#'       \item group; character; higher-level taxon
+#'    }
+#' }
+#'
+#' @note only metadata which are public, or which are from projects
+#'     the user has permission to are returned.
 
 metadata_for_tags = function(env) {
 
-    MAX_BATCHES_PER_REQUEST = 10000
     req = Rook::Request$new(env)
     res = Rook::Response$new()
 
     if (tracing)
         browser()
-    json = req$GET()[['json']] %>% fromJSON()
+    json = req$POST()[['json']] %>% fromJSON()
     auth = validate_request(json, res)
     if (is.null(auth))
         return(res$finish())
 
     sendHeader(res)
 
-    projectID = json$projectID %>% as.integer
     motusTagIDs = json$motusTagIDs %>% as.integer
 
-    if (!isTRUE(is.finite(projectID) && all(is.finite(motusTagIDs)))) {
+    if (!isTRUE(all(is.finite(motusTagIDs)))) {
         sendError("invalid parameter(s)")
         return(res$finish())
     }
@@ -845,5 +890,202 @@ where
 
     species = MetaDB(query)
     res$body = memCompress(toJSON(list(tags=tags, tagDeps=tagDeps, species=species), auto_unbox=TRUE, dataframe="columns"), "gzip")
+    res$finish()
+}
+
+#' get metadata for receivers
+#'
+#' @param deviceIDs; integer vector of motus device IDs; receiver
+#'     metadata will only be returned for receivers whose project has
+#'     indicated their metadata are public, or receivers in one of the
+#'     projects the user has permissions to.
+#'
+#'
+#' @return a list with these items:
+#' \itemize{
+#'    \item recvDeps; a list with these vector items:
+#'    \itemize{
+#'       \item deployID; integer deployment ID (internal to motus, but links to antDeps)
+#'       \item projectID; integer ID of project that deployed the receiver
+#'       \item serno; character serial number, e.g. "SG-1214BBBK3999", "Lotek-8681"
+#'       \item receiverType; character "SENSORGNOME" or "LOTEK"
+#'       \item deviceID; integer device ID (internal to motus)
+#'       \item status; character deployment status
+#'       \item name; character; typically a site name
+#'       \item fixtureType; character; what is the receiver mounted on?
+#'       \item latitude; numeric (initial) location, degrees North
+#'       \item longitude; numeric (initial) location, degrees East
+#'       \item elevation; numeric (initial) location, metres ASL
+#'       \item isMobile; integer non-zero means a mobile deployment
+#'       \item tsStart; numeric; timestamp of deployment start
+#'       \item tsEnd; numeric; timestamp of deployment end, or NA if ongoing
+#'    }
+#'    \item antDeps; a list with these vector items:
+#'    \itemize{
+#'       \item deployID; integer, links to deployID in recvDeps table
+#'       \item port; integer, which receiver port (USB for SGs, BNC for Lotek) the antenna is connected to
+#'       \item antennaType; character; e.g. "Yagi-5", "omni"
+#'       \item bearing; numeric compass angle at which antenna is pointing; degrees clockwise from magnetic north
+#'       \item heightMeters; numeric height of main antenna element above ground
+#'       \item cableLengthMeters; numeric length of coaxial cable from antenna to receiver, in metres
+#'       \item cableType: character; type of cable; e.g. "RG-58"
+#'       \item mountDistanceMeters; numeric distance of mounting point from receiver, in metres
+#'       \item mountBearing; numeric compass angle from receiver to antenna mount; degrees clockwise from magnetic north
+#'       \item polarization2; numeric angle giving tilt from "normal" position, in degrees
+#'       \item polarization1; numeric angle giving rotation of antenna about own axis, in degrees.
+#'    }
+#' }
+#'
+#' @note only metadata which are public, or which are from projects
+#'     the user has permission to are returned.
+
+metadata_for_receivers = function(env) {
+
+    req = Rook::Request$new(env)
+    res = Rook::Response$new()
+
+    if (tracing)
+        browser()
+    json = req$POST()[['json']] %>% fromJSON()
+    auth = validate_request(json, res)
+    if (is.null(auth))
+        return(res$finish())
+
+    sendHeader(res)
+
+    deviceIDs = json$deviceIDs %>% as.integer
+
+    if (!isTRUE(all(is.finite(deviceIDs)))) {
+        sendError("invalid parameter(s)")
+        return(res$finish())
+    }
+
+    ## determine which projects have receiver deployments overlapping with public
+    ## metadata (among the given tagIDs)
+
+    MetaDB("create temporary table if not exists tempQueryDeviceIDs (deviceID integer)")
+    MetaDB("delete from tempQueryDeviceIDs")
+    dbWriteTable(MetaDB$con, "tempQueryDeviceIDs", data.frame(deviceID=deviceIDs), append=TRUE, row.names=FALSE)
+    projs = MetaDB("
+select
+   distinct projectID
+from
+   tempQueryDeviceIds as t1
+   join recvDeps as t2 on t1.deviceID = t2.deviceID
+   join projs as t3 on t2.projectID = t3.id
+where
+   t3.sensorsPermissions = 2
+") [[1]]
+    ## append projects user has access to via motus permissions
+    projs = unique(c(projs, auth$projects))
+
+    ## select all deployments of the receivers from the permitted projects
+
+    query = sprintf("
+select
+    t1.deployID,
+    t1.projectID,
+    t1.serno,
+    t1.receiverType,
+    t1.deviceID,
+    t1.status,
+    t1.name,
+    t1.fixtureType,
+    t1.latitude,
+    t1.longitude,
+    t1.elevation,
+    t1.isMobile,
+    t1.tsStart,
+    t1.tsEnd
+from
+   recvDeps as t1
+where
+   t1.projectID in (%s)
+   and t1.deviceID in (%s)
+", paste(projs, collapse=","), paste(deviceIDs, collapse=","))
+
+    recvDeps = MetaDB(query)
+
+    query = sprintf("
+select
+    t2.deployID,
+    t2.port,
+    t2.antennaType,
+    t2.bearing,
+    t2.heightMeters,
+    t2.cableLengthMeters,
+    t2.cableType,
+    t2.mountDistanceMeters,
+    t2.mountBearing,
+    t2.polarization2,
+    t2.polarization1
+from
+   recvDeps as t1
+   join antDeps as t2 on t1.deployID = t2.deployID
+where
+   t1.projectID in (%s)
+   and t1.deviceID in (%s)
+", paste(projs, collapse=","), paste(deviceIDs, collapse=","))
+
+    antDeps = MetaDB(query)
+    res$body = memCompress(toJSON(list(recvDeps=recvDeps, antDeps=antDeps), auto_unbox=TRUE, dataframe="columns"), "gzip")
+    res$finish()
+}
+
+#' get motus tagIDs for ambiguity IDs
+#'
+#' @param ambigIDs integer vector of ambiguity IDs, which are all negative
+#'
+#' @return a list with these vector items:
+#' \itemize{
+#'    \item ambigID; negative integer tag ambiguity ID
+#'    \item motusTagID1; positive integer motus tag ID
+#'    \item motusTagID2; positive integer motus tag ID
+#'    \item motusTagID3; positive integer motus tag ID or null
+#'    \item motusTagID4; positive integer motus tag ID or null
+#'    \item motusTagID5; positive integer motus tag ID or null
+#'    \item motusTagID6; positive integer motus tag ID or null
+#' }
+
+tags_for_ambiguities = function(env) {
+
+    req = Rook::Request$new(env)
+    res = Rook::Response$new()
+
+    if (tracing)
+        browser()
+    json = req$POST()[['json']] %>% fromJSON()
+    auth = validate_request(json, res)
+    if (is.null(auth))
+        return(res$finish())
+
+    sendHeader(res)
+
+    ambigIDs = json$ambigIDs %>% as.integer
+
+    if (!isTRUE(all(is.finite(ambigIDs)) && all(ambigIDs < 0)) && length(ambigIDs) > 0) {
+        sendError("invalid parameter(s)")
+        return(res$finish())
+    }
+
+    query = sprintf("
+select
+   t1.ambigID,
+   t1.motusTagID1,
+   t1.motusTagID2,
+   t1.motusTagID3,
+   t1.motusTagID4,
+   t1.motusTagID5,
+   t1.motusTagID6
+from
+   tagAmbig as t1
+where
+   t1.ambigID in (%s)
+order by
+   t1.ambigID desc
+", paste(ambigIDs, collapse=","))
+
+    ambig = MotusDB(query)
+    res$body = memCompress(toJSON(ambig, auto_unbox=TRUE, dataframe="columns"), "gzip")
     res$finish()
 }
