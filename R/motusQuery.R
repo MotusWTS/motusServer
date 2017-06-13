@@ -32,7 +32,14 @@
 
 motusQuery = function (API, params = NULL, requestType="post", show=FALSE, json=FALSE, serno=NULL, masterKey=NULL, ...) {
     curl = getCurlHandle()
-    .opts = list(verbose=0, header=0, failonerror=0)
+    .opts = list(
+        httpheader = c(
+            "Content-Type"="application/json",
+            "Accept"="application/json"),
+        timeout = 20,
+        verbose = FALSE
+    )
+
     moreOpts = list(...)
     for (i in seq(along=moreOpts))
         .opts[[names(moreOpts)[i]]] = moreOpts[[i]]
