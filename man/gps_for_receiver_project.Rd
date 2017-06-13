@@ -12,6 +12,8 @@ gps_for_receiver_project(env)
 \item{batchID}{integer batchID}
 
 \item{ts}{numeric timestamp of latest fix already obtained}
+
+\item{countOnly}{logical return only the count of records}
 }
 \value{
 a data frame with the same schema as the gps table, but JSON-encoded as a list of columns

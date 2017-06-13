@@ -228,12 +228,13 @@ sendError = function(res, error) {
 #'
 #' @param projectID integer project ID
 #' @param ts numeric timestamp
+#' @param countOnly logical return only the count of records
 #'
 #' @return a data frame with the same schema as the batches table, but JSON-encoded as a list of columns
 
 batches_for_tag_project = function(env) {
 
-    MAX_BATCHES_PER_REQUEST = 10000
+    MAX_ROWS_PER_REQUEST = 10000
     req = Rook::Request$new(env)
     res = Rook::Response$new()
 
@@ -250,6 +251,7 @@ batches_for_tag_project = function(env) {
     ts = json$ts %>% as.numeric
     if (!isTRUE(is.finite(ts)))
         ts = 0
+    countOnly = isTRUE(json$countOnly)
 
     ## select batches that have a detection of a tag
     ## overlapping that tag's deployment by the given project
@@ -276,9 +278,13 @@ group by
    t3.batchID
 order by
    t3.ts
-limit %d",
-projectID, ts, MAX_BATCHES_PER_REQUEST)
-
+",
+projectID, ts)
+    if (countOnly) {
+        query = sprintf("select count(*) as count from (%s) as _bogus", query)
+    } else {
+        query = sprintf("%s limit %d", query, MAX_ROWS_PER_REQUEST)
+    }
     rv = MotusDB(query)
     res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
     res$finish()
@@ -288,12 +294,13 @@ projectID, ts, MAX_BATCHES_PER_REQUEST)
 #'
 #' @param projectID integer project ID
 #' @param ts numeric timestamp
+#' @param countOnly logical return only the count of records
 #'
 #' @return a data frame with the same schema as the batches table, but JSON-encoded as a list of columns
 
 batches_for_receiver_project = function(env) {
 
-    MAX_BATCHES_PER_REQUEST = 10000
+    MAX_ROWS_PER_REQUEST = 10000
     req = Rook::Request$new(env)
     res = Rook::Response$new()
 
@@ -310,6 +317,7 @@ batches_for_receiver_project = function(env) {
     ts = json$ts %>% as.numeric
     if (!isTRUE(is.finite(ts)))
         ts = 0
+    countOnly = isTRUE(json$countOnly)
 
     ## select batches for a receiver that begin during one of the project's deployments
     ## of that receiver  (we assume a receiver batch is entirely in a deployment; i.e.
@@ -335,8 +343,13 @@ where
      or (t1.tsStart <= t2.tsEnd and t2.tsBegin <= t1.tsEnd))
 order by
    t2.ts
-limit %d",
-projectID, ts, MAX_BATCHES_PER_REQUEST)
+",
+projectID, ts)
+    if (countOnly) {
+        query = sprintf("select count(*) as count from (%s) as _bogus", query)
+    } else {
+        query = sprintf("%s limit %d", query, MAX_ROWS_PER_REQUEST)
+    }
     rv = MotusDB(query)
     res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
     res$finish()
@@ -347,12 +360,13 @@ projectID, ts, MAX_BATCHES_PER_REQUEST)
 #' @param projectID integer project ID
 #' @param batchID integer batchID
 #' @param runID integer ID of largest run already obtained
+#' @param countOnly logical return only the count of records
 #'
 #' @return a data frame with the same schema as the runs table, but JSON-encoded as a list of columns
 
 runs_for_tag_project = function(env) {
 
-    MAX_RUNS_PER_REQUEST = 10000
+    MAX_ROWS_PER_REQUEST = 10000
     req = Rook::Request$new(env)
     res = Rook::Response$new()
 
@@ -368,6 +382,7 @@ runs_for_tag_project = function(env) {
     projectID = json$projectID %>% as.integer
     batchID = json$batchID %>% as.integer
     runID = json$runID %>% as.integer
+    countOnly = isTRUE(json$countOnly)
 
     if (!isTRUE(is.finite(projectID) && is.finite(batchID) && is.finite(runID))) {
         sendError("invalid parameter(s)")
@@ -400,8 +415,13 @@ group by
    t2.runID
 order by
    t2.runID
-limit %d",
-batchID, runID, projectID, MAX_RUNS_PER_REQUEST)
+",
+batchID, runID, projectID)
+    if (countOnly) {
+        query = sprintf("select count(*) as count from (%s) as _bogus", query)
+    } else {
+        query = sprintf("%s limit %d", query, MAX_ROWS_PER_REQUEST)
+    }
     rv = MotusDB(query)
     res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
     res$finish()
@@ -412,12 +432,13 @@ batchID, runID, projectID, MAX_RUNS_PER_REQUEST)
 #' @param projectID integer project ID
 #' @param batchID integer batchID
 #' @param runID integer ID of largest run already obtained
+#' @param countOnly logical return only the count of records
 #'
 #' @return a data frame with the same schema as the runs table, but JSON-encoded as a list of columns
 
 runs_for_receiver_project = function(env) {
 
-    MAX_RUNS_PER_REQUEST = 10000
+    MAX_ROWS_PER_REQUEST = 10000
     req = Rook::Request$new(env)
     res = Rook::Response$new()
 
@@ -433,6 +454,7 @@ runs_for_receiver_project = function(env) {
     projectID = json$projectID %>% as.integer
     batchID = json$batchID %>% as.integer
     runID = json$runID %>% as.integer
+    countOnly = isTRUE(json$countOnly)
 
     if (!isTRUE(is.finite(projectID) && is.finite(batchID) && is.finite(runID))) {
         sendError("invalid parameter(s)")
@@ -461,8 +483,13 @@ where
      or (t1.tsBegin <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
 order by
    t2.runID
-limit %d",
-batchID, runID, projectID, MAX_RUNS_PER_REQUEST)
+",
+batchID, runID, projectID)
+    if (countOnly) {
+        query = sprintf("select count(*) as count from (%s) as _bogus", query)
+    } else {
+        query = sprintf("%s limit %d", query, MAX_ROWS_PER_REQUEST)
+    }
     rv = MotusDB(query)
     res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
     res$finish()
@@ -473,12 +500,13 @@ batchID, runID, projectID, MAX_RUNS_PER_REQUEST)
 #' @param projectID integer project ID
 #' @param batchID integer batchID
 #' @param hitID integer ID of largest hit already obtained
+#' @param countOnly logical return only the count of records
 #'
 #' @return a data frame with the same schema as the hits table, but JSON-encoded as a list of columns
 
 hits_for_tag_project = function(env) {
 
-    MAX_HITS_PER_REQUEST = 50000
+    MAX_ROWS_PER_REQUEST = 50000
     req = Rook::Request$new(env)
     res = Rook::Response$new()
 
@@ -494,6 +522,7 @@ hits_for_tag_project = function(env) {
     projectID = json$projectID %>% as.integer
     batchID = json$batchID %>% as.integer
     hitID = json$hitID %>% as.integer
+    countOnly = isTRUE(json$countOnly)
 
     if (!isTRUE(is.finite(projectID) && is.finite(batchID) && is.finite(hitID))) {
         sendError("invalid parameter(s)")
@@ -528,8 +557,13 @@ where
    and t4.ts >= t3.tsStart
 order by
    t4.hitID
-limit %d",
-batchID, hitID, projectID, MAX_HITS_PER_REQUEST)
+",
+batchID, hitID, projectID)
+    if (countOnly) {
+        query = sprintf("select count(*) as count from (%s) as _bogus", query)
+    } else {
+        query = sprintf("%s limit %d", query, MAX_ROWS_PER_REQUEST)
+    }
     rv = MotusDB(query)
     res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
     res$finish()
@@ -540,12 +574,13 @@ batchID, hitID, projectID, MAX_HITS_PER_REQUEST)
 #' @param projectID integer project ID
 #' @param batchID integer batchID
 #' @param hitID integer ID of largest hit already obtained
+#' @param countOnly logical return only the count of records
 #'
 #' @return a data frame with the same schema as the hits table, but JSON-encoded as a list of columns
 
 hits_for_receiver_project = function(env) {
 
-    MAX_HITS_PER_REQUEST = 50000
+    MAX_ROWS_PER_REQUEST = 50000
     req = Rook::Request$new(env)
     res = Rook::Response$new()
 
@@ -561,6 +596,7 @@ hits_for_receiver_project = function(env) {
     projectID = json$projectID %>% as.integer
     batchID = json$batchID %>% as.integer
     hitID = json$hitID %>% as.integer
+    countOnly = isTRUE(json$countOnly)
 
     if (!isTRUE(is.finite(projectID) && is.finite(batchID) && is.finite(hitID))) {
         sendError("invalid parameter(s)")
@@ -594,8 +630,13 @@ where
      or (t1.tsBegin <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
 order by
    t2.hitID
-limit %d",
-batchID, projectID, hitID, MAX_HITS_PER_REQUEST)
+",
+batchID, projectID, hitID)
+    if (countOnly) {
+        query = sprintf("select count(*) as count from (%s) as _bogus", query)
+    } else {
+        query = sprintf("%s limit %d", query, MAX_ROWS_PER_REQUEST)
+    }
     rv = MotusDB(query)
     res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
     res$finish()
@@ -606,12 +647,13 @@ batchID, projectID, hitID, MAX_HITS_PER_REQUEST)
 #' @param projectID integer project ID of tags of interest
 #' @param batchID integer batchID
 #' @param ts numeric timestamp of latest fix already obtained
+#' @param countOnly logical return only the count of records
 #'
 #' @return a data frame with the same schema as the gps table, but JSON-encoded as a list of columns
 
 gps_for_tag_project = function(env) {
 
-    MAX_GPS_PER_REQUEST = 10000
+    MAX_ROWS_PER_REQUEST = 10000
     req = Rook::Request$new(env)
     res = Rook::Response$new()
 
@@ -627,6 +669,7 @@ gps_for_tag_project = function(env) {
     projectID = json$projectID %>% as.integer
     batchID = json$batchID %>% as.integer
     ts = json$ts %>% as.numeric
+    countOnly = isTRUE(json$countOnly)
 
     if (!isTRUE(is.finite(projectID) && is.finite(batchID) && is.finite(ts))) {
         sendError("invalid parameter(s)")
@@ -664,8 +707,13 @@ where
    and t.ts > %f
 order by
    t.ts
-limit %d",
-batchID, projectID, batchID, ts, MAX_GPS_PER_REQUEST)
+",
+batchID, projectID, batchID, ts)
+    if (countOnly) {
+        query = sprintf("select count(*) as count from (%s) as _bogus", query)
+    } else {
+        query = sprintf("%s limit %d", query, MAX_ROWS_PER_REQUEST)
+    }
     rv = MotusDB(query)
     res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
     res$finish()
@@ -676,12 +724,13 @@ batchID, projectID, batchID, ts, MAX_GPS_PER_REQUEST)
 #' @param projectID integer project ID
 #' @param batchID integer batchID
 #' @param ts numeric timestamp of latest fix already obtained
+#' @param countOnly logical return only the count of records
 #'
 #' @return a data frame with the same schema as the gps table, but JSON-encoded as a list of columns
 
 gps_for_receiver_project = function(env) {
 
-    MAX_GPS_PER_REQUEST = 10000
+    MAX_ROWS_PER_REQUEST = 10000
     req = Rook::Request$new(env)
     res = Rook::Response$new()
 
@@ -697,6 +746,7 @@ gps_for_receiver_project = function(env) {
     projectID = json$projectID %>% as.integer
     batchID = json$batchID %>% as.integer
     ts = json$ts %>% as.numeric
+    countOnly = isTRUE(json$countOnly)
 
     if (!isTRUE(is.finite(projectID) && is.finite(batchID) && is.finite(ts))) {
         sendError("invalid parameter(s)")
@@ -725,8 +775,13 @@ where
      or (t1.tsBegin <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
 order by
    t2.ts
-limit %d",
-batchID, projectID, ts, MAX_GPS_PER_REQUEST)
+",
+batchID, projectID, ts)
+    if (countOnly) {
+        query = sprintf("select count(*) as count from (%s) as _bogus", query)
+    } else {
+        query = sprintf("%s limit %d", query, MAX_ROWS_PER_REQUEST)
+    }
     rv = MotusDB(query)
     res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
     res$finish()
@@ -899,7 +954,6 @@ where
 #'     metadata will only be returned for receivers whose project has
 #'     indicated their metadata are public, or receivers in one of the
 #'     projects the user has permissions to.
-#'
 #'
 #' @return a list with these items:
 #' \itemize{

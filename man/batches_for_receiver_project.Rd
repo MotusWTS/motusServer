@@ -10,6 +10,8 @@ batches_for_receiver_project(env)
 \item{projectID}{integer project ID}
 
 \item{ts}{numeric timestamp}
+
+\item{countOnly}{logical return only the count of records}
 }
 \value{
 a data frame with the same schema as the batches table, but JSON-encoded as a list of columns

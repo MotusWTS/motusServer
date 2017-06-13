@@ -12,6 +12,8 @@ hits_for_tag_project(env)
 \item{batchID}{integer batchID}
 
 \item{hitID}{integer ID of largest hit already obtained}
+
+\item{countOnly}{logical return only the count of records}
 }
 \value{
 a data frame with the same schema as the hits table, but JSON-encoded as a list of columns
