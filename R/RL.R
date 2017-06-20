@@ -42,7 +42,8 @@ RL = function(X, path=file.path("/home/john/proj/motusServer/R", paste0(substitu
    for (n in nn) {
        if (is.function(e[[n]]))
            environment(e[[n]]) = nmotus
-       unlockBinding(n, nmotus)
+       if (bindingIsLocked(n, nmotus))
+           unlockBinding(n, nmotus)
        assign(n, e[[n]], nmotus)
        lockBinding(n, nmotus)
        if (exists(n, pmotus)) {
