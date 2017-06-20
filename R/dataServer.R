@@ -227,7 +227,7 @@ sendError = function(res, error) {
 #' get batches for a tag project
 #'
 #' @param projectID integer project ID
-#' @param ts numeric timestamp
+#' @param batchID integer batchID; only batches with larger batchID are returned
 #' @param countOnly logical return only the count of records
 #'
 #' @return a data frame with the same schema as the batches table, but JSON-encoded as a list of columns
@@ -248,9 +248,9 @@ batches_for_tag_project = function(env) {
     sendHeader(res)
 
     projectID = json$projectID %>% as.integer
-    ts = json$ts %>% as.numeric
-    if (!isTRUE(is.finite(ts)))
-        ts = 0
+    batchID = json$batchID %>% as.integer
+    if (!isTRUE(is.finite(batchID)))
+        batchID = 0
     countOnly = isTRUE(json$countOnly)
 
     ## select batches that have a detection of a tag
@@ -273,13 +273,13 @@ where
    t1.projectID = %d
    and t1.tsStart <= t3.tsEnd
    and t3.tsBegin <= t1.tsEnd
-   and t3.ts > %f
+   and t3.batchID > %d
 group by
    t3.batchID
 order by
-   t3.ts
+   t3.batchID
 ",
-projectID, ts)
+projectID, batchID)
     if (countOnly) {
         query = sprintf("select count(*) as count from (%s) as _bogus", query)
     } else {
@@ -293,7 +293,7 @@ projectID, ts)
 #' get batches for a receiver project
 #'
 #' @param projectID integer project ID
-#' @param ts numeric timestamp
+#' @param batchID integer batchID; only batches with larger batchID are returned
 #' @param countOnly logical return only the count of records
 #'
 #' @return a data frame with the same schema as the batches table, but JSON-encoded as a list of columns
@@ -314,9 +314,9 @@ batches_for_receiver_project = function(env) {
     sendHeader(res)
 
     projectID = json$projectID %>% as.integer
-    ts = json$ts %>% as.numeric
-    if (!isTRUE(is.finite(ts)))
-        ts = 0
+    batchID = json$batchID %>% as.integer
+    if (!isTRUE(is.finite(batchID)))
+        batchID = 0
     countOnly = isTRUE(json$countOnly)
 
     ## select batches for a receiver that begin during one of the project's deployments
@@ -338,13 +338,13 @@ from
    join batches as t2 on t1.deviceID=t2.motusDeviceID
 where
    t1.projectID = %d
-   and t2.ts > %f
+   and t2.batchID > %d
    and ((t1.tsEnd is null and t2.tsBegin >= t1.tsStart)
      or (t1.tsStart <= t2.tsEnd and t2.tsBegin <= t1.tsEnd))
 order by
-   t2.ts
+   t2.batchID
 ",
-projectID, ts)
+projectID, batchID)
     if (countOnly) {
         query = sprintf("select count(*) as count from (%s) as _bogus", query)
     } else {

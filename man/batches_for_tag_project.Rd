@@ -9,7 +9,7 @@ batches_for_tag_project(env)
 \arguments{
 \item{projectID}{integer project ID}
 
-\item{ts}{numeric timestamp}
+\item{batchID}{integer batchID; only batches with larger batchID are returned}
 
 \item{countOnly}{logical return only the count of records}
 }
