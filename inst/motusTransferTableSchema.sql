@@ -71,6 +71,7 @@ CREATE TABLE IF NOT EXISTS runs (
 
 CREATE INDEX runs_motusTagID ON runs(motusTagID);----
 CREATE INDEX runs_batchIDbegin ON runs(batchIDbegin);----
+CREATE INDEX runs_batchIDend ON runs(batchIDend);----
 
 -- Because runs can span multiple batches, we need a way to
 -- update some of their fields:
