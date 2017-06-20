@@ -84,7 +84,9 @@ allDataApps = c("authenticate_user",
  "gps_for_receiver_project",
  "metadata_for_tags",
  "metadata_for_receivers",
- "tags_for_ambiguities"
+ "tags_for_ambiguities",
+ "size_of_update_for_tag_project",
+ "size_of_update_for_receiver_project"
  )
 
 #' authenticate_user return a list of projects and receivers the user is authorized to receive data for
@@ -228,7 +230,6 @@ sendError = function(res, error) {
 #'
 #' @param projectID integer project ID
 #' @param batchID integer batchID; only batches with larger batchID are returned
-#' @param countOnly logical return only the count of records
 #'
 #' @return a data frame with the same schema as the batches table, but JSON-encoded as a list of columns
 
@@ -251,7 +252,6 @@ batches_for_tag_project = function(env) {
     batchID = json$batchID %>% as.integer
     if (!isTRUE(is.finite(batchID)))
         batchID = 0
-    countOnly = isTRUE(json$countOnly)
 
     ## select batches that have a detection of a tag
     ## overlapping that tag's deployment by the given project
@@ -268,7 +268,10 @@ select
 from
    tag_deployments as t1
    join runs as t2 on t1.motusTagID=t2.motusTagID
-   join batches as t3 on t2.batchIDbegin=t3.batchID
+   join batches as t3 on
+      t2.batchIDbegin=t3.batchID
+      or t2.batchIDend=t3.batchID
+      or (t2.batchIDend is null and t2.batchIDbegin < t3.batchID)
 where
    t1.projectID = %d
    and t1.tsStart <= t3.tsEnd
@@ -278,13 +281,9 @@ group by
    t3.batchID
 order by
    t3.batchID
+limit %d
 ",
-projectID, batchID)
-    if (countOnly) {
-        query = sprintf("select count(*) as count from (%s) as _bogus", query)
-    } else {
-        query = sprintf("%s limit %d", query, MAX_ROWS_PER_REQUEST)
-    }
+projectID, batchID, MAX_ROWS_PER_REQUEST)
     rv = MotusDB(query)
     res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
     res$finish()
@@ -294,7 +293,6 @@ projectID, batchID)
 #'
 #' @param projectID integer project ID
 #' @param batchID integer batchID; only batches with larger batchID are returned
-#' @param countOnly logical return only the count of records
 #'
 #' @return a data frame with the same schema as the batches table, but JSON-encoded as a list of columns
 
@@ -317,7 +315,6 @@ batches_for_receiver_project = function(env) {
     batchID = json$batchID %>% as.integer
     if (!isTRUE(is.finite(batchID)))
         batchID = 0
-    countOnly = isTRUE(json$countOnly)
 
     ## select batches for a receiver that begin during one of the project's deployments
     ## of that receiver  (we assume a receiver batch is entirely in a deployment; i.e.
@@ -343,13 +340,9 @@ where
      or (t1.tsStart <= t2.tsEnd and t2.tsBegin <= t1.tsEnd))
 order by
    t2.batchID
+limit %d
 ",
-projectID, batchID)
-    if (countOnly) {
-        query = sprintf("select count(*) as count from (%s) as _bogus", query)
-    } else {
-        query = sprintf("%s limit %d", query, MAX_ROWS_PER_REQUEST)
-    }
+projectID, batchID, MAX_ROWS_PER_REQUEST)
     rv = MotusDB(query)
     res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
     res$finish()
@@ -360,7 +353,6 @@ projectID, batchID)
 #' @param projectID integer project ID
 #' @param batchID integer batchID
 #' @param runID integer ID of largest run already obtained
-#' @param countOnly logical return only the count of records
 #'
 #' @return a data frame with the same schema as the runs table, but JSON-encoded as a list of columns
 
@@ -382,7 +374,6 @@ runs_for_tag_project = function(env) {
     projectID = json$projectID %>% as.integer
     batchID = json$batchID %>% as.integer
     runID = json$runID %>% as.integer
-    countOnly = isTRUE(json$countOnly)
 
     if (!isTRUE(is.finite(projectID) && is.finite(batchID) && is.finite(runID))) {
         sendError("invalid parameter(s)")
@@ -408,8 +399,8 @@ select
 from
    batches as t1
    join runs as t2 on
-      (t2.batchIDbegin = t1.batchID)
-      or (t2.batchIDend = t1.batchID)
+      t2.batchIDbegin = t1.batchID
+      or t2.batchIDend = t1.batchID
       or (t2.batchIDend is null and t2.batchIDbegin < t1.batchID)
    join tag_deployments as t3 on t2.motusTagID=t3.motusTagID
    join hits as t4 on t4.runID=t2.runID
@@ -423,13 +414,9 @@ group by
    t2.runID
 order by
    t2.runID
+limit %d
 ",
-batchID, runID, projectID)
-    if (countOnly) {
-        query = sprintf("select count(*) as count from (%s) as _bogus", query)
-    } else {
-        query = sprintf("%s limit %d", query, MAX_ROWS_PER_REQUEST)
-    }
+batchID, runID, projectID, MAX_ROWS_PER_REQUEST)
     rv = MotusDB(query)
     res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
     res$finish()
@@ -440,7 +427,6 @@ batchID, runID, projectID)
 #' @param projectID integer project ID
 #' @param batchID integer batchID
 #' @param runID integer ID of largest run already obtained
-#' @param countOnly logical return only the count of records
 #'
 #' @return a data frame with the same schema as the runs table, but JSON-encoded as a list of columns
 
@@ -462,7 +448,6 @@ runs_for_receiver_project = function(env) {
     projectID = json$projectID %>% as.integer
     batchID = json$batchID %>% as.integer
     runID = json$runID %>% as.integer
-    countOnly = isTRUE(json$countOnly)
 
     if (!isTRUE(is.finite(projectID) && is.finite(batchID) && is.finite(runID))) {
         sendError("invalid parameter(s)")
@@ -482,8 +467,8 @@ select
 from
    batches as t1
    join runs as t2 on
-      (t2.batchIDbegin = t1.batchID)
-      or (t2.batchIDend = t1.batchID)
+      t2.batchIDbegin = t1.batchID
+      or t2.batchIDend = t1.batchID
       or (t2.batchIDend is null and t2.batchIDbegin < t1.batchID)
    join receiver_deployments as t3 on t1.motusDeviceID=t3.deviceID
 where
@@ -494,13 +479,9 @@ where
      or (t1.tsBegin <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
 order by
    t2.runID
+limit %d
 ",
-batchID, runID, projectID)
-    if (countOnly) {
-        query = sprintf("select count(*) as count from (%s) as _bogus", query)
-    } else {
-        query = sprintf("%s limit %d", query, MAX_ROWS_PER_REQUEST)
-    }
+batchID, runID, projectID, MAX_ROWS_PER_REQUEST)
     rv = MotusDB(query)
     res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
     res$finish()
@@ -511,7 +492,6 @@ batchID, runID, projectID)
 #' @param projectID integer project ID
 #' @param batchID integer batchID
 #' @param hitID integer ID of largest hit already obtained
-#' @param countOnly logical return only the count of records
 #'
 #' @return a data frame with the same schema as the hits table, but JSON-encoded as a list of columns
 
@@ -533,7 +513,6 @@ hits_for_tag_project = function(env) {
     projectID = json$projectID %>% as.integer
     batchID = json$batchID %>% as.integer
     hitID = json$hitID %>% as.integer
-    countOnly = isTRUE(json$countOnly)
 
     if (!isTRUE(is.finite(projectID) && is.finite(batchID) && is.finite(hitID))) {
         sendError("invalid parameter(s)")
@@ -557,7 +536,10 @@ select
    t4.burstSlop
 from
    batches as t1
-   join runs as t2 on t2.batchIDbegin=t1.batchID
+   join runs as t2 on
+      t2.batchIDbegin=t1.batchID
+      or t2.batchIDend=t1.batchID
+      or (t2.batchIDend is null and t2.batchIDbegin < t1.batchID)
    join hits as t4 on t4.runID=t2.runID
    join tag_deployments as t3 on t2.motusTagID=t3.motusTagID
 where
@@ -568,13 +550,9 @@ where
    and t4.ts >= t3.tsStart
 order by
    t4.hitID
+limit %d
 ",
-batchID, hitID, projectID)
-    if (countOnly) {
-        query = sprintf("select count(*) as count from (%s) as _bogus", query)
-    } else {
-        query = sprintf("%s limit %d", query, MAX_ROWS_PER_REQUEST)
-    }
+batchID, hitID, projectID, MAX_ROWS_PER_REQUEST)
     rv = MotusDB(query)
     res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
     res$finish()
@@ -585,7 +563,6 @@ batchID, hitID, projectID)
 #' @param projectID integer project ID
 #' @param batchID integer batchID
 #' @param hitID integer ID of largest hit already obtained
-#' @param countOnly logical return only the count of records
 #'
 #' @return a data frame with the same schema as the hits table, but JSON-encoded as a list of columns
 
@@ -607,7 +584,6 @@ hits_for_receiver_project = function(env) {
     projectID = json$projectID %>% as.integer
     batchID = json$batchID %>% as.integer
     hitID = json$hitID %>% as.integer
-    countOnly = isTRUE(json$countOnly)
 
     if (!isTRUE(is.finite(projectID) && is.finite(batchID) && is.finite(hitID))) {
         sendError("invalid parameter(s)")
@@ -641,13 +617,9 @@ where
      or (t1.tsBegin <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
 order by
    t2.hitID
+limit %d
 ",
-batchID, projectID, hitID)
-    if (countOnly) {
-        query = sprintf("select count(*) as count from (%s) as _bogus", query)
-    } else {
-        query = sprintf("%s limit %d", query, MAX_ROWS_PER_REQUEST)
-    }
+batchID, projectID, hitID, MAX_ROWS_PER_REQUEST)
     rv = MotusDB(query)
     res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
     res$finish()
@@ -658,7 +630,6 @@ batchID, projectID, hitID)
 #' @param projectID integer project ID of tags of interest
 #' @param batchID integer batchID
 #' @param ts numeric timestamp of latest fix already obtained
-#' @param countOnly logical return only the count of records
 #'
 #' @return a data frame with the same schema as the gps table, but JSON-encoded as a list of columns
 
@@ -680,7 +651,6 @@ gps_for_tag_project = function(env) {
     projectID = json$projectID %>% as.integer
     batchID = json$batchID %>% as.integer
     ts = json$ts %>% as.numeric
-    countOnly = isTRUE(json$countOnly)
 
     if (!isTRUE(is.finite(projectID) && is.finite(batchID) && is.finite(ts))) {
         sendError("invalid parameter(s)")
@@ -708,7 +678,10 @@ from
          join hits as t2 on t2.runID = t3.runID
          join (select -1 as dt union select 0 as dt union select 1 as dt) as dt
       where
-         t3.batchIDbegin = %d
+         (t3.batchIDbegin = %d
+          or t3.batchIDend = %d
+          or (t3.batchIDend is null and t3.batchIDbegin < %d)
+         )
          and t4.projectID = %d
       order by
          hour
@@ -718,13 +691,9 @@ where
    and t.ts > %f
 order by
    t.ts
+limit %d
 ",
-batchID, projectID, batchID, ts)
-    if (countOnly) {
-        query = sprintf("select count(*) as count from (%s) as _bogus", query)
-    } else {
-        query = sprintf("%s limit %d", query, MAX_ROWS_PER_REQUEST)
-    }
+batchID, batchID, batchID, projectID, batchID, ts, MAX_ROWS_PER_REQUEST)
     rv = MotusDB(query)
     res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
     res$finish()
@@ -735,7 +704,6 @@ batchID, projectID, batchID, ts)
 #' @param projectID integer project ID
 #' @param batchID integer batchID
 #' @param ts numeric timestamp of latest fix already obtained
-#' @param countOnly logical return only the count of records
 #'
 #' @return a data frame with the same schema as the gps table, but JSON-encoded as a list of columns
 
@@ -757,7 +725,6 @@ gps_for_receiver_project = function(env) {
     projectID = json$projectID %>% as.integer
     batchID = json$batchID %>% as.integer
     ts = json$ts %>% as.numeric
-    countOnly = isTRUE(json$countOnly)
 
     if (!isTRUE(is.finite(projectID) && is.finite(batchID) && is.finite(ts))) {
         sendError("invalid parameter(s)")
@@ -786,13 +753,9 @@ where
      or (t1.tsBegin <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
 order by
    t2.ts
+limit %d
 ",
-batchID, projectID, ts)
-    if (countOnly) {
-        query = sprintf("select count(*) as count from (%s) as _bogus", query)
-    } else {
-        query = sprintf("%s limit %d", query, MAX_ROWS_PER_REQUEST)
-    }
+batchID, projectID, ts, MAX_ROWS_PER_REQUEST)
     rv = MotusDB(query)
     res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
     res$finish()
@@ -1152,5 +1115,255 @@ order by
 
     ambig = MotusDB(query)
     res$body = memCompress(toJSON(ambig, auto_unbox=TRUE, dataframe="columns"), "gzip")
+    res$finish()
+}
+
+#' get count of update items for a tag project
+#'
+#' @param projectID integer project ID
+#' @param batchID integer batchID; only batches with larger batchID are considered
+#'
+#' @return a list with these items:
+#' \itemize{
+#' \item numBatches
+#' \item numRuns
+#' \item numHits
+#' \item numGPS
+#' }
+
+size_of_update_for_tag_project = function(env) {
+
+    req = Rook::Request$new(env)
+    res = Rook::Response$new()
+
+    if (tracing)
+        browser()
+    json = req$POST()[['json']] %>% fromJSON()
+    auth = validate_request(json, res)
+    if (is.null(auth))
+        return(res$finish())
+
+    sendHeader(res)
+
+    projectID = json$projectID %>% as.integer
+    batchID = json$batchID %>% as.integer
+    if (!isTRUE(is.finite(batchID)))
+        batchID = 0
+
+    ## get number of new batches that have a detection of a tag
+    ## overlapping that tag's deployment by the given project
+
+    query = sprintf("
+select
+   count(t3.batchID)
+from
+   tag_deployments as t1
+   join runs as t2 on t1.motusTagID=t2.motusTagID
+   join batches as t3 on
+      t2.batchIDbegin=t3.batchID
+      or t2.batchIDend=t3.batchID
+      or (t2.batchIDend is null and t2.batchIDbegin < t3.batchID)
+where
+   t1.projectID = %d
+   and t1.tsStart <= t3.tsEnd
+   and t3.tsBegin <= t1.tsEnd
+   and t3.batchID > %d
+group by
+   t3.batchID
+",
+projectID, batchID)
+    numBatches = MotusDB(query)
+
+    ## get number of runs in new batches
+
+    query = sprintf("
+select
+   count(t2.runID)
+from
+   batches as t1
+   join runs as t2 on
+      (t2.batchIDbegin = t1.batchID)
+      or (t2.batchIDend = t1.batchID)
+      or (t2.batchIDend is null and t2.batchIDbegin < t1.batchID)
+   join tag_deployments as t3 on t2.motusTagID=t3.motusTagID
+   join hits as t4 on t4.runID=t2.runID
+where
+   t1.batchID > %d
+   and t3.projectID = %d
+   and t4.ts <= t3.tsEnd
+   and t4.ts >= t3.tsStart
+group by
+   t2.runID
+",
+batchID, projectID)
+    numRuns = MotusDB(query)
+
+    ## get number of hits in new batches
+
+    query = sprintf("
+select
+   count(t4.hitID)
+from
+   batches as t1
+   join runs as t2 on
+      t2.batchIDbegin=t1.batchID
+      or t2.batchIDend=t1.batchID
+      or (t2.batchIDend is null and t2.batchIDbegin < t1.batchID)
+   join hits as t4 on t4.runID=t2.runID
+   join tag_deployments as t3 on t2.motusTagID=t3.motusTagID
+where
+   t1.batchID > %d
+   and t3.projectID = %d
+   and t4.ts <= t3.tsEnd
+   and t4.ts >= t3.tsStart
+",
+batchID, projectID)
+    numHits = MotusDB(query)
+
+    ## get # of GPS fixes
+    query = sprintf("
+select
+    count(*)
+from
+   gps as t
+   join (
+      select
+         distinct 3600 * (floor(t2.ts / 3600) + dt.dt) as hour
+      from
+         runs as t3
+         join tag_deployments as t4 on t4.motusTagID=t3.motusTagID
+         join hits as t2 on t2.runID = t3.runID
+         join (select -1 as dt union select 0 as dt union select 1 as dt) as dt
+      where
+         t4.projectID = %d
+         and (
+              t3.batchIDbegin = %d
+          or  t3.batchIDend = %d
+          or (t3.batchIDend is null and t3.batchIDbegin < %d)
+             )
+      order by
+         hour
+    ) as t2 on t.ts >= t2.hour and t.ts < t2.hour + 3600
+where
+   t.batchID > %d
+",
+projectID, batchID, batchID, batchID, batchID)
+    numGPS = MotusDB(query)
+
+    rv = list(numBatches=numBatches, numRuns=numRuns, numHits=numHits, numGPS=numGPS)
+    res$body = memCompress(toJSON(rv, auto_unbox=TRUE), "gzip")
+    res$finish()
+}
+
+#' get count of update items for a receiver project
+#'
+#' @param projectID integer project ID
+#' @param batchID integer batchID; only batches with larger batchID are considered
+#'
+#' @return a list with these items:
+#' \itemize{
+#' \item numBatches
+#' \item numRuns
+#' \item numHits
+#' \item numGPS
+#' }
+
+size_of_update_for_receiver_project = function(env) {
+
+    req = Rook::Request$new(env)
+    res = Rook::Response$new()
+
+    if (tracing)
+        browser()
+    json = req$POST()[['json']] %>% fromJSON()
+    auth = validate_request(json, res)
+    if (is.null(auth))
+        return(res$finish())
+
+    sendHeader(res)
+
+    projectID = json$projectID %>% as.integer
+    batchID = json$batchID %>% as.integer
+    if (!isTRUE(is.finite(batchID)))
+        batchID = 0
+
+    ## count batches for a receiver that begin during one of the project's deployments
+    ## of that receiver  (we assume a receiver batch is entirely in a deployment; i.e.
+    ## that receivers get rebooted at least once between deployments to different
+    ## projects).
+
+    query = sprintf("
+select
+   count(t2.batchID)
+from
+   receiver_deployments as t1
+   join batches as t2 on t1.deviceID=t2.motusDeviceID
+where
+   t1.projectID = %d
+   and t2.batchID > %d
+   and ((t1.tsEnd is null and t2.tsBegin >= t1.tsStart)
+     or (t1.tsStart <= t2.tsEnd and t2.tsBegin <= t1.tsEnd))
+",
+projectID, batchID)
+    numBatches = MotusDB(query)
+
+    ## get number of runs in new batches
+
+    query = sprintf("
+select
+   count(t2.runID)
+from
+   batches as t1
+   join runs as t2 on
+      t2.batchIDbegin = t1.batchID
+      or t2.batchIDend = t1.batchID
+      or (t2.batchIDend is null and t2.batchIDbegin < t1.batchID)
+   join receiver_deployments as t3 on t1.motusDeviceID=t3.deviceID
+where
+   t1.batchID > %d
+   and t3.projectID = %d
+   and ((t3.tsEnd is null and t1.tsBegin >= t3.tsStart)
+     or (t1.tsBegin <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
+",
+batchID, projectID, MAX_ROWS_PER_REQUEST)
+    numRuns = MotusDB(query)
+
+    ## get number of hits in new batches
+
+    query = sprintf("
+select
+   count(t2.hitID)
+from
+   receiver_deployments as t3
+   join batches as t1 on t3.deviceID = t1.motusDeviceID
+   join hits as t2 on t2.batchID=t1.batchID
+where
+   t1.batchID > %d
+   and t3.projectID = %d
+   and ((t3.tsEnd is null and t1.tsBegin >= t3.tsStart)
+     or (t1.tsBegin <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
+",
+batchID, projectID)
+    numHits = MotusDB(query)
+
+    ## get # of GPS fixes
+    query = sprintf("
+select
+    count(t2.ts)
+from
+   receiver_deployments as t3
+   join batches as t1 on t3.deviceID = t1.motusDeviceID
+   join gps as t2 on t2.batchID=t1.batchID
+where
+   t1.batchID > %d
+   and t3.projectID = %d
+   and ((t3.tsEnd is null and t1.tsBegin >= t3.tsStart)
+     or (t1.tsBegin <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
+",
+batchID, projectID)
+    numGPS = MotusDB(query)
+
+    rv = list(numBatches=numBatches, numRuns=numRuns, numHits=numHits, numGPS=numGPS)
+    res$body = memCompress(toJSON(rv, auto_unbox=TRUE), "gzip")
     res$finish()
 }
