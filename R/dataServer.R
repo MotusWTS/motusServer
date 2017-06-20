@@ -392,6 +392,11 @@ runs_for_tag_project = function(env) {
     ## get all runs in a batch having a detection of a tag
     ## within a deployment of that tag by the given project
 
+    ## For a batch B, a run R is "in" B means:
+    ##     R.batchIDbegin == B
+    ##  or R.batchIDend == B
+    ##  or (R.batchIDend is null and R.batchIDbegin < B)
+
     query = sprintf("
 select
    t2.runID,
@@ -402,7 +407,10 @@ select
    t2.len
 from
    batches as t1
-   join runs as t2 on t2.batchIDbegin=t1.batchID
+   join runs as t2 on
+      (t2.batchIDbegin = t1.batchID)
+      or (t2.batchIDend = t1.batchID)
+      or (t2.batchIDend is null and t2.batchIDbegin < t1.batchID)
    join tag_deployments as t3 on t2.motusTagID=t3.motusTagID
    join hits as t4 on t4.runID=t2.runID
 where
@@ -473,7 +481,10 @@ select
    t2.len
 from
    batches as t1
-   join runs as t2 on t2.batchIDbegin=t1.batchID
+   join runs as t2 on
+      (t2.batchIDbegin = t1.batchID)
+      or (t2.batchIDend = t1.batchID)
+      or (t2.batchIDend is null and t2.batchIDbegin < t1.batchID)
    join receiver_deployments as t3 on t1.motusDeviceID=t3.deviceID
 where
    t1.batchID = %d
