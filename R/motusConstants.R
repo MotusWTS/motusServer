@@ -231,7 +231,7 @@ MOTUS_SYMBOLIC_LOCK_TABLE = "symLocks"
 ## Just about every OS these days writes indexing info to
 ## flash drives, and we often get these files in a transfer.
 
-MOTUS_JUNKFILE_REGEX = "(__MACOSX/|System Volume Information/|._.DS_Store)"
+MOTUS_JUNKFILE_REGEX = "(__MACOSX/|System Volume Information/|.DS_Store|._.DS_Store|.Trashes|._.Trashes)"
 
 ## the earliest valid date from a sensorgnome (= as.numeric(ymd("2010-01-01")))
 MOTUS_SG_EPOCH = 1262304000
