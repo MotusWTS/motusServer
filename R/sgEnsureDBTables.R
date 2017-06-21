@@ -43,7 +43,7 @@ sgEnsureDBTables = function(src, recreate=c()) {
     if (! "meta" %in% tables) {
         sql("
 create table meta (
-key  character not null unique primary key, -- name of key for meta data
+key  character not null primary key,        -- name of key for meta data
 val  character                              -- character string giving meta data; might be in JSON format
 )
 ");
@@ -148,7 +148,7 @@ comment text           -- method and reason for fixing; e.g. 'M' for monotonic c
     if (! "gps" %in% tables) {
         sql("
 create table gps (
-ts      double unique primary key,           -- system timestamp for this record
+ts      double primary key,                  -- system timestamp for this record
 batchID INTEGER NOT NULL REFERENCES batches, -- batch from which this fix came
 gpsts   double,                              -- gps timestamp
 lat     double,                              -- latitude, decimal degrees
