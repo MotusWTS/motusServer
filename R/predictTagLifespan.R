@@ -21,7 +21,5 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 predictTagLifespan = function(model, bi, dutyCycle = 1.0) {
-    if (! exists("tagLifespanPars"))
-        tagLifespanPars <<- readRDS(system.file("tagLifespanPars.rds", package="motusServer"))
     return(as.numeric(tagLifespanPars[model, 1] / (1 + tagLifespanPars[model, 2] * dutyCycle / bi)))
 }

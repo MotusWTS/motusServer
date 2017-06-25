@@ -71,6 +71,7 @@ CREATE TABLE IF NOT EXISTS runs (
 
 CREATE INDEX runs_motusTagID ON runs(motusTagID);----
 CREATE INDEX runs_batchIDbegin ON runs(batchIDbegin);----
+CREATE INDEX runs_batchIDend ON runs(batchIDend);----
 
 -- Because runs can span multiple batches, we need a way to
 -- update some of their fields:
@@ -121,6 +122,7 @@ CREATE TABLE IF NOT EXISTS hits (
 
 CREATE INDEX hits_batchID ON hits(batchID);----
 CREATE INDEX hits_runID ON hits(runID);----
+CREATE INDEX i_ts on hits(ts);----
 
 -- Table tagAmbig records sets of physically identical tags which have
 -- overlapping deployment periods.  When the motusTagID field in a row
@@ -245,4 +247,22 @@ CREATE TABLE IF NOT EXISTS upload_tokens (
        username CHAR(64),                          -- name of user on sensorgnome.org
        email CHAR(128),                            -- email address of user on sensorgnome.org
        expiry FLOAT(53)                            -- unix timestamp when this token expires
+);----
+
+CREATE TABLE IF NOT EXISTS tag_deployments (
+       projectID INT NOT NULL,     -- motus project ID
+       motusTagID INT NOT NULL,    -- motus tag ID
+       tsStart FLOAT(53) NOT NULL, -- unix timestamp of start of deployment
+       tsEnd FLOAT(53) NOT NULL,   -- unix timestamp of end of deployment
+       INDEX i_projectID (projectID),
+       INDEX i_motusTagID (motusTagID)
+);----
+
+CREATE TABLE IF NOT EXISTS receiver_deployments (
+       projectID INT NOT NULL,     -- motus project ID
+       deviceID INT NOT NULL,      -- motus tag ID
+       tsStart FLOAT(53) NOT NULL, -- unix timestamp of start of deployment
+       tsEnd FLOAT(53) NOT NULL,   -- unix timestamp of end of deployment
+       INDEX i_projectID (projectID),
+       INDEX i_deviceID (deviceID)
 );----

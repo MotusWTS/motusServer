@@ -15,31 +15,36 @@ library(lattice)
 ```
 
 We need some reasonable upper bound for the lifetimes of tags,
-by model and BI.
+by battery and BI.
 
 Lotek provides a short table here:
 
    http://www.lotek.com/bird+bat-nano.pdf  (As of 1 April, 2016)
 
+and there are additional models listed in "ANTC Spec Sheet.pdf" (no
+source), including the only numbers for battery type "3-1".  Since
+lifetime is listed as depending only on the battery (numeric portion
+of model string), we model on that.
+
 ```{r}
-lt = as.tbl(read.csv("./lotekTagLifespanByModelAndBI.csv"))
+lt = as.tbl(read.csv("./lotekTagLifespanByBatteryAndBI.csv"))
 print(lt)
 ```
 
-Rearrange so that we have columns _model_, _bi_, _dutyCycle_, _lifespan_.
+Rearrange so that we have columns _battery_, _bi_, _dutyCycle_, _lifespan_.
 
 ```{r}
-ls = lt %>% transmute(model = model, bi = 2, dutyCycle = 1, lifespan = lifespan2)
+ls = lt %>% transmute(battery = battery, bi = 2, dutyCycle = 1, lifespan = lifespan2)
 ls = lt %>%
-    transmute(model = model, bi = 5, dutyCycle = 1, lifespan = lifespan5) %>%
+    transmute(battery = battery, bi = 5, dutyCycle = 1, lifespan = lifespan5) %>%
     bind_rows(ls)
 
 ls = lt %>%
-    transmute(model = model, bi = 10, dutyCycle = 1, lifespan = lifespan10) %>%
+    transmute(battery = battery, bi = 10, dutyCycle = 1, lifespan = lifespan10) %>%
     bind_rows(ls)
 
 ls = lt %>%
-    transmute(model = model, bi = 10, dutyCycle = 0.5, lifespan = lifespan10onOff) %>%
+    transmute(battery = battery, bi = 10, dutyCycle = 0.5, lifespan = lifespan10onOff) %>%
     bind_rows(ls)
 
 ls = ls %>% mutate(biInv = 1.0 / bi, dcInv = 1.0 / dutyCycle)
@@ -48,8 +53,8 @@ print(ls)
 ```
 
 A simple model assumes that the battery capacity, $K$, depends on the
-tag model, and that tag power consumption $r$ is a sum of a baseline
-rate $r_0$ plus a pulse-dependent rate $r_1$  All tags transmit 4 pulses per burst,
+battery model, and that tag power consumption $r$ is a sum of a baseline
+rate $r_0$ plus a pulse-dependent rate $r_1$.  All tags transmit 4 pulses per burst,
 so the pulse-dependent rate $r_1$ depends only on duty cycle and burst interval
 like so:  $r_1 = r_p * \frac{dutyCyle}{BI}$
 
@@ -69,24 +74,23 @@ transmission, versus baseline.  The new model is:
 lifespan = \frac{D}{1 + \frac{r_t * dutyCycle}{BI}}
 \]
 
-We fit the model to each type of tag:
+We fit the model to each type of battery:
 
 ```{r, show=TRUE, results=FALSE, output=FALSE}
 par = res = pred = NULL
-
-mnames = unique(ls$model)
-for (m in mnames) {
+bnames = unique(ls$battery)
+for (m in bnames) {
     res[[m]] = nls(lifespan~D / (1 + rt * dutyCycle / bi),
-                   subset(ls, model==m), list(D = 500, rt = 5))
+                   subset(ls, battery==m), list(D = 500, rt = 5))
     par = rbind(par, c(coefficients(res[[m]]), max(residuals(res[[m]]))))
     pred = rbind(pred,
                  data.frame(
-                     tagType=m,
+                     battery=m,
                      bi=1:40,
                      lifespan=predict(res[[m]], list(bi=1:40, dutyCycle=1))
                  ))
 }
-rownames(par) = mnames
+rownames(par) = bnames
 colnames(par) = c("D", "rt", "Max Residual (days)")
 ```
 
@@ -96,30 +100,57 @@ For now we'll assume that means the $D$ parameter for that model is 2/3
 that for the NTQB-1
 
 ```{r}
-par = rbind(c(par[["NTQB-1","D"]] * 2 / 3, par[["NTQB-1", "rt"]], NA), par)
-rownames(par)[1] = "NTQB-1-LW"
+par = rbind(c(par[["1","D"]] * 2 / 3, par[["1", "rt"]], NA), par)
+rownames(par)[1] = "1-LW"
 pred = rbind(data.frame(
-    tagType="NTQB-1-LW",
+    battery="1-LW",
     bi=1:40,
-    lifespan=par[["NTQB-1-LW", "D"]] / (1 + par[["NTQB-1-LW", "rt"]] / (1:40)))
+    lifespan=par[["1-LW", "D"]] / (1 + par[["1-LW", "rt"]] / (1:40)))
   , pred)
 ```
 
-There's also apparently a model *NTQBW-3-2* (note the 'w'), which for now we'll
-assume is the same as the *NTQB-3-2*.  And a *NTQBW-2*.  Does the 'w' just
-mean wide?  And NTQBW-4-2, and NTQBW-6-2
+Now map model names to batteries.  We do this as a simple table
+because the naming scheme isn't consistent enough to bother doing it
+programmatically.
 
 ```{r}
-par = rbind(par, par["NTQB-3-2", ])
-rownames(par)[nrow(par)] = "NTQBW-3-2"
-par = rbind(par, par["NTQB-2", ])
-rownames(par)[nrow(par)] = "NTQBW-2"
-par = rbind(par, par["NTQB-4-2", ])
-rownames(par)[nrow(par)] = "NTQBW-4-2"
-par = rbind(par, par["NTQB-6-2", ])
-rownames(par)[nrow(par)] = "NTQBW-6-2"
-```
+## Models and the batteries they correspond to
 
+modelBattery = list(
+"NTQB-1-LW"  = "1-LW",
+"NTQB-1"     = "1",
+"NTQB-2"     = "2",
+"NTQB-3-2"   = "3-2",
+"NTQB-4-2"   = "4-2",
+"NTQB-6-1"   = "6-1",
+"NTQB-6-2"   = "6-2",
+"NTQBW-3-2"  = "3-2",
+"NTQBW-2"    = "2",
+"NTQBW-4-2"  = "4-2",
+"NTQBW-6-2"  = "6-2",
+"ANTC-M1-1"  = "1",
+"ANTC-M2-1"  = "2",
+"ANTC-M3-1"  = "3-1",
+"ANTC-M3-2"  = "3-2",
+"ANTC-M4-2S" = "4-2",
+"ANTC-M4-2L" = "4-2",
+"ANTC-M6-1"  = "6-1",
+"ANTC-M6-2"  = "6-2",
+"ANTCW-M1-1"  = "1",
+"ANTCW-M2-1"  = "2",
+"ANTCW-M3-1"  = "3-1",
+"ANTCW-M3-2"  = "3-2",
+"ANTCW-M4-2S" = "4-2",
+"ANTCW-M4-2L" = "4-2",
+"ANTCW-M6-1"  = "6-1",
+"ANTCW-M6-2"  = "6-2"
+)
+
+modPar = NULL
+for (b in names(modelBattery))
+    modPar = rbind(modPar, par[modelBattery[[b]],])
+rownames(modPar) = names(modelBattery)
+```
 
 The results show good agreement with the data table from Lotek:
 
@@ -137,22 +168,21 @@ internal resistance.  The table provided by Lotek only covers $2 <= BI
 down to 1s and from 20 to 40s using the fitted model.
 
 ```{r}
-xyplot(lifespan~bi, groups=tagType, pred,
+xyplot(lifespan~bi, groups=battery, pred,
        auto.key=list(corner=c(.05,.95)),
-       main="Reported (X) and Predicted (o) 80% Tag Lifespan",
+       main="Reported (X) and Predicted (o) Tag Lifespan by Battery Type",
        xlab="Burst Interval (seconds)",
        ylab="Lifespan (days)",
        type="b",
        panel = function(x, y, type, groups, ...) {
            panel.xyplot(x, y, type, groups, ...)
-           meas = which(x %in% c(2, 5, 10, 20) & groups != "NTQB-1-LW")
+           meas = which(x %in% c(2, 5, 10, 20) & groups != "1-LW")
            panel.points(x[meas], y[meas], pch="X", cex=1.5)
+           panel.abline(h=0, lty=2, col="gray")
            }
        )
 ```
 
 ```{r, include=FALSE}
-tagLifespanPars = par[, 1:2]
-save(tagLifespanPars, file="./package/data/tagLifespanPars.rda")
-
-
+tagLifespanPars = modPar[, 1:2]
+save(tagLifespanPars, file="../../data/tagLifespanPars.rda")

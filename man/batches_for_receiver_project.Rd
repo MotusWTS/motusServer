@@ -9,7 +9,7 @@ batches_for_receiver_project(env)
 \arguments{
 \item{projectID}{integer project ID}
 
-\item{ts}{numeric timestamp}
+\item{batchID}{integer batchID; only batches with larger batchID are returned}
 }
 \value{
 a data frame with the same schema as the batches table, but JSON-encoded as a list of columns

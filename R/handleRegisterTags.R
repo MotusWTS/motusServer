@@ -42,6 +42,7 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 handleRegisterTags = function(j) {
+
     meta = list(motusProjID=NULL, tagModel=NULL, nomFreq=NULL, species=NULL, deployDate=NULL, codeSet=NULL)
     lcMetaNames = tolower(names(meta))
     p = jobPath(j)
@@ -78,8 +79,12 @@ handleRegisterTags = function(j) {
     }
 
     tagModel = meta$tagModel
+
+    ## invoices sometimes don't show the "M" in the ANTC models
+    if (grepl("^ANTCW?-[0-9]", tagModel))
+        tagModel = sub("^(ANTCW?-)", "\\1M", tagModel, perl=TRUE)
     if (! isTRUE(tagModel %in% rownames(tagLifespanPars))) {
-        errs = c(errs, paste0("Invalid tag model: ", tagModel, "; must be one of:\n", paste(rownames(tagLifespanPars), collapse=", ")))
+        errs = c(errs, paste0("Invalid tag model: ", tagModel, "; must be one of:\n", paste(c(rownames(tagLifespanPars), extraTagModels), collapse=", ")))
     }
 
     nomFreq = as.numeric(meta$nomFreq)
@@ -145,7 +150,7 @@ handleRegisterTags = function(j) {
     fcdfreqs = as.numeric(info$fcdfreq)
 
     ## ignore freq if user just gave us the nominal frequency
-    if (isTRUE(all(fcdfreqs == nomFreq))) {
+    if (isTRUE(length(fcdfreqs) > 0 && all(fcdfreqs == nomFreq))) {
         jobLog(j, paste0("Please note: your filenames all have '@", sprintf("%.3f", nomFreq), "'.\n",
                       "The '@XXX.XXX' in filenames is for telling us the funcube listening frequency\n",
                       "rather than the nominal tag frequency, which is given in tagreg.txt file.\n",
