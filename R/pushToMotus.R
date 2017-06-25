@@ -52,12 +52,13 @@ pushToMotus = function(src) {
 
     ## So we need to reserve a block of nrow(b) IDs in motus.batches
 
-    firstMotusBatchID = motusReserveKeys("batches", "batchID", nrow(newBatches), "motusDeviceID", -deviceID)
+    firstMotusBatchID = motusReserveKeys("batches", "batchID", nrow(newBatches))
     offsetBatchID = firstMotusBatchID - newBatches$batchID[1]
 
-    ## Transfer tag ambiguities.  This is a two-way process, in that we want to have
-    ## a unique master ambigID across receivers for each ambiguity of a particular
-    ## set of (motus) tagIDs.
+    ## ---------- transfer tag ambiguities ----------
+    ## This is a two-way process, in that we want to have a unique
+    ## master ambigID across receivers for each ambiguity of a
+    ## particular set of (motus) tagIDs.
 
     ## 1. get tag ambiguities from this receiver which don't already have a master
     ## ambigID:
@@ -78,7 +79,7 @@ pushToMotus = function(src) {
         n = length(newA)
         if (n > 0) {
             ## note use of negative n to reserve negative, descending keys
-            firstMasterAmbigID = motusReserveKeys("tagAmbig", "ambigID", -n, "motusTagID1", -deviceID)
+            firstMasterAmbigID = motusReserveKeys("tagAmbig", "ambigID", -n)
 
             ## fill in new masterAmbigIDs
             joinAmbig$ambigID.y[newA] = seq(from = firstMasterAmbigID, by = -1, length = n)
@@ -116,7 +117,8 @@ pushToMotus = function(src) {
     txBatches$batchID = txBatches$batchID + offsetBatchID
 
     txBatches$tsMotus = -1
-    dbInsertOrReplace(mtcon, "batches", txBatches %>% as.data.frame)
+
+    dbWriteTable(mtcon, "batches", txBatches %>% as.data.frame, append=TRUE, row.names=FALSE)
 
     ## set bogus offsets, in case no record of these types; permits update to
     ## motusTX table in sqlite database to work.
@@ -133,24 +135,38 @@ pushToMotus = function(src) {
 
         b = newBatches[i,]
 
-        ## ----------  copy runs  ----------
+        ## ----------  copy new runs  ----------
 
-        ## get count of runs and 1st run ID for this batch
+        ## get count of new runs and 1st run ID for this batch
         runInfo = sql("select count(*), min(runID) from runs where batchIDbegin = %d", b$batchID)
 
         if (runInfo[1,1] > 0) {
 
             ## reserve the required number of runIDs
-            firstMotusRunID = motusReserveKeys("runs", "runID", runInfo[1,1], "batchIDbegin", -deviceID)
+            firstMotusRunID = motusReserveKeys("runs", "runID", runInfo[1,1])
             offsetRunID = firstMotusRunID - runInfo[1,2]
 
             res = dbSendQuery(con, sprintf("select * from runs where batchIDBegin = %d order by runID", b$batchID))
 
             ## grab runs from this batch, substituting any ambiguous tag IDs with their master (global) version:
-            res = dbSendQuery(con, sprintf("select runID, batchIDbegin, batchIDend,
-                                            ifnull(t2.masterAmbigID, t1.motusTagID) as motusTagID, ant, len
-                                            from runs as t1 left join tagAmbig as t2 on t1.motusTagID=t2.ambigID
-                                            where t1.batchIDBegin = %d order by t1.runID", b$batchID))
+            res = dbSendQuery(con, sprintf("
+select
+   runID,
+   batchIDbegin,
+   tsBegin,
+   tsEnd,
+   done,
+   ifnull(t2.masterAmbigID, t1.motusTagID) as motusTagID,
+   ant,
+   len
+from
+   runs as t1
+   left join tagAmbig as t2 on t1.motusTagID=t2.ambigID
+where
+   t1.batchIDbegin = %d
+order by
+   t1.runID
+", b$batchID))
 
             repeat {
                 runs = dbFetch(res, CHUNK_ROWS)
@@ -158,18 +174,51 @@ pushToMotus = function(src) {
                     break
                 runs$runID        = runs$runID        + offsetRunID
                 runs$batchIDbegin = runs$batchIDbegin + offsetBatchID
-                runs$batchIDend   = runs$batchIDend   + offsetBatchID  ## correct even if batchIDend is NA
-                dbInsertOrReplace(mtcon, "runs", runs)
+                dbWriteTable(mtcon, "runs", runs, append=TRUE, row.names=FALSE)
+                dbWriteTable(mtcon, "batchRuns", runs[, c("batchIDbegin", "runID")], append=TRUE, row.names=FALSE)
             }
             dbClearResult(res)
+        }
 
-            ## ----------  copy hits  ----------
+        ## ----------  update existing runs that overlap this batch  ----------
 
-            ## get count of hits and 1st hit ID for this batch
-            hitInfo = sql("select count(*), min(hitID) from hits where batchID = %d", b$batchID)
+        ## For runs which began before this batch and which were processed
+        ## during this batch, update their length and tsEnd fields
 
+        res = dbSendQuery(con, sprintf("
+select
+   *
+from
+   batchRuns as t0
+   join runs as t1 on t1.runID=t0.runID and t1.batchIDbegin <> t0.batchID
+   join motusTX as t2 on t2.batchID=t1.batchIDbegin
+where
+   t0.batchID = %d
+order by t1.runID
+", b$batchID))
+        repeat {
+            runUpd = dbFetch(res, CHUNK_ROWS)
+            if (nrow(runUpd) == 0)
+                break
+
+            runUpd$runID        = runUpd$runID        + runUpd$offsetRunID    ## offsetRunID depends on batchID via the join above
+            runUpd$batchIDbegin = runUpd$batchIDbegin + runUpd$offsetBatchID  ## offsetBatchID depends on batchID via the join above
+            dbInsertOrReplace(mtcon, "runs", runUpd[, c("runID", "batchIDbegin", "tsBegin", "tsEnd", "done", "motusTagID", "ant", "len")])
+
+            ## add records to batchRuns table
+            runUpd$batchID = b$batchID + offsetBatchID  ## current batch ID
+            dbWriteTable(mtcon, "batchRuns", runUpd[, c("batchID", "runID")], append=TRUE, row.names=FALSE)
+        }
+        dbClearResult(res)
+
+
+        ## ----------  copy hits  ----------
+
+        ## get count of hits and 1st hit ID for this batch
+        hitInfo = sql("select count(*), min(hitID) from hits where batchID = %d", b$batchID)
+        if (hitInfo[1,1] > 0) {
             ## reserve the required number of hitIDs
-            firstMotusHitID = motusReserveKeys("hits", "hitID", hitInfo[1,1], "batchID", -deviceID)
+            firstMotusHitID = motusReserveKeys("hits", "hitID", hitInfo[1,1])
             offsetHitID = firstMotusHitID - hitInfo[1,2]
 
             res = dbSendQuery(con, sprintf("select * from hits where batchID = %d order by hitID", b$batchID))
@@ -181,7 +230,7 @@ pushToMotus = function(src) {
                 hits$hitID   = hits$hitID   + offsetHitID
                 hits$runID   = hits$runID   + offsetRunID
                 hits$batchID = hits$batchID + offsetBatchID
-                dbInsertOrReplace(mtcon, "hits", hits)
+                dbWriteTable(mtcon, "hits", hits, append=TRUE, row.names=FALSE)
             }
             dbClearResult(res)
         }
@@ -189,7 +238,7 @@ pushToMotus = function(src) {
 
         gps = sql("select * from gps where batchID = %d order by ts", b$batchID)
         gps$batchID = gps$batchID + offsetBatchID
-        dbInsertOrReplace(mtcon, "gps", gps)
+        dbWriteTable(mtcon, "gps", gps, append=TRUE, row.names=FALSE)
 
         ## ----------  copy batchProgs  ----------
         bpr = sql("select * from batchProgs where batchID = %d", b$batchID)
@@ -212,26 +261,6 @@ pushToMotus = function(src) {
 
         if (nrow(pcs) > 0)
             dbWriteTable(mtcon, "pulseCounts", pcs, append=TRUE, row.names=FALSE)
-
-        ## ----------  generate runUpdates  ----------
-
-        ## For runs which began before this batch and which either
-        ## haven't ended or ended in this batch, update their length
-        ## and batchIDend fields.
-
-        res = dbSendQuery(con, sprintf("select * from runs as t1 left join motusTX as t2 on t1.batchIDbegin=t2.batchID where t1.batchIDBegin < %d and (t1.batchIDend is null or t1.batchIDend = %d) order by runID",
-                                       b$batchID, b$batchID))
-        repeat {
-            runUpd = dbFetch(res, CHUNK_ROWS)
-            if (nrow(runUpd) == 0)
-                break
-
-            runUpd$runID        = runUpd$runID      + runUpd$offsetRunID    ## offsetRunID depends on batchID via the join above
-            runUpd$batchID      = b$batchID         + offsetBatchID         ## this is just the current batchID, so we want the current offset
-            runUpd$batchIDend   = runUpd$batchIDend + runUpd$offsetBatchID  ## offsetBatchID depends on batchID via the join above
-            dbInsertOrReplace(mtcon, "runUpdates", runUpd[,c("batchID", "runID", "len", "batchIDend")])
-        }
-        dbClearResult(res)
 
         ## Mark what has been transferred
 
