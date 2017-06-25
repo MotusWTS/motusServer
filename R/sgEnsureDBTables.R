@@ -199,7 +199,7 @@ CREATE TABLE batches (
                                               -- database.
     monoBN INT,                               -- boot number for this receiver; (NULL
                                               -- okay; e.g. Lotek)
-    tsBegin FLOAT(53),                        -- timestamp for start of period
+    tsStart FLOAT(53),                        -- timestamp for start of period
                                               -- covered by batch; unix-style:
                                               -- seconds since 1 Jan 1970 GMT
     tsEnd FLOAT(53),                          -- timestamp for end of period
@@ -243,8 +243,10 @@ CREATE TABLE tagAmbig (
         sql("
 CREATE TABLE runs (
     runID INTEGER PRIMARY KEY,                        -- identifier of run; unique for this receiver
-    batchIDbegin INTEGER NOT NULL REFERENCES batches, -- unique identifier of batch this run began in
-    batchIDend INTEGER  REFERENCES batches,           -- unique identifier of batch this run ends in (if run is complete)
+    batchIDbegin INT NOT NULL,                        -- ID of batch this run begins in
+    tsBegin FLOAT(53),                                -- timestamp of first detection in run
+    tsEnd  FLOAT(53),                                 -- timestamp of last detection in run (so far)
+    done TININT NOT NULL DEFAULT 0,                   -- is run finished? 0 if no, 1 if yes.
     motusTagID INT NOT NULL,                          -- ID for the tag detected; foreign key to Motus DB
                                                       -- table
     ant TINYINT NOT NULL,                             -- antenna number (USB Hub port # for SG; antenna port
@@ -253,7 +255,20 @@ CREATE TABLE runs (
 );
 
 ")
+        sql("CREATE INDEX runs_batchIDbegin on runs(batchIDbegin)")
     }
+    if (! "batchRuns" %in% tables) {
+        sql("
+CREATE TABLE IF NOT EXISTS batchRuns (
+    batchID INT NOT NULL REFERENCES batches,  -- batch ID
+    runID BIGINT NOT NULL REFERENCES runs,     -- run ID
+    PRIMARY KEY (batchID, runID)              -- only one update per run per batch
+)");
+       sql("CREATE INDEX batchRuns_batchID ON batchRuns(batchID)")
+       sql("CREATE INDEX batchRuns_runID ON batchRuns(runID)")
+    }
+
+
     if (! "hits" %in% tables) {
         sql("
 CREATE TABLE hits (

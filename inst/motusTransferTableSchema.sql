@@ -11,11 +11,11 @@
 -- received, and distribution of files among batches should not affect
 -- the final output.
 
-CREATE DATABASE motus;
-USE motus;
+-- CREATE DATABASE motus;
+-- USE motus;
 
 CREATE TABLE IF NOT EXISTS batches (
-    batchID INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT, -- unique identifier for this batch
+    batchID INTEGER NOT NULL PRIMARY KEY,                -- unique identifier for this batch
     motusDeviceID INTEGER NOT NULL,                      -- motus ID of device this batch of data came from
                                                          -- foreign key to Motus DB table.
     monoBN INT,                                          -- boot number for this receiver (NULL
@@ -56,43 +56,35 @@ CREATE TABLE IF NOT EXISTS gps (
 -- are processed: batchIDend, and len
 
 CREATE TABLE IF NOT EXISTS runs (
-    runID BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT, -- identifier of run; unique for this receiver
-    batchIDbegin INTEGER NOT NULL REFERENCES batches, -- unique identifier of batch this run began in
-    batchIDend INTEGER REFERENCES batches,            -- unique identifier of batch this run ends in, if the
-                                                      -- run has ended.  Otherwise, this field is null, and
-                                                      -- the value of len, below, is the number of hits *so far*
+    runID BIGINT NOT NULL PRIMARY KEY,                -- identifier of run; unique for this receiver
+    batchIDbegin INT NOT NULL,                        -- ID of batch this run begins in
+    tsBegin FLOAT(53) NOT NULL,                       -- timestamp of first detection in the run
+    tsEnd FLOAT(53) NOT NULL                          -- timestamp of last detection in run so far (last pulse in completed burst, actually)
+    done TININT NOT NULL DEFAULT 0,                   -- is run finished? 0 if no, 1 if yes.
     motusTagID INT NOT NULL,                          -- ID for the tag detected; foreign key to Motus DB
                                                       -- table; a negative value correspond to an entry in the tagAmbig table.
     ant TINYINT NOT NULL,                             -- antenna number (USB Hub port # for SG; antenna port
                                                       -- # for Lotek)
-    len BIGINT NOT NULL                               -- number of detections in run ( so far ); this number
+    len BIGINT NOT NULL,                              -- number of detections in run ( so far ); this number
                                                       -- can increase
 );----
 
 CREATE INDEX runs_motusTagID ON runs(motusTagID);----
 CREATE INDEX runs_batchIDbegin ON runs(batchIDbegin);----
-CREATE INDEX runs_batchIDend ON runs(batchIDend);----
 
--- Because runs can span multiple batches, we need a way to
--- update some of their fields:
---    len: each new batch in which the run is still active
---         will add its detections of to this field
---    batchIDend: when a run has finally ended in a batch,
---         this field will be updated with a non-null batchID
---
--- Records in the runUpdates table refer to runs begun in
--- previous batches, and indicate how to update their fields.
+-- Because runs can span multiple batches, we want a way to
+-- keep track of which runs overlap which batches.
+-- The batchRuns table is a many-to-many relation between
+-- batchIDs and runIDs.
 
-CREATE TABLE IF NOT EXISTS runUpdates (
-    runID BIGINT NOT NULL REFERENCES runs,    -- identifier of run for which this record is an update
-    batchID INT NOT NULL REFERENCES batches,  -- batch from which this run update record came
-    len BIGINT NOT NULL,                      -- replacement length for this run
-    batchIDend INT REFERENCES batches,        -- replacement batchIDend for this run (if not null)
-    PRIMARY KEY (runID, batchID)              -- only one update per run per batch
+CREATE TABLE IF NOT EXISTS batchRuns (
+    batchID INT NOT NULL REFERENCES batches,  -- batch ID
+    runID BIGINT NOT NULL REFERENCES runs     -- run ID
+    PRIMARY KEY (batchID, runID)              -- only one update per run per batch
 );----
 
-CREATE INDEX runUpdates_runID ON runUpdates(runID);----
-CREATE INDEX runUpdates_batchID ON runUpdates(batchID);----
+CREATE INDEX batchRuns_batchID ON batchRuns(batchID);----
+CREATE INDEX batchRuns_runID ON batchRuns(runID);----
 
 -- Hits are detections of tags.  They are grouped in two ways:
 -- by runs (consecutive detections of a single tag by a single antenna)
@@ -100,7 +92,7 @@ CREATE INDEX runUpdates_batchID ON runUpdates(batchID);----
 -- Runs can span across batches.
 
 CREATE TABLE IF NOT EXISTS hits (
-    hitID BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT, -- unique ID of this hit
+    hitID BIGINT NOT NULL PRIMARY KEY,                -- unique ID of this hit
     runID BIGINT NOT NULL REFERENCES runs,            -- ID of run this hit belongs to
     batchID INTEGER NOT NULL REFERENCES batches,      -- ID of batch this hit belongs to
     ts FLOAT(53) NOT NULL,                            -- timestamp (centre of first pulse in detection)
@@ -122,7 +114,7 @@ CREATE TABLE IF NOT EXISTS hits (
 
 CREATE INDEX hits_batchID ON hits(batchID);----
 CREATE INDEX hits_runID ON hits(runID);----
-CREATE INDEX i_ts on hits(ts);----
+CREATE INDEX hits_ts on hits(ts);----
 
 -- Table tagAmbig records sets of physically identical tags which have
 -- overlapping deployment periods.  When the motusTagID field in a row
@@ -200,69 +192,20 @@ CREATE TABLE IF NOT EXISTS pulseCounts (
 
 CREATE INDEX pulseCounts_batchID ON pulseCounts(batchID);----
 
--- Sometimes we will want to entirely replace a bunch of batches with
--- new ones.  Really, we just delete the old batches, and insert
--- new ones (or not).  This table records deletions.  We will guarantee
--- that no runs cross in or out of the range of batches specified by a single
--- record of this table.  i.e. for any run, all of its hits are from batches
--- in the range batchIDbegin...batchIDend, or all of its hits are from batches
--- before batchIDbegin, or all of its hits are from batches after batchIDend.
-
-CREATE TABLE IF NOT EXISTS batchDelete (
-    batchIDbegin INT PRIMARY KEY UNIQUE NOT NULL REFERENCES batches,-- first batch to be deleted
-    batchIDend INT NOT NULL REFERENCES batches,                     -- last batch to be deleted
-    ts FLOAT(53) NOT NULL,                                          -- timestamp when this batch deletion record was added
-    reason TEXT,                                                    -- human-readable explanation for why a batch was deleted
-    tsMotus FLOAT(53) NOT NULL DEFAULT -1                           -- timestamp when this record transferred to motus
-);----
-
-CREATE INDEX batchDelete_batchIDend ON batchDelete(batchIDend);----
-
-CREATE TABLE IF NOT EXISTS sg_import_log (
-    batchID INT PRIMARY KEY UNIQUE NOT NULL REFERENCES batches,
-    transfer_dt FLOAT(53) NOT NULL,
-    success INT,
-    msg TEXT
-);----
-
--- grant privileges to remote user 'denis' to pull data and update the sg_import_log table
--- pulled data are indicated by setting the tsMotus field in appropriate tables.
-
-GRANT SELECT, UPDATE(tsMotus)   ON motus.batchDelete    TO 'denis'@'%';
-GRANT SELECT                    ON motus.batchParams    TO 'denis'@'%';
-GRANT SELECT                    ON motus.pulseCounts    TO 'denis'@'%';
-GRANT SELECT                    ON motus.batchProgs     TO 'denis'@'%';
-GRANT SELECT, UPDATE (tsMotus)  ON motus.batches        TO 'denis'@'%';
-GRANT SELECT                    ON motus.gps            TO 'denis'@'%';
-GRANT SELECT                    ON motus.hits           TO 'denis'@'%';
-GRANT SELECT                    ON motus.runUpdates     TO 'denis'@'%';
-GRANT SELECT                    ON motus.runs           TO 'denis'@'%';
-GRANT SELECT, UPDATE            ON motus.sg_import_log  TO 'denis'@'%';
-GRANT SELECT, UPDATE (tsMotus)  ON motus.tagAmbig       TO 'denis'@'%';
-
--- Table upload_tokens records tokens granted to users for data transfers
-
-CREATE TABLE IF NOT EXISTS upload_tokens (
-       token CHAR(32) PRIMARY KEY UNIQUE NOT NULL, -- token; looks like "lofHipkeXXX" where XXX is 24 random alphanum chars
-       username CHAR(64),                          -- name of user on sensorgnome.org
-       email CHAR(128),                            -- email address of user on sensorgnome.org
-       expiry FLOAT(53)                            -- unix timestamp when this token expires
-);----
-
-CREATE TABLE IF NOT EXISTS tag_deployments (
+CREATE TABLE IF NOT EXISTS tagDeployments (
        projectID INT NOT NULL,     -- motus project ID
        motusTagID INT NOT NULL,    -- motus tag ID
        tsStart FLOAT(53) NOT NULL, -- unix timestamp of start of deployment
        tsEnd FLOAT(53) NOT NULL,   -- unix timestamp of end of deployment
-       INDEX i_projectID (projectID),
-       INDEX i_motusTagID (motusTagID)
+       INDEX tagDeployments_projectID (projectID),
+       INDEX tagDeployments_motusTagID (motusTagID)
 );----
 
-CREATE TABLE IF NOT EXISTS receiver_deployments (
+CREATE TABLE IF NOT EXISTS receiverDeployments (
        projectID INT NOT NULL,     -- motus project ID
-       deviceID INT NOT NULL,      -- motus tag ID
+       deviceID INT NOT NULL,      -- motus device ID
        tsStart FLOAT(53) NOT NULL, -- unix timestamp of start of deployment
        tsEnd FLOAT(53) NOT NULL,   -- unix timestamp of end of deployment
-       INDEX i_projectID (projectID),
-       INDEX i_deviceID (deviceID)
+       INDEX receiverDeployments_projectID (projectID),
+       INDEX receiverDeployments_deviceID (deviceID)
 );----
