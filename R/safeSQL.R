@@ -168,7 +168,7 @@ safeSQL = function(con, busyTimeout = 300) {
 `$.safeSQL` = function(x, name) {
     con = environment(x)$con
     switch(substitute(name),
-           db = if(inherits(con, "MySQLConnection")) con@db else con@dbname,
+           db = if(inherits(con, "MySQLConnection")) "MySQL connect; FIXME: no way to get dbname?" else con@dbname,
            con = con,
            NULL
            )
