@@ -2,6 +2,7 @@
 % Please edit documentation in R/as.list.motusMap.R, R/getMap.R
 \name{names.motusMap}
 \alias{names.motusMap}
+\alias{names.motusMap}
 \title{get the key values of a map table in a database}
 \usage{
 \method{names}{motusMap}(map)
@@ -23,4 +24,3 @@ get the key values of a map table in a database
 
 get the key values of a map table in a database
 }
-

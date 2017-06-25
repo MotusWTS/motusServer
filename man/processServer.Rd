@@ -45,4 +45,3 @@ be processed before Y1, regardless of which was enqueued first.
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

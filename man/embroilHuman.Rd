@@ -32,10 +32,9 @@ a full directory structure with any files of unknown type
 An email is sent to the poor chump whose job it is to deal with
 this.
 }
-\author{
-John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
-}
 \seealso{
 \link{\code{server}}
 }
-
+\author{
+John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}

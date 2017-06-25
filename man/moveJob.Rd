@@ -22,10 +22,9 @@ parents, use \link{\code{reparentJob()}}
 Retain the old path to the job, in case of interruption
 between recording the new path and moving the folder.
 }
-\author{
-John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
-}
 \seealso{
 \link{\code{Copse}}
 }
-
+\author{
+John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}

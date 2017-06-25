@@ -35,4 +35,3 @@ against accidentally downloading far more than was intended.
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

@@ -22,4 +22,3 @@ and GPS fixes are added to motus transfer tables.
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

@@ -30,4 +30,3 @@ x$MACAddr <- "01235a3be098"
 x$recvSerno <- NULL
 x[["MACAddr"]]
 }
-

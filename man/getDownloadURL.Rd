@@ -18,4 +18,3 @@ return the URL to the download site for a project
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

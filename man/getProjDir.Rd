@@ -22,4 +22,3 @@ with appropriate files (e.g. header.html) if it does not already exist.
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

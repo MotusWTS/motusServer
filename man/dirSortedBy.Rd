@@ -41,10 +41,9 @@ The sorting happens *across* folders, rather than within them.
 Get listing of full paths to items in folder(s), sorted by choice of
 item from file.info
 }
-\author{
-John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
-}
 \seealso{
 \link{\code{dir}}
 }
-
+\author{
+John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}

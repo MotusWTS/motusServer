@@ -54,4 +54,3 @@ if \code{user} is "Anonymous", return an invalid token and timestamp of 0.
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

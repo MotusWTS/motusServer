@@ -11,4 +11,3 @@ create idempotent methods:}
 To support syntactic sugar like Jobs[! done && type=="email"]$done = 1,
 create idempotent methods:
 }
-

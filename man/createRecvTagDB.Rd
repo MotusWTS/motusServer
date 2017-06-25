@@ -31,4 +31,3 @@ This lets users see live detections of their tags in the field.
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

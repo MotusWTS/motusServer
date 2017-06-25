@@ -19,4 +19,3 @@ a data frame with the same schema as the runs table, but JSON-encoded as a list 
 \description{
 get runs by tag project from a batch
 }
-

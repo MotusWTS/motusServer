@@ -20,12 +20,11 @@ sharing includes a URL to that item and requires no further
 credentials.  This URL is downloaded recursively into a directory
 using the gdrive command-line client (see references).
 }
-\author{
-John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
-}
 \references{
 \url{https://github.com/prasmussen/gdrive}
 
 \url{https://developers.google.com/drive/v3/web/about-sdk}
 }
-
+\author{
+John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}

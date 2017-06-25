@@ -31,4 +31,3 @@ load secrets for motus web API
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

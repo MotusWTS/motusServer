@@ -39,10 +39,9 @@ a subjob of type "SGfiles" is enqueued to process them.
 Called by \code{\link{processServer}}.  Any files in subfolders
 of the specified job's folder are processed.
 }
-\author{
-John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
-}
 \seealso{
 \code{\link{processServer}}
 }
-
+\author{
+John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}

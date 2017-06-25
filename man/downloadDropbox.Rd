@@ -26,10 +26,9 @@ This will not work with the URL in the email that dropbox
     link that permits anyone to view the file, then manually email
     it to us.  We have filed a feature request on this [1].
 }
-\author{
-John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
-}
 \references{
 \link{https://www.dropboxforum.com/hc/en-us/community/posts/206649516-Import-Email-shared-file-by-api-?page=1#community_comment_212400843}
 }
-
+\author{
+John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}

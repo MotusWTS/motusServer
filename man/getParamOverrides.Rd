@@ -44,4 +44,3 @@ override will override a project-wide override, if both are applicable.
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

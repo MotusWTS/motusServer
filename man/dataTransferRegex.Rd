@@ -14,4 +14,3 @@ A PCRE-style regular expression for matching URLs in an email
 message sent to share data.
 }
 \keyword{datasets}
-

@@ -30,4 +30,3 @@ This function applies an appropriate method to the given URL to ensure this.
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

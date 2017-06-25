@@ -19,4 +19,3 @@ a data frame with the same schema as the gps table, but JSON-encoded as a list o
 \description{
 get all GPS fixes from a batch "near" to detections of tags from a project.
 }
-

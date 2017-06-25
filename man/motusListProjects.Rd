@@ -21,4 +21,3 @@ return a list of all motus projects
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

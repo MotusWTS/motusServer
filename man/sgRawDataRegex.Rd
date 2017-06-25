@@ -12,4 +12,3 @@ sgRawDataRegex
 Regular expression for parsing line from raw data file.
 }
 \keyword{datasets}
-

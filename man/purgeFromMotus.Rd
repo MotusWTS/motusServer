@@ -22,4 +22,3 @@ used, so that an audit trail is left.
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

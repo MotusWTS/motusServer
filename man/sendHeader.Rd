@@ -19,4 +19,3 @@ send the header for a reply
 the reply will always be a gzip-compressed JSON-encoded value.
 We also disable caching.
 }
-

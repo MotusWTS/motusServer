@@ -41,4 +41,3 @@ this can be ensured by first calling \link{\code{ensureServerDB()}}
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

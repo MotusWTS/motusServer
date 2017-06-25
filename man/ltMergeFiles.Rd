@@ -46,4 +46,3 @@ If err is not NA for a file, then other fields for that file
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

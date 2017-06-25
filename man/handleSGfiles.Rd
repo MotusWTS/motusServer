@@ -24,10 +24,9 @@ For each unique SG serial number found among the names of
 if \code{topJob(j)$mergeOnly)} is TRUE, then only merge files
 into receiver databases; don't run the tag finder.
 }
-\author{
-John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
-}
 \seealso{
 \link{\code{processServer}}
 }
-
+\author{
+John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}

@@ -20,10 +20,9 @@ transferred by the email.  Just before moving the job, a new subjob
 of type "newFiles" is created, but not enqueued.  Whichever
 processServer claims the job will end up enqueuing the "newFiles" subjob.
 }
-\author{
-John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
-}
 \seealso{
 \code{\link{emailServer}}, \code{\link{processServer}}
 }
-
+\author{
+John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}

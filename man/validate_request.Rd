@@ -27,4 +27,3 @@ and return NULL.
 \description{
 validate a request by looking up its token, failing gracefully
 }
-

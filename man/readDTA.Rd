@@ -49,4 +49,3 @@ The .DTA file is processed in lexical order, so that changes
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

@@ -28,4 +28,3 @@ Contents only up to the first embedded NUL are returned.
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

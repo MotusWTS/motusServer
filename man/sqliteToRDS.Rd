@@ -114,4 +114,3 @@ If there are no result rows from the query, then the R value
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

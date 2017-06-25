@@ -34,11 +34,10 @@ wetransfer.com does not have a published download API, so we
     server.  Watch for changes to the format of emails and server
     replies that might break this fragile code.
 }
-\author{
-John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
-}
 \seealso{
 \link{\code{download.wetransferDirect}} for downloading using
 the link in an email to the file recipient.
 }
-
+\author{
+John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}

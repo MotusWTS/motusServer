@@ -45,10 +45,9 @@ By default, we assume each tag was recorded at 4 kHz below
 
 Called by \code{\link{processServer}}.
 }
-\author{
-John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
-}
 \seealso{
 \code{\link{processServer}}, which calls this function.
 }
-
+\author{
+John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}

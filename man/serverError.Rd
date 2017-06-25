@@ -23,4 +23,3 @@ based on R's dump.frames()
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

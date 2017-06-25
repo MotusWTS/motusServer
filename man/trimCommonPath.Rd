@@ -22,4 +22,3 @@ trimCommonPath(c("/A/B/C", "/A/B/D/E", "/A/B/F")) == c("C", "D/E", "F")
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

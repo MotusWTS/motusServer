@@ -37,4 +37,3 @@ a tag timeline when viewed in a fixed-width font.
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

@@ -26,4 +26,3 @@ serialize an object to a raw vector, without the "RDS" file header.
 this is a convenience function used by sqliteToRds, and is intended for small objects,
 since the serialization is done in-memory.
 }
-

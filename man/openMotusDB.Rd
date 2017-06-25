@@ -4,7 +4,8 @@
 \alias{openMotusDB}
 \title{Return a src_mysql attached to the motus mysql database.}
 \usage{
-openMotusDB(dbname = "motus", host = "localhost", user = "motus")
+openMotusDB(dbname = "motus", host = "localhost", user = "motus",
+  sock = "/var/run/mysqld/mysqld.sock")
 }
 \arguments{
 \item{dbname}{database name; default: "motus"}
@@ -12,6 +13,8 @@ openMotusDB(dbname = "motus", host = "localhost", user = "motus")
 \item{host}{hostname or IP address; default: "localhost"}
 
 \item{user}{user on database; default: "motus"}
+
+\item{sock}{location of socket for database; default: "/var/run/mysqld/mysqld.sock"}
 }
 \value{
 object of class \link{\code{safeSQL}}
@@ -32,4 +35,3 @@ The safeSQL objects is stored in the global variable MotusDB, and
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

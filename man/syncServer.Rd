@@ -36,10 +36,9 @@ by each attached receiver.  The last step of the shell script is
 to cause its own relaunch after a random time interval, via an
 'at' job.
 }
-\author{
-John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
-}
 \seealso{
 \link{\code{handleSyncReceiver}}
 }
-
+\author{
+John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}

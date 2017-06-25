@@ -42,4 +42,3 @@ before unpacking the message, since I'm not sure \code{ripmime} can handle this.
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

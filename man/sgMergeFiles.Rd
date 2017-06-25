@@ -46,11 +46,10 @@ Determines which files are redundant, new, or partially new.  Does
 after merging their target's contents; i.e. the symlink is deleted,
 not the file it points to.
 }
-\author{
-John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
-}
 \seealso{
 \code{sgRunNewFiles}, which calls this function and then calls \code{sgFindTags}
 as appropriate.
 }
-
+\author{
+John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}

@@ -117,4 +117,3 @@ If both \code{ts} and \code{monoBN} are NULL, then all
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

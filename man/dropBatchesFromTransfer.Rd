@@ -22,4 +22,3 @@ motus yet, but this can be overridden by the "force" parameter.
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

@@ -40,4 +40,3 @@ this depends on some other process placing uploaded files
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

@@ -29,10 +29,9 @@ The name for the new path is a timestamp with any additional
 components specified in \code{...} pasted afterward, separated by MOTUS_QUEUE_SEP
 which defaults to ',' (comma); e.g. 2016-09-14T00-43-29.586886,dta
 }
-\author{
-John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
-}
 \seealso{
 \link{\code{server}}
 }
-
+\author{
+John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}

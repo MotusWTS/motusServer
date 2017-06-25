@@ -18,10 +18,9 @@ TRUE if the email message was successfully handled
 \description{
 called by \code{\link{emailServer}} for new messages
 }
-\author{
-John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
-}
 \seealso{
 \code{\link{emailServer}}
 }
-
+\author{
+John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}

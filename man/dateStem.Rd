@@ -68,4 +68,3 @@ dateStem(ymd_hms("2014-05-01 03:20:17", "2014-05-01 03:20:17")) ## returns "2014
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

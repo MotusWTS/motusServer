@@ -21,4 +21,3 @@ reply to http requests for information on the processing queue
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

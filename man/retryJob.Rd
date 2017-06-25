@@ -41,10 +41,9 @@ One of the process servers watching queue 0 will then claim the job
 and re-run those subjobs touched above, as well as any which had not
 been run.
 }
-\author{
-John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
-}
 \seealso{
 \code{\link{processServer}}
 }
-
+\author{
+John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}

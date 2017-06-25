@@ -26,4 +26,3 @@ JSON fields called "log" and "summary" in the top-level ancestor of the job.
 "Summary" is intended to give a quick overview, while "log" should provide.
 details.
 }
-

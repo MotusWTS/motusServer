@@ -35,4 +35,3 @@ for (i in seq(along=runID)) if (posInRun[i] != sum(runID[1:i] == runID[i])) stop
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

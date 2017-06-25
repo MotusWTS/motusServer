@@ -28,4 +28,3 @@ only the data for receiver deployments belonging to that project.
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

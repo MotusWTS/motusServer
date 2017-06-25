@@ -18,4 +18,3 @@ Load unfinished jobs from server database and enqueue them.
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

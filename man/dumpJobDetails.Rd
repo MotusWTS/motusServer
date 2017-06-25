@@ -16,4 +16,3 @@ dumpJobDetails(res, j, i)
 \description{
 dump details of job j to res, as ith job listing
 }
-

@@ -74,10 +74,9 @@ m will usually be zero, but that can't be guaranteed.  We retain the list
 of items 1..n + m, and check inotify events against it. The first item
 not in that list will be item n + 2m + 1, which is new.
 }
-\author{
-John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
-}
 \seealso{
 \code{\link{server}}
 }
-
+\author{
+John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}

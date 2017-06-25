@@ -159,4 +159,3 @@ table X_old, if it exists), and the results of the query are written to X.
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

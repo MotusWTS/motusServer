@@ -23,4 +23,3 @@ a list with these items:
 \description{
 get count of update items for a receiver project
 }
-

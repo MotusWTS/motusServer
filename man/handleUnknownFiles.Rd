@@ -16,10 +16,9 @@ TRUE;
 Called by \code{\link{processServer}}.  Files are
 retained, and the sender is emailed a list of the files.
 }
-\author{
-John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
-}
 \seealso{
 \code{\link{processServer}}
 }
-
+\author{
+John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}

@@ -24,4 +24,3 @@ a list with these vector items:
 \description{
 get motus tagIDs for ambiguity IDs
 }
-

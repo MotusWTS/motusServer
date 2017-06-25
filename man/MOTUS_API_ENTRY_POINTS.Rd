@@ -12,4 +12,3 @@ MOTUS_API_ENTRY_POINTS
 API entry points:
 }
 \keyword{datasets}
-

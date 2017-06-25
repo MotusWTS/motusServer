@@ -19,4 +19,3 @@ return a vector of subjobs of the given topjob which are in the queue
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

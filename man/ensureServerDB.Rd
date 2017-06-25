@@ -20,4 +20,3 @@ And it holds a table of remotely-registered receivers and their credentials.
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

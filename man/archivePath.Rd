@@ -36,10 +36,9 @@ TRUE iff the file or folder was successfully archived
 Some files such as SG system logs and unhandled files are stored
 into folders, possibly for later manual processing.
 }
-\author{
-John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
-}
 \seealso{
 \link{\code{server}}
 }
-
+\author{
+John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}

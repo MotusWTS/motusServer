@@ -61,4 +61,3 @@ or no matches in the motus set, respectively.
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

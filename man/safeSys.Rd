@@ -64,4 +64,3 @@ stdout and stderr for the command are redirected to temporary
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

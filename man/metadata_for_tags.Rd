@@ -62,4 +62,3 @@ get metadata for tags
 only metadata which are public, or which are from projects
     the user has permission to are returned.
 }
-

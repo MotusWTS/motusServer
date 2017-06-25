@@ -24,10 +24,9 @@ Called by \code{\link{processServer}}.  Any files in subfolders
 of the specified job's folder are processed.  These might be archives
 that need to be sanity checked and unpacked.
 }
-\author{
-John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
-}
 \seealso{
 \code{\link{processServer}}
 }
-
+\author{
+John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}

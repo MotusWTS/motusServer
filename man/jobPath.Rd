@@ -29,10 +29,9 @@ generate the path on the fly from the \code{$path} components of
 this jobs and its ancestors.  This traces the job up to its top job,
 pre-pending non-null path components as it goes.
 }
-\author{
-John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
-}
 \seealso{
 \link{\code{Copse}}
 }
-
+\author{
+John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}

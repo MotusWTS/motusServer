@@ -20,4 +20,3 @@ return a list motus sensor deployments for a project
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

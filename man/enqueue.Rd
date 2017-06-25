@@ -35,10 +35,9 @@ to the global variable MOTUS_QUEUE.
 enqueue("/tmp/mytmpurlfile")
 
 }
-\author{
-John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
-}
 \seealso{
 \code{\link{server}}
 }
-
+\author{
+John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}

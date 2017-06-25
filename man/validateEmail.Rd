@@ -26,10 +26,9 @@ The body and text of the email is searched for a valid token (see
 \link{\code{getUploadToken}}) and if found, the username and email
 address are returned.
 }
-\author{
-John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
-}
 \seealso{
 \link{\code{getUploadToken}}
 }
-
+\author{
+John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}

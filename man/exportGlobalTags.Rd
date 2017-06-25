@@ -23,10 +23,9 @@ no return value; writes a file called "proj_NNN_globaltags.rds" to
 This function is a stop-gap to allow users to get their full data sets
 in advance of the full end-user motus R package being available.
 }
-\author{
-John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
-}
 \seealso{
 \code{\link{getGlobalTagsView}}
 }
-
+\author{
+John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}

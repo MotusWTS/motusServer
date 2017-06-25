@@ -19,4 +19,3 @@ a data frame with the same schema as the hits table, but JSON-encoded as a list 
 \description{
 get hits by receiver project from a batch (i.e. all hits from the batch)
 }
-
