@@ -15,8 +15,8 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 sgEnsureDBTables = function(src, recreate=c()) {
-    if (! inherits(src, "src_sqlite"))
-        stop("src is not a dplyr::src_sqlite object")
+    if (! inherits(src, "src"))
+        stop("src is not a dplyr::src object")
     con = src$con
     if (! inherits(con, "SQLiteConnection"))
         stop("src is not open or is corrupt; underlying db connection invalid")

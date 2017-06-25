@@ -32,7 +32,7 @@ pushToMotus = function(src) {
 
     deviceID = getMotusDeviceID(src)
     if(! isTRUE(deviceID > 0))
-        stop("invalid motus device ID for receiver with DB at ", src$path)
+        stop("invalid motus device ID for receiver with DB at ", attr(src$con, "dbname"))
 
     ## Ensure the device ID has been set on all batches.
     ## It is a constant, and the only reason we do this
