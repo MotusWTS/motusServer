@@ -153,6 +153,9 @@ getMotusMetaDB = function() {
     ## location we store a cached copy of the motus tag DB
     cachedDB = "/sgm/cache/motus_meta_db.sqlite"
 
+    ## make sure the database has correct tables
+    safeSys("sqlite3", cachedDB, noQuote="<", system.file("motusMetadataSchema.sql", package="motusServer"))
+
     ## try to lock the cachedDB (by trying to lock its name)
     lockSymbol(cachedDB)
 
@@ -174,13 +177,17 @@ getMotusMetaDB = function() {
     s = src_sqlite(cachedDB, TRUE)
     dbGetQuery(s$con, "pragma busy_timeout=300000")
 
-    ## convenience function to backup existing table T to T_old
+    ## convenience function to backup existing table T to T_old.
+    ## We delete from rather than delete and re-create T, so that
+    ## we preserve existence of indexes etc.
+
     bkup = function(T) {
         try(silent=TRUE, {
             dbGetQuery(s$con, paste0("drop table ", T, "_old"))
         })
         try(silent=TRUE, {
-            dbGetQuery(s$con, paste0("alter table ", T, " rename to ", T, "_old"))
+            dbGetQuery(s$con, paste0("create table ", T, "_old as select * from T"))
+            dbGetQuery(s$con, paste0("delete from ", T))
         })
     }
 
@@ -203,34 +210,39 @@ getMotusMetaDB = function() {
         fix = is.na(p$label)
         p$label[fix] = sapply(strsplit(gsub(" - ", " ", p$name[fix]), " ", fixed=TRUE), function(n) paste(head(n, 3), collapse="_"))
 
-        bkup("projs")
-        dbWriteTable(s$con, "projs", p, overwrite=TRUE, row.names=FALSE)
+        if (nrow(p) > 20) { ## arbitrary sanity check
+            bkup("projs")
+            dbWriteTable(s$con, "projs", p, append=TRUE, row.names=FALSE)
+        }
 
         ## add a fullID label for each tagDep
         t$fullID = sprintf("%s#%s:%.1f@%g", p$label[match(t$projectID, p$id)], t$mfgID, t$period, t$nomFreq)
         t = t[, c(1:2, match("deployID", names(t)): ncol(t))]
 
-        bkup("tagDeps")
-        ## write just the deployment portion of the records to tagDeps
-        dbWriteTable(s$con, "tagDeps", t, overwrite=TRUE, row.names=FALSE)
+        if (nrow(t) > 1000) { ## arbitrary sanity check
+            bkup("tagDeps")
+            ## write just the deployment portion of the records to tagDeps
+            dbWriteTable(s$con, "tagDeps", t, append=TRUE, row.names=FALSE)
 
-        ## End any unterminated deployments of tags which have a later deployment.
-        ## The earlier deployment is ended 1 second before the (earliest) later one begins.
+            ## End any unterminated deployments of tags which have a later deployment.
+            ## The earlier deployment is ended 1 second before the (earliest) later one begins.
 
-        dbGetQuery(s$con, "update tagDeps set tsEnd = (select min(t2.tsStart) - 1 from tagDeps as t2 where t2.tsStart > tagDeps.tsStart and tagDeps.tagID=t2.tagID) where tsEnd is null and tsStart is not null");
+            dbGetQuery(s$con, "update tagDeps set tsEnd = (select min(t2.tsStart) - 1 from tagDeps as t2 where t2.tsStart > tagDeps.tsStart and tagDeps.tagID=t2.tagID) where tsEnd is null and tsStart is not null");
 
-        ## replace slim copy of tag deps in mysql database
-        MotusDB("delete from tag_deployments")
-        dbWriteTable(MotusDB$con, "tag_deployments", dbGetQuery(s$con, "select projectID, tagID as motusTagID, tsStart, tsEnd from tagDeps order by projectID, tagID"),
-                     append=TRUE, row.names=FALSE)
-
+            ## replace slim copy of tag deps in mysql database
+            MotusDB("delete from tagDeps")
+            dbWriteTable(MotusDB$con, "tagDeps", dbGetQuery(s$con, "select projectID, tagID as motusTagID, tsStart, tsEnd from tagDeps order by projectID, tagID"),
+                         append=TRUE, row.names=FALSE)
+        }
     })
 
     ## grab species
     try(silent=TRUE, {
         t = motusListSpecies()
-        bkup("species")
-        dbWriteTable(s$con, "species", t, row.names=FALSE)
+        if (nrow(t) > 1000) { ## arbitrary species check
+            bkup("species")
+            dbWriteTable(s$con, "species", t, append=TRUE, row.names=FALSE)
+        }
     })
 
     ## grab receivers
@@ -261,21 +273,25 @@ getMotusMetaDB = function() {
         ## workaround until upstream changes format of serial numbers for Lotek receivers
         recv$serno = sub("(SRX600|SRX800|SRX-DL)", "Lotek", perl=TRUE, recv$serno)
 
-        bkup("recvDeps")
-        dbWriteTable(s$con, "recvDeps", recv, overwrite=TRUE, row.names=FALSE)
+        if (nrow(recv) > 100) { ## arbitrary sanity check
+            bkup("recvDeps")
+            dbWriteTable(s$con, "recvDeps", recv, append=TRUE, row.names=FALSE)
 
-        ## End any unterminated receiver deployments on receivers which have a later deployment.
-        ## The earlier deployment is ended 1 second before the (earliest) later one begins.
+            ## End any unterminated receiver deployments on receivers which have a later deployment.
+            ## The earlier deployment is ended 1 second before the (earliest) later one begins.
 
-        dbGetQuery(s$con, "update recvDeps set tsEnd = (select min(t2.tsStart) - 1 from recvDeps as t2 where t2.tsStart > recvDeps.tsStart and recvDeps.serno=t2.serno) where tsEnd is null and tsStart is not null");
+            dbGetQuery(s$con, "update recvDeps set tsEnd = (select min(t2.tsStart) - 1 from recvDeps as t2 where t2.tsStart > recvDeps.tsStart and recvDeps.serno=t2.serno) where tsEnd is null and tsStart is not null");
 
-        ## update slim copy of receiver deps in mysql database
-        MotusDB("delete from receiver_deployments")
-        dbWriteTable(MotusDB$con, "receiver_deployments", dbGetQuery(s$con, "select projectID, deviceID, tsStart, tsEnd from recvDeps order by projectID, deviceID"),
-                     append=TRUE, row.names=FALSE)
+            ## update slim copy of receiver deps in mysql database
+            MotusDB("delete from recvDeps")
+            dbWriteTable(MotusDB$con, "recvDeps", dbGetQuery(s$con, "select projectID, deviceID, tsStart, tsEnd from recvDeps order by projectID, deviceID"),
+                         append=TRUE, row.names=FALSE)
+        }
 
-        bkup("antDeps")
-        dbWriteTable(s$con, "antDeps", ant %>% as.data.frame, overwrite=TRUE, row.names=FALSE)
+        if (nrow(ant) > 100) { ## arbitrary sanity check
+            bkup("antDeps")
+            dbWriteTable(s$con, "antDeps", ant %>% as.data.frame, append=TRUE, row.names=FALSE)
+        }
     })
 
 
@@ -290,9 +306,10 @@ getMotusMetaDB = function() {
                            lat = latitude,
                            lon = longitude,
                            elev = 0 )
-
-        bkup("gps")
-        dbWriteTable(s$con, "recvGPS", gps, row.names=FALSE)
+        if (nrow(gps) > 100) { ## arbitrary sanity check
+            bkup("gps")
+            dbWriteTable(s$con, "recvGPS", gps, append=TRUE, row.names=FALSE)
+        }
     })
 
     ## DEPRECATED: copy paramOverrides table from paramOverrides database until there's a motus
@@ -300,8 +317,10 @@ getMotusMetaDB = function() {
     try(silent=TRUE, {
         sql = ensureParamOverridesTable()
         t = sql("select * from paramOverrides")
-        bkup("paramOverrides")
-        dbWriteTable(s$con, "paramOverrides", t, row.names=FALSE)
+        if (nrow(t) > 1) { ## arbitrary sanity check
+            bkup("paramOverrides")
+            dbWriteTable(s$con, "paramOverrides", t, append=TRUE, row.names=FALSE)
+        }
     })
 
     sql(.CLOSE=TRUE)
