@@ -4,25 +4,27 @@
 \alias{motusReserveKeys}
 \title{Reserve a block of consecutive primary keys in a motus transfer table.}
 \usage{
-motusReserveKeys(table, key, n, IDcol, ID)
+motusReserveKeys(table, key, n, maxKeyTable = "maxKeys")
 }
 \arguments{
 \item{table}{name of the table in which to reserve keys.}
 
 \item{key}{name of the key column in table \code{table}.  This
-column must be a INT (or BIGINT) PRIMARY KEY.}
+column must be an INT (or BIGINT) PRIMARY KEY.}
 
 \item{n}{number of consecutive keys to reserve.  If negative, the
 keys are reserved in descending order, starting at the smallest
-available value.}
+(i.e. most negative) available value.  For a given table, keys
+should always be reserved with \code{n} of the same size;
+i.e. keys should always be allocated ascending order, or always
+allocated in descending order.  Default: "maxKeys".}
 
-\item{IDcol}{name of column in which value \code{ID} is placed.
-Placing a receiver-unique value in this column lets us retrieve
-the value for the \code{key} column.}
-
-\item{ID}{value unique across receivers that is placed in column
-\code{IDcol} to mark it as belonging to this receiver.
-Ideally, this is the motusRecvID key for this receiver.}
+\item{maxKeyTable}{name of the table in which maximum key values
+are recorded; this must have (at least) these fields:
+\itemize{
+   \item tableName UNIQUE CHAR name of table
+   \item maxKey BIGINT maximum magnitude of a key in the table
+}}
 }
 \value{
 the first key value in the block.  For positive \code{n}, this
@@ -34,17 +36,20 @@ from closest to 0 to farther from 0.
 This function returns the first key value in a block of N consecutive
 key values for the specified table.  These key values are atomically
 reserved, and guaranteed not to collide with key values for any other
-receiver.  This permits multiple processes to be pushing data to
+receiver, provided every process updating the database uses this function.
+This permits multiple processes to be pushing data to
 motus (via populating the transfer tables) at the same time.
 }
-\details{
-Note: a record with the largest key value for the block, and default
-values for other columns, is inserted into the table.
+\note{
+this function uses the table maxKeys to track the maximum
+    (magnitude of a) key in any table of interest.  The
+    implementation is cooperative: all keys in any table this
+    function is used for must be obtained by using this function.
 }
 \examples{
 
 ## return the first key in a block of 200 reserved in the batches table
-motusReserveKeys("batches", "batchID", 200, "motusRecvID", 1234)
+motusReserveKeys("batches", "batchID", 200)
 
 }
 \author{
