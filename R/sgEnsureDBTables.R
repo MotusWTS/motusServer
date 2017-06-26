@@ -246,7 +246,7 @@ CREATE TABLE runs (
     batchIDbegin INT NOT NULL,                        -- ID of batch this run begins in
     tsBegin FLOAT(53),                                -- timestamp of first detection in run
     tsEnd  FLOAT(53),                                 -- timestamp of last detection in run (so far)
-    done TININT NOT NULL DEFAULT 0,                   -- is run finished? 0 if no, 1 if yes.
+    done TINYINT NOT NULL DEFAULT 0,                  -- is run finished? 0 if no, 1 if yes.
     motusTagID INT NOT NULL,                          -- ID for the tag detected; foreign key to Motus DB
                                                       -- table
     ant TINYINT NOT NULL,                             -- antenna number (USB Hub port # for SG; antenna port
