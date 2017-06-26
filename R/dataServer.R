@@ -258,24 +258,22 @@ batches_for_tag_project = function(env) {
 
     query = sprintf("
 select
-   t3.batchID,
-   t3.motusDeviceID as deviceID,
-   t3.monoBN,
-   t3.tsBegin,
-   t3.tsEnd,
-   t3.numHits,
-   t3.ts
+   t4.batchID,
+   t4.motusDeviceID as deviceID,
+   t4.monoBN,
+   t4.tsStart,
+   t4.tsEnd,
+   t4.numHits,
+   t4.ts
 from
-   tag_deployments as t1
-   join runs as t2 on t1.motusTagID=t2.motusTagID
-   join batches as t3 on
-      t2.batchIDbegin=t3.batchID
-      or t2.batchIDend=t3.batchID
-      or (t2.batchIDend is null and t2.batchIDbegin < t3.batchID)
+   tagDeps as t1
+   join runs as t2 on t2.motusTagID = t1.motusTagID
+   join batchRuns as t3 on t3.runID = t2.runID
+   join batches as t4 on t4.batchID = t3.batchID
 where
    t1.projectID = %d
-   and t1.tsStart <= t3.tsEnd
-   and t3.tsBegin <= t1.tsEnd
+   and t1.tsStart <= t4.tsEnd
+   and t4.tsStart <= t1.tsEnd
    and t3.batchID > %d
 group by
    t3.batchID
@@ -326,18 +324,18 @@ select
    t2.batchID,
    t2.motusDeviceID as deviceID,
    t2.monoBN,
-   t2.tsBegin,
+   t2.tsStart,
    t2.tsEnd,
    t2.numHits,
    t2.ts
 from
-   receiver_deployments as t1
+   recvDeps as t1
    join batches as t2 on t1.deviceID=t2.motusDeviceID
 where
    t1.projectID = %d
    and t2.batchID > %d
-   and ((t1.tsEnd is null and t2.tsBegin >= t1.tsStart)
-     or (t1.tsStart <= t2.tsEnd and t2.tsBegin <= t1.tsEnd))
+   and ((t1.tsEnd is null and t2.tsStart >= t1.tsStart)
+     or (t1.tsStart <= t2.tsEnd and t2.tsStart <= t1.tsEnd))
 order by
    t2.batchID
 limit %d
@@ -380,40 +378,33 @@ runs_for_tag_project = function(env) {
         return(res$finish())
     }
 
-    ## get all runs in a batch having a detection of a tag
-    ## within a deployment of that tag by the given project
-
-    ## For a batch B, a run R is "in" B means:
-    ##     R.batchIDbegin == B
-    ##  or R.batchIDend == B
-    ##  or (R.batchIDend is null and R.batchIDbegin < B)
+    ## get all runs of a tag within a deployment of that tag by the
+    ## given project that overlap the given batch
 
     query = sprintf("
 select
    t2.runID,
    t2.batchIDbegin,
-   t2.batchIDend,
+   t2.tsBegin,
+   t2.tsEnd,
+   t2.done,
    t2.motusTagID,
    t2.ant,
    t2.len
 from
-   batches as t1
-   join runs as t2 on
-      t2.batchIDbegin = t1.batchID
-      or t2.batchIDend = t1.batchID
-      or (t2.batchIDend is null and t2.batchIDbegin < t1.batchID)
-   join tag_deployments as t3 on t2.motusTagID=t3.motusTagID
-   join hits as t4 on t4.runID=t2.runID
+   batchRuns as t1
+   join runs as t2 on t2.runID = t1.runID
+   join tagDeps as t3 on t2.motusTagID=t3.motusTagID
 where
    t1.batchID = %d
-   and t2.runID > %d
+   and t1.runID > %d
    and t3.projectID = %d
-   and t4.ts <= t3.tsEnd
-   and t4.ts >= t3.tsStart
+   and t2.tsBegin <= t3.tsEnd
+   and t3.tsStart <= t2.tsEnd
 group by
-   t2.runID
+   t1.runID
 order by
-   t2.runID
+   t1.runID
 limit %d
 ",
 batchID, runID, projectID, MAX_ROWS_PER_REQUEST)
@@ -458,25 +449,25 @@ runs_for_receiver_project = function(env) {
 
     query = sprintf("
 select
-   t2.runID,
-   t2.batchIDbegin,
-   t2.batchIDend,
-   t2.motusTagID,
-   t2.ant,
-   t2.len
+   t3.runID,
+   t3.batchIDbegin,
+   t3.tsBegin,
+   t3.tsEnd,
+   t3.done,
+   t3.motusTagID,
+   t3.ant,
+   t3.len
 from
    batches as t1
-   join runs as t2 on
-      t2.batchIDbegin = t1.batchID
-      or t2.batchIDend = t1.batchID
-      or (t2.batchIDend is null and t2.batchIDbegin < t1.batchID)
-   join receiver_deployments as t3 on t1.motusDeviceID=t3.deviceID
+   join batchRuns as t2 on t2.batchID = t1.batchID
+   join runs as t3 on t3.runID=t2.runID
+   join recvDeps as t4 on t4.motusDeviceID=t1.deviceID
 where
    t1.batchID = %d
    and t2.runID > %d
-   and t3.projectID = %d
-   and ((t3.tsEnd is null and t1.tsBegin >= t3.tsStart)
-     or (t1.tsBegin <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
+   and t4.projectID = %d
+   and ((t4.tsEnd is null and t1.tsStart >= t4.tsStart)
+     or (t1.tsStart <= t4.tsEnd and t4.tsStart <= t1.tsEnd))
 order by
    t2.runID
 limit %d
@@ -536,18 +527,16 @@ select
    t4.burstSlop
 from
    batches as t1
-   join runs as t2 on
-      t2.batchIDbegin=t1.batchID
-      or t2.batchIDend=t1.batchID
-      or (t2.batchIDend is null and t2.batchIDbegin < t1.batchID)
-   join hits as t4 on t4.runID=t2.runID
-   join tag_deployments as t3 on t2.motusTagID=t3.motusTagID
+   join batchRuns as t2 on t2.batchID = t1.batchID
+   join runs as t3 on t3.runID = t2.runID
+   join hits as t4 on t4.runID = t2.runID
+   join tagDeps as t5 on t5.motusTagID=t3.motusTagID
 where
    t1.batchID = %d
    and t4.hitID > %d
-   and t3.projectID = %d
-   and t4.ts <= t3.tsEnd
-   and t4.ts >= t3.tsStart
+   and t5.projectID = %d
+   and t4.ts <= t5.tsEnd
+   and t4.ts >= t5.tsStart
 order by
    t4.hitID
 limit %d
@@ -606,15 +595,15 @@ select
    t2.slop,
    t2.burstSlop
 from
-   receiver_deployments as t3
+   recvDeps as t3
    join batches as t1 on t3.deviceID = t1.motusDeviceID
    join hits as t2 on t2.batchID=t1.batchID
 where
    t1.batchID = %d
    and t3.projectID = %d
    and t2.hitID > %d
-   and ((t3.tsEnd is null and t1.tsBegin >= t3.tsStart)
-     or (t1.tsBegin <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
+   and ((t3.tsEnd is null and t1.tsStart >= t3.tsStart)
+     or (t1.tsStart <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
 order by
    t2.hitID
 limit %d
@@ -658,6 +647,8 @@ gps_for_tag_project = function(env) {
     }
 
     ## pull out appropriate gps records
+    ## grab runs in the given batch for tags in the given project,
+    ## pull out gps fixes for those runs, and remove duplicates
 
     query = sprintf("
 select
@@ -671,29 +662,30 @@ from
    gps as t
    join (
       select
-         distinct 3600 * (floor(t2.ts / 3600) + dt.dt) as hour
+         t2.tsBegin as tsBegin,
+         t2.tsEnd as tsEnd
       from
-         runs as t3
-         join tag_deployments as t4 on t4.motusTagID=t3.motusTagID
-         join hits as t2 on t2.runID = t3.runID
-         join (select -1 as dt union select 0 as dt union select 1 as dt) as dt
+         batchRuns as t1
+         join runs as t2 on t2.runID = t1.runID
+         join tagDeps as t3 on t3.motusTagID=t2.motusTagID
       where
-         (t3.batchIDbegin = %d
-          or t3.batchIDend = %d
-          or (t3.batchIDend is null and t3.batchIDbegin < %d)
-         )
-         and t4.projectID = %d
-      order by
-         hour
-    ) as t2 on t.ts >= t2.hour and t.ts < t2.hour + 3600
+         t1.batchID = %d
+         and t3.projectID = %d
+         and t2.tsBegin <= t3.tsEnd
+         and t3.tsStart <= t2.tsEnd
+    ) as t4
 where
    t.batchID = %d
    and t.ts > %f
+   and t.ts >= t4.tsBegin - 3600
+   and t.ts <= t4.tsEnd + 3600
 order by
+   t.ts
+group by
    t.ts
 limit %d
 ",
-batchID, batchID, batchID, projectID, batchID, ts, MAX_ROWS_PER_REQUEST)
+batchID, projectID, batchID, ts, MAX_ROWS_PER_REQUEST)
     rv = MotusDB(query)
     res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
     res$finish()
@@ -742,15 +734,15 @@ select
     t2.lon,
     t2.alt
 from
-   receiver_deployments as t3
+   recvDeps as t3
    join batches as t1 on t3.deviceID = t1.motusDeviceID
    join gps as t2 on t2.batchID=t1.batchID
 where
    t1.batchID = %d
    and t3.projectID = %d
    and t2.ts > %f
-   and ((t3.tsEnd is null and t1.tsBegin >= t3.tsStart)
-     or (t1.tsBegin <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
+   and ((t3.tsEnd is null and t1.tsStart >= t3.tsStart)
+     or (t1.tsStart <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
 order by
    t2.ts
 limit %d
@@ -1155,18 +1147,15 @@ size_of_update_for_tag_project = function(env) {
 
     query = sprintf("
 select
-   count(t3.batchID)
+   count(*)
 from
-   tag_deployments as t1
-   join runs as t2 on t1.motusTagID=t2.motusTagID
-   join batches as t3 on
-      t2.batchIDbegin=t3.batchID
-      or t2.batchIDend=t3.batchID
-      or (t2.batchIDend is null and t2.batchIDbegin < t3.batchID)
+   tagDeps as t1
+   join runs as t2 on t1.motusTagID = t2.motusTagID
+   join batchRuns as t3 on t3.runID = t2.runID
 where
    t1.projectID = %d
-   and t1.tsStart <= t3.tsEnd
-   and t3.tsBegin <= t1.tsEnd
+   and t1.tsStart <= t2.tsEnd
+   and t2.tsStart <= t1.tsEnd
    and t3.batchID > %d
 group by
    t3.batchID
@@ -1178,20 +1167,17 @@ projectID, batchID)
 
     query = sprintf("
 select
-   count(t2.runID)
+   count(*)
 from
    batches as t1
-   join runs as t2 on
-      (t2.batchIDbegin = t1.batchID)
-      or (t2.batchIDend = t1.batchID)
-      or (t2.batchIDend is null and t2.batchIDbegin < t1.batchID)
-   join tag_deployments as t3 on t2.motusTagID=t3.motusTagID
-   join hits as t4 on t4.runID=t2.runID
+   join batchRuns as t2 on t2.batchID = t1.batchID
+   join runs as t3 on t3.runID = t2.runID
+   join tagDeps as t4 on t4.motusTagID=t3.motusTagID
 where
    t1.batchID > %d
-   and t3.projectID = %d
-   and t4.ts <= t3.tsEnd
-   and t4.ts >= t3.tsStart
+   and t4.projectID = %d
+   and t3.tsStart <= t3.tsEnd
+   and t4.tsStart <= t4.tsEnd
 group by
    t2.runID
 ",
@@ -1202,20 +1188,18 @@ batchID, projectID)
 
     query = sprintf("
 select
-   count(t4.hitID)
+   count(*)
 from
    batches as t1
-   join runs as t2 on
-      t2.batchIDbegin=t1.batchID
-      or t2.batchIDend=t1.batchID
-      or (t2.batchIDend is null and t2.batchIDbegin < t1.batchID)
-   join hits as t4 on t4.runID=t2.runID
-   join tag_deployments as t3 on t2.motusTagID=t3.motusTagID
+   join batchRuns as t2 on t2.batchID = t1.batchID
+   join runs as t3 on t3.runID = t2.runID
+   join hits as t4 on t4.runID = t2.runID
+   join tagDeps as t5 on t5.motusTagID=t3.motusTagID
 where
    t1.batchID > %d
-   and t3.projectID = %d
-   and t4.ts <= t3.tsEnd
-   and t4.ts >= t3.tsStart
+   and t5.projectID = %d
+   and t4.ts <= t5.tsEnd
+   and t4.ts >= t5.tsStart
 ",
 batchID, projectID)
     numHits = MotusDB(query)
@@ -1223,32 +1207,36 @@ batchID, projectID)
     ## get # of GPS fixes
     query = sprintf("
 select
-    count(*)
+    count (t.ts)
 from
    gps as t
    join (
       select
-         distinct 3600 * (floor(t2.ts / 3600) + dt.dt) as hour
+         t3.tsBegin as tsBegin,
+         t3.tsEnd as tsEnd
       from
-         runs as t3
-         join tag_deployments as t4 on t4.motusTagID=t3.motusTagID
-         join hits as t2 on t2.runID = t3.runID
-         join (select -1 as dt union select 0 as dt union select 1 as dt) as dt
+         batchRuns as t1
+         join runs as t2 on t2.runID = t1.runID
+         join tagDeps as t3 on t3.motusTagID=t2.motusTagID
       where
-         t4.projectID = %d
-         and (
-              t3.batchIDbegin = %d
-          or  t3.batchIDend = %d
-          or (t3.batchIDend is null and t3.batchIDbegin < %d)
-             )
-      order by
-         hour
-    ) as t2 on t.ts >= t2.hour and t.ts < t2.hour + 3600
+         t1.batchID > %d
+         and t3.projectID = %d
+         and t2.tsBegin <= t3.tsEnd
+         and t3.tsStart <= t2.tsEnd
+    ) as t4
 where
    t.batchID > %d
+   and t.ts > %f
+   and t.ts >= t4.tsBegin - 3600
+   and t.ts <= t4.tsEnd + 3600
+order by
+   t.ts
+group by
+   t.ts
 ",
-projectID, batchID, batchID, batchID, batchID)
-    numGPS = MotusDB(query)
+batchID, projectID, batchID, ts, MAX_ROWS_PER_REQUEST)
+
+    numGPS = MotusDB(query)[[1]]
 
     rv = list(numBatches=numBatches, numRuns=numRuns, numHits=numHits, numGPS=numGPS)
     res$body = memCompress(toJSON(rv, auto_unbox=TRUE), "gzip")
@@ -1294,15 +1282,15 @@ size_of_update_for_receiver_project = function(env) {
 
     query = sprintf("
 select
-   count(t2.batchID)
+   count(*)
 from
-   receiver_deployments as t1
+   recvDeps as t1
    join batches as t2 on t1.deviceID=t2.motusDeviceID
 where
    t1.projectID = %d
    and t2.batchID > %d
-   and ((t1.tsEnd is null and t2.tsBegin >= t1.tsStart)
-     or (t1.tsStart <= t2.tsEnd and t2.tsBegin <= t1.tsEnd))
+   and ((t1.tsEnd is null and t2.tsStart >= t1.tsStart)
+     or (t1.tsStart <= t2.tsEnd and t2.tsStart <= t1.tsEnd))
 ",
 projectID, batchID)
     numBatches = MotusDB(query)
@@ -1311,37 +1299,36 @@ projectID, batchID)
 
     query = sprintf("
 select
-   count(t2.runID)
+   count(*)
 from
    batches as t1
-   join runs as t2 on
-      t2.batchIDbegin = t1.batchID
-      or t2.batchIDend = t1.batchID
-      or (t2.batchIDend is null and t2.batchIDbegin < t1.batchID)
-   join receiver_deployments as t3 on t1.motusDeviceID=t3.deviceID
+   join batchRuns as t2 on t2.batchID = t1.batchID
+   join runs as t3 on t3.runID=t2.runID
+   join recvDeps as t4 on t4.motusDeviceID=t1.deviceID
 where
    t1.batchID > %d
-   and t3.projectID = %d
-   and ((t3.tsEnd is null and t1.tsBegin >= t3.tsStart)
-     or (t1.tsBegin <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
+   and t4.projectID = %d
+   and ((t4.tsEnd is null and t1.tsStart >= t4.tsStart)
+     or (t1.tsStart <= t4.tsEnd and t4.tsStart <= t1.tsEnd))
 ",
-batchID, projectID, MAX_ROWS_PER_REQUEST)
+batchID, projectID)
+
     numRuns = MotusDB(query)
 
     ## get number of hits in new batches
 
     query = sprintf("
 select
-   count(t2.hitID)
+   count(*)
 from
-   receiver_deployments as t3
+   recvDeps as t3
    join batches as t1 on t3.deviceID = t1.motusDeviceID
    join hits as t2 on t2.batchID=t1.batchID
 where
    t1.batchID > %d
    and t3.projectID = %d
-   and ((t3.tsEnd is null and t1.tsBegin >= t3.tsStart)
-     or (t1.tsBegin <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
+   and ((t3.tsEnd is null and t1.tsStart >= t3.tsStart)
+     or (t1.tsStart <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
 ",
 batchID, projectID)
     numHits = MotusDB(query)
@@ -1349,16 +1336,16 @@ batchID, projectID)
     ## get # of GPS fixes
     query = sprintf("
 select
-    count(t2.ts)
+    count(*)
 from
-   receiver_deployments as t3
+   recvDeps as t3
    join batches as t1 on t3.deviceID = t1.motusDeviceID
    join gps as t2 on t2.batchID=t1.batchID
 where
    t1.batchID > %d
    and t3.projectID = %d
-   and ((t3.tsEnd is null and t1.tsBegin >= t3.tsStart)
-     or (t1.tsBegin <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
+   and ((t3.tsEnd is null and t1.tsStart >= t3.tsStart)
+     or (t1.tsStart <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
 ",
 batchID, projectID)
     numGPS = MotusDB(query)
