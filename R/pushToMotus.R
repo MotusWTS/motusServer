@@ -86,14 +86,14 @@ pushToMotus = function(src) {
 
             ## create table with new tag ambiguities to be added to master tagAmbig table
             newAmbig = joinAmbig[newA, ] %>% transmute_(
-                                         ambigID="ambigID.y",
-                                         motusTagID1 = "motusTagID1",
-                                         motusTagID2 = "motusTagID2",
-                                         motusTagID3 = "motusTagID3",
-                                         motusTagID4 = "motusTagID4",
-                                         motusTagID5 = "motusTagID5",
-                                         motusTagID6 = "motusTagID6",
-                                         tsMotus     = 0) %>% as.data.frame
+                                                 ambigID="ambigID.y",
+                                                 motusTagID1 = "motusTagID1",
+                                                 motusTagID2 = "motusTagID2",
+                                                 motusTagID3 = "motusTagID3",
+                                                 motusTagID4 = "motusTagID4",
+                                                 motusTagID5 = "motusTagID5",
+                                                 motusTagID6 = "motusTagID6",
+                                                 tsMotus     = 0) %>% as.data.frame
             ## write new tag ambiguities
             ## but work around bug in RMySQL
             dbWriteTable(mtcon, "temptagAmbig", newAmbig, overwrite=TRUE, row.names=FALSE)
@@ -147,6 +147,7 @@ pushToMotus = function(src) {
             offsetRunID = firstMotusRunID - runInfo[1,2]
 
             res = dbSendQuery(con, sprintf("select * from runs where batchIDBegin = %d order by runID", b$batchID))
+            dbClearResult(res)
 
             ## grab runs from this batch, substituting any ambiguous tag IDs with their master (global) version:
             res = dbSendQuery(con, sprintf("
@@ -175,7 +176,9 @@ order by
                 runs$runID        = runs$runID        + offsetRunID
                 runs$batchIDbegin = runs$batchIDbegin + offsetBatchID
                 dbWriteTable(mtcon, "runs", runs, append=TRUE, row.names=FALSE)
-                dbWriteTable(mtcon, "batchRuns", runs[, c("batchIDbegin", "runID")], append=TRUE, row.names=FALSE)
+                ## rename batchIDbegin column so we can use it as batchID in batchRuns table
+                names(runs)[grep("batchIDbegin", names(runs))] = "batchID"
+                dbWriteTable(mtcon, "batchRuns", runs[, c("batchID", "runID")], append=TRUE, row.names=FALSE)
             }
             dbClearResult(res)
         }
@@ -278,8 +281,8 @@ order by t1.runID
     ## tsMotus on these batches.
 
     MotusDB("update batches set tsMotus = 0 where tsMotus = -1 and batchID >= %d and batchID <= %d",
-          offsetBatchID + newBatches$batchID[1],
-          offsetBatchID + tail(newBatches$batchID, 1))
+            offsetBatchID + newBatches$batchID[1],
+            offsetBatchID + tail(newBatches$batchID, 1))
 
     invisible(NULL)
 }
