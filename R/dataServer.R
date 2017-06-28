@@ -259,7 +259,7 @@ batches_for_tag_project = function(env) {
     query = sprintf("
 select
    t4.batchID,
-   t4.motusDeviceID as deviceID,
+   t4.motusDeviceID,
    t4.monoBN,
    t4.tsStart,
    t4.tsEnd,
@@ -322,7 +322,7 @@ batches_for_receiver_project = function(env) {
     query = sprintf("
 select
    t2.batchID,
-   t2.motusDeviceID as deviceID,
+   t2.motusDeviceID,
    t2.monoBN,
    t2.tsStart,
    t2.tsEnd,
