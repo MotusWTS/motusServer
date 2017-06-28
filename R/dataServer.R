@@ -1159,7 +1159,7 @@ size_of_update_for_tag_project = function(env) {
 
     query = sprintf("
 select
-   count(*)
+   count(distinct t3.batchID)
 from
    tagDeps as t1
    join runs as t2 on t1.motusTagID = t2.motusTagID
@@ -1167,19 +1167,17 @@ from
 where
    t1.projectID = %d
    and t1.tsStart <= t2.tsEnd
-   and t2.tsStart <= t1.tsEnd
+   and t2.tsBegin <= t1.tsEnd
    and t3.batchID > %d
-group by
-   t3.batchID
 ",
 projectID, batchID)
-    numBatches = MotusDB(query)
+    numBatches = MotusDB(query)[[1]]
 
     ## get number of runs in new batches
 
     query = sprintf("
 select
-   count(*)
+   count(distinct t2.runID)
 from
    batches as t1
    join batchRuns as t2 on t2.batchID = t1.batchID
@@ -1188,13 +1186,11 @@ from
 where
    t1.batchID > %d
    and t4.projectID = %d
-   and t3.tsStart <= t3.tsEnd
+   and t3.tsBegin <= t3.tsEnd
    and t4.tsStart <= t4.tsEnd
-group by
-   t2.runID
 ",
 batchID, projectID)
-    numRuns = MotusDB(query)
+    numRuns = MotusDB(query)[[1]]
 
     ## get number of hits in new batches
 
@@ -1214,7 +1210,7 @@ where
    and t4.ts >= t5.tsStart
 ",
 batchID, projectID)
-    numHits = MotusDB(query)
+    numHits = MotusDB(query)[[1]]
 
     ## get # of GPS fixes
     query = sprintf("
