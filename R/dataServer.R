@@ -1245,7 +1245,12 @@ batchID, projectID, batchID)
 
     numGPS = MotusDB(query)[[1]]
 
-    rv = list(numBatches=numBatches, numRuns=numRuns, numHits=numHits, numGPS=numGPS)
+    numBytes = 110 + 90 * numBatches +
+        75 + 64 * numRuns +
+        80 + 100 * numHits +
+        50 + 52 * numGPS
+
+    rv = list(numBatches=numBatches, numRuns=numRuns, numHits=numHits, numGPS=numGPS, numBytes=numBytes)
     res$body = memCompress(toJSON(rv, auto_unbox=TRUE), "gzip")
     res$finish()
 }
@@ -1357,7 +1362,12 @@ where
 batchID, projectID)
     numGPS = MotusDB(query)
 
-    rv = list(numBatches=numBatches, numRuns=numRuns, numHits=numHits, numGPS=numGPS)
+    numBytes = 110 + 90 * numBatches +
+        75 + 64 * numRuns +
+        80 + 100 * numHits +
+        50 + 52 * numGPS
+
+    rv = list(numBatches=numBatches, numRuns=numRuns, numHits=numHits, numGPS=numGPS, numBytes=numBytes)
     res$body = memCompress(toJSON(rv, auto_unbox=TRUE), "gzip")
     res$finish()
 }
