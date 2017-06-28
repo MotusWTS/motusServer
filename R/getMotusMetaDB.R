@@ -186,7 +186,7 @@ getMotusMetaDB = function() {
             dbGetQuery(s$con, paste0("drop table ", T, "_old"))
         })
         try(silent=TRUE, {
-            dbGetQuery(s$con, paste0("create table ", T, "_old as select * from T"))
+            dbGetQuery(s$con, paste0("create table ", T, "_old as select * from ", T))
             dbGetQuery(s$con, paste0("delete from ", T))
         })
     }
@@ -241,7 +241,7 @@ getMotusMetaDB = function() {
         t = motusListSpecies()
         if (nrow(t) > 1000) { ## arbitrary species check
             bkup("species")
-            dbWriteTable(s$con, "species", t, append=TRUE, row.names=FALSE)
+            dbWriteTable(s$con, "species", t[,c("id", "english", "french", "scientific", "group", "sort")], append=TRUE, row.names=FALSE)
         }
     })
 
@@ -259,7 +259,7 @@ getMotusMetaDB = function() {
             if (isTRUE(nrow(r) > 0)) {
                 if ("antennas" %in% names(r)) {
                     for (i in 1:nrow(r)) {
-                        if (! is.null(r$antennas[[i]])) {
+                        if (isTRUE(nrow(r$antennas[[i]]) > 0)) {
                             ant = bind_rows(ant, cbind(deployID=r$deployID[[i]], r$antennas[[i]]))
                         }
                     }
@@ -305,7 +305,8 @@ getMotusMetaDB = function() {
                            ts = tsStart,
                            lat = latitude,
                            lon = longitude,
-                           elev = 0 )
+                           elev = 0 )  %>%
+            distinct (deviceID, ts)
         if (nrow(gps) > 100) { ## arbitrary sanity check
             bkup("gps")
             dbWriteTable(s$con, "recvGPS", gps, append=TRUE, row.names=FALSE)
