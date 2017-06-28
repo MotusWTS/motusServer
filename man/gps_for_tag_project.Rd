@@ -2,7 +2,8 @@
 % Please edit documentation in R/dataServer.R
 \name{gps_for_tag_project}
 \alias{gps_for_tag_project}
-\title{get all GPS fixes from a batch "near" to detections of tags from a project.}
+\title{get all GPS fixes from a batch "relevant to" detections of tags
+from a project.}
 \usage{
 gps_for_tag_project(env)
 }
@@ -17,5 +18,15 @@ gps_for_tag_project(env)
 a data frame with the same schema as the gps table, but JSON-encoded as a list of columns
 }
 \description{
-get all GPS fixes from a batch "near" to detections of tags from a project.
+get all GPS fixes from a batch "relevant to" detections of tags
+from a project.
+}
+\details{
+This is given a permissive interpretation: all GPS fixes
+    from 1 hour before the first detection of a project tag to 1
+    hour after the last detection of a project tag in the given
+    batch are returned.  This might return GPS fixes for long
+    periods where no tags from the project were detected, if a
+    batch has a few early and a few late detections of the
+    project's tags.
 }
