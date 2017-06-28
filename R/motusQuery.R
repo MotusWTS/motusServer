@@ -82,6 +82,7 @@ motusQuery = function (API, params = NULL, requestType="post", show=FALSE, json=
         cat(JSON, "\n")
 
     log = file("~/motus_query_log.txt", "a")
+    on.exit(close(log))
     cat(format(Sys.time()), ",", requestType, ",", API, ",", JSON, "\n", file=log)
     retries = 0
     while(retries < 5) {
