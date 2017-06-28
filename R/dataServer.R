@@ -1095,6 +1095,11 @@ tags_for_ambiguities = function(env) {
         return(res$finish())
     }
 
+    ## to work around invalid syntax of '()', use an invalid ID
+    ## to get a result with zero rows.
+
+    if (length(ambigIDs) == 0)
+        ambigIDs = 0
     query = sprintf("
 select
    t1.ambigID,
