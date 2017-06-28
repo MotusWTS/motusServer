@@ -112,7 +112,7 @@ handleRegisterTags = function(j) {
 
     deployDate = NA
     if (! is.null(meta$deployDate)) {
-        deployDate = ymd(meta$deployDate)
+        deployDate = ymd(meta$deployDate, tz="GMT")
         if (is.na(deployDate)) {
             jobLog(j, paste0("Warning: could not parse deployment date: ", meta$deployDate, "\nShould be in form YYYY-MM-DD.\n"))
         }
