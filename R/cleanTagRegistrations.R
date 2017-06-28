@@ -223,7 +223,7 @@ cleanTagRegistrations = function(m, s, cleanBI = FALSE) {
 
     clean$tsStart[haveDateBin] = subset(clean, haveDateBin) %>%
         with( paste(substr(dateBin, 1, 4), (as.numeric(substring(dateBin,6)) - 1) * 3 + 1, 1, sep="-")) %>%
-        ymd %>% as.numeric
+        ymd(tz="GMT") %>% as.numeric
 
 
     ##-------------------- tsEnd --------------------
