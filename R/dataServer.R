@@ -614,11 +614,20 @@ batchID, projectID, hitID, MAX_ROWS_PER_REQUEST)
     res$finish()
 }
 
-#' get all GPS fixes from a batch "near" to detections of tags from a project.
+#' get all GPS fixes from a batch "relevant to" detections of tags
+#' from a project.
 #'
 #' @param projectID integer project ID of tags of interest
 #' @param batchID integer batchID
 #' @param ts numeric timestamp of latest fix already obtained
+#'
+#' @details This is given a permissive interpretation: all GPS fixes
+#'     from 1 hour before the first detection of a project tag to 1
+#'     hour after the last detection of a project tag in the given
+#'     batch are returned.  This might return GPS fixes for long
+#'     periods where no tags from the project were detected, if a
+#'     batch has a few early and a few late detections of the
+#'     project's tags.
 #'
 #' @return a data frame with the same schema as the gps table, but JSON-encoded as a list of columns
 
@@ -662,8 +671,8 @@ from
    gps as t
    join (
       select
-         t2.tsBegin as tsBegin,
-         t2.tsEnd as tsEnd
+         min(t2.tsBegin) as tsBegin,
+         max(t2.tsEnd) as tsEnd
       from
          batchRuns as t1
          join runs as t2 on t2.runID = t1.runID
@@ -680,8 +689,6 @@ where
    and t.ts >= t4.tsBegin - 3600
    and t.ts <= t4.tsEnd + 3600
 order by
-   t.ts
-group by
    t.ts
 limit %d
 ",
@@ -1207,13 +1214,13 @@ batchID, projectID)
     ## get # of GPS fixes
     query = sprintf("
 select
-    count (t.ts)
+    count(t.ts)
 from
    gps as t
    join (
       select
-         t3.tsBegin as tsBegin,
-         t3.tsEnd as tsEnd
+         min(t2.tsBegin) as tsBegin,
+         max(t2.tsEnd) as tsEnd
       from
          batchRuns as t1
          join runs as t2 on t2.runID = t1.runID
@@ -1226,15 +1233,10 @@ from
     ) as t4
 where
    t.batchID > %d
-   and t.ts > %f
    and t.ts >= t4.tsBegin - 3600
    and t.ts <= t4.tsEnd + 3600
-order by
-   t.ts
-group by
-   t.ts
 ",
-batchID, projectID, batchID, ts, MAX_ROWS_PER_REQUEST)
+batchID, projectID, batchID)
 
     numGPS = MotusDB(query)[[1]]
 
