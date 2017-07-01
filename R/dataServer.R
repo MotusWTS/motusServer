@@ -264,7 +264,10 @@ select
    t4.tsStart,
    t4.tsEnd,
    t4.numHits,
-   t4.ts
+   t4.ts,
+   t4.motusUserID,
+   t4.motusProjectID,
+   t4.motusJobID
 from
    tagDeps as t1
    join runs as t2 on t2.motusTagID = t1.motusTagID
@@ -327,7 +330,10 @@ select
    t2.tsStart,
    t2.tsEnd,
    t2.numHits,
-   t2.ts
+   t2.ts,
+   t4.motusUserID,
+   t4.motusProjectID,
+   t4.motusJobID
 from
    recvDeps as t1
    join batches as t2 on t1.deviceID=t2.motusDeviceID
