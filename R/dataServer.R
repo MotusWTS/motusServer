@@ -190,7 +190,7 @@ validate_request = function(json, res, needProjectID=TRUE) {
 
     tryCatch({
         authToken = json$authToken %>% as.character
-        projectID = json$projectID %>% as.integer[1]
+        projectID = (json$projectID %>% as.integer)[1]
         now = as.numeric(Sys.time())
         rv = AuthDB("select userID, (select group_concat(key, ',') from json_each(projects)) as projects from auth where token=:token and expiry > :now",
                     token = authToken,
@@ -236,6 +236,69 @@ sendHeader = function(res) {
 
 sendError = function(res, error) {
     res$body = memCompress(toJSON(list(error=error), auto_unbox=TRUE), "gzip")
+}
+
+#' get receivers for a project
+#'
+#' @param projectID; integer scalar project ID
+#'
+#' @return a list with these vector items:
+#'    \itemize{
+#'       \item projectID; integer ID of project that deployed the receiver
+#'       \item serno; character serial number, e.g. "SG-1214BBBK3999", "Lotek-8681"
+#'       \item receiverType; character "SENSORGNOME" or "LOTEK"
+#'       \item deviceID; integer device ID (internal to motus)
+#'       \item status; character deployment status
+#'       \item name; character; typically a site name
+#'       \item fixtureType; character; what is the receiver mounted on?
+#'       \item latitude; numeric (initial) location, degrees North
+#'       \item longitude; numeric (initial) location, degrees East
+#'       \item elevation; numeric (initial) location, metres ASL
+#'       \item isMobile; integer non-zero means a mobile deployment
+#'       \item tsStart; numeric; timestamp of deployment start
+#'       \item tsEnd; numeric; timestamp of deployment end, or NA if ongoing
+#'    }
+
+receivers_for_project = function(env) {
+
+    req = Rook::Request$new(env)
+    res = Rook::Response$new()
+
+    if (tracing)
+        browser()
+    json = req$POST()[['json']] %>% fromJSON()
+    auth = validate_request(json, res)
+    if (is.null(auth))
+        return(res$finish())
+
+    sendHeader(res)
+
+    ## select all deployments of the receivers from the specified project
+
+    query = sprintf("
+select
+    t1.projectID,
+    t1.serno,
+    t1.receiverType,
+    t1.deviceID,
+    t1.status,
+    t1.name,
+    t1.fixtureType,
+    t1.latitude,
+    t1.longitude,
+    t1.elevation,
+    t1.isMobile,
+    t1.tsStart,
+    t1.tsEnd
+from
+   recvDeps as t1
+where
+   t1.projectID =%d
+", auth$projectID)
+
+    recvDeps = MetaDB(query)
+    res$body = memCompress(toJSON(recvDeps, auto_unbox=TRUE, dataframe="columns"), "gzip")
+    res$finish()
 }
 
 

@@ -4,7 +4,7 @@
 \alias{validate_request}
 \title{validate a request by looking up its token, failing gracefully}
 \usage{
-validate_request(json, res)
+validate_request(json, res, needProjectID = TRUE)
 }
 \arguments{
 \item{json}{named list with at least these items:
@@ -12,14 +12,20 @@ validate_request(json, res)
 \item authToken authorization token
 \item projectID (optional) projectID
 }}
+
+\item{res}{the rook result object}
+
+\item{needProjectID}{logical; if TRUE, a projectID to which the user
+has permission must be in \code{json}; default:  TRUE}
 }
 \value{
-if \code{authToken} represents a valid unexpired token, and projectID is
+if \code{authToken} represents a valid unexpired token, and needProjectID is FALSE or projectID is
 a project for which the user is authorized, returns
 a list with these items:
 \itemize{
 \item userID integer user ID
-\item projects integer vector of project IDs user has permission to
+\item projects integer vector of *all* project IDs user has permission to
+\item projectID the projectID specified in the request (and it is guaranteed the user has permission to this project)
 }
 Otherwise, send a JSON-formatted reply with the single item "error": "authorization failed"
 and return NULL.
