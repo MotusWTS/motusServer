@@ -74,20 +74,21 @@ dataServer = function(port=0xda7a, tracing=FALSE) {
 ## a string giving the list of apps for this server
 
 allDataApps = c("authenticate_user",
- "batches_for_tag_project",
- "batches_for_receiver_project",
- "runs_for_tag_project",
- "runs_for_receiver_project",
- "hits_for_tag_project",
- "hits_for_receiver_project",
- "gps_for_tag_project",
- "gps_for_receiver_project",
- "metadata_for_tags",
- "metadata_for_receivers",
- "tags_for_ambiguities",
- "size_of_update_for_tag_project",
- "size_of_update_for_receiver_project"
- )
+                "receivers_for_project",
+                "batches_for_tag_project",
+                "batches_for_receiver_project",
+                "runs_for_tag_project",
+                "runs_for_receiver_project",
+                "hits_for_tag_project",
+                "hits_for_receiver_project",
+                "gps_for_tag_project",
+                "gps_for_receiver_project",
+                "metadata_for_tags",
+                "metadata_for_receivers",
+                "tags_for_ambiguities",
+                "size_of_update_for_tag_project",
+                "size_of_update_for_receiver_project"
+                )
 
 #' authenticate_user return a list of projects and receivers the user is authorized to receive data for
 #'
@@ -160,41 +161,53 @@ authenticate_user = function(env) {
 }
 
 #' validate a request by looking up its token, failing gracefully
+#'
 #' @param json named list with at least these items:
 #' \itemize{
 #' \item authToken authorization token
 #' \item projectID (optional) projectID
 #' }
 #'
-#' @return if \code{authToken} represents a valid unexpired token, and projectID is
+#' @param res the rook result object
+#'
+#' @param needProjectID logical; if TRUE, a projectID to which the user
+#' has permission must be in \code{json}; default:  TRUE
+#'
+#' @return if \code{authToken} represents a valid unexpired token, and needProjectID is FALSE or projectID is
 #' a project for which the user is authorized, returns
 #' a list with these items:
 #' \itemize{
 #' \item userID integer user ID
-#' \item projects integer vector of project IDs user has permission to
+#' \item projects integer vector of *all* project IDs user has permission to
+#' \item projectID the projectID specified in the request (and it is guaranteed the user has permission to this project)
 #' }
 #' Otherwise, send a JSON-formatted reply with the single item "error": "authorization failed"
 #' and return NULL.
 
-validate_request = function(json, res) {
+validate_request = function(json, res, needProjectID=TRUE) {
 
-    authToken = json$authToken
-    projectID = json$projectID
-    now = as.numeric(Sys.time())
-    rv = AuthDB("select userID, (select group_concat(key, ',') from json_each(projects)) as projects from auth where token=:token and expiry > :now",
-                token = authToken,
-                now = now)
     okay = TRUE
-    if (! isTRUE(nrow(rv) > 0)) {
-        ## authToken invalid or expired
-        okay = FALSE
-    } else  {
-        rv = list(userID=rv$userID, projects = scan(text=rv$projects, sep=",", quiet=TRUE))
-        if (length(projectID) > 0 && ! isTRUE(projectID %in% rv$projects)) {
-            ## user not authorized for project
+
+    tryCatch({
+        authToken = json$authToken %>% as.character
+        projectID = json$projectID %>% as.integer[1]
+        now = as.numeric(Sys.time())
+        rv = AuthDB("select userID, (select group_concat(key, ',') from json_each(projects)) as projects from auth where token=:token and expiry > :now",
+                    token = authToken,
+                    now = now)
+        if (! isTRUE(nrow(rv) > 0)) {
+            ## authToken invalid or expired
             okay = FALSE
+        } else  {
+            rv = list(userID=rv$userID, projects = scan(text=rv$projects, sep=",", quiet=TRUE), projectID=projectID)
+            if (needProjectID && ! isTRUE(length(projectID) == 1 && projectID %in% rv$projects)) {
+                ## user not authorized for project
+            okay = FALSE
+            }
         }
-    }
+    }, error=function(e) {
+        okay <<- FALSE
+    })
     if (! okay) {
         sendHeader(res)
         sendError(res, "authorization failed")
@@ -248,8 +261,7 @@ batches_for_tag_project = function(env) {
 
     sendHeader(res)
 
-    projectID = json$projectID %>% as.integer
-    batchID = json$batchID %>% as.integer
+    batchID = json$batchID %>% as.integer[1]
     if (!isTRUE(is.finite(batchID)))
         batchID = 0
 
@@ -284,7 +296,7 @@ order by
    t3.batchID
 limit %d
 ",
-projectID, batchID, MAX_ROWS_PER_REQUEST)
+auth$projectID, batchID, MAX_ROWS_PER_REQUEST)
     rv = MotusDB(query)
     res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
     res$finish()
@@ -312,7 +324,6 @@ batches_for_receiver_project = function(env) {
 
     sendHeader(res)
 
-    projectID = json$projectID %>% as.integer
     batchID = json$batchID %>% as.integer
     if (!isTRUE(is.finite(batchID)))
         batchID = 0
@@ -346,7 +357,7 @@ order by
    t2.batchID
 limit %d
 ",
-projectID, batchID, MAX_ROWS_PER_REQUEST)
+auth$projectID, batchID, MAX_ROWS_PER_REQUEST)
     rv = MotusDB(query)
     res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
     res$finish()
@@ -375,11 +386,10 @@ runs_for_tag_project = function(env) {
 
     sendHeader(res)
 
-    projectID = json$projectID %>% as.integer
     batchID = json$batchID %>% as.integer
     runID = json$runID %>% as.integer
 
-    if (!isTRUE(is.finite(projectID) && is.finite(batchID) && is.finite(runID))) {
+    if (!isTRUE(is.finite(batchID) && is.finite(runID))) {
         sendError("invalid parameter(s)")
         return(res$finish())
     }
@@ -413,7 +423,7 @@ order by
    t1.runID
 limit %d
 ",
-batchID, runID, projectID, MAX_ROWS_PER_REQUEST)
+batchID, runID, auth$projectID, MAX_ROWS_PER_REQUEST)
     rv = MotusDB(query)
     res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
     res$finish()
@@ -442,11 +452,10 @@ runs_for_receiver_project = function(env) {
 
     sendHeader(res)
 
-    projectID = json$projectID %>% as.integer
     batchID = json$batchID %>% as.integer
     runID = json$runID %>% as.integer
 
-    if (!isTRUE(is.finite(projectID) && is.finite(batchID) && is.finite(runID))) {
+    if (!isTRUE(is.finite(batchID) && is.finite(runID))) {
         sendError("invalid parameter(s)")
         return(res$finish())
     }
@@ -478,7 +487,7 @@ order by
    t2.runID
 limit %d
 ",
-batchID, runID, projectID, MAX_ROWS_PER_REQUEST)
+batchID, runID, auth$projectID, MAX_ROWS_PER_REQUEST)
     rv = MotusDB(query)
     res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
     res$finish()
@@ -507,11 +516,10 @@ hits_for_tag_project = function(env) {
 
     sendHeader(res)
 
-    projectID = json$projectID %>% as.integer
     batchID = json$batchID %>% as.integer
     hitID = json$hitID %>% as.integer
 
-    if (!isTRUE(is.finite(projectID) && is.finite(batchID) && is.finite(hitID))) {
+    if (!isTRUE(is.finite(batchID) && is.finite(hitID))) {
         sendError("invalid parameter(s)")
         return(res$finish())
     }
@@ -547,7 +555,7 @@ order by
    t4.hitID
 limit %d
 ",
-batchID, hitID, projectID, MAX_ROWS_PER_REQUEST)
+batchID, hitID, auth$projectID, MAX_ROWS_PER_REQUEST)
     rv = MotusDB(query)
     res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
     res$finish()
@@ -576,11 +584,10 @@ hits_for_receiver_project = function(env) {
 
     sendHeader(res)
 
-    projectID = json$projectID %>% as.integer
     batchID = json$batchID %>% as.integer
     hitID = json$hitID %>% as.integer
 
-    if (!isTRUE(is.finite(projectID) && is.finite(batchID) && is.finite(hitID))) {
+    if (!isTRUE(is.finite(batchID) && is.finite(hitID))) {
         sendError("invalid parameter(s)")
         return(res$finish())
     }
@@ -614,7 +621,7 @@ order by
    t2.hitID
 limit %d
 ",
-batchID, projectID, hitID, MAX_ROWS_PER_REQUEST)
+batchID, auth$projectID, hitID, MAX_ROWS_PER_REQUEST)
     rv = MotusDB(query)
     res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
     res$finish()
@@ -652,7 +659,6 @@ gps_for_tag_project = function(env) {
 
     sendHeader(res)
 
-    projectID = json$projectID %>% as.integer
     batchID = json$batchID %>% as.integer
     ts = json$ts %>% as.numeric
 
@@ -698,7 +704,7 @@ order by
    t.ts
 limit %d
 ",
-batchID, projectID, batchID, ts, MAX_ROWS_PER_REQUEST)
+batchID, auth$projectID, batchID, ts, MAX_ROWS_PER_REQUEST)
     rv = MotusDB(query)
     res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
     res$finish()
@@ -727,11 +733,10 @@ gps_for_receiver_project = function(env) {
 
     sendHeader(res)
 
-    projectID = json$projectID %>% as.integer
     batchID = json$batchID %>% as.integer
     ts = json$ts %>% as.numeric
 
-    if (!isTRUE(is.finite(projectID) && is.finite(batchID) && is.finite(ts))) {
+    if (!isTRUE(is.finite(batchID) && is.finite(ts))) {
         sendError("invalid parameter(s)")
         return(res$finish())
     }
@@ -760,7 +765,7 @@ order by
    t2.ts
 limit %d
 ",
-batchID, projectID, ts, MAX_ROWS_PER_REQUEST)
+batchID, auth$projectID, ts, MAX_ROWS_PER_REQUEST)
     rv = MotusDB(query)
     res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
     res$finish()
@@ -1155,7 +1160,6 @@ size_of_update_for_tag_project = function(env) {
 
     sendHeader(res)
 
-    projectID = json$projectID %>% as.integer
     batchID = json$batchID %>% as.integer
     if (!isTRUE(is.finite(batchID)))
         batchID = 0
@@ -1176,7 +1180,7 @@ where
    and t2.tsBegin <= t1.tsEnd
    and t3.batchID > %d
 ",
-projectID, batchID)
+auth$projectID, batchID)
     numBatches = MotusDB(query)[[1]]
 
     ## get number of runs in new batches
@@ -1195,7 +1199,7 @@ where
    and t3.tsBegin <= t3.tsEnd
    and t4.tsStart <= t4.tsEnd
 ",
-batchID, projectID)
+batchID, auth$projectID)
     numRuns = MotusDB(query)[[1]]
 
     ## get number of hits in new batches
@@ -1215,7 +1219,7 @@ where
    and t4.ts <= t5.tsEnd
    and t4.ts >= t5.tsStart
 ",
-batchID, projectID)
+batchID, auth$projectID)
     numHits = MotusDB(query)[[1]]
 
     ## get # of GPS fixes
@@ -1243,7 +1247,7 @@ where
    and t.ts >= t4.tsBegin - 3600
    and t.ts <= t4.tsEnd + 3600
 ",
-batchID, projectID, batchID)
+batchID, auth$projectID, batchID)
 
     numGPS = MotusDB(query)[[1]]
 
@@ -1284,7 +1288,6 @@ size_of_update_for_receiver_project = function(env) {
 
     sendHeader(res)
 
-    projectID = json$projectID %>% as.integer
     batchID = json$batchID %>% as.integer
     if (!isTRUE(is.finite(batchID)))
         batchID = 0
@@ -1306,7 +1309,7 @@ where
    and ((t1.tsEnd is null and t2.tsStart >= t1.tsStart)
      or (t1.tsStart <= t2.tsEnd and t2.tsStart <= t1.tsEnd))
 ",
-projectID, batchID)
+auth$projectID, batchID)
     numBatches = MotusDB(query)
 
     ## get number of runs in new batches
@@ -1325,7 +1328,7 @@ where
    and ((t4.tsEnd is null and t1.tsStart >= t4.tsStart)
      or (t1.tsStart <= t4.tsEnd and t4.tsStart <= t1.tsEnd))
 ",
-batchID, projectID)
+batchID, auth$projectID)
 
     numRuns = MotusDB(query)
 
@@ -1344,7 +1347,7 @@ where
    and ((t3.tsEnd is null and t1.tsStart >= t3.tsStart)
      or (t1.tsStart <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
 ",
-batchID, projectID)
+batchID, auth$projectID)
     numHits = MotusDB(query)
 
     ## get # of GPS fixes
@@ -1361,7 +1364,7 @@ where
    and ((t3.tsEnd is null and t1.tsStart >= t3.tsStart)
      or (t1.tsStart <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
 ",
-batchID, projectID)
+batchID, auth$projectID)
     numGPS = MotusDB(query)
 
     numBytes = 110 + 90 * numBatches +
