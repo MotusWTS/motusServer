@@ -90,7 +90,8 @@ ensureServerDirs = function() {
     ## create symlinks to package scripts and shared libs from /sgm/bin
 
     instDir = system.file(c("scripts", "libs"), package="motusServer")
-    suppressWarnings(file.symlink(dir(instDir, full.names=TRUE), file.path(MOTUS_PATH$BIN, dir(instDir))))
+    targets = dir(instDir, full.names=TRUE)
+    suppressWarnings(file.symlink(targets, file.path(MOTUS_PATH$BIN, basename(targets))))
 
     return(rv)
 }
