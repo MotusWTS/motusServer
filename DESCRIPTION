@@ -10,6 +10,7 @@ Maintainer: John Brzustowski <jbrzusto@fastmail.fm>
 Depends:
     R (>= 3.1.0),
     digest,
+    dbplyr,
     dplyr,
     httr,
     jsonlite,
