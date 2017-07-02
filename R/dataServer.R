@@ -189,7 +189,7 @@ validate_request = function(json, res, needProjectID=TRUE) {
     okay = TRUE
 
     tryCatch({
-        authToken = json$authToken %>% as.character
+        authToken = (json$authToken %>% as.character)[1]
         projectID = (json$projectID %>% as.integer)[1]
         now = as.numeric(Sys.time())
         rv = AuthDB("select userID, (select group_concat(key, ',') from json_each(projects)) as projects from auth where token=:token and expiry > :now",
@@ -324,7 +324,7 @@ batches_for_tag_project = function(env) {
 
     sendHeader(res)
 
-    batchID = json$batchID %>% as.integer[1]
+    batchID = (json$batchID %>% as.integer)[1]
     if (!isTRUE(is.finite(batchID)))
         batchID = 0
 
@@ -387,7 +387,7 @@ batches_for_receiver_project = function(env) {
 
     sendHeader(res)
 
-    batchID = json$batchID %>% as.integer
+    batchID = (json$batchID %>% as.integer)[1]
     if (!isTRUE(is.finite(batchID)))
         batchID = 0
 
@@ -449,8 +449,8 @@ runs_for_tag_project = function(env) {
 
     sendHeader(res)
 
-    batchID = json$batchID %>% as.integer
-    runID = json$runID %>% as.integer
+    batchID = (json$batchID %>% as.integer)[1]
+    runID = (json$runID %>% as.integer)[1]
 
     if (!isTRUE(is.finite(batchID) && is.finite(runID))) {
         sendError("invalid parameter(s)")
@@ -515,8 +515,8 @@ runs_for_receiver_project = function(env) {
 
     sendHeader(res)
 
-    batchID = json$batchID %>% as.integer
-    runID = json$runID %>% as.integer
+    batchID = (json$batchID %>% as.integer)[1]
+    runID = (json$runID %>% as.integer)[1]
 
     if (!isTRUE(is.finite(batchID) && is.finite(runID))) {
         sendError("invalid parameter(s)")
@@ -579,8 +579,8 @@ hits_for_tag_project = function(env) {
 
     sendHeader(res)
 
-    batchID = json$batchID %>% as.integer
-    hitID = json$hitID %>% as.integer
+    batchID = (json$batchID %>% as.integer)[1]
+    hitID = (json$hitID %>% as.integer)[1]
 
     if (!isTRUE(is.finite(batchID) && is.finite(hitID))) {
         sendError("invalid parameter(s)")
@@ -647,8 +647,8 @@ hits_for_receiver_project = function(env) {
 
     sendHeader(res)
 
-    batchID = json$batchID %>% as.integer
-    hitID = json$hitID %>% as.integer
+    batchID = (json$batchID %>% as.integer)[1]
+    hitID = (json$hitID %>% as.integer)[1]
 
     if (!isTRUE(is.finite(batchID) && is.finite(hitID))) {
         sendError("invalid parameter(s)")
@@ -722,10 +722,10 @@ gps_for_tag_project = function(env) {
 
     sendHeader(res)
 
-    batchID = json$batchID %>% as.integer
-    ts = json$ts %>% as.numeric
+    batchID = (json$batchID %>% as.integer)[1]
+    ts = (json$ts %>% as.numeric)[1]
 
-    if (!isTRUE(is.finite(projectID) && is.finite(batchID) && is.finite(ts))) {
+    if (!isTRUE(is.finite(batchID) && is.finite(ts))) {
         sendError("invalid parameter(s)")
         return(res$finish())
     }
@@ -796,8 +796,8 @@ gps_for_receiver_project = function(env) {
 
     sendHeader(res)
 
-    batchID = json$batchID %>% as.integer
-    ts = json$ts %>% as.numeric
+    batchID = (json$batchID %>% as.integer)[1]
+    ts = (json$ts %>% as.numeric)[1]
 
     if (!isTRUE(is.finite(batchID) && is.finite(ts))) {
         sendError("invalid parameter(s)")
