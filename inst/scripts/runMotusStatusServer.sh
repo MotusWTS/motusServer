@@ -44,6 +44,8 @@ EOF
     shift
 done
 
+export SPID=$$;
+
 PIDFILE=/sgm/statusServer.pid
 if [[ -s $PIDFILE ]]; then
     OLDPID=`cat $PIDFILE`
@@ -70,6 +72,9 @@ function onExit {
     if [[ $TRACE != 0 && "$MYTMPDIR" =~ /tmp/tmp* ]]; then
         rm -rf "$MYTMPDIR"
     fi
+
+    ## delete locks held by this process
+    sqlite3 /sgm/server.sqlite "pragma busy_timeout=10000; delete from symLocks where owner=$SPID" > /dev/null
 }
 
 ## call the cleanup handler on exit
