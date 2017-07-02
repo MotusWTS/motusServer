@@ -54,4 +54,4 @@ for i in `seq 1 $N` 101 102; do
 done
 setsid /sgm/bin/runMotusSyncServer.sh &
 
-echo "Started email, upload, status, sync and $N + 2 process servers, one for high-priority jobs."
+echo "Started email, upload, status, data, sync and $N + 2 process servers, one for high-priority jobs."
