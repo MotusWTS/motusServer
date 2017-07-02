@@ -894,7 +894,7 @@ metadata_for_tags = function(env) {
     if (tracing)
         browser()
     json = req$POST()[['json']] %>% fromJSON()
-    auth = validate_request(json, res)
+    auth = validate_request(json, res, needProjectID=FALSE)
     if (is.null(auth))
         return(res$finish())
 
@@ -1048,7 +1048,7 @@ metadata_for_receivers = function(env) {
     if (tracing)
         browser()
     json = req$POST()[['json']] %>% fromJSON()
-    auth = validate_request(json, res)
+    auth = validate_request(json, res, needProjectID=FALSE)
     if (is.null(auth))
         return(res$finish())
 
@@ -1156,7 +1156,7 @@ tags_for_ambiguities = function(env) {
     if (tracing)
         browser()
     json = req$POST()[['json']] %>% fromJSON()
-    auth = validate_request(json, res)
+    auth = validate_request(json, res, needProjectID=FALSE)
     if (is.null(auth))
         return(res$finish())
 
