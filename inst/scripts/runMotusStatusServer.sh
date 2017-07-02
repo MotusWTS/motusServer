@@ -28,7 +28,7 @@ while [[ "$1" != "" ]]; do
 
 Usage: runMotusStatusServer.sh [-h] [-t] [-p PORT]
 
-Run the motus email server which processes incoming data emails.
+Run the motus status server which replies to requests for job and server status.
 
    -h  show usage
 
