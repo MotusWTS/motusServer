@@ -17,6 +17,8 @@ Kills all motus servers by invoking these scripts:
 
    - killMotusStatusServer.sh
 
+   - killMotusDataServer.sh
+
    - killMotusSyncServer.sh
 
    - killMotusProcessServer.sh -a [-g]
@@ -40,8 +42,9 @@ fi
 ## DISABLED: /sgm/bin/killMotusEmailServer.sh $GRACEFUL
 /sgm/bin/killMotusUploadServer.sh
 /sgm/bin/killMotusStatusServer.sh
+/sgm/bin/killMotusDataServer.sh
 /sgm/bin/killMotusSyncServer.sh
 /sgm/bin/killMotusProcessServers.sh -a $GRACEFUL
 
 
-echo Killed email, upload, status and all process servers.
+echo Killed email, upload, status, data and all process servers.

@@ -44,6 +44,7 @@ fi
 ## DISABLED: setsid /sgm/bin/runMotusEmailServer.sh &
 setsid /sgm/bin/runMotusUploadServer.sh &
 setsid /sgm/bin/runMotusStatusServer.sh &
+setsid /sgm/bin/runMotusDataServer.sh &
 
 ## '99' is the priority server, for short fast jobs; it won't
 ## run uploaded data.
