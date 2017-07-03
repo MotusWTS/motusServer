@@ -80,7 +80,7 @@ CREATE TABLE batches (
                                               -- database.
     monoBN INT,                               -- boot number for this receiver; (NULL
                                               -- okay; e.g. Lotek)
-    tsBegin FLOAT(53),                        -- timestamp for start of period
+    tsStart FLOAT(53),                        -- timestamp for start of period
                                               -- covered by batch; unix-style:
                                               -- seconds since 1 Jan 1970 GMT
     tsEnd FLOAT(53),                          -- timestamp for end of period

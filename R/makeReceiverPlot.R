@@ -285,7 +285,7 @@ t1.hourBin * 3600 + 1800 as ts,
 1 as n,
 0 as freq,
 0 as sig
-from pulseCounts as t1 join batches as t2 on t1.batchID=t2.batchID where t2.monoBN between %d and %d and t1.hourBin >= t2.tsBegin/3600 and t1.hourBin <= t2.tsEnd / 3600 group by t1.ant, t1.hourBin",
+from pulseCounts as t1 join batches as t2 on t1.batchID=t2.batchID where t2.monoBN between %d and %d and t1.hourBin >= t2.tsStart/3600 and t1.hourBin <= t2.tsEnd / 3600 group by t1.ant, t1.hourBin",
 monoBNlo, monoBNhi))
 
     }
@@ -298,12 +298,12 @@ monoBNlo, monoBNhi))
         reboots = dbGetQuery(recv$con, sprintf("
 select monoBN%%10 as ant,
 ' Reboot Odometer' as fullID,
-round(min(tsBegin) / 3600) as bin,
-min(tsBegin) as ts,
+round(min(tsStart) / 3600) as bin,
+min(tsStart) as ts,
 1 as n,
 0 as freq,
 0 as sig
-from batches where monoBN between %d and %d and tsBegin >= 1262304000 group by monoBN",
+from batches where monoBN between %d and %d and tsStart >= 1262304000 group by monoBN",
 monoBNlo, monoBNhi))
         reboots$fullID = as.factor(reboots$fullID)
     } else {
@@ -322,7 +322,7 @@ monoBNlo, monoBNhi))
         dayseq = seq(from=round(min(tags$ts), "days"), to=round(max(tags$ts),"days"), by=24*3600)
     } else {
         if (is.null(ts)) {
-            ts = unlist(dbGetQuery(con, sprintf("select min(tsBegin), max(tsEnd) from batches where monoBN between %s and %s", monoBN[1], monoBN[2])))
+            ts = unlist(dbGetQuery(con, sprintf("select min(tsStart), max(tsEnd) from batches where monoBN between %s and %s", monoBN[1], monoBN[2])))
         }
         dayseq = seq(from=round(min(ts), "days"), to=round(max(ts),"days"), by=24*3600)
     }
