@@ -74,6 +74,7 @@ dataServer = function(port=0xda7a, tracing=FALSE) {
 ## a string giving the list of apps for this server
 
 allDataApps = c("authenticate_user",
+                "deviceID_for_receiver",
                 "receivers_for_project",
                 "batches_for_tag_project",
                 "batches_for_receiver",
@@ -236,6 +237,55 @@ sendHeader = function(res) {
 
 sendError = function(res, error) {
     res$body = memCompress(toJSON(list(error=error), auto_unbox=TRUE), "gzip")
+}
+
+#' get deviceIDs for receiver serial numbers
+#'
+#' @param serno character vector of serial numbers
+#'
+#' @return a list with these vector items:
+#'    \itemize{
+#'       \item serno; character receiver serial numbers
+#'       \item deviceID; integer device ID
+#'    }
+
+deviceID_for_receiver = function(env) {
+
+    req = Rook::Request$new(env)
+    res = Rook::Response$new()
+
+    if (tracing)
+        browser()
+    json = req$POST()[['json']] %>% fromJSON()
+    auth = validate_request(json, res, needProjectID=FALSE)
+    serno = json$serno %>% as.character
+
+    if (is.null(auth) || length(serno) == 0)
+        return(res$finish())
+
+    sendHeader(res)
+
+    ## select deviceIDs for those receivers deployed by projects the user has permissions to
+
+    MetaDB("create temporary table if not exists tempSernos (serno text)")
+    MetaDB("delete from tempSernos")
+    dbWriteTable(MetaDB$con, "tempSernos", data.frame(serno=serno), append=TRUE, row.names=FALSE)
+
+    query = sprintf("
+select
+    t1.serno,
+    t2.deviceID
+from
+   tempSernos as t1
+   join recvDeps as t2 on t1.serno=t2.serno
+where
+   t2.projectID in (%s)
+group by t2.serno
+", paste(auth$projects, collapse=","))
+
+    devIds = MetaDB(query)
+    res$body = memCompress(toJSON(devIds, auto_unbox=TRUE, dataframe="columns"), "gzip")
+    res$finish()
 }
 
 #' get receivers for a project
