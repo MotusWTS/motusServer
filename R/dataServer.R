@@ -76,18 +76,18 @@ dataServer = function(port=0xda7a, tracing=FALSE) {
 allDataApps = c("authenticate_user",
                 "receivers_for_project",
                 "batches_for_tag_project",
-                "batches_for_receiver_project",
+                "batches_for_receiver",
                 "runs_for_tag_project",
-                "runs_for_receiver_project",
+                "runs_for_receiver",
                 "hits_for_tag_project",
-                "hits_for_receiver_project",
+                "hits_for_receiver",
                 "gps_for_tag_project",
-                "gps_for_receiver_project",
+                "gps_for_receiver",
                 "metadata_for_tags",
                 "metadata_for_receivers",
                 "tags_for_ambiguities",
                 "size_of_update_for_tag_project",
-                "size_of_update_for_receiver_project"
+                "size_of_update_for_receiver"
                 )
 
 #' authenticate_user return a list of projects and receivers the user is authorized to receive data for
@@ -365,14 +365,15 @@ auth$projectID, batchID, MAX_ROWS_PER_REQUEST)
     res$finish()
 }
 
-#' get batches for a receiver project
+
+#' get batches for a receiver
 #'
-#' @param projectID integer project ID
+#' @param deviceID integer device ID
 #' @param batchID integer batchID; only batches with larger batchID are returned
 #'
 #' @return a data frame with the same schema as the batches table, but JSON-encoded as a list of columns
 
-batches_for_receiver_project = function(env) {
+batches_for_receiver = function(env) {
 
     MAX_ROWS_PER_REQUEST = 10000
     req = Rook::Request$new(env)
@@ -381,11 +382,17 @@ batches_for_receiver_project = function(env) {
     if (tracing)
         browser()
     json = req$POST()[['json']] %>% fromJSON()
-    auth = validate_request(json, res)
+    auth = validate_request(json, res, needProjectID=FALSE)
     if (is.null(auth))
         return(res$finish())
 
     sendHeader(res)
+
+    deviceID = (json$deviceID %>% as.integer)[1]
+    if (!isTRUE(is.finite(deviceID))) {
+        sendError("invalid parameter(s)")
+        return(res$finish())
+    }
 
     batchID = (json$batchID %>% as.integer)[1]
     if (!isTRUE(is.finite(batchID)))
@@ -405,14 +412,15 @@ select
    t2.tsEnd,
    t2.numHits,
    t2.ts,
-   t4.motusUserID,
-   t4.motusProjectID,
-   t4.motusJobID
+   t2.motusUserID,
+   t2.motusProjectID,
+   t2.motusJobID
 from
    recvDeps as t1
    join batches as t2 on t1.deviceID=t2.motusDeviceID
 where
-   t1.projectID = %d
+   t1.deviceID = %d
+   and t1.projectID in (%s)
    and t2.batchID > %d
    and ((t1.tsEnd is null and t2.tsStart >= t1.tsStart)
      or (t1.tsStart <= t2.tsEnd and t2.tsStart <= t1.tsEnd))
@@ -420,7 +428,7 @@ order by
    t2.batchID
 limit %d
 ",
-auth$projectID, batchID, MAX_ROWS_PER_REQUEST)
+deviceID, paste(auth$projects, collapse=","), batchID, MAX_ROWS_PER_REQUEST)
     rv = MotusDB(query)
     res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
     res$finish()
@@ -492,15 +500,14 @@ batchID, runID, auth$projectID, MAX_ROWS_PER_REQUEST)
     res$finish()
 }
 
-#' get all runs from a batch
+#' get all runs from a batch for a receiver
 #'
-#' @param projectID integer project ID
 #' @param batchID integer batchID
 #' @param runID integer ID of largest run already obtained
 #'
 #' @return a data frame with the same schema as the runs table, but JSON-encoded as a list of columns
 
-runs_for_receiver_project = function(env) {
+runs_for_receiver = function(env) {
 
     MAX_ROWS_PER_REQUEST = 10000
     req = Rook::Request$new(env)
@@ -509,7 +516,7 @@ runs_for_receiver_project = function(env) {
     if (tracing)
         browser()
     json = req$POST()[['json']] %>% fromJSON()
-    auth = validate_request(json, res)
+    auth = validate_request(json, res, needProjectID=FALSE)
     if (is.null(auth))
         return(res$finish())
 
@@ -539,18 +546,18 @@ from
    batches as t1
    join batchRuns as t2 on t2.batchID = t1.batchID
    join runs as t3 on t3.runID=t2.runID
-   join recvDeps as t4 on t4.motusDeviceID=t1.deviceID
+   join recvDeps as t4 on t4.deviceID=t1.motusDeviceID
 where
    t1.batchID = %d
    and t2.runID > %d
-   and t4.projectID = %d
+   and t4.projectID in (%s)
    and ((t4.tsEnd is null and t1.tsStart >= t4.tsStart)
      or (t1.tsStart <= t4.tsEnd and t4.tsStart <= t1.tsEnd))
 order by
    t2.runID
 limit %d
 ",
-batchID, runID, auth$projectID, MAX_ROWS_PER_REQUEST)
+batchID, runID, paste(auth$projects, collapse=","), MAX_ROWS_PER_REQUEST)
     rv = MotusDB(query)
     res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
     res$finish()
@@ -624,15 +631,14 @@ batchID, hitID, auth$projectID, MAX_ROWS_PER_REQUEST)
     res$finish()
 }
 
-#' get hits by receiver project from a batch (i.e. all hits from the batch)
+#' get all hits from a batch for a receiver
 #'
-#' @param projectID integer project ID
 #' @param batchID integer batchID
 #' @param hitID integer ID of largest hit already obtained
 #'
 #' @return a data frame with the same schema as the hits table, but JSON-encoded as a list of columns
 
-hits_for_receiver_project = function(env) {
+hits_for_receiver = function(env) {
 
     MAX_ROWS_PER_REQUEST = 50000
     req = Rook::Request$new(env)
@@ -641,7 +647,7 @@ hits_for_receiver_project = function(env) {
     if (tracing)
         browser()
     json = req$POST()[['json']] %>% fromJSON()
-    auth = validate_request(json, res)
+    auth = validate_request(json, res, needProjectID=FALSE)
     if (is.null(auth))
         return(res$finish())
 
@@ -676,7 +682,7 @@ from
    join hits as t2 on t2.batchID=t1.batchID
 where
    t1.batchID = %d
-   and t3.projectID = %d
+   and t3.projectID in (%s)
    and t2.hitID > %d
    and ((t3.tsEnd is null and t1.tsStart >= t3.tsStart)
      or (t1.tsStart <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
@@ -684,7 +690,7 @@ order by
    t2.hitID
 limit %d
 ",
-batchID, auth$projectID, hitID, MAX_ROWS_PER_REQUEST)
+batchID, paste(auth$projects, collapse=","), hitID, MAX_ROWS_PER_REQUEST)
     rv = MotusDB(query)
     res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
     res$finish()
@@ -775,13 +781,12 @@ batchID, auth$projectID, batchID, ts, MAX_ROWS_PER_REQUEST)
 
 #' get all GPS fixes from a batch
 #'
-#' @param projectID integer project ID
 #' @param batchID integer batchID
 #' @param ts numeric timestamp of latest fix already obtained
 #'
 #' @return a data frame with the same schema as the gps table, but JSON-encoded as a list of columns
 
-gps_for_receiver_project = function(env) {
+gps_for_receiver = function(env) {
 
     MAX_ROWS_PER_REQUEST = 10000
     req = Rook::Request$new(env)
@@ -790,7 +795,7 @@ gps_for_receiver_project = function(env) {
     if (tracing)
         browser()
     json = req$POST()[['json']] %>% fromJSON()
-    auth = validate_request(json, res)
+    auth = validate_request(json, res, needProjectID=FALSE)
     if (is.null(auth))
         return(res$finish())
 
@@ -820,7 +825,7 @@ from
    join gps as t2 on t2.batchID=t1.batchID
 where
    t1.batchID = %d
-   and t3.projectID = %d
+   and t3.projectID in (%s)
    and t2.ts > %f
    and ((t3.tsEnd is null and t1.tsStart >= t3.tsStart)
      or (t1.tsStart <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
@@ -828,7 +833,7 @@ order by
    t2.ts
 limit %d
 ",
-batchID, auth$projectID, ts, MAX_ROWS_PER_REQUEST)
+batchID, paste(auth$projects, collapse=","), ts, MAX_ROWS_PER_REQUEST)
     rv = MotusDB(query)
     res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
     res$finish()
@@ -1324,9 +1329,9 @@ batchID, auth$projectID, batchID)
     res$finish()
 }
 
-#' get count of update items for a receiver project
+#' get count of update items for a receiver
 #'
-#' @param projectID integer project ID
+#' @param deviceID integer motus device ID
 #' @param batchID integer batchID; only batches with larger batchID are considered
 #'
 #' @return a list with these items:
@@ -1337,7 +1342,7 @@ batchID, auth$projectID, batchID)
 #' \item numGPS
 #' }
 
-size_of_update_for_receiver_project = function(env) {
+size_of_update_for_receiver = function(env) {
 
     req = Rook::Request$new(env)
     res = Rook::Response$new()
@@ -1345,13 +1350,13 @@ size_of_update_for_receiver_project = function(env) {
     if (tracing)
         browser()
     json = req$POST()[['json']] %>% fromJSON()
-    auth = validate_request(json, res)
+    auth = validate_request(json, res, needProjectID=FALSE)
     if (is.null(auth))
         return(res$finish())
 
     sendHeader(res)
 
-    batchID = json$batchID %>% as.integer
+    deviceID = json$deviceID %>% as.integer
     if (!isTRUE(is.finite(batchID)))
         batchID = 0
 
@@ -1387,11 +1392,11 @@ from
    join recvDeps as t4 on t4.motusDeviceID=t1.deviceID
 where
    t1.batchID > %d
-   and t4.projectID = %d
+   and t4.projectID in (%s)
    and ((t4.tsEnd is null and t1.tsStart >= t4.tsStart)
      or (t1.tsStart <= t4.tsEnd and t4.tsStart <= t1.tsEnd))
 ",
-batchID, auth$projectID)
+batchID, paste(auth$projects, collapse=","))
 
     numRuns = MotusDB(query)
 
