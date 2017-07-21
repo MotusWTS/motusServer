@@ -132,7 +132,7 @@ makeReceiverPlot = function(recv, meta=NULL, title="", condense=3600, ts = NULL,
         stop("This is not a receiver database.  Use a different function for plotting tagProject or site databases.")
 
     serno = rinfo$recvSerno
-    isLotek = rinfo$recvType == "Lotek"
+    isLotek = rinfo$recvType == "LOTEK"
 
     ## get a tagview for the detections in this receiver (a tagview joins batches/runs/hits with appropriate metadata)
     tags = tagview(recv, meta)

@@ -272,7 +272,7 @@ getMotusMetaDB = function() {
         recv = recv %>% as.data.frame
         ## workaround until upstream changes format of serial numbers for Lotek receivers
         recv$serno = sub("(SRX600|SRX800|SRX-DL)", "Lotek", perl=TRUE, recv$serno)
-
+        recv$receiverType = ifelse(grepl("^SG-", recv$serno, perl=TRUE), "SENSORGNOME", "LOTEK")
         if (nrow(recv) > 100) { ## arbitrary sanity check
             bkup("recvDeps")
             dbWriteTable(s$con, "recvDeps", recv, append=TRUE, row.names=FALSE)

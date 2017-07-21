@@ -106,10 +106,12 @@ ltMergeFiles = function(files, j, dbdir=MOTUS_PATH$RECV) {
 
             meta = getMap(src)
 
-            meta$dbType = "receiver" ## indicate this is a receiver database (vs. a tagProject database)
-            meta$recvSerno = x$recv
-            meta$recvType = "Lotek"
-            meta$recvModel = getLotekModel(x$recv)
+            if (is.null(meta$dbType)) {
+                meta$dbType = "receiver" ## indicate this is a receiver database (vs. a tagProject database)
+                meta$recvSerno = x$recv
+                meta$recvType = "LOTEK"
+                meta$recvModel = getLotekModel(x$recv)
+            }
 
             ## write file record
             dbGetPreparedQuery(
