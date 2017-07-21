@@ -201,7 +201,7 @@ getMotusMetaDB = function() {
 
         ## fill in *something* for missing project labels (first 3 words with underscores)
         fix = is.na(p$label)
-        p$label[fix] = sapply(strsplit(gsub(" - ", " ", p$name[fix]), " ", fixed=TRUE), function(n) paste(head(n, 3), collapse="_"))
+        p$label[fix] = unlist(lapply(strsplit(gsub(" - ", " ", p$name[fix]), " ", fixed=TRUE), function(n) paste(head(n, 3), collapse="_")))
 
         bkup("projs")
         dbWriteTable(s$con, "projs", p, overwrite=TRUE, row.names=FALSE)
