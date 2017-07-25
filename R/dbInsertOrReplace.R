@@ -34,6 +34,10 @@ dbInsertOrReplace = function(con, name, df) {
 
     sql("create table %s as select * from %s limit 0", tmp, name)
 
+    ## drop the temporary table when we exit
+
+    on.exit( sql("drop table %s", tmp) )
+
     ## write all records to the temporary table
 
     dbWriteTable(con, tmp, df, row.names=FALSE, append=TRUE)
@@ -42,8 +46,4 @@ dbInsertOrReplace = function(con, name, df) {
     ## into the target
 
     sql("replace into %s select * from %s", name, tmp)
-
-    ## drop the temporary table
-
-    sql("drop table %s", tmp)
 }
