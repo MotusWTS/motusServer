@@ -9,15 +9,12 @@
 #'
 #' @param table name of the table in which to reserve keys.
 #'
-#' @param key name of the key column in table \code{table}.  This
-#'     column must be an INT (or BIGINT) PRIMARY KEY.
-#'
 #' @param n number of consecutive keys to reserve.  If negative, the
 #'     keys are reserved in descending order, starting at the smallest
 #'     (i.e. most negative) available value.  For a given table, keys
-#'     should always be reserved with \code{n} of the same size;
+#'     should always be reserved with \code{n} of the same sign;
 #'     i.e. keys should always be allocated ascending order, or always
-#'     allocated in descending order.  Default: "maxKeys".
+#'     allocated in descending order.
 #'
 #' @param maxKeyTable name of the table in which maximum key values
 #' are recorded; this must have (at least) these fields:
@@ -25,6 +22,7 @@
 #'    \item tableName UNIQUE CHAR name of table
 #'    \item maxKey BIGINT maximum magnitude of a key in the table
 #' }
+#' Default: "maxKeys"
 #'
 #' @return the first key value in the block.  For positive \code{n}, this
 #' is the lowest key value in the block.  For negative \code{n}, this is
@@ -34,7 +32,7 @@
 #' @examples
 #'
 #' ## return the first key in a block of 200 reserved in the batches table
-#' motusReserveKeys("batches", "batchID", 200)
+#' motusReserveKeys("batches", 200)
 #'
 #' @note this function uses the table maxKeys to track the maximum
 #'     (magnitude of a) key in any table of interest.  The
@@ -43,14 +41,12 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-motusReserveKeys = function(table, key, n, maxKeyTable="maxKeys") {
+motusReserveKeys = function(table, n, maxKeyTable="maxKeys") {
 
-    ## Insert a new record at the last new key value we want in the
-    ## block.  The entire query, including nested select, is atomic,
-    ## so if multiple processes are trying to reserve blocks, they
-    ## won't overlap.  Note that all keys for the given table must be
-    ## allocated by using this function, so the atomicity is
-    ## cooperative.
+    ## atomically increment the record in maxKeyTable with tableName == table
+    ## Note the use of max(maxKey) to cover the case where no current entry exists
+    ## for the given table.  Otherwise, the select query has an empty result and
+    ## no new record is inserted into maxKeyTable.
 
     MotusDB("replace into %s (tableName, maxKey) select '%s', @maxKey := ifnull(max(maxKey), 0) + %d from %s where tableName='%s'",
             maxKeyTable, table, abs(n), maxKeyTable, table, .QUOTE=FALSE)

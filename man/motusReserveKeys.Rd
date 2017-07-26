@@ -4,27 +4,25 @@
 \alias{motusReserveKeys}
 \title{Reserve a block of consecutive primary keys in a motus transfer table.}
 \usage{
-motusReserveKeys(table, key, n, maxKeyTable = "maxKeys")
+motusReserveKeys(table, n, maxKeyTable = "maxKeys")
 }
 \arguments{
 \item{table}{name of the table in which to reserve keys.}
 
-\item{key}{name of the key column in table \code{table}.  This
-column must be an INT (or BIGINT) PRIMARY KEY.}
-
 \item{n}{number of consecutive keys to reserve.  If negative, the
 keys are reserved in descending order, starting at the smallest
 (i.e. most negative) available value.  For a given table, keys
-should always be reserved with \code{n} of the same size;
+should always be reserved with \code{n} of the same sign;
 i.e. keys should always be allocated ascending order, or always
-allocated in descending order.  Default: "maxKeys".}
+allocated in descending order.}
 
 \item{maxKeyTable}{name of the table in which maximum key values
 are recorded; this must have (at least) these fields:
 \itemize{
    \item tableName UNIQUE CHAR name of table
    \item maxKey BIGINT maximum magnitude of a key in the table
-}}
+}
+Default: "maxKeys"}
 }
 \value{
 the first key value in the block.  For positive \code{n}, this
@@ -49,7 +47,7 @@ this function uses the table maxKeys to track the maximum
 \examples{
 
 ## return the first key in a block of 200 reserved in the batches table
-motusReserveKeys("batches", "batchID", 200)
+motusReserveKeys("batches", 200)
 
 }
 \author{

@@ -52,7 +52,7 @@ pushToMotus = function(src) {
 
     ## So we need to reserve a block of nrow(b) IDs in motus.batches
 
-    firstMotusBatchID = motusReserveKeys("batches", "batchID", nrow(newBatches))
+    firstMotusBatchID = motusReserveKeys("batches", nrow(newBatches))
     offsetBatchID = firstMotusBatchID - newBatches$batchID[1]
 
     ## ---------- transfer tag ambiguities ----------
@@ -79,7 +79,7 @@ pushToMotus = function(src) {
         n = length(newA)
         if (n > 0) {
             ## note use of negative n to reserve negative, descending keys
-            firstMasterAmbigID = motusReserveKeys("tagAmbig", "ambigID", -n)
+            firstMasterAmbigID = motusReserveKeys("tagAmbig", -n)
 
             ## fill in new masterAmbigIDs
             joinAmbig$ambigID.y[newA] = seq(from = firstMasterAmbigID, by = -1, length = n)
@@ -143,7 +143,7 @@ pushToMotus = function(src) {
         if (runInfo[1,1] > 0) {
 
             ## reserve the required number of runIDs
-            firstMotusRunID = motusReserveKeys("runs", "runID", runInfo[1,1])
+            firstMotusRunID = motusReserveKeys("runs", runInfo[1,1])
             offsetRunID = firstMotusRunID - runInfo[1,2]
 
             res = dbSendQuery(con, sprintf("select * from runs where batchIDBegin = %d order by runID", b$batchID))
@@ -221,7 +221,7 @@ order by t1.runID
         hitInfo = sql("select count(*), min(hitID) from hits where batchID = %d", b$batchID)
         if (hitInfo[1,1] > 0) {
             ## reserve the required number of hitIDs
-            firstMotusHitID = motusReserveKeys("hits", "hitID", hitInfo[1,1])
+            firstMotusHitID = motusReserveKeys("hits", hitInfo[1,1])
             offsetHitID = firstMotusHitID - hitInfo[1,2]
 
             res = dbSendQuery(con, sprintf("select * from hits where batchID = %d order by hitID", b$batchID))
