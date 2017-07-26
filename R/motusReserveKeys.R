@@ -59,5 +59,5 @@ motusReserveKeys = function(table, n, maxKeyTable="maxKeys") {
     if (n >= 0)
         return (maxKey - n + 1)
     else
-        return (- (maxKey - n + 1))
+        return (- (maxKey + n + 1))
 }
