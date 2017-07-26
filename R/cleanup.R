@@ -19,7 +19,7 @@
 
 cleanup = function(src, dropTables = FALSE, vacuum=FALSE) {
     sql = function(...) dbGetQuery(src$con, sprintf(...))
-    for (t in c("batches", "runs", "hits", "batchParams", "batchProgs", "batchState", "batchRuns", "gps", "tagAmbig", "timeFixes", "pulseCounts"))
+    for (t in c("batches", "runs", "hits", "batchParams", "batchProgs", "batchState", "batchRuns", "gps", "tagAmbig", "timeFixes", "pulseCounts", "motusTX"))
         sql("%s %s", if (dropTables) "drop table if exists" else "delete from", t)
     if (dropTables)
         sgEnsureDBTables(src)
