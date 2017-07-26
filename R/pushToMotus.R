@@ -268,7 +268,7 @@ order by t1.runID
         ## Mark what has been transferred
 
         sql("insert into motusTX (batchID, tsMotus, offsetBatchID, offsetRunID, offsetHitID) \
-                         values  (  %d   , %.4f     , %d          , %g         , %g         )",
+                         values  (  %d   , %.4f   , %d           , %.0f       , %.0f       )",
             b$batchID,
             as.numeric(Sys.time()),
             offsetBatchID,
