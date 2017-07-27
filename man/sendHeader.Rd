@@ -16,6 +16,6 @@ no return value
 send the header for a reply
 }
 \details{
-the reply will always be a gzip-compressed JSON-encoded value.
+the reply will always be a bzip2-compressed JSON-encoded value.
 We also disable caching.
 }

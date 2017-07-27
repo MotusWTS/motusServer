@@ -138,7 +138,7 @@ authenticate_user = function(env) {
         resp = getForm(motusServer:::MOTUS_API_USER_VALIDATE, json=motusReq, curl=Curl) %>% fromJSON
         ## generate a new authentication token for this user
         rv = list(
-            token = unclass(RCurl::base64(readBin("/dev/urandom", raw(), n=ceiling(OPT_TOKEN_BITS / 8)))),
+            authToken = unclass(RCurl::base64(readBin("/dev/urandom", raw(), n=ceiling(OPT_TOKEN_BITS / 8)))),
             expiry = as.numeric(Sys.time()) + OPT_AUTH_LIFE,
             userID = resp$userID,
             projects = resp$projects,
@@ -147,7 +147,7 @@ authenticate_user = function(env) {
 
         ## add the auth info to the database for lookup by token
         AuthDB("replace into auth (token, expiry, userID, projects) values (:token, :expiry, :userID, :projects)",
-               token = rv$token,
+               token = rv$authToken,
                expiry = rv$expiry,
                userID = rv$userID,
                projects = rv$projects %>% toJSON (auto_unbox=TRUE) %>% unclass
@@ -157,7 +157,7 @@ authenticate_user = function(env) {
         rv <<- list(error="authentication with motus failed")
     })
 
-    res$body = memCompress(toJSON(rv, auto_unbox=TRUE), "gzip")
+    res$body = makeBody(rv)
     res$finish()
 }
 
@@ -217,17 +217,34 @@ validate_request = function(json, res, needProjectID=TRUE) {
     return(rv)
 }
 
+#' make the body for a reply
+#' converts \code{...} to json using toJSON with options:
+#' \itemize{
+#' \item auto_unbox=TRUE
+#' \item dataframe="columns"
+#' }
+#' then compresses the result
+#' with memCompress and method "bzip2"
+#'
+#' @param ... items and options for \code{toJSON}
+#'
+#' @return a raw vector
+
+makeBody = function(...) {
+    memCompress(toJSON(..., auto_unbox=TRUE, dataframe="columns"), "bzip2")
+}
+
 #' send the header for a reply
 #' @param res Rook::Response object
 #' @return no return value
 #'
-#' @details the reply will always be a gzip-compressed JSON-encoded value.
+#' @details the reply will always be a bzip2-compressed JSON-encoded value.
 #' We also disable caching.
 #'
 sendHeader = function(res) {
     res$header("Cache-control", "no-cache")
-    res$header("Content-Type", "application/json")
-    res$header("Content-Encoding", "gzip")
+    res$header("Content-type", "application/json")
+    res$header("Content-Encoding", "bzip2")
 }
 
 #' send an error as the reply
@@ -236,7 +253,7 @@ sendHeader = function(res) {
 #' @return no return value
 
 sendError = function(res, error) {
-    res$body = memCompress(toJSON(list(error=error), auto_unbox=TRUE), "gzip")
+    res$body = makeBody(list(error=error), auto_unbox=TRUE)
 }
 
 #' get deviceIDs for receiver serial numbers
@@ -284,7 +301,7 @@ group by t2.serno
 ", paste(auth$projects, collapse=","))
 
     devIds = MetaDB(query)
-    res$body = memCompress(toJSON(devIds, auto_unbox=TRUE, dataframe="columns"), "gzip")
+    res$body = makeBody(devIds)
     res$finish()
 }
 
@@ -347,7 +364,7 @@ where
 ", auth$projectID)
 
     recvDeps = MetaDB(query)
-    res$body = memCompress(toJSON(recvDeps, auto_unbox=TRUE, dataframe="columns"), "gzip")
+    res$body = makeBody(recvDeps)
     res$finish()
 }
 
@@ -411,7 +428,7 @@ limit %d
 ",
 auth$projectID, batchID, MAX_ROWS_PER_REQUEST)
     rv = MotusDB(query)
-    res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
+    res$body = makeBody(rv)
     res$finish()
 }
 
@@ -480,7 +497,7 @@ limit %d
 ",
 deviceID, paste(auth$projects, collapse=","), batchID, MAX_ROWS_PER_REQUEST)
     rv = MotusDB(query)
-    res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
+    res$body = makeBody(rv)
     res$finish()
 }
 
@@ -546,7 +563,7 @@ limit %d
 ",
 batchID, runID, auth$projectID, MAX_ROWS_PER_REQUEST)
     rv = MotusDB(query)
-    res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
+    res$body = makeBody(rv)
     res$finish()
 }
 
@@ -609,7 +626,7 @@ limit %d
 ",
 batchID, runID, paste(auth$projects, collapse=","), MAX_ROWS_PER_REQUEST)
     rv = MotusDB(query)
-    res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
+    res$body = makeBody(rv)
     res$finish()
 }
 
@@ -677,7 +694,7 @@ limit %d
 ",
 batchID, hitID, auth$projectID, MAX_ROWS_PER_REQUEST)
     rv = MotusDB(query)
-    res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
+    res$body = makeBody(rv)
     res$finish()
 }
 
@@ -742,7 +759,7 @@ limit %d
 ",
 batchID, paste(auth$projects, collapse=","), hitID, MAX_ROWS_PER_REQUEST)
     rv = MotusDB(query)
-    res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
+    res$body = makeBody(rv)
     res$finish()
 }
 
@@ -825,7 +842,7 @@ limit %d
 ",
 batchID, auth$projectID, batchID, ts, MAX_ROWS_PER_REQUEST)
     rv = MotusDB(query)
-    res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
+    res$body = makeBody(rv)
     res$finish()
 }
 
@@ -885,7 +902,7 @@ limit %d
 ",
 batchID, paste(auth$projects, collapse=","), ts, MAX_ROWS_PER_REQUEST)
     rv = MotusDB(query)
-    res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
+    res$body = makeBody(rv)
     res$finish()
 }
 
@@ -1046,7 +1063,7 @@ where
 ", paste(speciesIDs, collapse=","))
 
     species = MetaDB(query)
-    res$body = memCompress(toJSON(list(tags=tags, tagDeps=tagDeps, species=species), auto_unbox=TRUE, dataframe="columns"), "gzip")
+    res$body = makeBody(list(tags=tags, tagDeps=tagDeps, species=species))
     res$finish()
 }
 
@@ -1184,7 +1201,7 @@ where
 ", paste(projs, collapse=","), paste(deviceIDs, collapse=","))
 
     antDeps = MetaDB(query)
-    res$body = memCompress(toJSON(list(recvDeps=recvDeps, antDeps=antDeps), auto_unbox=TRUE, dataframe="columns"), "gzip")
+    res$body = makeBody(list(recvDeps=recvDeps, antDeps=antDeps))
     res$finish()
 }
 
@@ -1247,7 +1264,7 @@ order by
 ", paste(ambigIDs, collapse=","))
 
     ambig = MotusDB(query)
-    res$body = memCompress(toJSON(ambig, auto_unbox=TRUE, dataframe="columns"), "gzip")
+    res$body = makeBody(ambig)
     res$finish()
 }
 
@@ -1375,7 +1392,7 @@ batchID, auth$projectID, batchID)
         50 + 52 * numGPS
 
     rv = list(numBatches=numBatches, numRuns=numRuns, numHits=numHits, numGPS=numGPS, numBytes=numBytes)
-    res$body = memCompress(toJSON(rv, auto_unbox=TRUE), "gzip")
+    res$body = makeBody(rv, auto_unbox=TRUE)
     res$finish()
 }
 
@@ -1491,6 +1508,6 @@ batchID, auth$projectID)
         50 + 52 * numGPS
 
     rv = list(numBatches=numBatches, numRuns=numRuns, numHits=numHits, numGPS=numGPS, numBytes=numBytes)
-    res$body = memCompress(toJSON(rv, auto_unbox=TRUE), "gzip")
+    res$body = makeBody(rv, auto_unbox=TRUE)
     res$finish()
 }
