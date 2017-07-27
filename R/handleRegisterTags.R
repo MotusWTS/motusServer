@@ -80,13 +80,18 @@ handleRegisterTags = function(j) {
 
     tagModel = meta$tagModel
 
-    ## invoices sometimes don't show the "M" in the ANTC models
-    if (grepl("^ANTCW?-[0-9]", tagModel))
-        tagModel = sub("^(ANTCW?-)", "\\1M", tagModel, perl=TRUE)
-    if (! isTRUE(tagModel %in% rownames(tagLifespanPars))) {
-        errs = c(errs, paste0("Invalid tag model: ", tagModel, "; must be one of:\n", paste(c(rownames(tagLifespanPars), extraTagModels), collapse=", ")))
-    }
+    ## invoices sometimes don't show the "M" in the ANTC models,
+    if (grepl("^ANTC", tagModel, perl=TRUE) && ! grepl("M", tagModel, perl=TRUE))
+        tagModel = sub("([0-9])", "M\\1", tagModel, perl=TRUE) ## insert "M" before first digit
 
+    ## ignore hyphens when matching model
+    tmi = match(gsub("-", "", tagModel, perl=TRUE), gsub("-", "", rownames(tagLifespanPars), perl=TRUE))
+    if (is.na(tmi)) {
+        errs = c(errs, paste0("Invalid tag model: ", tagModel, "; must be one of:\n", paste(rownames(tagLifespanPars), collapse=", ")))
+    } else {
+        ## fix up any hyphens so upstream recognizes the model string
+        tagModel = rownames(tagLifespanPars)[tmi]
+    }
     nomFreq = as.numeric(meta$nomFreq)
     if (! isTRUE(nomFreq >= 100 && nomFreq <= 200)) {
         errs = c(errs, paste0("Likely invalid tag nominal frequency: ", nomFreq, "; should be in the VHF range 100...200 MHz for motus"))
