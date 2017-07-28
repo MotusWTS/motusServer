@@ -34,7 +34,7 @@ motusQuery = function (API, params = NULL, requestType="post", show=FALSE, json=
     curl = getCurlHandle()
     .opts = list(
         httpheader = c(
-            "Content-Type"="application/json",
+            "Content-Type"="application/x-www-form-urlencoded",
             "Accept"="application/json"),
         timeout = 20,
         verbose = FALSE
@@ -67,7 +67,7 @@ motusQuery = function (API, params = NULL, requestType="post", show=FALSE, json=
             serno = serno,
             hash = HASH,
             date = DAY,
-            format = "jsonp",
+            fmt = "jsonp",
             login = MOTUS_SECRETS$user,
             pword = MOTUS_SECRETS$passwd
             ),
