@@ -69,7 +69,7 @@ motusQuery = function (API, params = NULL, requestType="post", show=FALSE, json=
             serno = serno,
             hash = HASH,
             date = DAY,
-            fmt = "jsonp",
+            fmt = "json",
             login = MOTUS_SECRETS$user,
             pword = MOTUS_SECRETS$passwd
             ),
