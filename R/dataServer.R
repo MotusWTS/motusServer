@@ -744,15 +744,21 @@ select
    t2.slop,
    t2.burstSlop
 from
-   recvDeps as t3
-   join batches as t1 on t3.deviceID = t1.motusDeviceID
+   batches as t1
    join hits as t2 on t2.batchID=t1.batchID
 where
    t1.batchID = %d
-   and t3.projectID in (%s)
+   and (select
+           count(*)
+        from
+           recvDeps as t3
+        where
+           t3.deviceID=t1.motusDeviceID
+           and t3.projectID in (%s)
+           and ((t3.tsEnd is null and t1.tsStart >= t3.tsStart)
+                or (t1.tsStart <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
+   ) > 0
    and t2.hitID > %d
-   and ((t3.tsEnd is null and t1.tsStart >= t3.tsStart)
-     or (t1.tsStart <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
 order by
    t2.hitID
 limit %d
