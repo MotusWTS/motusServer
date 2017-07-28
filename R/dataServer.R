@@ -1430,6 +1430,9 @@ size_of_update_for_receiver = function(env) {
     sendHeader(res)
 
     deviceID = json$deviceID %>% as.integer
+    if (!isTRUE(is.finite(deviceID)))
+        return(res$finish())
+    batchID = json$batchID %>% as.integer
     if (!isTRUE(is.finite(batchID)))
         batchID = 0
 
@@ -1445,12 +1448,12 @@ from
    recvDeps as t1
    join batches as t2 on t1.deviceID=t2.motusDeviceID
 where
-   t1.projectID = %d
+   t1.projectID in (%s)
    and t2.batchID > %d
    and ((t1.tsEnd is null and t2.tsStart >= t1.tsStart)
      or (t1.tsStart <= t2.tsEnd and t2.tsStart <= t1.tsEnd))
 ",
-auth$projectID, batchID)
+paste(auth$projects, collapse=","), batchID)
     numBatches = MotusDB(query)
 
     ## get number of runs in new batches
@@ -1462,7 +1465,7 @@ from
    batches as t1
    join batchRuns as t2 on t2.batchID = t1.batchID
    join runs as t3 on t3.runID=t2.runID
-   join recvDeps as t4 on t4.motusDeviceID=t1.deviceID
+   join recvDeps as t4 on t4.deviceID=t1.motusDeviceID
 where
    t1.batchID > %d
    and t4.projectID in (%s)
@@ -1484,11 +1487,11 @@ from
    join hits as t2 on t2.batchID=t1.batchID
 where
    t1.batchID > %d
-   and t3.projectID = %d
+   and t3.projectID in (%s)
    and ((t3.tsEnd is null and t1.tsStart >= t3.tsStart)
      or (t1.tsStart <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
 ",
-batchID, auth$projectID)
+batchID, paste(auth$projects, collapse=","))
     numHits = MotusDB(query)
 
     ## get # of GPS fixes
@@ -1501,11 +1504,11 @@ from
    join gps as t2 on t2.batchID=t1.batchID
 where
    t1.batchID > %d
-   and t3.projectID = %d
+   and t3.projectID in (%s)
    and ((t3.tsEnd is null and t1.tsStart >= t3.tsStart)
      or (t1.tsStart <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
 ",
-batchID, auth$projectID)
+batchID, paste(auth$projects, collapse=","))
     numGPS = MotusDB(query)
 
     numBytes = 110 + 90 * numBatches +
