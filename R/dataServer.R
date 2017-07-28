@@ -253,7 +253,7 @@ sendHeader = function(res) {
 #' @return no return value
 
 sendError = function(res, error) {
-    res$body = makeBody(list(error=error), auto_unbox=TRUE)
+    res$body = makeBody(list(error=error))
 }
 
 #' get deviceIDs for receiver serial numbers
@@ -1392,7 +1392,7 @@ batchID, auth$projectID, batchID)
         50 + 52 * numGPS
 
     rv = list(numBatches=numBatches, numRuns=numRuns, numHits=numHits, numGPS=numGPS, numBytes=numBytes)
-    res$body = makeBody(rv, auto_unbox=TRUE)
+    res$body = makeBody(rv)
     res$finish()
 }
 
@@ -1508,6 +1508,6 @@ batchID, auth$projectID)
         50 + 52 * numGPS
 
     rv = list(numBatches=numBatches, numRuns=numRuns, numHits=numHits, numGPS=numGPS, numBytes=numBytes)
-    res$body = makeBody(rv, auto_unbox=TRUE)
+    res$body = makeBody(rv)
     res$finish()
 }
