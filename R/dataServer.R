@@ -457,7 +457,7 @@ batches_for_receiver = function(env) {
 
     deviceID = (json$deviceID %>% as.integer)[1]
     if (!isTRUE(is.finite(deviceID))) {
-        sendError("invalid parameter(s)")
+        sendError(res, "invalid parameter(s)")
         return(res$finish())
     }
 
@@ -528,7 +528,7 @@ runs_for_tag_project = function(env) {
     runID = (json$runID %>% as.integer)[1]
 
     if (!isTRUE(is.finite(batchID) && is.finite(runID))) {
-        sendError("invalid parameter(s)")
+        sendError(res, "invalid parameter(s)")
         return(res$finish())
     }
 
@@ -593,7 +593,7 @@ runs_for_receiver = function(env) {
     runID = (json$runID %>% as.integer)[1]
 
     if (!isTRUE(is.finite(batchID) && is.finite(runID))) {
-        sendError("invalid parameter(s)")
+        sendError(res, "invalid parameter(s)")
         return(res$finish())
     }
 
@@ -657,7 +657,7 @@ hits_for_tag_project = function(env) {
     hitID = (json$hitID %>% as.integer)[1]
 
     if (!isTRUE(is.finite(batchID) && is.finite(hitID))) {
-        sendError("invalid parameter(s)")
+        sendError(res, "invalid parameter(s)")
         return(res$finish())
     }
 
@@ -724,7 +724,7 @@ hits_for_receiver = function(env) {
     hitID = (json$hitID %>% as.integer)[1]
 
     if (!isTRUE(is.finite(batchID) && is.finite(hitID))) {
-        sendError("invalid parameter(s)")
+        sendError(res, "invalid parameter(s)")
         return(res$finish())
     }
 
@@ -799,7 +799,7 @@ gps_for_tag_project = function(env) {
     ts = (json$ts %>% as.numeric)[1]
 
     if (!isTRUE(is.finite(batchID) && is.finite(ts))) {
-        sendError("invalid parameter(s)")
+        sendError(res, "invalid parameter(s)")
         return(res$finish())
     }
 
@@ -872,7 +872,7 @@ gps_for_receiver = function(env) {
     ts = (json$ts %>% as.numeric)[1]
 
     if (!isTRUE(is.finite(batchID) && is.finite(ts))) {
-        sendError("invalid parameter(s)")
+        sendError(res, "invalid parameter(s)")
         return(res$finish())
     }
 
@@ -975,7 +975,7 @@ metadata_for_tags = function(env) {
     motusTagIDs = json$motusTagIDs %>% as.integer
 
     if (!isTRUE(all(is.finite(motusTagIDs)))) {
-        sendError("invalid parameter(s)")
+        sendError(res, "invalid parameter(s)")
         return(res$finish())
     }
 
@@ -1129,7 +1129,7 @@ metadata_for_receivers = function(env) {
     deviceIDs = json$deviceIDs %>% as.integer
 
     if (!isTRUE(all(is.finite(deviceIDs)))) {
-        sendError("invalid parameter(s)")
+        sendError(res, "invalid parameter(s)")
         return(res$finish())
     }
 
@@ -1237,7 +1237,7 @@ tags_for_ambiguities = function(env) {
     ambigIDs = json$ambigIDs %>% as.integer
 
     if (!isTRUE(all(is.finite(ambigIDs)) && all(ambigIDs < 0)) && length(ambigIDs) > 0) {
-        sendError("invalid parameter(s)")
+        sendError(res, "invalid parameter(s)")
         return(res$finish())
     }
 
