@@ -34,7 +34,9 @@ motusQuery = function (API, params = NULL, requestType="post", show=FALSE, json=
     curl = getCurlHandle()
     .opts = list(
         httpheader = c(
-            "Content-Type"="application/x-www-form-urlencoded",
+            "Content-Type" = switch(requestType,
+                                    post="application/x-www-form-urlencoded",
+                                    get="application/json"),
             "Accept"="application/json"),
         timeout = 20,
         verbose = FALSE
