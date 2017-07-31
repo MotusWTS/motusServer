@@ -189,6 +189,8 @@ validate_request = function(json, res, needProjectID=TRUE) {
 
     okay = TRUE
 
+    openMotusDB() ## ensure connection is still valid after a possibly long time between requests
+
     tryCatch({
         authToken = (json$authToken %>% as.character)[1]
         projectID = (json$projectID %>% as.integer)[1]
