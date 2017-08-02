@@ -36,6 +36,12 @@ createRecvTagDB = function(projectID, dateBin, path = getProjDir(projectID)) {
     if (! isTRUE(nrow(tags) > 0))
         stop("No tags found for project ", projectID, " with dateBin in ", paste(dateBin, collapse="-"))
 
+    ## remove multiple records for same tag; we only want their physical characteristics
+    tags = subset(tags, ! duplicated(tagID))
+
+    ## the onboard tag finder can't handle duplicated mfgID, bi; remove any duplicates
+    tags = subset(tags, ! duplicated(cbind(mfgID, round(period, 1))))
+
     dbFile = file.path(path, sprintf("project_%d_%s_tag_database.sqlite", projectID, paste0(dateBin, collapse="_")))
 
     ## lookup project label
