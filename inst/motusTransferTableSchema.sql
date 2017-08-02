@@ -220,3 +220,28 @@ CREATE TABLE IF NOT EXISTS maxKeys (
        tableName CHAR(32) PRIMARY KEY,  -- table name in this DB
        maxKey BIGINT                    -- maximum magnitude of "allocated" (reserved or actually used) key in this table
 );--
+
+CREATE TABLE IF NOT EXISTS batchProgs (
+    batchID INT NOT NULL references batches, -- which batch run this record refers to
+    progName VARCHAR(16) NOT NULL,           -- identifier of program; e.g. 'find_tags',
+                                             -- 'lotek-plugins.so'
+    progVersion CHAR(40) NOT NULL,           -- git commit hash for version of code used
+    progBuildTS FLOAT(53) NOT NULL,          -- timestamp of binary for this program; unix-style:
+                                             -- seconds since 1 Jan 1970 GMT; NULL means not
+                                             -- transferred
+    PRIMARY KEY (batchID, progName)          -- only one version of a given program per batch
+);--
+
+CREATE TABLE IF NOT EXISTS batchParams (
+-- This table only records changes to parameters by batchID.
+-- The value of a parameter used to run batch X is the value in this table from
+-- the record with the largest batchID not exceeding X.
+-- i.e. it is assumed batchIDs are chronological, and that any change applies to all
+-- batches after a given record.
+    batchID INT NOT NULL references batches,   -- which batch run this parameter setting is for
+    progName VARCHAR(16) NOT NULL,             -- identifier of program; e.g. 'find_tags',
+                                               -- 'lotek-plugins.so'
+    paramName varchar(16) NOT NULL,            -- name of parameter (e.g. 'minFreq')
+    paramVal FLOAT(53) NOT NULL,               -- value of parameter
+    PRIMARY KEY (batchID, progName, paramName) -- only one value of a given parameter per program per batch
+);--
