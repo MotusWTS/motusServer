@@ -12,7 +12,6 @@ metadata_for_tags(env)
 \value{
 a list with these items
 
-
 \itemize{
    \item tags; a list with these vector items:
    \itemize{
@@ -52,6 +51,12 @@ a list with these items
       \item french; character; French species name
       \item scientific; character; scientific species name
       \item group; character; higher-level taxon
+   }
+   \item projs; a list with these columns:
+   \itemize{
+      \item id; integer motus project id
+      \item name; character full name of motus project
+      \item label; character short label for motus project; e.g. for use in plots
    }
 }
 }

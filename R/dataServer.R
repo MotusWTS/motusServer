@@ -920,7 +920,6 @@ batchID, paste(auth$projects, collapse=","), ts, MAX_ROWS_PER_REQUEST)
 #'
 #' @return a list with these items
 #'
-#'
 #' \itemize{
 #'    \item tags; a list with these vector items:
 #'    \itemize{
@@ -961,6 +960,12 @@ batchID, paste(auth$projects, collapse=","), ts, MAX_ROWS_PER_REQUEST)
 #'       \item scientific; character; scientific species name
 #'       \item group; character; higher-level taxon
 #'    }
+#'    \item projs; a list with these columns:
+#'    \itemize{
+#'       \item id; integer motus project id
+#'       \item name; character full name of motus project
+#'       \item label; character short label for motus project; e.g. for use in plots
+#'    }
 #' }
 #'
 #' @note only metadata which are public, or which are from projects
@@ -995,16 +1000,18 @@ metadata_for_tags = function(env) {
     dbWriteTable(MetaDB$con, "tempQueryTagIDs", data.frame(tagID=motusTagIDs), append=TRUE, row.names=FALSE)
     projs = MetaDB("
 select
-   distinct projectID
+   t3.id as id,
+   t3.name as name,
+   t3.label as label
 from
    tempQueryTagIds as t1
    join tagDeps as t2 on t1.tagID = t2.tagID
    join projs as t3 on t2.projectID = t3.id
 where
    t3.tagsPermissions = 2
-") [[1]]
+")
     ## append projects user has access to via motus permissions
-    projs = unique(c(projs, auth$projects))
+    projIDs = unique(c(projs$id, auth$projects))
 
     ## select all deployments of these tags from the permitted projects
 
@@ -1028,7 +1035,7 @@ from
 where
    t1.projectID in (%s)
    and t1.tagID in (%s)
-", paste(projs, collapse=","), paste(motusTagIDs, collapse=","))
+", paste(projIDs, collapse=","), paste(motusTagIDs, collapse=","))
 
     tagDeps = MetaDB(query)
 
@@ -1071,7 +1078,7 @@ where
 ", paste(speciesIDs, collapse=","))
 
     species = MetaDB(query)
-    res$body = makeBody(list(tags=tags, tagDeps=tagDeps, species=species))
+    res$body = makeBody(list(tags=tags, tagDeps=tagDeps, species=species, projs=projs))
     res$finish()
 }
 
@@ -1115,6 +1122,12 @@ where
 #'       \item polarization2; numeric angle giving tilt from "normal" position, in degrees
 #'       \item polarization1; numeric angle giving rotation of antenna about own axis, in degrees.
 #'    }
+#'    \item projs; a list with these columns:
+#'    \itemize{
+#'       \item id; integer motus project id
+#'       \item name; character full name of motus project
+#'       \item label; character short label for motus project; e.g. for use in plots
+#'    }
 #' }
 #'
 #' @note only metadata which are public, or which are from projects
@@ -1149,16 +1162,18 @@ metadata_for_receivers = function(env) {
     dbWriteTable(MetaDB$con, "tempQueryDeviceIDs", data.frame(deviceID=deviceIDs), append=TRUE, row.names=FALSE)
     projs = MetaDB("
 select
-   distinct projectID
+   t3.id as id,
+   t3.name as name,
+   t3.label as label
 from
    tempQueryDeviceIds as t1
    join recvDeps as t2 on t1.deviceID = t2.deviceID
    join projs as t3 on t2.projectID = t3.id
 where
    t3.sensorsPermissions = 2
-") [[1]]
+")
     ## append projects user has access to via motus permissions
-    projs = unique(c(projs, auth$projects))
+    projIDs = unique(c(projs$id, auth$projects))
 
     ## select all deployments of the receivers from the permitted projects
 
@@ -1183,7 +1198,7 @@ from
 where
    t1.projectID in (%s)
    and t1.deviceID in (%s)
-", paste(projs, collapse=","), paste(deviceIDs, collapse=","))
+", paste(projIDs, collapse=","), paste(deviceIDs, collapse=","))
 
     recvDeps = MetaDB(query)
 
@@ -1206,10 +1221,10 @@ from
 where
    t1.projectID in (%s)
    and t1.deviceID in (%s)
-", paste(projs, collapse=","), paste(deviceIDs, collapse=","))
+", paste(projIDs, collapse=","), paste(deviceIDs, collapse=","))
 
     antDeps = MetaDB(query)
-    res$body = makeBody(list(recvDeps=recvDeps, antDeps=antDeps))
+    res$body = makeBody(list(recvDeps=recvDeps, antDeps=antDeps, projs=projs))
     res$finish()
 }
 
