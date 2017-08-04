@@ -40,5 +40,5 @@ x = syncDBtoFiles(SERNO, RECVDIR, REPODIR, BKUPDIR)
 tx = table(x$status)
 
 cat("Files already present and complete: ", tx["0"], "\n")
-cat("Files already present, but in complete so backed-up and updated: ", tx["1"], "\n")
+cat("Files already present, but incomplete so backed-up and updated: ", tx["1"], "\n")
 cat("New files: ", tx["2"], "\n")

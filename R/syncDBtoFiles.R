@@ -55,8 +55,8 @@ syncDBtoFiles = function(serno, dbdir=MOTUS_PATH$RECV, repo=MOTUS_PATH$FILE_REPO
             for (.ii in 1) {
                 ## not a loop
                 if (! is.na(j)) {
-                    len = suppressWarnings(system(paste0("gzip -l ", repoFiles$name[j], " | gawk 'FNR==2{print $2}' 2>/dev/null"), ignore.stderr=TRUE, intern=TRUE))
-                    if (isTRUE(as.integer(len) >= dbFiles$size[i])) {
+                    len = suppressWarnings(system(paste0("gzip -l \"", gsub('"', '\\"', repoFiles$name[j], fixed=TRUE), "\" | gawk 'FNR==2{print $2}' 2>/dev/null"), ignore.stderr=TRUE, intern=TRUE))
+                    if (isTRUE(as.numeric(len) >= dbFiles$size[i])) {
                         dbFiles$status[i] = 0L
                         break
                     } else {
