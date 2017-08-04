@@ -71,7 +71,7 @@ handlePlotData = function(j) {
         site = info$site[i]
 
         title = sprintf("%.0f %s %s Tags (%s)", year, proj, site, condenseLabel)
-        datafilename = file.path(outDir, sprintf("%s-%.0f_%s_%s_%s_tags.rds", serno, year, proj, site, condenseLabel))
+        datafilename = file.path(outDir, sprintf("%s-%.0f_%s_%s_%s_tags.rds", serno, year, proj, gsub("/", ";", site, fixed=TRUE), condenseLabel))
         plotfilename = sub("\\.rds$", "\\.png", datafilename, perl=TRUE)
 
         ## generate the plot object and condensed dataset
