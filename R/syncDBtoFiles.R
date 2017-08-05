@@ -93,6 +93,7 @@ syncDBtoFiles = function(serno, dbdir=MOTUS_PATH$RECV, repo=MOTUS_PATH$FILE_REPO
             file.rename(repoFiles$name[j], bkupFile)
         }
         if (! is.na(dest)) {
+            dir.create(dirname(dest), recursive=TRUE, showWarnings=FALSE)
             if (isSG) {
                 fc = dbGetQuery(db$con, sprintf("select t1.fileID, bz2uncompress(t2.contents, t1.size) from files as t1 join fileContents as t2 on t1.fileID=t2.fileID where t1.fileID=%d", dbFiles$fileID[i]))[[2]][[1]]
                 out = gzfile(dest, "wb")
@@ -100,7 +101,6 @@ syncDBtoFiles = function(serno, dbdir=MOTUS_PATH$RECV, repo=MOTUS_PATH$FILE_REPO
                 fc = dbGetQuery(db$con, sprintf("select fileID, bz2uncompress(contents, size) from DTAfiles where fileID=%d", dbFiles$fileID[i]))[[2]][[1]]
                 out = file(dest, "wb")
             }
-            dir.create(dirname(dest), recursive=TRUE, showWarnings=FALSE)
             writeBin(fc, out)
             close(out)
         }
