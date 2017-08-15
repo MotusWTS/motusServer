@@ -12,7 +12,8 @@ getYearProjSite(serno, ts = NULL, bn = NULL, motusProjectID = NULL)
 
 \item{ts}{numeric vector of length 2; start and end time}
 
-\item{bn}{integer vector of length 2; start and end boot session numbers}
+\item{bn}{integer vector of length 2; start and end boot session numbers; ignored if
+\code{serno} is a Lotek receiver.}
 
 \item{motusProjectID}{integer scalar; motus project ID to use in case no deployments found
 for this receiver.}
@@ -45,11 +46,12 @@ If a time range is provided, all deployments that overlap the
 specified time range are returned, and the range of timestamps for
 these deployments is returned in the tsStart, tsEnd fields.
 
-If a boot session range is provided, all deployments that include
-the specified boot session range are returned, and the range of
-boot sessions from these is returned in the bnStart, bnEnd fields.
-It is assumed the caller has obtained a lock on that receiver's DB,
-via \code{lockSymbol(serno)}.
+If a boot session range is provided and the receiver is a
+sensorgnome, all deployments that include the specified boot
+session range are returned, and the range of boot sessions from
+these is returned in the bnStart, bnEnd fields.  It is assumed the
+caller has obtained a lock on that receiver's DB, via
+\code{lockSymbol(serno)}.
 
 In either case, if the receiver is a SensorGnome, the return value includes
 valid bnStart and bnEnd - the range of boot sessions corresponding to

@@ -108,7 +108,10 @@ handleRerunReceiver = function(j) {
     ## queue data export
 
     newSubJob(topJob(j), "exportData", serno=serno)
-    newSubJob(topJob(j), "plotData", serno=serno, monoBN=range(monoBN), ts=range(ts))
+    if (isLotek)
+        newSubJob(topJob(j), "plotData", serno=serno, ts=range(ts))
+    else
+        newSubJob(topJob(j), "plotData", serno=serno, monoBN=range(monoBN))
 
     return(TRUE)
 }
