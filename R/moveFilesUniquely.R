@@ -7,16 +7,16 @@
 #' \code{dst} are changed like so:
 #'
 #' \enumerate{
-#' \item if the filename does not end in \code{-NNN.EXT}  where \code{NNN} is an
-#' integer and \code{EXT} is the file extension, then add \code{-1} to
-#' the filename before the extension; e.g.
+#' \item if the filename does not end in \code{-NNN}  where \code{NNN} is an
+#' integer, then add \code{-1} to
+#' the filename; e.g.
 #'
-#'    \code{myfile.txt -> myfile-1.txt}
+#'    \code{myfile.txt -> myfile.txt-1}
 #'
-#' \item if the filename already ends in \code{-NNN.EXT}, then
+#' \item if the filename already ends in \code{-NNN}, then
 #' increment \code{NNN}; e.g.
 #'
-#'   \code{myfile-3.txt -> myfile-4.txt}
+#'   \code{myfile.txt-3 -> myfile.txt-4}
 #'
 #' }
 #'
@@ -35,24 +35,20 @@ moveFilesUniquely = function(src, dst) {
     fd = basename(src)
     existing = dir(dst)
 
-    ## regex to match file extensions, including added "-NNN"
-    nameRegex = "(?sx)
-            ^
-            (?:(?<base>.*)-(?<number>[0-9]+)(?<ext>\\.[^.]*))
-              |
-            (?:(?<base2>.*)(?<ext2>\\.[^.]*))
-            $"
+    ## regex to find possible "-NNN" suffixes on files
+    nameRegex = "(?sx)^(?<base>.*)(-(?<number>[0-9]+)?)$"
 
     ## function to increment the -NNN extension (if any) on a file
     bumpSuffix = function(p) {
-        if ("ext2" %in% names(p)) {
-            paste0(p["base2"], "-1", p["ext2"])
+        if ("number" %in% names(p)) {
+            paste0(p["base"], "-", 1+as.numeric(p["number"]))
         } else {
-            paste0(p["base"], "-", as.integer(p["number"]) + 1, p["ext"])
+            paste0(p["base"], "-1")
         }
     }
 
-    ## loop until no filename conflicts
+    ## loop until no filename conflicts (ugly way to bump up -NNN suffixes)
+    ## until there's no duplicate
     repeat {
         conflict = fd %in% existing | duplicated(fd)
         if (! any(conflict))
