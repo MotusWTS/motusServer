@@ -25,16 +25,16 @@ Filenames that conflict with each other or those already in
 \code{dst} are changed like so:
 
 \enumerate{
-\item if the filename does not end in \code{-NNN.EXT}  where \code{NNN} is an
-integer and \code{EXT} is the file extension, then add \code{-1} to
-the filename before the extension; e.g.
+\item if the filename does not end in \code{-NNN}  where \code{NNN} is an
+integer, then add \code{-1} to
+the filename; e.g.
 
-   \code{myfile.txt -> myfile-1.txt}
+   \code{myfile.txt -> myfile.txt-1}
 
-\item if the filename already ends in \code{-NNN.EXT}, then
+\item if the filename already ends in \code{-NNN}, then
 increment \code{NNN}; e.g.
 
-  \code{myfile-3.txt -> myfile-4.txt}
+  \code{myfile.txt-3 -> myfile.txt-4}
 
 }
 }
