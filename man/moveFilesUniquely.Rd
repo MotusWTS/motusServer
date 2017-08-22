@@ -13,8 +13,8 @@ moveFilesUniquely(src, dst)
 \item{dst}{path to target folder}
 }
 \value{
-a boolean vector of the same length as \code{src}, with TRUE
-entries corresponding to files moved successfully.
+a character vector of the same length as \code{src}, with non-NA
+entries giving new names for any files that were renamed
 }
 \description{
 Move files to a single folder, renaming new files in cases
