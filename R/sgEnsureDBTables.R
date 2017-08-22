@@ -53,11 +53,11 @@ val  character                              -- character string giving meta data
         sql("
 create table files (
 fileID   integer not null primary key, -- file ID - used in most data tables
-name     text unique,                  -- name of file (basename only; no path, no compression extension)
-size     integer,                      -- size of uncompressed file contents
-bootnum  integer,                      -- boot number: number of times SG was booted before this file was recorded
-monoBN   integer,                      -- monotonic boot number: corrects issues with bn for BB white receivers, e.g.
-ts       double,                       -- timestamp from filename (time at which file was created)
+name     text unique not null,         -- name of file (basename only; no path, no compression extension)
+size     integer not null,             -- size of uncompressed file contents
+bootnum  integer not null,             -- boot number: number of times SG was booted before this file was recorded
+monoBN   integer not null,             -- monotonic boot number: corrects issues with bn for BB white receivers, e.g.
+ts       double not null,              -- timestamp from filename (time at which file was created)
 tscode   character(1),                 -- timestamp code: 'P'=prior to GPS fix; 'Z' = after GPS fix
 tsDB     double,                       -- timestamp when file was read into this database
 isDone   integer,                      -- if non-zero, this was a complete, valid compressed file, so will never be updated.
