@@ -24,42 +24,46 @@
 #'
 #' @param dst path to target folder
 #'
-#' @return a boolean vector of the same length as \code{src}, with TRUE
-#' entries corresponding to files moved successfully.
+#' @return a character vector of the same length as \code{src}, with non-NA
+#' entries giving new names for any files that were renamed
 #'
 #' @export
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 moveFilesUniquely = function(src, dst) {
-    fd = basename(src)
+    fname = basename(src)
     existing = dir(dst)
 
     ## regex to find possible "-NNN" suffixes on files
-    nameRegex = "(?sx)^(?<base>.*)(-(?<number>[0-9]+)?)$"
+    nameRegex = "(?sx)^(?:(?:(?<base>.*)-(?<number>[0-9]+))$)|(?<base2>.*)$"
 
     ## function to increment the -NNN extension (if any) on a file
     bumpSuffix = function(p) {
         if ("number" %in% names(p)) {
             paste0(p["base"], "-", 1+as.numeric(p["number"]))
         } else {
-            paste0(p["base"], "-1")
+            paste0(p["base2"], "-1")
         }
     }
 
     ## loop until no filename conflicts (ugly way to bump up -NNN suffixes)
     ## until there's no duplicate
+    initial.conflict = NULL
     repeat {
-        conflict = fd %in% existing | duplicated(fd)
+        conflict = fname %in% existing | duplicated(fname)
+        if (is.null(initial.conflict))
+            initial.conflict = conflict
         if (! any(conflict))
             break
 
         ## match portions of conflicting filenames
-        parts = regexPieces(nameRegex, fd[conflict])
+        parts = regexPieces(nameRegex, fname[conflict])
 
         ## rename according to rules
 
-        fd[conflict] = lapply(parts, bumpSuffix)
+        fname[conflict] = sapply(parts, bumpSuffix)
     }
-    file.rename(src, file.path(dst, fd))
+    file.rename(src, file.path(dst, fname))
+    return(ifelse(initial.conflict, fname, NA))
 }

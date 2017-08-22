@@ -26,6 +26,8 @@ a data_frame reporting the fate of each file, with these columns:
 \item serno    - serial number (e.g. "Lotek-1234") of receiver this file is from
 \item ts       - first timestamp from a detection in this file
 \item tsLast   - last timestamp from a detection in this file
+\item inRepo   - file came from file_repo (rather than being a new upload; happens when fully reprocessing)
+\item fid      - fileID, if file in or added to DB
 }
 }
 \description{
