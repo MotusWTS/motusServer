@@ -23,10 +23,10 @@ getMotusDeviceID = function(src, useFirst=TRUE) {
         return(as.integer(deviceID))
 
     ## see whether motus knows this receiver
-    mm = motusListSensors(serialNo=m$recvSerno)
-    if (length(mm) > 0) {
-        if (nrow(mm) == 1 || (nrow(mm) > 0 && useFirst)) {
-            m$deviceID = mm$deviceID[match(m$recvSerno, mm$serno)][1]
+    mm = subset(motusListSensors(), receiverID==m$recvSerno)
+    if (dim(mm) > 0) {
+        if (dim(mm) == 1 || (nrow(mm) > 0 && useFirst)) {
+            m$deviceID = mm$deviceID[1]
             rv = as.integer(m$deviceID)
             if (isTRUE(rv > 0))
                 return(rv)
