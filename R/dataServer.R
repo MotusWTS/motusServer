@@ -1054,7 +1054,7 @@ select
    t1.lifeSpan,
    t1.nomFreq,
    t1.offsetFreq,
-   t1.bi,
+   t1.period as bi,
    t1.pulseLen
 from
    tags as t1
