@@ -1,9 +1,21 @@
 #' Merge a batch of raw SG files with their receiver database(s).
 #'
 #' Determines which files are redundant, new, or partially new.  Does
-#' *not* run the tag finder.  Any files which are symlinks are deleted
+#' *not* run the tag finder.
+#'
+#' Any new content from files is merged into the files and fileContents
+#' tables of the receiver DBs.
+#'
+#' Files are disposed of like so:
+#' \itemize{
+#' \item any files which are symlinks are deleted
 #' after merging their target's contents; i.e. the symlink is deleted,
 #' not the file it points to.
+#' \item files whose path has \code{MOTUS_PATH$FILE_REPO} as a prefix are left as-is
+#' \item files whose path does not have \code{MOTUS_PATH$FILE_REPO} as a prefix, and which
+#' either are new or have new content are moved to \code{MOTUS_PATH$FILE_REPO/serno/YYYY-MM-DD}
+#' \item remaining files are moved to \code{MOTUS_PATH$TRASH}
+#' }
 #'
 #' @param files either a character vector of full paths to files, or
 #'     the full path to a directory, which will be searched
@@ -214,7 +226,7 @@ sgMergeFiles = function(files, j, dbdir = MOTUS_PATH$RECV) {
         ## FIXME? is there a cleaner way to do '%>% collect %>% as.XXX' to get a scalar entry from a tbl?
 
         meta = getMap(src)
-        if (is.null(meta$dbType)) {
+        if (length(meta$dbType) == 0) {
             meta$dbType = "receiver" ## indicate this is a receiver database (vs. a tagProject database)
             meta$recvSerno = recv
             meta$recvType = "SENSORGNOME"
@@ -246,7 +258,7 @@ sgMergeFiles = function(files, j, dbdir = MOTUS_PATH$RECV) {
                         "insert into files (name, size, bootnum, monoBN, ts, tscode, tsDB, isDone, motusJobID) values (:name, :size, :bootnum, :monoBN, :ts, :tscode, :tsDB, :isDone, :motusJobID)",
 
                         data.frame(
-                            name             = newf$name[i],
+                            name             = newf$Fname[i],
                             size             = attr(fcon, "len"),
                             bootnum          = newf$Fbootnum[i],
                             monoBN           = newf$Fbootnum[i],
@@ -305,6 +317,9 @@ sgMergeFiles = function(files, j, dbdir = MOTUS_PATH$RECV) {
         }
         lockSymbol(recv, lock=FALSE)
     }
+
+    ## skip files having MOTUS_PATH$FILE_REPO as a prefix
+    ff = ff[MOTUS_PATH$FILE_REPO != substr(ff, 1, nchar(MOTUS_PATH$FILE_REPO))]
 
     ## remove files which are just symlinks
     link = Sys.readlink(ff)
