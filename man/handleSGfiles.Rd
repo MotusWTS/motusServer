@@ -7,7 +7,10 @@
 handleSGfiles(j)
 }
 \arguments{
-\item{j}{the job}
+\item{j}{the job with these item(s):
+\itemize{
+   \item filePath; path to files to be merged; if NULL, defaults to \code{jobPath(j)}
+}}
 }
 \value{
 TRUE

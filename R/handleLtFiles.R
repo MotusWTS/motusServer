@@ -4,7 +4,10 @@
 #' to the queue.  Merges files into receiver DBs, then queues
 #' a job to run the tag finder on each of these.
 #'
-#' @param j, the job.
+#' @param j the job with these item(s):
+#' \itemize{
+#'    \item filePath; path to files to be merged; if NULL, defaults to \code{jobPath(j)}
+#' }
 #'
 #' @return TRUE after queueing jobs
 #'
@@ -18,10 +21,13 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 handleLtFiles = function(j) {
+    path = j$filePath
+    if (is.null(path))
+        path = jobPath(j)
 
     ## merge files into receiver database(s)
 
-    info = ltMergeFiles(jobPath(j), j)
+    info = ltMergeFiles(path, j)
 
     if (isTRUE(topJob(j)$mergeOnly > 0))
         return(TRUE)
