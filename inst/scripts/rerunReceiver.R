@@ -9,7 +9,7 @@ ARGS = commandArgs(TRUE)
 if (length(ARGS) == 0) {
     cat("
 
-Usage: rerunReceiver.R [-p] [-c] [-e] SERNO [BLO BHI]
+Usage: rerunReceiver.R [-F] [-p] [-c] [-e] SERNO [BLO BHI]
 
 where:
 
@@ -27,6 +27,9 @@ where:
  -c: cleanup: before running the tag finder, delete existing batches, runs, hits for
      the specified boot sessions
 
+ -F: full rerun: delete all internally-stored files before running, then behave
+     as if full contents of file_repo for that receiver consists of new files
+
 A new job will be created and placed into the master queue (queue 0),
 from where a processServer can claim it.
 
@@ -39,6 +42,7 @@ priority = FALSE
 exportOnly = FALSE
 cleanup = FALSE
 monoBN = NULL
+fullRerun = FALSE
 
 while(isTRUE(substr(ARGS[1], 1, 1) == "-")) {
     switch(ARGS[1],
@@ -50,6 +54,9 @@ while(isTRUE(substr(ARGS[1], 1, 1) == "-")) {
            },
            "-c" = {
                cleanup = TRUE
+           },
+           "-F" = {
+               fullRerun = TRUE
            },
            {
                stop("Unknown argument: ", ARGS[1])
@@ -72,9 +79,14 @@ suppressMessages(suppressWarnings(library(motusServer)))
 
 loadJobs()
 
-j = newJob("rerunReceiver", .parentPath=MOTUS_PATH$INCOMING, serno=serno, monoBN=monoBN, exportOnly=exportOnly, cleanup=cleanup, replyTo=MOTUS_ADMIN_EMAIL, valid=TRUE, .enqueue=FALSE)
+if (fullRerun) {
+    j = newJob("fullRecvRerun", .parentPath=MOTUS_PATH$INCOMING, serno=serno, replyTo=MOTUS_ADMIN_EMAIL, valid=TRUE, .enqueue=FALSE)
+    jobLog(j, paste0("Fully rerunning receiver ", serno, " from file_repo files."))
+} else {
+    j = newJob("rerunReceiver", .parentPath=MOTUS_PATH$INCOMING, serno=serno, monoBN=monoBN, exportOnly=exportOnly, cleanup=cleanup, replyTo=MOTUS_ADMIN_EMAIL, valid=TRUE, .enqueue=FALSE)
+    jobLog(j, paste0("Rerunning receiver ", serno, " with monoBN=", paste(monoBN, collapse="...")))
+}
 
-jobLog(j, paste0("Rerunning receiver ", serno, " with monoBN=", paste(monoBN, collapse="...")))
 
 ## move the job to the queue 0 or the priority queue
 
