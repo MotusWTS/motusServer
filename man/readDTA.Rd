@@ -4,7 +4,7 @@
 \alias{readDTA}
 \title{read a lotek .DTA file}
 \usage{
-readDTA(filename = "", lines = NULL)
+readDTA(filename = "", lines = NULL, numLines = -1)
 }
 \arguments{
 \item{filename}{if specified, gives the full path to the .DTA file}
@@ -12,9 +12,14 @@ readDTA(filename = "", lines = NULL)
 \item{lines}{if specified, this is a character vector of lines from the .DTA file
 (helpful if it has already been read in for some reason).  If NULL (the default),
 this function reads the file specified by \code{filename}}
+
+\item{numLines}{the maximum number of lines to read from the file.
+Useful if reading the file only to get a serial number, which
+is within the first 20 lines. Default: -1, which reads all lines.}
 }
 \value{
-a named list with these items:
+if \code{sernoOnly} is TRUE, a character scalar receiver serial number such as "Lotek-123".
+Otherwise, a named list with some or all of these items:
 
 \itemize{
 \item  recv serial number; e.g. "Lotek-123"
