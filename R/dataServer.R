@@ -683,18 +683,24 @@ from
    join batchRuns as t2 on t2.batchID = t1.batchID
    join runs as t3 on t3.runID = t2.runID
    join hits as t4 on t4.runID = t2.runID
-   join tagDeps as t5 on t5.motusTagID=t3.motusTagID
 where
    t1.batchID = %d
+   and (select
+           count(*)
+        from
+           tagDeps as t5
+        where
+           t5.motusTagID=t3.motusTagID
+           and t5.projectID=%d
+           and ((t5.tsEnd is null and t3.tsBegin >= t5.tsStart)
+                or (t3.tsBegin <= t5.tsEnd and t5.tsStart <= t3.tsEnd))
+   ) > 0
    and t4.hitID > %d
-   and t5.projectID = %d
-   and t4.ts <= t5.tsEnd
-   and t4.ts >= t5.tsStart
 order by
    t4.hitID
 limit %d
 ",
-batchID, hitID, auth$projectID, MAX_ROWS_PER_REQUEST)
+batchID, auth$projectID, hitID, MAX_ROWS_PER_REQUEST)
     rv = MotusDB(query)
     res$body = makeBody(rv)
     res$finish()
