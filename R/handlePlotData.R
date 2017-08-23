@@ -67,6 +67,9 @@ handlePlotData = function(j) {
 
     info = info %>% group_by(year, proj, site) %>% summarize(serno=first(serno), projID=first(projID), tsStart=min(tsStart, na.rm=TRUE), tsEnd=max(tsEnd, na.rm=TRUE), bnStart=min(bnStart, na.rm=TRUE), bnEnd = max(bnEnd, na.rm=TRUE))
 
+    ## deal with -Inf for tsEnd arising from max(c()); set to a very long time in the future.
+    info$tsEnd[! is.finite(info$tsEnd)] = 1e20
+
     outDir = file.path(MOTUS_PATH$PLOTS, serno)
     dir.create(outDir, mode="0770")
 

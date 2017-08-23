@@ -268,7 +268,7 @@ monoBNlo, monoBNhi))
 
         pulses = dbGetQuery(recv$con, sprintf("
 select ant,
-' Antenna ' || ant || ' Activity' as fullID,
+' Antenna ' || case when ant = -1 then 'A1+A2+A3+A4' else ant end || ' Activity' as fullID,
 hourBin as bin,
 hourBin * 3600 + 1800 as ts,
 1 as n,
@@ -351,10 +351,10 @@ monoBNlo, monoBNhi))
                 panel.xyplot(x[gps], y[gps], groups=groups[gps], pch = "|", col="green", ...)
             ## plot antennas
             if (any(ant))
-                panel.xyplot(x[ant], y[ant], groups=groups[ant], pch = '|', col = antCol[1 + as.integer(levels(as.factor(groups[ant])))], ...)
+                panel.xyplot(x[ant], y[ant], groups=groups[ant], pch = '|', col = antCol[1 + abs(as.integer(levels(as.factor(groups[ant]))))], ...)
             ## plot tags
             if (any(tag))
-                panel.xyplot(x[tag], y[tag], groups=groups[tag], col = antCol[1 + as.integer(levels(as.factor(groups[tag])))], ...)
+                panel.xyplot(x[tag], y[tag], groups=groups[tag], col = antCol[1 + abs(as.integer(levels(as.factor(groups[tag]))))], ...)
         },
         main = list(paste0(title, "\n", sprintf("Receiver: %s", serno)), cex=1.5),
         ylab = list(ylab, cex=1.5),
