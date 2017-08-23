@@ -6,7 +6,14 @@ if (length(ARGV) == 0) {
     cat("
 Make sure all data files in a receiver's DB are in the file repo,
 adding any which are missing, and backing up any which get replaced
-by a longer version from the DB.
+by a longer version from the DB.  The results are written
+as a .csv (tab-separated) sequence of (filename, status),
+where status is an integer meaning:
+
+0: no change; file already in repo and contains the same or longer data as in DB
+1: updated; file already in repo, but DB had a longer version
+2: inserted; file not in repo; added there in .txt.gz format if
+   the file was marked as complete in the DB; otherwise in uncompressed .txt format.
 
 Usage:
 
@@ -35,10 +42,5 @@ if (! file.exists(file.path(RECVDIR, paste0(SERNO, ".motus"))))
     stop("No receiver database found")
 
 suppressWarnings(suppressMessages(library(motusServer)))
-x = syncDBtoFiles(SERNO, RECVDIR, REPODIR, BKUPDIR)
-
-tx = table(x$status)
-
-cat("Files already present and complete: ", tx["0"], "\n")
-cat("Files already present, but incomplete so backed-up and updated: ", tx["1"], "\n")
-cat("New files: ", tx["2"], "\n")
+x = syncDBtoRepo(SERNO, RECVDIR, REPODIR, BKUPDIR)
+write.csv(x, stdout(), row.names=FALSE)
