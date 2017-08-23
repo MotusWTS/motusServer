@@ -62,6 +62,11 @@ handlePlotData = function(j) {
     ## get rid of empty deployments; i.e. those for which we don't actually have data.
     info = subset(info, !(is.na(tsStart) & is.na(bnStart)))
 
+    ## group by year, proj, site to keep all "deployments" together (multiple deployments might differ
+    ## only in antenna placement; we want these on the same plots)
+
+    info = info %>% group_by(year, proj, site) %>% summarize(serno=first(serno), projID=first(projID), tsStart=min(tsStart, na.rm=TRUE), tsEnd=max(tsEnd, na.rm=TRUE), bnStart=min(bnStart, na.rm=TRUE), bnEnd = max(bnEnd, na.rm=TRUE))
+
     outDir = file.path(MOTUS_PATH$PLOTS, serno)
     dir.create(outDir, mode="0770")
     safeSys("chgrp", "www-data", outDir)
