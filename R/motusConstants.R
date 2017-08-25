@@ -144,19 +144,17 @@ MOTUS_PATH = list(
     TRASH            = "/sgm/trash/",                ## files to be deleted once we know they've been processed
 
     UPLOADS          = structure("/sgm/uploads/",    ## target in which the ProjectSend server makes hardlinks to its newly-uploaded files
-                       owner="sg:www-data",
-                       perm="g+rwsx"),
+                       perm="g+rwsx"),               ## www-data user belongs to group "sg" so can write there
 
     UPLOAD_ARCHIVE   = "/raid5tb/uploads/files",     ## folder where ProjectSend stores uploaded files, filed by username
 
-                                                     ## must be writable by the user running the ProjectSend webserver (probably www-data)
+                                                     ## must be writable by the user running the ProjectSend webserver (www-data)
     USERAUTH         = structure("/sgm/userauth/",   ## folder to store sqlite database of user authentication cached from motus.org
-                       owner="sg:www-data",          ## this folder needs to have group set to "www-data" and have permissions g+rwx so that
-                       perm="g+rswx"),               ## Apache web server's mod_auth_external can read/write to it.
+                       owner="sg:www-data",          ## this folder needs to have permissions g+rwx so that
+                       perm="g+rswx"),               ## Apache web server's mod_auth_external can read/write to it (user www-data belongs to group sg)
 
     WWW              = structure("/sgm/www/",        ## File hierarchy to be served by apache to authenticated motus users
-                       owner="sg:www-data",
-                       perm = "g+rsx")
+                       perm = "g+rsx")               ## listable/readable
 )
 
 ## main logfile name

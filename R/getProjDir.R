@@ -44,7 +44,5 @@ require valid-user
 TKTAuthToken %d
 ', p), file=file.path(d, ".htaccess"))
 
-    safeSys("sudo", "chown", "-R", "www-data:www-data", d)
-
     return(d)
 }
