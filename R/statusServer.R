@@ -62,8 +62,9 @@ latestJobsApp = function(env) {
     ## contents, if the javascript written by this function is filtered out:
 
     res$write(paste0("<small>As of ", format(Sys.time(), "%d %b %Y %H:%M:%S (GMT)</small>"), '
+<br><a href="" id="page_first">Top</a>&nbsp;&nbsp;&nbsp<a href="" id="page_up">Page Up</a>&nbsp;&nbsp;&nbsp;<a href="" id="page_down">Page Down</a>&nbsp;&nbsp;&nbsp;<a href="" id="page_last">Bottom</a><br>
+
 <script type="text/javascript">
-var numJobs = $(".jobDetails").length;
 
 function toggleJobExpand(n) {
    var jdn = ".jobDetails" + n;
@@ -95,14 +96,25 @@ function makeJobToggle(n) {
     return(function() {toggleJobExpand(n)});
 };
 
-for (var j=1; j <= numJobs; ++j) {
-    $(".jobSummary" + j).click(makeJobToggle(j));
+var numJobs;
+
+window.onload = function() {
+   numJobs = $(".jobDetails").length;
+   for (var j=1; j <= numJobs; ++j) {
+       $(".jobSummary" + j).click(makeJobToggle(j));
+   }
+   var loc = window.location;
+   var url = loc.protocol + "//" + loc.host + loc.pathname
+   $("#page_up")[0].href = url + "?k=-" + (jobIDs[1] + 1);
+   $("#page_down")[0].href = url + "?k=" + (jobIDs[0] - 1);
+   $("#page_first")[0].href = url + "?k=0";
+   $("#page_last")[0].href = url + "?k=-1";
 }
 </script>
 '));
     showSync = ifelse(isTRUE(req$GET()[['sync']]==1), '=', '<>')
     user = as.character(req$GET()[['user']])[1]
-    if (! is.na(user) && user != "admin" && user != "stuart" && user != "zoe" && user != "phil" && user != "andre") {
+    if (! is.na(user) && user != "john" && user != "stuart" && user != "zoe" && user != "phil" && user != "andre") {
         jj = ServerDB(sprintf("select id from jobs where user=:user and pid is null and type %s 'syncReceiver' order by id desc", showSync), user=user)[[1]]
         k = 0
     } else {
@@ -110,21 +122,20 @@ for (var j=1; j <= numJobs; ++j) {
         if (! isTRUE(n > 0 && n <= 500))
             n = 20
         k = as.integer(req$GET()[['k']])[1]
-        if (! isTRUE(k >= 0))
-            k = 0
         if (k == 0)
             k = ServerDB("select max (id) from jobs where pid is null")[[1]]
         if (k > 0) {
-            jj = ServerDB(sprintf("select id from jobs where pid is null and id <= :k and type %s 'syncReceiver' order by mtime desc limit :n", showSync), k=k, n=n)[[1]]
+            jj = ServerDB(sprintf("select id from jobs where pid is null and id <= :k and type %s 'syncReceiver' order by id desc limit :n", showSync), k=k, n=n)[[1]]
         } else {
-            jj = ServerDB(sprintf("select id from jobs where pid is null and id >= :k and type %s 'syncReceiver' order by mtime desc limit :n", showSync), k=-k, n=n)[[1]]
+            jj = ServerDB(sprintf("select id from jobs where pid is null and id >= :k and type %s 'syncReceiver' order by id limit :n", showSync), k=-k, n=n)[[1]]
+            jj = sort(jj, decreasing=TRUE) ## note: do the sort rather than changing the order in the SQL query; else we always get the latest n jobs.
         }
     }
     if (length(jj) == 0) {
-        jj = ServerDB(sprintf("select id from jobs where pid is null and type %s 'syncReceiver' order by mtime %s limit :n", showSync, if (k > 0) "desc" else ""), n=n) [[1]]
+        jj = ServerDB(sprintf("select id from jobs where pid is null and type %s 'syncReceiver' order by id %s limit :n", showSync, if (k > 0) "desc" else ""), n=n) [[1]]
     }
 
-    info = ServerDB(" select t1.id, coalesce(json_extract(t1.data, '$.replyTo[0]'), json_extract(t1.data, '$.replyTo')), t1.type, t1.ctime, t1.mtime, min(t2.done) as done from jobs as t1 left outer join jobs as t2 on t1.id=t2.stump where t1.id in (:jj) group by t1.id order by t1.mtime desc", jj=jj)
+    info = ServerDB(" select t1.id, coalesce(json_extract(t1.data, '$.replyTo[0]'), json_extract(t1.data, '$.replyTo')), t1.type, t1.ctime, t1.mtime, min(t2.done) as done from jobs as t1 left outer join jobs as t2 on t1.id=t2.stump where t1.id in (:jj) group by t1.id order by t1.id desc", jj=jj)
     class(info$ctime) = class(info$mtime) = c("POSIXt", "POSIXct")
     info$done = c("Error", "Active", "Done")[2 + info$done]
 
@@ -136,6 +147,7 @@ for (var j=1; j <= numJobs; ++j) {
     for (i in seq(along=jj)) {
         dumpJobDetails(res, jj[i], i)
     }
+    res$write(sprintf('<script type="text/javascript">jobIDs=[%s];</script>', paste(range(jj), collapse=",")))
     res$finish()
 }
 
@@ -256,7 +268,7 @@ queueStatusApp = function(env) {
           ))
         if (length(jj) > 0) {
             res$write("<b>Incomplete jobs:</b>")
-            info = ServerDB("select t1.id, coalesce(json_extract(t1.data, '$.replyTo[0]'), json_extract(t1.data, '$.replyTo')), t1.type, t1.ctime, t1.mtime, group_concat(t2.type) as sj from jobs as t1 join jobs as t2 on t1.id=t2.stump where t1.id in (:jj) and t2.done == 0 group by t1.id order by t1.mtime desc", jj=jj)
+            info = ServerDB("select t1.id, coalesce(json_extract(t1.data, '$.replyTo[0]'), json_extract(t1.data, '$.replyTo')), t1.type, t1.ctime, t1.mtime, group_concat(t2.type) as sj from jobs as t1 join jobs as t2 on t1.id=t2.stump where t1.id in (:jj) and t2.done == 0 group by t1.id order by t1.id desc", jj=jj)
             class(info$ctime) = class(info$mtime) = c("POSIXt", "POSIXct")
             info$sj = sapply(info$sj, function(x) { j = strsplit(x, ",")[[1]]; t = table(j); paste(sprintf("%s(%d)", names(t), t), collapse=", ")})
             names(info) = c("ID", "Sender", "Type", "Created", "Last Activity", "Incomplete SubJobs")
