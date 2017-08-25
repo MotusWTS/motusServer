@@ -39,14 +39,9 @@ getProjDir = function(p) {
 
     cat(sprintf("<h3>Motus Project %d.  %s</h3>\n", p, pn), file=file.path(d, "header.html"))
     cat(sprintf('
-AuthType Basic
-AuthName "Please login with your username and password from motus.org"
-AuthBasicProvider external
-AuthExternal download
-GroupExternal download
-HeaderName header.html
-IndexIgnore header.html
-Require group %d
+AuthType None
+require valid-user
+TKTAuthToken %d
 ', p), file=file.path(d, ".htaccess"))
 
     safeSys("sudo", "chown", "-R", "www-data:www-data", d)
