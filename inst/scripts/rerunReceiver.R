@@ -81,10 +81,10 @@ loadJobs()
 
 if (fullRerun) {
     j = newJob("fullRecvRerun", .parentPath=MOTUS_PATH$INCOMING, serno=serno, replyTo=MOTUS_ADMIN_EMAIL, valid=TRUE, .enqueue=FALSE)
-    jobLog(j, paste0("Fully rerunning receiver ", serno, " from file_repo files."))
+    jobLog(j, paste0("Fully rerunning receiver ", serno, " from file_repo files."), summary=TRUE)
 } else {
     j = newJob("rerunReceiver", .parentPath=MOTUS_PATH$INCOMING, serno=serno, monoBN=monoBN, exportOnly=exportOnly, cleanup=cleanup, replyTo=MOTUS_ADMIN_EMAIL, valid=TRUE, .enqueue=FALSE)
-    jobLog(j, paste0("Rerunning receiver ", serno, " with monoBN=", paste(monoBN, collapse="...")))
+    jobLog(j, paste0(if(isTRUE(exportOnly)) "Re-exporting data from" else "Rerunning", " receiver ", serno), summary=TRUE)
 }
 
 
