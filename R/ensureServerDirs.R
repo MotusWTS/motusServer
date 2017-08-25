@@ -93,5 +93,12 @@ ensureServerDirs = function() {
     targets = dir(instDir, full.names=TRUE)
     suppressWarnings(file.symlink(targets, file.path(MOTUS_PATH$BIN, basename(targets))))
 
+    ## create symlinks to scripts for the static webserver; these are e.g. php pages
+    ## served by apache and control access to downloads of receiver summary plots etc.
+
+    instDir = system.file("scripts/www", package="motusServer")
+    targets = dir(instDir, full.names=TRUE)
+    suppressWarnings(file.symlink(targets, file.path(MOTUS_PATH$WWW, basename(targets))))
+
     return(rv)
 }
