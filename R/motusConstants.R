@@ -242,4 +242,4 @@ MOTUS_SG_EPOCH = 1262304000
 MOTUS_TAGREG_MANIFEST_REGEXP = ".*tagreg.*\\.txt$"
 
 ## sprintf-format string for URL of downloadable files; %d is for projectID
-MOTUS_DOWNLOAD_URL_FMT = "https://sensorgnome.org/download/%d"
+MOTUS_DOWNLOAD_URL_FMT = "https://sgdata.motus.org/download/%d"
