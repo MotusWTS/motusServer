@@ -9,7 +9,12 @@
 #' (helpful if it has already been read in for some reason).  If NULL (the default),
 #' this function reads the file specified by \code{filename}
 #'
-#' @return a named list with these items:
+#' @param numLines the maximum number of lines to read from the file.
+#'     Useful if reading the file only to get a serial number, which
+#'     is within the first 20 lines. Default: -1, which reads all lines.
+#'
+#' @return if \code{sernoOnly} is TRUE, a character scalar receiver serial number such as "Lotek-123".
+#' Otherwise, a named list with some or all of these items:
 #'
 #' \itemize{
 #' \item  recv serial number; e.g. "Lotek-123"
@@ -37,172 +42,172 @@
 #'     subsequent detection blocks.
 #'
 #' @export
-#' 
+#'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 
-readDTA = function(filename="", lines=NULL) {
+readDTA = function(filename="", lines=NULL, numLines=-1) {
 
-  if (is.null(lines))
-    ## read the DTA file in; we don't sweat line endings this way
-    lines = readLines(filename)
+    if (is.null(lines))
+        ## read the DTA file in; we don't sweat line endings this way
+        lines = readLines(filename, n = numLines)
 
-  date.format = "%m/%d/%y %H:%M:%OS"
+    date.format = "%m/%d/%y %H:%M:%OS"
 
-  ## frequency and gain tables, needed for figuring out the antenna frequency and
-  ## power for each detection
-  
-  gain.tab = numeric()
-  freq.tab = numeric()
+    ## frequency and gain tables, needed for figuring out the antenna frequency and
+    ## power for each detection
 
-  ## paste text into one big string
-  lines = paste(lines, collapse="\n")
+    gain.tab = numeric()
+    freq.tab = numeric()
 
-  ## start with a NULL tags dataframe
-  tags = NULL
-    
-  ## match against a regular expression to find tables - this splits the file
-  ## up into recognizable blocks, in the order in which they appear there.
-  ## We read and interpret those blocks later.
-  
-  res = gregexpr(ltDTAregex, lines, perl=TRUE)[[1]]
-  clen = t(attr(res, "capture.length"))
-  cstart = t(attr(res, "capture.start"))
-  parts = clen != 0
-  pieces = stri_sub(lines, cstart[parts], length = clen[parts])
-  names(pieces) = rownames(clen)[1 + ((which(parts)-1) %% nrow(clen))]
-  newlines = gregexpr("\n", lines)[[1]]
-  piece.lines.before = sapply(cstart[parts], function(x) sum(newlines < x))
+    ## paste text into one big string
+    lines = paste(lines, collapse="\n")
 
-  ## each element of the character vector 'pieces' is the body of a
-  ## table.
-  ## Interpret these now.
+    ## start with a NULL tags dataframe
+    tags = NULL
 
-  codeset = as.character(NA)
-  
-  for (ip in seq(along=pieces)) {
-    if (nchar(pieces[ip]) == 0)
-      next
-    
-    piece.name = names(pieces)[ip] ## can be repeated
+    ## match against a regular expression to find tables - this splits the file
+    ## up into recognizable blocks, in the order in which they appear there.
+    ## We read and interpret those blocks later.
 
-    ## to keep line counts valid, retain blank lines within tables as rows of NA
-    
-    con = textConnection(pieces[ip])
-    tab = read.table(con, as.is=TRUE, blank.lines.skip=FALSE)
-    close(con)
-    
-    switch(piece.name,
-           model = {
-               model = tab[1, 1]
-           },
+    res = gregexpr(ltDTAregex, lines, perl=TRUE)[[1]]
+    clen = t(attr(res, "capture.length"))
+    cstart = t(attr(res, "capture.start"))
+    parts = clen != 0
+    pieces = stri_sub(lines, cstart[parts], length = clen[parts])
+    names(pieces) = rownames(clen)[1 + ((which(parts)-1) %% nrow(clen))]
+    newlines = gregexpr("\n", lines)[[1]]
+    piece.lines.before = sapply(cstart[parts], function(x) sum(newlines < x))
 
-           serial_no = {
-             serno = tab[1,1]
-           },
-           
-           code_set = {
-             codeset = tab[1,1]
-           },
+    ## each element of the character vector 'pieces' is the body of a
+    ## table.
+    ## Interpret these now.
 
-           active_scan = {
-             ## make a lookup table for frequency by channel
-             freq.tab[as.character(tab[,1])] = tab[,2]
-           },
+    codeset = as.character(NA)
 
-           antenna_gain = {
-             ## make a lookup table for gain by antenna
-             ## We use this to adjust observed power i.e. we reduce
-             ## power by a factor of gain.  A brief lab trial
-             ## showed an approximate increase of recorded signal
-             ## strength of 40 units for each 10 unit increase in gain,
-             ## so we reduce signal strength by 4 * gain before converting
-             ## to dB way below.
-             gain.tab[as.character(tab[,1])] = tab[,2]
-           },
+    for (ip in seq(along=pieces)) {
+        if (nchar(pieces[ip]) == 0)
+            next
 
-           id_manual = {
-               ## manually triggered readings are fully self-contained with these columns
-               ## Date   Time               Freq [MHz]    Gain  Tag ID        Antenna   Power   Data       Latitude      Longitude
-               ##   1     2                   3            4      5              6        7      8            9            10
-               ## parse date / time from first two columns
-               tab = data.frame(
-                   ts = as.numeric(as.POSIXct(strptime(paste(tab[[1]], tab[[2]]), date.format, tz="GMT"))),
-                   id = tab[[5]],
-                   ant = tab[[6]],
-                   sig = tab[[7]],
-                   lat = tab[[9]],
-                   lon = tab[[10]],
-                   dtaline = piece.lines.before[ip] + 1:nrow(tab),
-                   antfreq = tab[[3]],
-                   gain = tab[[4]],
-                   codeset = factor(1, labels=codeset),
-                   stringsAsFactors = FALSE)
-               tags = rbind(tags, tab)
-           },
-           ## default =
-           {
-             ## this is a table of tag hits, either ID only or ID + GPS
-             tab[1] = as.numeric(as.POSIXct(strptime(paste(tab[[1]], tab[[2]]), date.format, tz="GMT")))
-             tab = tab[-2]
-             if (piece.name == "id_only")
-               tab = cbind(tab, NA, NA)  ## lat and lon not available
-             
-             names(tab) = c("ts", "chan", "id", "ant", "sig", "lat", "lon")
-             tab$dtaline = piece.lines.before[ip] + 1:nrow(tab)
-             tab$ant = as.character(tab$ant)
+        piece.name = names(pieces)[ip] ## can be repeated
 
-             tab = subset(tab, id != 999)
-             ## fill in the appropriate gain value, or a best guess
-             
-             ants = unique(tab$ant)
-             bad.ants = is.na(gain.tab[ants])
-             if (any(bad.ants)) {
-               ## the table refers to antenna for which we haven't seen a gain settings
-               ## It appears that on the SRX-DL, if there are two antennas,
-               ## and one of them is AH0, that antenna appears with a number in tag hit records
-               if (sum(bad.ants) == 1 && !is.na(gain.tab["AH0"]) && ! all(tab$ant  == "AH0")) {
-                 ## use the gain for AH0, as this is presumably the same antenna
-                 gain.tab[ants[bad.ants]] = gain.tab["AH0"]
-               } else {
-                 ## use the gain from the first antenna with known gain, otherwise, use
-                 ## 80 as this was common
-                 if (all(is.na(gain.tab))) {
-                   gain.to.use = 80
-                   gain.source = " but NO GAIN VALUES WERE SPECIFIED FOR ANY ANTENNA!"
-                 } else {
-                   gain.to.use = gain.tab[which(!is.na(gain.tab))[1]]
-                   gain.source = paste(" specified for antenna '", names(gain.tab)[which(!is.na(gain.tab))[1]], "'", sep="")
-                 }
-                 gain.tab[ants[bad.ants]] = gain.to.use
-                 warning("Warning: No gain setting found for antenna number(s): ", paste(ants[bad.ants], collapse=", "),
-                         " specified in ", piece.name, " table.\nUsing gain value of ", gain.to.use, gain.source, "\n")
+        ## to keep line counts valid, retain blank lines within tables as rows of NA
+
+        con = textConnection(pieces[ip])
+        tab = read.table(con, as.is=TRUE, blank.lines.skip=FALSE)
+        close(con)
+
+        switch(piece.name,
+               model = {
+                   model = tab[1, 1]
+               },
+
+               serial_no = {
+                   serno = tab[1,1]
+               },
+
+               code_set = {
+                   codeset = tab[1,1]
+               },
+
+               active_scan = {
+                   ## make a lookup table for frequency by channel
+                   freq.tab[as.character(tab[,1])] = tab[,2]
+               },
+
+               antenna_gain = {
+                   ## make a lookup table for gain by antenna
+                   ## We use this to adjust observed power i.e. we reduce
+                   ## power by a factor of gain.  A brief lab trial
+                   ## showed an approximate increase of recorded signal
+                   ## strength of 40 units for each 10 unit increase in gain,
+                   ## so we reduce signal strength by 4 * gain before converting
+                   ## to dB way below.
+                   gain.tab[as.character(tab[,1])] = tab[,2]
+               },
+
+               id_manual = {
+                   ## manually triggered readings are fully self-contained with these columns
+                   ## Date   Time               Freq [MHz]    Gain  Tag ID        Antenna   Power   Data       Latitude      Longitude
+                   ##   1     2                   3            4      5              6        7      8            9            10
+                   ## parse date / time from first two columns
+                   tab = data.frame(
+                       ts = as.numeric(as.POSIXct(strptime(paste(tab[[1]], tab[[2]]), date.format, tz="GMT"))),
+                       id = tab[[5]],
+                       ant = tab[[6]],
+                       sig = tab[[7]],
+                       lat = tab[[9]],
+                       lon = tab[[10]],
+                       dtaline = piece.lines.before[ip] + 1:nrow(tab),
+                       antfreq = tab[[3]],
+                       gain = tab[[4]],
+                       codeset = factor(1, labels=codeset),
+                       stringsAsFactors = FALSE)
+                   tags = rbind(tags, tab)
+               },
+               ## default =
+               {
+                   ## this is a table of tag hits, either ID only or ID + GPS
+                   tab[1] = as.numeric(as.POSIXct(strptime(paste(tab[[1]], tab[[2]]), date.format, tz="GMT")))
+                   tab = tab[-2]
+                   if (piece.name == "id_only")
+                       tab = cbind(tab, NA, NA)  ## lat and lon not available
+
+                   names(tab) = c("ts", "chan", "id", "ant", "sig", "lat", "lon")
+                   tab$dtaline = piece.lines.before[ip] + 1:nrow(tab)
+                   tab$ant = as.character(tab$ant)
+
+                   tab = subset(tab, id != 999)
+                   ## fill in the appropriate gain value, or a best guess
+
+                   ants = unique(tab$ant)
+                   bad.ants = is.na(gain.tab[ants])
+                   if (any(bad.ants)) {
+                       ## the table refers to antenna for which we haven't seen a gain settings
+                       ## It appears that on the SRX-DL, if there are two antennas,
+                       ## and one of them is AH0, that antenna appears with a number in tag hit records
+                       if (sum(bad.ants) == 1 && !is.na(gain.tab["AH0"]) && ! all(tab$ant  == "AH0")) {
+                           ## use the gain for AH0, as this is presumably the same antenna
+                           gain.tab[ants[bad.ants]] = gain.tab["AH0"]
+                       } else {
+                           ## use the gain from the first antenna with known gain, otherwise, use
+                           ## 80 as this was common
+                           if (all(is.na(gain.tab))) {
+                               gain.to.use = 80
+                               gain.source = " but NO GAIN VALUES WERE SPECIFIED FOR ANY ANTENNA!"
+                           } else {
+                               gain.to.use = gain.tab[which(!is.na(gain.tab))[1]]
+                               gain.source = paste(" specified for antenna '", names(gain.tab)[which(!is.na(gain.tab))[1]], "'", sep="")
+                           }
+                           gain.tab[ants[bad.ants]] = gain.to.use
+                           warning("Warning: No gain setting found for antenna number(s): ", paste(ants[bad.ants], collapse=", "),
+                                   " specified in ", piece.name, " table.\nUsing gain value of ", gain.to.use, gain.source, "\n")
+                       }
+                   }
+                   ## get frequency from latest frequency table
+                   tab$antfreq = freq.tab[as.character(tab$chan)]
+
+                   ## report the gain setting in use
+                   tab$gain = gain.tab[tab$ant]
+
+                   ## fill in the current codeset, if any rows were found
+                   if(nrow(tab) > 0)
+                       tab$codeset = factor(1, labels=codeset)
+
+                   ## remove the channel setting, which is redundant
+                   tab$chan = NULL
+
+                   tags = rbind(tags, tab)
                }
-             }
-             ## get frequency from latest frequency table
-             tab$antfreq = freq.tab[as.character(tab$chan)]
+               )
+    }
+    ## sort in order by time; record with and without GPS fixes are segregated
+    ## in the DTA file, even though their timestamps might be interleaved.
+    ## (why are GPS fixes intermittent? weird...)
 
-             ## report the gain setting in use
-             tab$gain = gain.tab[tab$ant]
-
-             ## fill in the current codeset, if any rows were found
-             if(nrow(tab) > 0)
-                tab$codeset = factor(1, labels=codeset)
-
-             ## remove the channel setting, which is redundant
-             tab$chan = NULL
-
-             tags = rbind(tags, tab)
-           }
-           )
-  }
-  ## sort in order by time; record with and without GPS fixes are segregated
-  ## in the DTA file, even though their timestamps might be interleaved.
-  ## (why are GPS fixes intermittent? weird...)
-
-  if (! is.null(tags)) {
-      tags = subset(tags, ! is.na(tags$ts))
-      tags = tags[order(tags$ts),]
-  }
-  return (list(tags=tags, recv = paste0("Lotek-", serno), pieces=pieces, piece.lines.before=piece.lines.before))
+    if (! is.null(tags)) {
+        tags = subset(tags, ! is.na(tags$ts))
+        tags = tags[order(tags$ts),]
+    }
+    return (list(tags=tags, recv = paste0("Lotek-", serno), pieces=pieces, piece.lines.before=piece.lines.before))
 }
