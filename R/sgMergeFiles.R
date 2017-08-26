@@ -244,7 +244,7 @@ sgMergeFiles = function(files, j, dbdir = MOTUS_PATH$RECV) {
                         "insert into files (name, size, bootnum, monoBN, ts, tscode, tsDB, isDone, motusJobID) values (:name, :size, :bootnum, :monoBN, :ts, :tscode, :tsDB, :isDone, :motusJobID)",
 
                         data.frame(
-                            name             = newf$name[i],
+                            name             = newf$Fname[i],
                             size             = attr(fcon, "len"),
                             bootnum          = newf$Fbootnum[i],
                             monoBN           = newf$Fbootnum[i],
