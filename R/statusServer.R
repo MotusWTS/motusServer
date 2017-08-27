@@ -12,10 +12,10 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 statusServer = function(port, tracing=FALSE) {
+    loadJobs()
+
     ## ensure a large cache - we use the server DB intensively
     ServerDB("pragma cache_size=60000")
-
-    loadJobs()
 
     library(Rook)
     library(hwriter)
