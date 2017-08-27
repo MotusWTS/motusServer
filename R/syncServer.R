@@ -37,7 +37,6 @@ syncServer = function(tracing = FALSE, fileEvent="CLOSE_WRITE") {
         options(error=recover)
 
     ensureServerDirs()
-    ensureServerDB()
     motusLog("Sync server started")
 
     ## load jobs

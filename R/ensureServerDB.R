@@ -16,7 +16,12 @@
 ensureServerDB = function() {
     if (exists("ServerDB", .GlobalEnv))
         return()
+
     ServerDB <<- safeSQL(MOTUS_SERVER_DB)
+
+    lockSymbol("ServerDB")
+    on.exit(lockSymbol("ServerDB", lock=FALSE))
+
     ServerDB(sprintf("CREATE TABLE IF NOT EXISTS %s (
 symbol TEXT UNIQUE PRIMARY KEY,
 owner INTEGER

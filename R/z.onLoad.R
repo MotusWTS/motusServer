@@ -34,7 +34,5 @@
         MOTUS_MAINLOG <<- stdout()
     })
 
-    ensureServerDB()
-
     invisible(NULL)
 }
