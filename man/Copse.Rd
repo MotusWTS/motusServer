@@ -63,9 +63,11 @@ Twigs are S3 objects of class "Twig" with these S3 methods:
 \itemize{
 \item $(Twig, name): return value of name in Twig, with name an unquoted symbol
 \item $<-(Twig, name, value): set value of name in Twig, with name an unquoted symbol
+\item [(Twig, index): return a subset of Twigs, allowing the usual ways of indexing an integer vector
 \item [[(Twig, name): return value of name in Twig, with name a quoted character scalar
 \item [[<-(Twig, name, value): set value of name in Twig, with name a quoted character scalar
 \item names(Twig): list names in Twig
+\item as.list(Twig): list of named items in Twig and their values
 \item parent(Twig): get parent Twig of Twig, or NULL if it has none
 \item stump(Twig): ultimate ancestor of Twig, or NULL if none
 \item parent<-(Twig, Twig): set parent of Twig to Twig with ID TwigID (can pass a Twig instead):

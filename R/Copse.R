@@ -90,9 +90,11 @@
 #' \itemize{
 #' \item $(Twig, name): return value of name in Twig, with name an unquoted symbol
 #' \item $<-(Twig, name, value): set value of name in Twig, with name an unquoted symbol
+#' \item [(Twig, index): return a subset of Twigs, allowing the usual ways of indexing an integer vector
 #' \item [[(Twig, name): return value of name in Twig, with name a quoted character scalar
 #' \item [[<-(Twig, name, value): set value of name in Twig, with name a quoted character scalar
 #' \item names(Twig): list names in Twig
+#' \item as.list(Twig): list of named items in Twig and their values
 #' \item parent(Twig): get parent Twig of Twig, or NULL if it has none
 #' \item stump(Twig): ultimate ancestor of Twig, or NULL if none
 #' \item parent<-(Twig, Twig): set parent of Twig to Twig with ID TwigID (can pass a Twig instead):
@@ -427,7 +429,19 @@ print.Twig = function(x, ...) {
 
 names.Twig = function(T) {
     C = copse(T)
-    C$sql(paste("select key from", C$table, "as t1, json_each(data) where t1.id=", T[1]))[[1]]
+    C$sql(paste("select distinct key from", C$table, "as t1, json_each(data) where t1.id in (", paste(T, collapse=","), ")"))[[1]]
+}
+
+#' @export
+
+as.list.Twig = function(T) {
+    structure(lapply(names(T), function(i) T[[i]]), names=names(T))
+}
+
+#' @export
+
+`[.Twig` = function(T, i) {
+    structure(unclass(T)[i], class="Twig", Copse=copse(T))
 }
 
 #' @export
@@ -447,17 +461,22 @@ names.Twig = function(T) {
     .rollback = TRUE
     on.exit(C$sql(if(.rollback) "rollback to copse" else "release copse"))
 ##    on.exit({C$sql(if(.rollback) "rollback to copse" else "release copse"); cat (if (.rollback) "rollback [[.Twig\n" else "release [[.Twig\n")})
-    fr = paste0("from ", C$table, " where id in (", paste(T, collapse=","), ")")
+    fr = paste0("from ", C$table, " where id in (", paste(T, collapse=","), ") order by id")
     if (name %in% names(C$fixed)) {
-        rv = C$sql(paste("select", name, fr))[[1]]
+        rv = C$sql(paste("select", name, fr))[[1]][order(T)]
     } else {
         xs = paste0("'$.",name,"'")
-        type = C$sql(paste0("select json_type(data,", xs, ")", fr))[[1]][1]
-        rv = C$sql(paste("select json_extract(data,", xs, ")", fr))[[1]]
-        if (isTRUE(type == "object" || type == "array"))
-            rv = fromJSON(rv)
-        else if (isTRUE(is.na(type)))
+        type = C$sql(paste0("select json_type(data,", xs, ")", fr))[[1]][order(T)]
+        rv = C$sql(paste("select json_extract(data,", xs, ")", fr))[[1]][order(T)]
+        ## extract from JSON where necessary
+        if (isTRUE(any(type == "object" | type == "array"))) {
+            rv.old = rv
+            rv = list()
+            for (i in seq(along=rv.old))
+                rv[[i]] = if (! is.na(type[i]) && (type[i] == "object" || type[i] == "array")) fromJSON(rv.old[[i]]) else rv.old[[i]]
+        } else if (isTRUE(all(is.na(type)))) {
             rv = NULL
+        }
     }
     .rollback = FALSE
     return(rv)
