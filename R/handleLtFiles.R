@@ -42,9 +42,9 @@ handleLtFiles = function(j) {
             jobLog(j, paste0("Receiver ", f$serno[1], ":  the .DTA files have no new data, so the tag finder will not be run"), summary=TRUE)
             return(0)
         }
-        newSubJob(j, "LtFindtags", serno=f$serno[1], tsStart=min(f$ts[f$dataNew]))
+        newSubJob(j, "LtFindtags", serno=f$serno[1], tsStart=min(f$ts[f$dataNew], na.rm=TRUE))
         newSubJob(topJob(j), "exportData", serno=f$serno[1])
-        newSubJob(topJob(j), "plotData", serno=f$serno[1], ts=c(min(f$ts), max(f$tsLast)))
+        newSubJob(topJob(j), "plotData", serno=f$serno[1], ts=c(min(f$ts, na.rm=TRUE), max(f$tsLast, na.rm=TRUE)))
     }
 
     info %>% group_by(serno) %>% do (ignore = runReceiver(.))
