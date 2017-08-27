@@ -69,6 +69,7 @@ ltMergeFiles = function(files, j, dbdir=MOTUS_PATH$RECV) {
 
         src = getRecvSrc(serno)
         sql = safeSQL(src)
+        files = tbl(src, "DTAfiles")
 
         iRecv = which(rv$serno==serno)
         for (i in iRecv) {
@@ -94,8 +95,6 @@ ltMergeFiles = function(files, j, dbdir=MOTUS_PATH$RECV) {
 
             ## compute file hash, then check whether it already is in database
             fhash = digest(blob, algo="sha512", serialize=FALSE)
-
-            files = tbl(src, "DTAfiles")
 
             bname = basename(f)
             if (files %>% filter(name==bname) %>% count %>% as.data.frame > 0) {
