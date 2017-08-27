@@ -119,7 +119,7 @@ where we have reason to believe that model is the one most commonly used for it.
     linesPerChunk = 40
     i = 1
     numChunk = ceiling(nrow(hist) / linesPerChunk)
-    for (i in 1:numChunk) {
+    for (i in seq_len(numChunk)) {
         writeLines(c(ystr, mstr), f)
         li = seq(from = 1 + (i - 1) * linesPerChunk, to = min(nrow(hist), i * linesPerChunk ))
         writeLines(hist$line[li], f)

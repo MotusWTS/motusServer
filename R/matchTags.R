@@ -3,7 +3,7 @@
 #' A set of user tags is looked up in a set of motus-registered tags.
 #' The user tag set is divided into three subsets: tags with unique, multiple,
 #' or no matches in the motus set, respectively.
-#' 
+#'
 #' @param u: user tags; a dplyr::tbl_df object, having at least the
 #'     columns representing manufacturer tag ID, burst interval, and
 #'     registration year
@@ -25,14 +25,14 @@
 #'     in matching burst interval.  Burst intervals are rounded to
 #'     this number of digits before matching.  Defaults to 0, meaning
 #'     integer values are used.
-#' 
+#'
 #' @param id.digits: number of digits after the decimal point to use
 #'     in matching manufacturer tag ID.  Tags might have been
 #'     registered with digits after the decimal point to represent
 #'     duplicate IDs distinguished by burst interval in the same year
 #'     and project.  IDs are rounded to this number of digits before
 #'     matching. Defaults to 0, meaning integer values are used.
-#' 
+#'
 #'
 #' @return a list with four items:
 #' \enumerate{
@@ -51,7 +51,7 @@
 #' }
 #'
 #' @export
-#' 
+#'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 matchTags = function(u, m, id, bi, yr, bi.digits=0, id.digits=0) {
@@ -66,7 +66,7 @@ matchTags = function(u, m, id, bi, yr, bi.digits=0, id.digits=0) {
         )
 
     ## simple case - no user tags given
-    if (is.null(u)) 
+    if (is.null(u))
         return (rv)
 
     ## simple case - no motus tags given
@@ -78,29 +78,29 @@ matchTags = function(u, m, id, bi, yr, bi.digits=0, id.digits=0) {
     ## modify user set; Can't seem to get this to work properly with mutate
 
     ## create a unique rowID for the user tag set
-    u$.rowID = 1:nrow(u)
-            
+    u$.rowID = seq_len(nrow(u))
+
     ## rounded ID
     u$.iid = as.numeric(u[[id]]) %>% round(id.digits)
 
     ## rounded burst interval
     u$.ibi = round(u[[bi]], bi.digits)
-            
+
     ## copy year to new name
     u$.yr = u[[yr]]
 
-    
+
     ## modify motus set
 
     ## unique row id
-    m$.rowID2 = 1:nrow(m)
+    m$.rowID2 = seq_len(nrow(m))
 
     ## rounded ID
     m$.iid = as.numeric(m$mfgID) %>% round(id.digits)
 
     ## add a rounded burst interval
     m$.ibi = round(m$period, bi.digits)
-    
+
     ## registration year
     m$.yr = year(m$tsSG)
 
@@ -116,17 +116,17 @@ matchTags = function(u, m, id, bi, yr, bi.digits=0, id.digits=0) {
     if (nrow(hit) == 0) {
         rv$none = u    ## remove extra columns from u
     } else {
-        
+
         ## find all rows in join for which the user row matches
         ## multiple motus rows; rowID is the unique ID for each
         ## user tag.
-        
+
         dup = hit$.rowID %in% hit$.rowID[duplicated(hit$.rowID)]
 
         ## generate return value, removing temporary columns
         rv$none = u %>% filter(! .rowID %in% hit$.rowID)
 
-        rv$unique = hit %>% filter(! dup) 
+        rv$unique = hit %>% filter(! dup)
         rv$multi  = hit %>% filter(  dup)
 
         ## now look for collisions: motus tag registrations having
@@ -147,5 +147,3 @@ matchTags = function(u, m, id, bi, yr, bi.digits=0, id.digits=0) {
     }
     return(rv)
 }
-
-

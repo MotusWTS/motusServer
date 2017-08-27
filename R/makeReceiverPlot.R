@@ -202,7 +202,7 @@ makeReceiverPlot = function(recv, meta=NULL, title="", condense=3600, ts = NULL,
 select ambigID, motusTagID1, motusTagID2, motusTagID3, motusTagID4, motusTagID5, motusTagID6
 from tagAmbig where ambigID in (", paste0(aID, collapse=","), ")"))
         xlabExtra = paste0("\nAmbiguous Tags: ",
-                           paste( sapply(1:nrow(ambig),
+                           paste( sapply(seq_len(nrow(ambig)),
                                          function(i) {
                                              a = ambig[i, -1]
                                              a = a[!is.na(a)]
@@ -324,6 +324,7 @@ monoBNlo, monoBNhi))
         if (is.null(ts)) {
             ts = unlist(dbGetQuery(con, sprintf("select min(tsStart), max(tsEnd) from batches where monoBN between %s and %s", monoBN[1], monoBN[2])))
         }
+        class(ts) = c("POSIXt", "POSIXct")
         dayseq = seq(from=round(min(ts), "days"), to=round(max(ts),"days"), by=24*3600)
     }
 

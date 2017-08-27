@@ -76,7 +76,7 @@ sgMergeFiles = function(files, j, dbdir = MOTUS_PATH$RECV) {
     ## to the files from the filesystem.
 
     allf = data_frame(
-        ID       = 1:length(ff),
+        ID       = seq_len(length(ff)),
         fullname = ff,
         basename = ff %>% basename %>% iconv(to="UTF-8", sub="byte")
     )
@@ -235,7 +235,7 @@ sgMergeFiles = function(files, j, dbdir = MOTUS_PATH$RECV) {
         }
         now = as.numeric(Sys.time())
         if (nrow(newf) > 0) {
-            for (i in 1:nrow(newf)) {
+            for (i in seq_len(nrow(newf))) {
                 if (! newf$use[i])
                     next
 

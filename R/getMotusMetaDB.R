@@ -257,7 +257,7 @@ getMotusMetaDB = function() {
             r = motusListSensorDeps(projectID=pid)
             if (isTRUE(nrow(r) > 0)) {
                 if ("antennas" %in% names(r)) {
-                    for (i in 1:nrow(r)) {
+                    for (i in seq_len(nrow(r))) {
                         if (isTRUE(nrow(r$antennas[[i]]) > 0)) {
                             ant = bind_rows(ant, cbind(deployID=r$deployID[[i]], r$antennas[[i]]))
                         }

@@ -51,7 +51,7 @@ syncDBtoFiles = function(serno, dbdir=MOTUS_PATH$RECV, repo=MOTUS_PATH$FILE_REPO
     dbFiles$repoUncomp = match(dbFiles$name, repoFiles$basename)
     dbFiles$repoComp = match(paste0(dbFiles$name, ".gz"), repoFiles$basename)
     dbFiles$status = 2L ## assume file must be added to repo
-    for (i in 1:nrow(dbFiles)) {
+    for (i in seq_len(nrow(dbFiles))) {
         dest = NA
         doBkup = FALSE
         j = dbFiles$repoComp[i]

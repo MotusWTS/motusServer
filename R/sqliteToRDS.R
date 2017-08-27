@@ -131,7 +131,7 @@ sqliteToRDS = function(con, query, bind.data=data.frame(x=0L), out, classes = NU
 
     ## which columns are to be coded as factors?
 
-    fact = which(col$Sclass == "character" & (stringsAsFactors | sapply(1:n, function(x) 'factor' %in% useClass[[x]])))
+    fact = which(col$Sclass == "character" & (stringsAsFactors | sapply(seq_len(n), function(x) 'factor' %in% useClass[[x]])))
     col$Sclass[fact] = "factor"
     for (i in fact)
         useClass[[i]] = unique(c(useClass[[i]], "factor"))
@@ -144,7 +144,7 @@ sqliteToRDS = function(con, query, bind.data=data.frame(x=0L), out, classes = NU
         colLevels[[f]] = dbGetPreparedQuery(con, paste0("select distinct ", col$name[f], " from (", query, ")"), bind.data)[[1]]
 
     ## which columns are to be exported as logical?
-    logi = which(col$Sclass == "integer" &  sapply(1:n, function(x) 'logical' %in% useClass[[x]]))
+    logi = which(col$Sclass == "integer" &  sapply(seq_len(n), function(x) 'logical' %in% useClass[[x]]))
     col$Sclass[logi] = "logical"
 
     ## open temporary files for each column, and file prefix and suffix
@@ -162,7 +162,7 @@ sqliteToRDS = function(con, query, bind.data=data.frame(x=0L), out, classes = NU
 
     hasAttr = logical(n)
 
-    for (i in 1:n) {
+    for (i in seq_len(n)) {
         type = colTypeMap[col$Sclass[i]]
         ## add Object and Attribute flags to columns which are factors,
         ## or which have class values other than "logical"
@@ -185,7 +185,7 @@ sqliteToRDS = function(con, query, bind.data=data.frame(x=0L), out, classes = NU
         block = dbFetch(res, n=rowsPerBlock)
         nr = nr + nrow(block)
         resRow = block[1,] ## save a row for later
-        for (i in 1:n) {
+        for (i in seq_len(n)) {
             switch(col$Sclass[i],
                    factor = {
                        ## write a plain integer vector
@@ -204,7 +204,7 @@ sqliteToRDS = function(con, query, bind.data=data.frame(x=0L), out, classes = NU
     }
 
     ## write attributes for any columns that need them
-    for (i in 1:n) {
+    for (i in seq_len(n)) {
         if (! hasAttr[i])
             next
         ## attributes are user-specified classes, and levels, for factors
@@ -216,7 +216,7 @@ sqliteToRDS = function(con, query, bind.data=data.frame(x=0L), out, classes = NU
 
     ## we now know n, the number of rows, so write that to each column file
     ## at the appropriate location, namely 4 bytes from the start
-    for (i in 1:n) {
+    for (i in seq_len(n)) {
         seek(colCon[[i]], 4, rw="w")
         writeBin(as.integer(nr), colCon[[i]], endian="little")
     }
@@ -248,7 +248,7 @@ sqliteToRDS = function(con, query, bind.data=data.frame(x=0L), out, classes = NU
     lapply(colCon, close)
 
     ## append each column file
-    cmd = paste0("cat ", paste0(c(colFiles[n+1], colFiles[1:n], colFiles[n+2]), collapse=" "), " | bzip2 -9 -c > ", out)
+    cmd = paste0("cat ", paste0(c(colFiles[n+1], colFiles[seq_len(n)], colFiles[n+2]), collapse=" "), " | bzip2 -9 -c > ", out)
     system(cmd)  ## NB: we don't use safeSys because that overrides redirects  (FIXME!)
 
     ## delete the intermediate files
@@ -280,7 +280,7 @@ sqliteToRDS = function(con, query, bind.data=data.frame(x=0L), out, classes = NU
 serializeNoHeader = function(x, dropTypeLen=FALSE) {
     r = rawConnection(raw(), "wb")
     serialize(x, r, ascii=FALSE, xdr=FALSE)
-    rv = rawConnectionValue(r) [-(1:ifelse(dropTypeLen, 22, 14))]
+    rv = rawConnectionValue(r) [-seq_len(ifelse(dropTypeLen, 22, 14))]
     close(r)  ## don't wait for gc() to do this
     return(rv)
 }

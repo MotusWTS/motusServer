@@ -131,7 +131,7 @@ pushToMotus = function(src) {
 
     ## for each batch, transfer associated records
 
-    for (i in 1:nrow(newBatches)) {
+    for (i in seq_len(nrow(newBatches))) {
 
         b = newBatches[i,]
 

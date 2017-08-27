@@ -26,7 +26,7 @@ trimCommonPath = function(files) {
         return(files)
 
     ith     = function(x, i) sapply(x, `[`,  i)
-    fromIth = function(x, i) lapply(x, `[`, - (1:i))
+    fromIth = function(x, i) lapply(x, `[`, - seq_len(i))
 
     i = 1
     while(i < n && length(unique(ith(parts, i))) == 1) {

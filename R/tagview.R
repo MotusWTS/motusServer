@@ -160,7 +160,7 @@ tagview = function(db, dbMeta=db, mobile=NULL, keep=FALSE) {
         ambigdeps = dbGetQuery(db$con, "SELECT ambigID, max(tsStart) as tsStart, group_concat(fullID) as fullID FROM _ambigjoin GROUP BY ambigID;")
         dbGetQuery(db$con, "DROP VIEW _ambigjoin;")
 
-        for (i in 1:nrow(ambigdeps)) {
+        for (i in seq_len(nrow(ambigdeps))) {
             parts = unique(strsplit(ambigdeps$fullID[i], ",", fixed=TRUE)[[1]])
             ambigdeps$fullID[i] = paste0(paste(sub("#.*", "", perl=TRUE, parts), collapse=" or "), "#", sub(".*#", "", perl=TRUE, parts[1]))
         }

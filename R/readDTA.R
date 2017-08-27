@@ -138,7 +138,7 @@ readDTA = function(filename="", lines=NULL, numLines=-1) {
                        sig = tab[[7]],
                        lat = tab[[9]],
                        lon = tab[[10]],
-                       dtaline = piece.lines.before[ip] + 1:nrow(tab),
+                       dtaline = piece.lines.before[ip] + seq_len(nrow(tab)),
                        antfreq = tab[[3]],
                        gain = tab[[4]],
                        codeset = factor(1, labels=codeset),
@@ -154,7 +154,7 @@ readDTA = function(filename="", lines=NULL, numLines=-1) {
                        tab = cbind(tab, NA, NA)  ## lat and lon not available
 
                    names(tab) = c("ts", "chan", "id", "ant", "sig", "lat", "lon")
-                   tab$dtaline = piece.lines.before[ip] + 1:nrow(tab)
+                   tab$dtaline = piece.lines.before[ip] + seq_len(nrow(tab))
                    tab$ant = as.character(tab$ant)
 
                    tab = subset(tab, id != 999)

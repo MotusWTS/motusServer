@@ -1,11 +1,11 @@
 #' Perform sanity checks on the motus tag database, reporting problems.
 #'
 #' Mainly, look for duplicated tags.
-#' 
+#'
 #' @return a list of problems found.
 #'
 #' @export
-#' 
+#'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 validateMotusTagDB = function() {
@@ -13,7 +13,7 @@ validateMotusTagDB = function() {
 
     ## bidirectional duplicate: return TRUE for any non-unique item
     bdup = function(x) duplicated(x) | duplicated(x, fromLast=TRUE)
-    
+
     ## check for non-integer tag IDs (might be okay in the future, but for now these are bogus)
     badID = is.na(as.integer(x$mfgID))
 
@@ -30,7 +30,7 @@ validateMotusTagDB = function() {
         cat("Tags assigned to multiple projects:\n")
         print((xproj %>% collect) [,1:10])
     }
-    
+
     ## check for identical tags within a project, clumping date bin by year
 
     twins = mtt %>% mutate(
@@ -56,13 +56,13 @@ validateMotusTagDB = function() {
         nny = paste0(nn, ".y")
 
         cat("tagID.x,wins,tagID.y,wins,EQ,NE\n")
-        for (i in 1:nrow(twins)) {
+        for (i in seq_len(nrow(twins))) {
             xna = is.na(twins[i, nnx])
             yna = is.na(twins[i, nny])
             cat(twins$tagID.x[i], sum(! xna & yna), twins$tagID.y[i], sum(!yna & xna), sum(!xna & !yna & twins[i, nnx] == twins[i, nny]), sum(!xna & !yna & twins[i, nnx] != twins[i, nny]), sep=",")
             cat("\n")
         }
-                
+
     }
 
     ## look for duplicated band #s

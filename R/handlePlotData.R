@@ -73,7 +73,7 @@ handlePlotData = function(j) {
     outDir = file.path(MOTUS_PATH$PLOTS, serno)
     dir.create(outDir, mode="0770")
 
-    for (i in 1:nrow(info)) {
+    for (i in seq_len(nrow(info))) {
         year = info$year[i]
         proj = info$proj[i]
         site = info$site[i]

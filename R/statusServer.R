@@ -142,7 +142,7 @@ window.onload = function() {
     ## any expression from here on can't use the original names for the columns of info
     names(info) = c("ID", "Sender", "Type", "Created", "Last Activity", "Status")
     res$write(hwrite(info, border=0, row.style=list('font-weight:bold'), row.bgcolor=rep(c("#ffffff", "#f0f0f0"), length=nrow(info)),
-                     row.class=paste0("jobSummary jobSummary", 1:nrow(info))))
+                     row.class=paste0("jobSummary jobSummary", seq_len(nrow(info)))))
     res$write('<div id="jobSummaryEllipsis" style="display:none"><b>&nbsp;&nbsp;&nbsp;&nbsp;. . .</b></div>\n')
     for (i in seq(along=jj)) {
         dumpJobDetails(res, jj[i], i)
@@ -376,7 +376,7 @@ format(Now, "%Y %b %d %H:%M:%S GMT"),
             }
             class(lastCon) = c("POSIXt", "POSIXct")
             ## if (nrow(devices) > 0) {
-            ##   numAnts = sum(unlist(tapply(1:nrow(devices), devices$port,
+            ##   numAnts = sum(unlist(tapply(seq_len(nrow(devices)), devices$port,
             ##     function(i) {
             ##       j = tail(i, 1)
             ##       devices$action[j] == 'A' && grepl("funcube", devices$type[j], ignore.case=TRUE)
@@ -522,7 +522,7 @@ allReceiversApp = function(env) {
           lastCon = 0
         }
         if (nrow(devices) > 0) {
-          numAnts = sum(unlist(tapply(1:nrow(devices), devices$port,
+          numAnts = sum(unlist(tapply(seq_len(nrow(devices)), devices$port,
             function(i) {
               j = tail(i, 1)
               devices$action[j] == 'A' && grepl("funcube", devices$type[j], ignore.case=TRUE)
