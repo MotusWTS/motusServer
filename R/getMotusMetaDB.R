@@ -153,9 +153,6 @@ getMotusMetaDB = function() {
     ## location we store a cached copy of the motus tag DB
     cachedDB = "/sgm/cache/motus_meta_db.sqlite"
 
-    ## make sure the database has correct tables
-    safeSys("sqlite3", cachedDB, noQuote="<", system.file("motusMetadataSchema.sql", package="motusServer"))
-
     ## try to lock the cachedDB (by trying to lock its name)
     lockSymbol(cachedDB)
 
@@ -165,6 +162,8 @@ getMotusMetaDB = function() {
 
     on.exit(lockSymbol(cachedDB, lock=FALSE))
 
+    ## make sure the database has correct tables
+    safeSys("sqlite3", cachedDB, noQuote="<", system.file("motusMetadataSchema.sql", package="motusServer"))
 
     ## if the cached DB exists and is less than 1 day old, do nothing
 
