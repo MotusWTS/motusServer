@@ -135,9 +135,15 @@ window.onload = function() {
         jj = ServerDB(sprintf("select id from jobs where pid is null and type %s 'syncReceiver' order by id %s limit :n", showSync, if (k > 0) "desc" else ""), n=n) [[1]]
     }
 
-    info = ServerDB(" select t1.id, coalesce(json_extract(t1.data, '$.replyTo[0]'), json_extract(t1.data, '$.replyTo')), t1.type, t1.ctime, t1.mtime, min(t2.done) as done from jobs as t1 left outer join jobs as t2 on t1.id=t2.stump where t1.id in (:jj) group by t1.id order by t1.id desc", jj=jj)
+    info = ServerDB(" select t1.id, t1.queue, coalesce(json_extract(t1.data, '$.replyTo[0]'), json_extract(t1.data, '$.replyTo')), t1.type, t1.ctime, t1.mtime, min(t2.done) as done from jobs as t1 left outer join jobs as t2 on t1.id=t2.stump where t1.id in (:jj) group by t1.id order by t1.id desc", jj=jj)
     class(info$ctime) = class(info$mtime) = c("POSIXt", "POSIXct")
-    info$done = c("Error", "Active", "Done")[2 + info$done]
+    info$done = c("Error", "Waiting", "Done")[2 + info$done]
+    running = which(info$done == "Waiting" & info$queue != 0)
+    if (length(running) > 0)
+        info$done[running] = paste0("Running on #", info$queue[running])
+
+    ## drop queue
+    info = info[, -2]
 
     ## any expression from here on can't use the original names for the columns of info
     names(info) = c("ID", "Sender", "Type", "Created", "Last Activity", "Status")
