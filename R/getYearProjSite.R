@@ -92,7 +92,7 @@ getYearProjSite = function(serno, ts=NULL, bn=NULL, motusProjectID=NULL) {
     ## use a temporary database to do this as a join query
     meta = safeSQL(getMotusMetaDB())
 
-    dbWriteTable(meta$con, "temp.info", info %>% as.data.frame, row.names=FALSE)
+    dbWriteTable(meta$con, "tempinfo", info %>% as.data.frame, row.names=FALSE, overwrite=TRUE, temporary=TRUE)
 
     ## look up deployments by serial number and timestamp
 
