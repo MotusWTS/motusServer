@@ -15,10 +15,12 @@ jobLog(j, msg, summary = FALSE)
 \item{msg}{character vector of messages}
 
 \item{summary}{logical scalar; if TRUE, the message is added to the summary field; otherwise,
-the default, it is added to the log field.
+the default, it is added to the log field.}
+}
+\value{
+\code{invisible(NULL)}
 
-
-The messages in \code{msg} are joined with "\\n" and appended to any already existing for this job.}
+The messages in \code{msg} are joined with "\\n" and appended to any already existing for this job.
 }
 \description{
 Add a message to the log for a job.  Log messages are saved in two

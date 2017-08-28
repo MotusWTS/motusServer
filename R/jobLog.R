@@ -10,6 +10,7 @@
 #' @param summary logical scalar; if TRUE, the message is added to the summary field; otherwise,
 #' the default, it is added to the log field.
 #'
+#' @return \code{invisible(NULL)}
 #'
 #' The messages in \code{msg} are joined with "\\n" and appended to any already existing for this job.
 #'
@@ -22,4 +23,5 @@ jobLog = function(j, msg, summary=FALSE) {
     field = ifelse(isTRUE(summary), "summary", "log")
     C$sql(paste0("update ", C$table, " set data=json_set(data, '$.", field, "', ifnull(json_extract(data, '$.", field, "'), '') || :msg) where id=", stump(j)),
           msg = paste(msg, "\n", collapse="", sep=""))
+    return(invisible(NULL))
 }
