@@ -19,6 +19,9 @@ dataServer = function(port=0xda7a, tracing=FALSE) {
     library(RCurl)
     library(jsonlite)
 
+    ## make sure the server database exists, is open, and put a safeSQL object in the global ServerDB
+    ensureServerDB()
+
     ## open the "motus transfer" database, putting a safeSQL object in the global MotusDB
     openMotusDB()
 
