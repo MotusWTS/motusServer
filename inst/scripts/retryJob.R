@@ -43,10 +43,13 @@ if (is.null(j))
 
 done = children(j)$done
 
-if (all(done > 0))
+if (all(done > 0) && j$done > 0)
     stop("All subjobs of Job ", jobID, " completed successfully")
 
 ## mark jobs with errors as not done
+
+if (j$done < 0)
+    j$done = 0
 
 kids = children(j)[done < 0]  ## need to end up with a LHS object of
                               ## class "Twig" for the subsequent
@@ -57,6 +60,8 @@ msg = sprintf("Retrying subjob(s) %s of types %s", paste(kids, collapse=", "), p
 jobLog(j, msg, summary=TRUE)
 jobLog(j, "--- (retry) ---")
 
-moveJob(j, MOTUS_PATH$QUEUE0)
-
-cat("\n", msg, " for job ", j, "\n")
+if (moveJob(j, MOTUS_PATH$QUEUE0)) {
+    cat("\n", msg, " for job ", j, "\n")
+} else {
+    stop("Failed to move job ", j, " to queue 0")
+}
