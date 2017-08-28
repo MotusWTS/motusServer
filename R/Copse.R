@@ -192,7 +192,7 @@ newTwig.Copse = function(C, ..., .parent=NULL) {
 
     ## create the empty twig
     C$sql(paste("insert into", C$table, "(pid, stump, ctime, mtime) values (:pid, (select ifnull(stump, id) from", C$table, "where id=:pid), :ctime, :mtime)"),
-            pid = if (is.null(.parent)) NA else .parent[1], ## subscript to drop class
+            pid = if (is.null(.parent)) NA else unclass(.parent),
             ctime = now,
             mtime = now
             )
