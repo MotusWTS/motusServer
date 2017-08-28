@@ -98,7 +98,7 @@ safeSQL = function(con, busyTimeout = 300) {
 
         ########## RSQLite ##########
 
-        dbGetQuery(con, paste0("pragma busy_timeout=", round(busyTimeout * 1000)))
+        dbGetQuery(con, sprintf("pragma busy_timeout=%d", round(busyTimeout * 1000)))
         structure(
             function(query, ..., .CLOSE=FALSE, .QUOTE) {
                 if (! missing(.QUOTE))
