@@ -470,10 +470,7 @@ as.list.Twig = function(T) {
         rv = C$sql(paste("select json_extract(data,", xs, ")", fr))[[1]][order(T)]
         ## extract from JSON where necessary
         if (isTRUE(any(type == "object" | type == "array"))) {
-            rv.old = rv
-            rv = list()
-            for (i in seq(along=rv.old))
-                rv[[i]] = if (! is.na(type[i]) && (type[i] == "object" || type[i] == "array")) fromJSON(rv.old[[i]]) else rv.old[[i]]
+            rv = if(length(rv) > 1) sapply(rv, fromJSON, USE.NAMES=FALSE) else fromJSON(rv)
         } else if (isTRUE(all(is.na(type)))) {
             rv = NULL
         }
