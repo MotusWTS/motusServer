@@ -653,7 +653,7 @@ batchID, runID, paste(auth$projects, collapse=","), MAX_ROWS_PER_REQUEST)
 
 hits_for_tag_project = function(env) {
 
-    MAX_ROWS_PER_REQUEST = 50000
+    MAX_ROWS_PER_REQUEST = 10000
     req = Rook::Request$new(env)
     res = Rook::Response$new()
 
@@ -726,7 +726,7 @@ batchID, auth$projectID, hitID, MAX_ROWS_PER_REQUEST)
 
 hits_for_receiver = function(env) {
 
-    MAX_ROWS_PER_REQUEST = 50000
+    MAX_ROWS_PER_REQUEST = 10000
     req = Rook::Request$new(env)
     res = Rook::Response$new()
 
