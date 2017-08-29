@@ -496,6 +496,8 @@ where
    and t2.batchID > %d
    and ((t1.tsEnd is null and t2.tsStart >= t1.tsStart)
      or (t1.tsStart <= t2.tsEnd and t2.tsStart <= t1.tsEnd))
+group by
+   t2.batchID
 order by
    t2.batchID
 limit %d
@@ -625,6 +627,8 @@ where
    and t4.projectID in (%s)
    and ((t4.tsEnd is null and t1.tsStart >= t4.tsStart)
      or (t1.tsStart <= t4.tsEnd and t4.tsStart <= t1.tsEnd))
+group by
+   t2.runID
 order by
    t2.runID
 limit %d
