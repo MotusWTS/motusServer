@@ -57,7 +57,6 @@ dataServer = function(port=0xda7a, tracing=FALSE) {
     AuthDB <<- safeSQL(file.path(MOTUS_PATH$USERAUTH, "data_user_auth.sqlite"))
     AuthDB("create table if not exists auth (token TEXT UNIQUE PRIMARY KEY, expiry REAL, userID INTEGER, projects TEXT, receivers TEXT)")
     AuthDB("create index if not exists auth_expiry on auth (expiry)")
-    AuthDB("create unique index if not exists auth_userID on auth (userID)")
 
     ## add each function below as an app
 
@@ -149,12 +148,17 @@ authenticate_user = function(env) {
         )
 
         ## add the auth info to the database for lookup by token
+        ## we're using replace into to cover the 0-probability case where token has been used before.
         AuthDB("replace into auth (token, expiry, userID, projects) values (:token, :expiry, :userID, :projects)",
                token = rv$authToken,
                expiry = rv$expiry,
                userID = rv$userID,
                projects = rv$projects %>% toJSON (auto_unbox=TRUE) %>% unclass
                )
+        ## delete any expired tokens for user, while we're here.
+        AuthDB("delete from auth where expiry < :now and userID = :userID",
+               now = as.numeric(Sys.time()),
+               userID = rv$userID)
     },
     error = function(e) {
         rv <<- list(error="authentication with motus failed")
