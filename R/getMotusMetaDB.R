@@ -162,14 +162,14 @@ getMotusMetaDB = function() {
 
     on.exit(lockSymbol(cachedDB, lock=FALSE))
 
-    ## make sure the database has correct tables
-    safeSys("sqlite3", cachedDB, noQuote="<", system.file("motusMetadataSchema.sql", package="motusServer"))
-
     ## if the cached DB exists and is less than 1 day old, do nothing
 
     if (file.exists(cachedDB) && diff(as.numeric(c(file.info(cachedDB)$mtime, Sys.time()))) <= 24 * 3600) {
         return (cachedDB)
     }
+
+    ## make sure the database has correct tables
+    safeSys("sqlite3", cachedDB, noQuote="<", system.file("motusMetadataSchema.sql", package="motusServer"))
 
     ## open / create the cached DB; because we might be re-populating it via network
     ## API calls to motus.org, allow for a 5 minute busy timeout.
