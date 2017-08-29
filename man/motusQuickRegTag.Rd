@@ -38,9 +38,9 @@ meaning unknown.}
 
 \item{tsStart:}{start of deployment, if known.}
 
-\item{species:}{4-letter code of species, if known}
+\item{species:}{4-letter code of species, or integer species ID if known}
 
-\item{...:}{additional parameters to motusQuery()}
+\item{...:}{additional parameters to motusDeployTag()}
 }
 \value{
 a 3-element numeric vector; the first element is the motus

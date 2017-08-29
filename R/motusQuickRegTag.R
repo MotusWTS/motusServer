@@ -43,9 +43,9 @@
 #'
 #' @param tsStart: start of deployment, if known.
 #'
-#' @param species: 4-letter code of species, if known
+#' @param species: 4-letter code of species, or integer species ID if known
 #'
-#' @param ...: additional parameters to motusQuery()
+#' @param ...: additional parameters to motusDeployTag()
 #'
 #' @return a 3-element numeric vector; the first element is the motus
 #'     tag ID, and the second element, if not NA, is the motus
@@ -144,8 +144,7 @@ motusQuickRegTag = function(projectID,
         dateBin      = dateBin
     )
     res = motusQuery(MOTUS_API_REGISTER_TAG, requestType="post",
-               pars
-             , ...)
+               pars)
 
     if (is.null(res$tagID))
         stop("tag registration failed ", capture.output(res))
@@ -164,19 +163,26 @@ motusQuickRegTag = function(projectID,
             assign(n, as.numeric(v))
     }
 
-    if (is.null(tsStart) && is.null(species))
-        return (c(res$tagID, NA, period))
+    deployID = NA
+    if (! is.null(tsStart) || !is.null(species) || length(list(...)) != 0) {
 
-    speciesID = NULL
-    if (! is.null(species)) {
-        sp = motusListSpecies(species, qlang="CD")
-        if (length(sp) == 0) {
-            warning("Unknown species code: ", species, ". Tag registered, but no deployment record will be generated")
-        } else {
-            speciesID = sp$id
+        speciesID = NULL
+        if (is.character(species)) {
+            sp = motusListSpecies(species, qlang="CD")
+            if (length(sp) == 0) {
+                warning("Unknown species code: ", species, ". Tag registered, but no species will be included in the deployment record")
+            } else {
+                speciesID = sp$id
+            }
+        } else if (is.numeric(species)) {
+            speciesID = species
+        }
+
+        ## test again for non-null deployment info
+        if (! is.null(tsStart) || !is.null(species) || length(list(...)) != 0) {
+            resD = motusDeployTag(res$tagID, projectID, "pending", tsStart=tsStart, speciesID=speciesID, ...)
+            deployID = resD$deployID
         }
     }
-
-    resD = motusDeployTag(res$tagID, projectID, "pending", tsStart=tsStart, speciesID=sp$id)
-    return (c(res$tagID, resD$deployID, period))
+    return (c(res$tagID, deployID, period))
 }
