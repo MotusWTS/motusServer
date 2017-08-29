@@ -41,11 +41,19 @@ wavFindTags = function(f, tdb,
                        ){
 
     tmpf = tempfile(rep("file", 2))
-    cmd = sprintf("/sgm/bin/vamp-host %s /sgm/bin/lotek-plugins.so:findpulsefdbatch:pulses %s -o %s",
-                  paste0("-a ", names(pdpars), "=", pdpars, collapse=" "),
-                  f,
-                  tmpf[1])
-    safeSys(cmd, quote=FALSE)
+
+    ## note the quoting of the path to the recording file (f)
+    ## but not of the pasted parameter string.  Only the former
+    ## is set by the upload user.
+
+    safeSys("/sgm/bin/vamp-host",
+            pars=paste0("-a ", names(pdpars), "=", pdpars, collapse = " "),
+            "/sgm/bin/lotek-plugins.so:findpulsefdbatch:pulses",
+            f,
+            "-o",
+            tmpf[1],
+            shell=TRUE,
+            quote=TRUE)
 
     ## read pulse finder output and add a leading antenna field, as expected by find_tags_unifile
     pulses = readLines(tmpf[1])
@@ -55,8 +63,6 @@ wavFindTags = function(f, tdb,
                   paste0("--", gsub('_', '-', names(tfpars), perl=TRUE), '=', tfpars, collapse=" "),
                   tdb,
                   tmpf[2])
-
-
 
     rv = tryCatch({
         x = read.csv(textConnection(safeSys(cmd, quote=FALSE)), as.is=TRUE)
