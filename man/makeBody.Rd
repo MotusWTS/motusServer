@@ -3,7 +3,7 @@
 \name{makeBody}
 \alias{makeBody}
 \title{make the body for a reply
-converts \code{...} to json using toJSON with options:
+converts a list or data.frame to json using toJSON with options:
 \itemize{
 \item auto_unbox=TRUE
 \item dataframe="columns"
@@ -11,17 +11,17 @@ converts \code{...} to json using toJSON with options:
 then compresses the result
 with memCompress and method "bzip2"}
 \usage{
-makeBody(...)
+makeBody(x)
 }
 \arguments{
-\item{...}{items and options for \code{toJSON}}
+\item{x}{list or data.frame to encode and compress}
 }
 \value{
 a raw vector
 }
 \description{
 make the body for a reply
-converts \code{...} to json using toJSON with options:
+converts a list or data.frame to json using toJSON with options:
 \itemize{
 \item auto_unbox=TRUE
 \item dataframe="columns"

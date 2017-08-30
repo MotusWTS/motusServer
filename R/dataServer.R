@@ -65,6 +65,11 @@ dataServer = function(port=0xda7a, tracing=FALSE) {
 
     motusLog("Data server started")
 
+    ## start time for processing each request that passes through
+    ## validate_request()
+
+    ts_req <<- 0
+
     Server$start(port = port)
 
     if (! tracing) {
@@ -194,6 +199,8 @@ authenticate_user = function(env) {
 
 validate_request = function(json, res, needProjectID=TRUE) {
 
+    ts_req <<- as.numeric(Sys.time())
+
     okay = TRUE
 
     openMotusDB() ## ensure connection is still valid after a possibly long time between requests
@@ -227,7 +234,7 @@ validate_request = function(json, res, needProjectID=TRUE) {
 }
 
 #' make the body for a reply
-#' converts \code{...} to json using toJSON with options:
+#' converts a list or data.frame to json using toJSON with options:
 #' \itemize{
 #' \item auto_unbox=TRUE
 #' \item dataframe="columns"
@@ -235,12 +242,13 @@ validate_request = function(json, res, needProjectID=TRUE) {
 #' then compresses the result
 #' with memCompress and method "bzip2"
 #'
-#' @param ... items and options for \code{toJSON}
+#' @param x list or data.frame to encode and compress
 #'
 #' @return a raw vector
 
-makeBody = function(...) {
-    memCompress(toJSON(..., auto_unbox=TRUE, dataframe="columns"), "bzip2")
+makeBody = function(x) {
+    cat("Request time: ", as.numeric(Sys.time()) - ts_req, "\n", file=stderr())
+    memCompress(toJSON(x, auto_unbox=TRUE, dataframe="columns"), "bzip2")
 }
 
 #' send the header for a reply
