@@ -117,12 +117,12 @@ allDataApps = c("authenticate_user",
 
 authenticate_user = function(env) {
 
-    req = Rook::Request$new(env)
+    json = fromJSON(parent.frame()$postBody["json"])
     res = Rook::Response$new()
 
     if (tracing)
         browser()
-    json <- req$POST()[['json']] %>% fromJSON()
+
     username <- json$user
     password <- json$password
 
@@ -277,12 +277,12 @@ sendError = function(res, error) {
 
 deviceID_for_receiver = function(env) {
 
-    req = Rook::Request$new(env)
+    json = fromJSON(parent.frame()$postBody["json"])
     res = Rook::Response$new()
 
     if (tracing)
         browser()
-    json = req$POST()[['json']] %>% fromJSON()
+
     auth = validate_request(json, res, needProjectID=FALSE)
     serno = json$serno %>% as.character
 
@@ -337,12 +337,12 @@ group by t2.serno
 
 receivers_for_project = function(env) {
 
-    req = Rook::Request$new(env)
+    json = fromJSON(parent.frame()$postBody["json"])
     res = Rook::Response$new()
 
     if (tracing)
         browser()
-    json = req$POST()[['json']] %>% fromJSON()
+
     auth = validate_request(json, res)
     if (is.null(auth))
         return(res$finish())
@@ -388,12 +388,12 @@ where
 batches_for_tag_project = function(env) {
 
     MAX_ROWS_PER_REQUEST = 10000
-    req = Rook::Request$new(env)
+    json = fromJSON(parent.frame()$postBody["json"])
     res = Rook::Response$new()
 
     if (tracing)
         browser()
-    json = req$POST()[['json']] %>% fromJSON()
+
     auth = validate_request(json, res)
     if (is.null(auth))
         return(res$finish())
@@ -452,12 +452,12 @@ auth$projectID, batchID, MAX_ROWS_PER_REQUEST)
 batches_for_receiver = function(env) {
 
     MAX_ROWS_PER_REQUEST = 10000
-    req = Rook::Request$new(env)
+    json = fromJSON(parent.frame()$postBody["json"])
     res = Rook::Response$new()
 
     if (tracing)
         browser()
-    json = req$POST()[['json']] %>% fromJSON()
+
     auth = validate_request(json, res, needProjectID=FALSE)
     if (is.null(auth))
         return(res$finish())
@@ -523,12 +523,12 @@ deviceID, paste(auth$projects, collapse=","), batchID, MAX_ROWS_PER_REQUEST)
 runs_for_tag_project = function(env) {
 
     MAX_ROWS_PER_REQUEST = 10000
-    req = Rook::Request$new(env)
+    json = fromJSON(parent.frame()$postBody["json"])
     res = Rook::Response$new()
 
     if (tracing)
         browser()
-    json = req$POST()[['json']] %>% fromJSON()
+
     auth = validate_request(json, res)
     if (is.null(auth))
         return(res$finish())
@@ -588,12 +588,12 @@ batchID, runID, auth$projectID, MAX_ROWS_PER_REQUEST)
 runs_for_receiver = function(env) {
 
     MAX_ROWS_PER_REQUEST = 10000
-    req = Rook::Request$new(env)
+    json = fromJSON(parent.frame()$postBody["json"])
     res = Rook::Response$new()
 
     if (tracing)
         browser()
-    json = req$POST()[['json']] %>% fromJSON()
+
     auth = validate_request(json, res, needProjectID=FALSE)
     if (is.null(auth))
         return(res$finish())
@@ -654,12 +654,12 @@ batchID, runID, paste(auth$projects, collapse=","), MAX_ROWS_PER_REQUEST)
 hits_for_tag_project = function(env) {
 
     MAX_ROWS_PER_REQUEST = 10000
-    req = Rook::Request$new(env)
+    json = fromJSON(parent.frame()$postBody["json"])
     res = Rook::Response$new()
 
     if (tracing)
         browser()
-    json = req$POST()[['json']] %>% fromJSON()
+
     auth = validate_request(json, res)
     if (is.null(auth))
         return(res$finish())
@@ -727,12 +727,12 @@ batchID, auth$projectID, hitID, MAX_ROWS_PER_REQUEST)
 hits_for_receiver = function(env) {
 
     MAX_ROWS_PER_REQUEST = 10000
-    req = Rook::Request$new(env)
+    json = fromJSON(parent.frame()$postBody["json"])
     res = Rook::Response$new()
 
     if (tracing)
         browser()
-    json = req$POST()[['json']] %>% fromJSON()
+
     auth = validate_request(json, res, needProjectID=FALSE)
     if (is.null(auth))
         return(res$finish())
@@ -808,12 +808,12 @@ batchID, paste(auth$projects, collapse=","), hitID, MAX_ROWS_PER_REQUEST)
 gps_for_tag_project = function(env) {
 
     MAX_ROWS_PER_REQUEST = 10000
-    req = Rook::Request$new(env)
+    json = fromJSON(parent.frame()$postBody["json"])
     res = Rook::Response$new()
 
     if (tracing)
         browser()
-    json = req$POST()[['json']] %>% fromJSON()
+
     auth = validate_request(json, res)
     if (is.null(auth))
         return(res$finish())
@@ -881,12 +881,12 @@ batchID, auth$projectID, batchID, ts, MAX_ROWS_PER_REQUEST)
 gps_for_receiver = function(env) {
 
     MAX_ROWS_PER_REQUEST = 10000
-    req = Rook::Request$new(env)
+    json = fromJSON(parent.frame()$postBody["json"])
     res = Rook::Response$new()
 
     if (tracing)
         browser()
-    json = req$POST()[['json']] %>% fromJSON()
+
     auth = validate_request(json, res, needProjectID=FALSE)
     if (is.null(auth))
         return(res$finish())
@@ -990,12 +990,12 @@ batchID, paste(auth$projects, collapse=","), ts, MAX_ROWS_PER_REQUEST)
 
 metadata_for_tags = function(env) {
 
-    req = Rook::Request$new(env)
+    json = fromJSON(parent.frame()$postBody["json"])
     res = Rook::Response$new()
 
     if (tracing)
         browser()
-    json = req$POST()[['json']] %>% fromJSON()
+
     auth = validate_request(json, res, needProjectID=FALSE)
     if (is.null(auth))
         return(res$finish())
@@ -1152,12 +1152,12 @@ where
 
 metadata_for_receivers = function(env) {
 
-    req = Rook::Request$new(env)
+    json = fromJSON(parent.frame()$postBody["json"])
     res = Rook::Response$new()
 
     if (tracing)
         browser()
-    json = req$POST()[['json']] %>% fromJSON()
+
     auth = validate_request(json, res, needProjectID=FALSE)
     if (is.null(auth))
         return(res$finish())
@@ -1262,12 +1262,12 @@ where
 
 tags_for_ambiguities = function(env) {
 
-    req = Rook::Request$new(env)
+    json = fromJSON(parent.frame()$postBody["json"])
     res = Rook::Response$new()
 
     if (tracing)
         browser()
-    json = req$POST()[['json']] %>% fromJSON()
+
     auth = validate_request(json, res, needProjectID=FALSE)
     if (is.null(auth))
         return(res$finish())
@@ -1323,12 +1323,12 @@ order by
 
 size_of_update_for_tag_project = function(env) {
 
-    req = Rook::Request$new(env)
+    json = fromJSON(parent.frame()$postBody["json"])
     res = Rook::Response$new()
 
     if (tracing)
         browser()
-    json = req$POST()[['json']] %>% fromJSON()
+
     auth = validate_request(json, res)
     if (is.null(auth))
         return(res$finish())
@@ -1451,12 +1451,12 @@ batchID, auth$projectID, batchID)
 
 size_of_update_for_receiver = function(env) {
 
-    req = Rook::Request$new(env)
+    json = fromJSON(parent.frame()$postBody["json"])
     res = Rook::Response$new()
 
     if (tracing)
         browser()
-    json = req$POST()[['json']] %>% fromJSON()
+
     auth = validate_request(json, res, needProjectID=FALSE)
     if (is.null(auth))
         return(res$finish())
