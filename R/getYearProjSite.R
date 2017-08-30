@@ -92,13 +92,16 @@ getYearProjSite = function(serno, ts=NULL, bn=NULL, motusProjectID=NULL) {
     ## use a temporary database to do this as a join query
     meta = safeSQL(getMotusMetaDB())
 
-    dbWriteTable(meta$con, "tempinfo", info %>% as.data.frame, row.names=FALSE, overwrite=TRUE, temporary=TRUE)
+    dbExecute(meta$con, "create temporary table if not exists tempinfo (serno text, tsLo real, tsHi real, bnLo integer, bnHi integer, year integer, proj text, site text, tsStart real, tsEnd real, bnStart integer, bnEnd integer)")
+    dbExecute(meta$con, "delete from tempinfo")
+
+    dbWriteTable(meta$con, "tempinfo", info %>% as.data.frame, row.names=FALSE, append=TRUE)
 
     ## look up deployments by serial number and timestamp
 
     ## get latest row (largest tsHi) that is still no later than ts for the receiver
 
-    rv = meta(sprintf("select t1.serno as serno, 0 as year, t3.id as projID, t3.label as proj, t2.name as site, t2.tsStart as tsStart, t2.tsEnd as tsEnd, null as bnStart, null as bnEnd from temp.info as t1 join recvDeps as t2 on t1.serno = t2.serno and t2.tsStart <= t1.tsHi and (t2.tsEnd is null or t2.tsEnd >= t1.tsLo) left join projs as t3 on t2.projectID=t3.id", MOTUS_SG_EPOCH, MOTUS_SG_EPOCH))
+    rv = meta(sprintf("select t1.serno as serno, 0 as year, t3.id as projID, t3.label as proj, t2.name as site, t2.tsStart as tsStart, t2.tsEnd as tsEnd, null as bnStart, null as bnEnd from tempinfo as t1 join recvDeps as t2 on t1.serno = t2.serno and t2.tsStart <= t1.tsHi and (t2.tsEnd is null or t2.tsEnd >= t1.tsLo) left join projs as t3 on t2.projectID=t3.id", MOTUS_SG_EPOCH, MOTUS_SG_EPOCH))
 
     ## for some reason, the above leads to a character column if there's an NA anywhere in it
     rv$tsStart = as.numeric(rv$tsStart)
