@@ -100,7 +100,13 @@ motusQuickRegTag = function(projectID,
         allMotusTags <<- subset(allMotusTags, ! is.na(period))
     }
 
-    pip = allMotusTags$period[abs(allMotusTags$period - period) <= 0.05]
+    ## try get BI for registered tags of same model, similar period
+    pip = allMotusTags$period[which(abs(allMotusTags$period - period) <= 0.05 & (is.null(model) | is.na(model) | (gsub("[-A-Z]", "", allMotusTags$model, perl=TRUE) == gsub("[-A-Z]", "", model, perl=TRUE))))]
+
+    ## if not enough, get BI for any tags of similar period
+    if (length(pip) == 0)
+        pip = allMotusTags$period[abs(allMotusTags$period - period) <= 0.05]
+
     if (length(pip) > 1) {
         periodSD = sd(pip)
         if (periodSD > 0.003)
