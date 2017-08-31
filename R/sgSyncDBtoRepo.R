@@ -149,13 +149,13 @@ sgSyncDBtoRepo = function(serno, dbdir=MOTUS_PATH$RECV, repo=MOTUS_PATH$FILE_REP
         } else {
             ## db does not have complete file and file already in repo
             uncomp = which(x$comp == "")[1]
-            if (! is.na(uncomp) &&
-                (x$size.y[uncomp] >= x$size.x[uncomp] ||
-                 compressedFileDone(x$name.y[uncomp]))) {
+            comp = which(x$comp != "")[1]
+            if ((! is.na(uncomp) && x$size.y[uncomp] >= x$size.x[uncomp]) ||
+                (! is.na(comp)   && compressedFileDone(x$name.y[comp]))) {
                 ## repo has uncompressed file already larger than one in db, or a complete compressed file
                 status = 0L
             } else {
-                ## repo copy is either not complete (.gz) or smaller than db's copy
+                ## repo copy is either not complete (.gz) or smaller than db's copy (.txt)
                 backupFiles = TRUE
                 writeToRepo = "txt"
                 status = 1L
