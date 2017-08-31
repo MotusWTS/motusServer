@@ -202,9 +202,6 @@ getMotusMetaDB = function() {
         ## grab projects
         p =  motusListProjects()
 
-        ## rename "code" column to "label"
-        names(p)[match("code", names(p))] = "label"
-
         ## fill in *something* for missing project labels (first 3 words with underscores)
         fix = is.na(p$label)
         p$label[fix] = unlist(lapply(strsplit(gsub(" - ", " ", p$name[fix]), " ", fixed=TRUE), function(n) paste(head(n, 3), collapse="_")))

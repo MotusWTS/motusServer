@@ -31,11 +31,14 @@ species. One of the following possible values: EN (English), FR
 if any matches were found, they are returned as a dataframe
 with these columns:
 \enumerate{
-\item id - numeric ID of species
-\item english - english-language name of species
-\item french - french-language name of species
-\item scientific - scientific name of species
+\item id; integer ID of species
+\item english character; english-language name of species
+\item french character; french-language name of species
+\item scientific character; scientific name of species
+\item group character; e.g. "BIRDS"
+\item sort integer sorting order
 }
+Otherwise, NULL is returned.
 }
 \description{
 return a list of species IDs for the given codes or names
