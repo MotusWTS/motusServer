@@ -1,3 +1,5 @@
+## FIXME: for Lotek-375, 380, seems to be working, but nothing in the final DB, despite its size.  WTF?
+
 #' serve http requests for tag detection data
 #'
 #' @param port integer; local port on which to listen for requests
@@ -506,8 +508,7 @@ where
    t1.deviceID = %d
    and t1.projectID in (%s)
    and t2.batchID > %d
-   and ((t1.tsEnd is null and t2.tsStart >= t1.tsStart)
-     or (t1.tsStart <= t2.tsEnd and t2.tsStart <= t1.tsEnd))
+   and (t1.tsStart <= t2.tsEnd and (t1.tsEnd is null or t1.tsEnd = 0 or t2.tsStart <= t1.tsEnd))
 group by
    t2.batchID
 order by
@@ -637,8 +638,7 @@ where
    t1.batchID = %d
    and t2.runID > %d
    and t4.projectID in (%s)
-   and ((t4.tsEnd is null and t1.tsStart >= t4.tsStart)
-     or (t1.tsStart <= t4.tsEnd and t4.tsStart <= t1.tsEnd))
+   and (t4.tsStart <= t1.tsEnd and (t4.tsEnd is null or t4.tsEnd = 0 or t1.tsStart <= t4.tsEnd))
 group by
    t2.runID
 order by
@@ -711,8 +711,8 @@ where
         where
            t5.motusTagID=t3.motusTagID
            and t5.projectID=%d
-           and ((t5.tsEnd is null and t3.tsBegin >= t5.tsStart)
-                or (t3.tsBegin <= t5.tsEnd and t5.tsStart <= t3.tsEnd))
+           and (t5.tsStart <= t3.tsEnd and (t5.tsEnd is null or t5.tsEnd = 0 or t3.tsBegin <= t5.tsEnd))
+        limit 1
    ) > 0
    and t4.hitID > %d
 order by
@@ -782,8 +782,8 @@ where
         where
            t3.deviceID=t1.motusDeviceID
            and t3.projectID in (%s)
-           and ((t3.tsEnd is null and t1.tsStart >= t3.tsStart)
-                or (t1.tsStart <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
+           and (t3.tsStart <= t1.tsEnd and (t3.tsEnd is null or t3.tsEnd = 0 or t1.tsStart <= t3.tsEnd))
+        limit 1
    ) > 0
    and t2.hitID > %d
 order by
@@ -927,8 +927,7 @@ where
    t1.batchID = %d
    and t3.projectID in (%s)
    and t2.ts > %f
-   and ((t3.tsEnd is null and t1.tsStart >= t3.tsStart)
-     or (t1.tsStart <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
+   and (t3.tsStart <= t1.tsEnd and (t3.tsEnd is null or t3.tsEnd = 0 or t1.tsStart <= t3.tsEnd))
 order by
    t2.ts
 limit %d
@@ -1492,8 +1491,7 @@ from
 where
    t1.projectID in (%s)
    and t2.batchID > %d
-   and ((t1.tsEnd is null and t2.tsStart >= t1.tsStart)
-     or (t1.tsStart <= t2.tsEnd and t2.tsStart <= t1.tsEnd))
+   and (t1.tsStart <= t2.tsEnd and (t1.tsEnd is null or t1.tsEnd = 0 or t2.tsStart <= t1.tsEnd))
 ",
 paste(auth$projects, collapse=","), batchID)
     numBatches = MotusDB(query)
@@ -1511,8 +1509,7 @@ from
 where
    t1.batchID > %d
    and t4.projectID in (%s)
-   and ((t4.tsEnd is null and t1.tsStart >= t4.tsStart)
-     or (t1.tsStart <= t4.tsEnd and t4.tsStart <= t1.tsEnd))
+   and (t4.tsStart <= t1.tsEnd and (t4.tsEnd is null or t4.tsEnd = 0 or t1.tsStart <= t4.tsEnd))
 ",
 batchID, paste(auth$projects, collapse=","))
 
@@ -1530,8 +1527,7 @@ from
 where
    t1.batchID > %d
    and t3.projectID in (%s)
-   and ((t3.tsEnd is null and t1.tsStart >= t3.tsStart)
-     or (t1.tsStart <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
+   and (t3.tsStart <= t1.tsEnd and (t3.tsEnd is null or t3.tsEnd = 0 or t1.tsStart <= t3.tsEnd))
 ",
 batchID, paste(auth$projects, collapse=","))
     numHits = MotusDB(query)
@@ -1547,8 +1543,7 @@ from
 where
    t1.batchID > %d
    and t3.projectID in (%s)
-   and ((t3.tsEnd is null and t1.tsStart >= t3.tsStart)
-     or (t1.tsStart <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
+   and (t3.tsStart <= t1.tsEnd and (t3.tsEnd is null or t3.tsEnd = 0 or t1.tsStart <= t3.tsEnd))
 ",
 batchID, paste(auth$projects, collapse=","))
     numGPS = MotusDB(query)
