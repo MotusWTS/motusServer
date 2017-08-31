@@ -124,53 +124,59 @@ allDataApps = c("authenticate_user",
 
 authenticate_user = function(env) {
 
-    json = fromJSON(parent.frame()$postBody["json"])
-    res = Rook::Response$new()
-
     if (tracing)
         browser()
 
-    username <- json$user
-    password <- json$password
-
+    res = Rook::Response$new()
+    rv = NULL
     sendHeader(res)
 
-    motusReq = toJSON(list(
-        date = format(Sys.time(), "%Y%m%d%H%M%S"),
-        login = username,
-        pword = password,
-        type = "csv"),
-        auto_unbox = TRUE)
-
-    rv = NULL
     tryCatch({
-        resp = getForm(motusServer:::MOTUS_API_USER_VALIDATE, json=motusReq, curl=Curl) %>% fromJSON
-        ## generate a new authentication token for this user
-        rv = list(
-            authToken = unclass(RCurl::base64(readBin("/dev/urandom", raw(), n=ceiling(OPT_TOKEN_BITS / 8)))),
-            expiry = as.numeric(Sys.time()) + OPT_AUTH_LIFE,
-            userID = resp$userID,
-            projects = resp$projects,
-            receivers = NULL
-        )
-
-        ## add the auth info to the database for lookup by token
-        ## we're using replace into to cover the 0-probability case where token has been used before.
-        AuthDB("replace into auth (token, expiry, userID, projects) values (:token, :expiry, :userID, :projects)",
-               token = rv$authToken,
-               expiry = rv$expiry,
-               userID = rv$userID,
-               projects = rv$projects %>% toJSON (auto_unbox=TRUE) %>% unclass
-               )
-        ## delete any expired tokens for user, while we're here.
-        AuthDB("delete from auth where expiry < :now and userID = :userID",
-               now = as.numeric(Sys.time()),
-               userID = rv$userID)
-    },
-    error = function(e) {
-        rv <<- list(error="authentication with motus failed")
+        json = parent.frame()$postBody["json"]
+        cat(format(Sys.time(), "%Y-%m-%dT%H-%M-%S"), ": authenticate_user: ", json, '\n', sep="", file=stderr())
+        json = fromJSON(json)
+    }, error = function(e) {
+        rv <<- list(error="request is missing a json field or it has invalid JSON")
     })
+    if (is.null(rv)) {
+        username <- json$user
+        password <- json$password
 
+        motusReq = toJSON(list(
+            date = format(Sys.time(), "%Y%m%d%H%M%S"),
+            login = username,
+            pword = password,
+            type = "csv"),
+            auto_unbox = TRUE)
+
+        tryCatch({
+            resp = getForm(motusServer:::MOTUS_API_USER_VALIDATE, json=motusReq, curl=Curl) %>% fromJSON
+            ## generate a new authentication token for this user
+            rv = list(
+                authToken = unclass(RCurl::base64(readBin("/dev/urandom", raw(), n=ceiling(OPT_TOKEN_BITS / 8)))),
+                expiry = as.numeric(Sys.time()) + OPT_AUTH_LIFE,
+                userID = resp$userID,
+                projects = resp$projects,
+                receivers = NULL
+            )
+
+            ## add the auth info to the database for lookup by token
+            ## we're using replace into to cover the 0-probability case where token has been used before.
+            AuthDB("replace into auth (token, expiry, userID, projects) values (:token, :expiry, :userID, :projects)",
+                   token = rv$authToken,
+                   expiry = rv$expiry,
+                   userID = rv$userID,
+                   projects = rv$projects %>% toJSON (auto_unbox=TRUE) %>% unclass
+                   )
+            ## delete any expired tokens for user, while we're here.
+            AuthDB("delete from auth where expiry < :now and userID = :userID",
+                   now = as.numeric(Sys.time()),
+                   userID = rv$userID)
+        },
+        error = function(e) {
+            rv <<- list(error="authentication with motus failed")
+        })
+    }
     res$body = makeBody(rv)
     res$finish()
 }
