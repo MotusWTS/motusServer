@@ -221,10 +221,10 @@ static void GZreadFile( sqlite3_context *context, int argc, sqlite3_value **argv
       nOut = gzread(gzf, inBuf, nIn);
       gzclose(gzf);
       if( nOut < 0) {
-        free(inBuf);
+        sqlite3_free(inBuf);
       } else {
         if ( nOut < nIn) {
-          sqlite3_realloc(inBuf, nOut);
+          inBuf = sqlite3_realloc(inBuf, nOut);
         }
         sqlite3_result_blob(context, inBuf, nOut, sqlite3_free);
       }
