@@ -100,6 +100,7 @@
 #' \item parent<-(Twig, Twig): set parent of Twig to Twig with ID TwigID (can pass a Twig instead):
 #' \item child(Twig, n): get nth child of Twig, or NULL if it doesn't exist
 #' \item children(Twig): get list of IDs of children of Twig
+#' \item progeny(Twig): Twigs which are progeny of Twig
 #'
 #' \item childrenWhere(Twig, expr): list of child Twigs for which
 #'       given expr is TRUE.  The expression is applied against the
@@ -580,6 +581,13 @@ numChildren.Twig = function(T) {
 
 #' @export
 
+progeny.Twig = function(T) {
+    C = copse(T)
+    C[[ C$sql(paste("select id from", C$table, "where pid is not null and stump=", T, "order by id"))[[1]] ]]
+}
+
+#' @export
+
 child.Twig = function(T, n) {
     child(copse(T), T, n)
 }
@@ -688,6 +696,10 @@ child = function(C, ...) UseMethod("child")
 #' @export
 
 children = function(C, ...) UseMethod("children")
+
+#' @export
+
+progeny = function(C, ...) UseMethod("progeny")
 
 #' @export
 

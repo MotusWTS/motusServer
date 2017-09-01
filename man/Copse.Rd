@@ -73,6 +73,7 @@ Twigs are S3 objects of class "Twig" with these S3 methods:
 \item parent<-(Twig, Twig): set parent of Twig to Twig with ID TwigID (can pass a Twig instead):
 \item child(Twig, n): get nth child of Twig, or NULL if it doesn't exist
 \item children(Twig): get list of IDs of children of Twig
+\item progeny(Twig): Twigs which are progeny of Twig
 
 \item childrenWhere(Twig, expr): list of child Twigs for which
       given expr is TRUE.  The expression is applied against the
