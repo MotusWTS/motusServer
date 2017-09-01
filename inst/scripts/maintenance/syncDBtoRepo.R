@@ -42,5 +42,7 @@ if (! file.exists(file.path(RECVDIR, paste0(SERNO, ".motus"))))
     stop("No receiver database found")
 
 suppressWarnings(suppressMessages(library(motusServer)))
+lockSymbol(SERNO)
+on.exist(lockSymbol(SERNO, FALSE))
 x = syncDBtoRepo(SERNO, RECVDIR, REPODIR, BKUPDIR)
 write.csv(x, stdout(), row.names=FALSE)
