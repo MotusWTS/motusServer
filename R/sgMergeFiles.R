@@ -132,7 +132,7 @@ sgMergeFiles = function(files, j, dbdir = MOTUS_PATH$RECV) {
             Fport      = tolower(Fport),
             Fextension = tolower(Fextension),
             Fcomp      = tolower(Fcomp),
-            Fname      = paste0(Fprefix, '-', Fserno,'-', Fbootnum, '-', FtsString, FtsCode, '-', Fport, Fextension),
+            Fname      = sub("\\.gz$", "", allf$basename),
             iname     = tolower(Fname),
             done      = FALSE,
             partial   = FALSE,
@@ -178,7 +178,8 @@ sgMergeFiles = function(files, j, dbdir = MOTUS_PATH$RECV) {
         ## sqlite connection
 
         con = src$con
-        dbGetQuery(con, "pragma journal_mode=wal")
+        dbExecute(con, "pragma journal_mode=wal")
+        dbExecute(con, sprintf("insert or replace into meta values ('fileRepo', '%s')", MOTUS_PATH$FILE_REPO))
 
         ## existing files in database
 
@@ -239,17 +240,15 @@ sgMergeFiles = function(files, j, dbdir = MOTUS_PATH$RECV) {
                 if (! newf$use[i])
                     next
 
-                ## grab file contents as bz2-compressed raw vector
-                fcon = tryCatch(
-                    getFileAsBZ2(newf$fullname[i], newf$Fcomp[i], newf$nsize[i]),
-                    error = function(e) NULL
-                )
+                ## calculate length of uncompressed file contents
 
-                if (is.null(fcon)) {
-                    warning("Skipping unreadable file", newf$fullname[i], "\nPerhaps it is corrupt?")
-                    newf$corrupt[i] = TRUE
-                    next
-                }
+                len = if (newf$Fcomp[i] == "") {
+                          ## just the file size, for a text file
+                          newf$nsize[i]
+                      } else {
+                          ## as much as zcat can get, for a .gz file
+                          as.integer(safeSys("zcat", nq1="-q", newf$fullname[i], nq2="2>/dev/null | wc -c"))
+                      }
 
                 if (newf$new[i]) {
                     ## not yet in database
@@ -259,7 +258,7 @@ sgMergeFiles = function(files, j, dbdir = MOTUS_PATH$RECV) {
 
                         data.frame(
                             name             = newf$Fname[i],
-                            size             = attr(fcon, "len"),
+                            size             = len,
                             bootnum          = newf$Fbootnum[i],
                             monoBN           = newf$Fbootnum[i],
                             ts               = newf$Fts[i],
@@ -270,29 +269,16 @@ sgMergeFiles = function(files, j, dbdir = MOTUS_PATH$RECV) {
                             stringsAsFactors = FALSE
                         )
                     )
-                    dbGetPreparedQuery(
-                        con,
-                        "insert into fileContents (fileID, contents) values (last_insert_rowid(), :contents)",
-                        data.frame(contents=I(list(fcon)))
-                    )
                 } else {
                     dbGetPreparedQuery(
                         con,
                         "update files set size=:size, isDone=:isDone, motusJobID=:motusJobID where fileID=:fileID ",
                         data.frame(
-                            size       = attr(fcon, "len"),
+                            size       = len,
                             isDone     = newf$Fcomp[i] == ".gz",  ## incomplete compressed files are dropped above
                             motusJobID = as.integer(j),
                             fileID     = newf$fileID[i]
                         )
-                    )
-                    dbGetPreparedQuery(
-                        con,
-                        "update fileContents set contents=:contents where fileID=:fileID ",
-                        data_frame(  ## NB: use this instead of data.frame because latter's handling of list columns is broken as of 2016 Aug 16.
-                            contents = list(fcon),
-                            fileID   = newf$fileID[i]
-                        ) %>% as.data.frame
                     )
                 }
             }
@@ -321,23 +307,25 @@ sgMergeFiles = function(files, j, dbdir = MOTUS_PATH$RECV) {
     ## skip files having MOTUS_PATH$FILE_REPO as a prefix
     ff = ff[MOTUS_PATH$FILE_REPO != substr(ff, 1, nchar(MOTUS_PATH$FILE_REPO))]
 
-    ## remove files which are just symlinks
-    link = Sys.readlink(ff)
-    isLink = !( is.na(link) | link == "")
-    file.remove(ff[isLink])
-
     ## save any files to be used in the file repo
     reallyUse = allf$use & ! allf$corrupt
+
+    ## which files are really just symlinks
+    link = Sys.readlink(ff)
+    isLink = !( is.na(link) | link == "")
     keep = reallyUse & !isLink
     useFiles = ff[keep]
     dirsNeeded = unique(file.path(MOTUS_PATH$FILE_REPO, allf$Fserno[keep], format(allf$Fts[keep], "%Y-%m-%d")))
     for( d in dirsNeeded)
         dir.create(d, showWarnings=FALSE, recursive=TRUE)
 
-    file.rename(useFiles, file.path(MOTUS_PATH$FILE_REPO, allf$Fserno[keep], format(allf$Fts[keep], "%Y-%m-%d"), basename(useFiles)))
+    safeFileRename(useFiles, file.path(MOTUS_PATH$FILE_REPO, allf$Fserno[keep], format(allf$Fts[keep], "%Y-%m-%d"), basename(useFiles)))
+
+    ## remove files which are just symlinks
+    file.remove(ff[isLink])
 
     ## remove remaining files
-    toTrash(ff[!isLink])
+    toTrash(ff[!isLink & !keep])
 
     return (list(
         info = structure(allf %>%
