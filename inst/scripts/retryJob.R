@@ -41,7 +41,11 @@ j = Jobs[[jobID]]
 if (is.null(j))
     stop(jobID, " is not a valid jobID")
 
-done = children(j)$done
+j = topJob(j)
+if (as.numeric(j) != jobID)
+    warning("Using topjob ", j, " instead of its descendent ", jobID, "\n")
+
+done = progeny(j)$done
 
 if (all(done > 0) && j$done > 0)
     stop("All subjobs of Job ", jobID, " completed successfully")
@@ -51,7 +55,7 @@ if (all(done > 0) && j$done > 0)
 if (j$done < 0)
     j$done = 0
 
-kids = children(j)[done < 0]  ## need to end up with a LHS object of
+kids = progeny(j)[done < 0]  ## need to end up with a LHS object of
                               ## class "Twig" for the subsequent
                               ## assignment
 kids$done = 0
@@ -60,7 +64,7 @@ msg = sprintf("Retrying subjob(s) %s of types %s", paste(kids, collapse=", "), p
 jobLog(j, msg, summary=TRUE)
 jobLog(j, "--- (retry) ---")
 
-if (moveJob(j, MOTUS_PATH$QUEUE0)) {
+if (moveJob(topJob(j), MOTUS_PATH$QUEUE0)) {
     cat("\n", msg, " for job ", j, "\n")
 } else {
     stop("Failed to move job ", j, " to queue 0")
