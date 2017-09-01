@@ -7,12 +7,18 @@
 
   http://www.sqlite.org/src/artifact?ci=trunk&filename=ext/misc/fileio.c
 
+  changes:
+
+  - add bzip2/bunzip2 support
+  - add ability to decompress gzip files (strip header; use trailing 4-byte size)
+
 */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <sqlite3ext.h>
 #include <bzlib.h>
+#include <zlib.h>
 #include <assert.h>
 SQLITE_EXTENSION_INIT1
 
@@ -120,7 +126,7 @@ static void recorded_free ( void * p) {
 #endif
 
 
-static void compressFunc (sqlite3_context *context, int argc, sqlite3_value **argv ) {
+static void BZ2compressFunc (sqlite3_context *context, int argc, sqlite3_value **argv ) {
   // JMB: unlike the original function, we don't store uncompressed size, as this is
   // already in our table as a separate field
   unsigned nIn, nOut;
@@ -136,14 +142,14 @@ static void compressFunc (sqlite3_context *context, int argc, sqlite3_value **ar
 #endif
   BZ2_bzBuffToBuffCompress( outBuf, &nOut, inBuf, nIn, 9, 0, 0);
 #ifdef DEBUG
-    sqlite3_result_blob(context, outBuf, nOut, recorded_free);
+  sqlite3_result_blob(context, outBuf, nOut, recorded_free);
 #else
-    sqlite3_result_blob(context, outBuf, nOut, free);
+  sqlite3_result_blob(context, outBuf, nOut, free);
 #endif
 }
 
 
-static void uncompressFunc ( sqlite3_context *context, int argc, sqlite3_value **argv ) {
+static void BZ2uncompressFunc ( sqlite3_context *context, int argc, sqlite3_value **argv ) {
   // JMB: unlike the original function, this function requires a second parameter
   // giving the uncompressed size.
 
@@ -175,14 +181,69 @@ static void uncompressFunc ( sqlite3_context *context, int argc, sqlite3_value *
   }
 }
 
+/*
+** Implementation of the "readgzfile(X, Y)" SQL function.  At most Y bytes of
+** uncompressed data are read from the gzip-compressed file named X, and returned as a BLOB.
+** NULL is returned if the file does not exist or decompression fails.  If Y is not
+** given, the trailing 4-byte suffix of the file is used to determine uncompressed size.
+*/
+
+static void GZreadFile( sqlite3_context *context, int argc, sqlite3_value **argv){
+
+  unsigned int nIn;
+  int nOut;
+  void *inBuf;
+  const char *zName;
+  FILE *in;
+  gzFile gzf;
+
+  zName = (const char*)sqlite3_value_text(argv[0]);
+  if( zName==0 ) {return;}
+
+  in = fopen(zName, "rb");
+  if( in==0 ) return;
+  if (argc < 2) {
+    /* get size from 4-byte suffix of file */
+    fseek(in, -4, SEEK_END);
+    /* danger: assume little-endian int in file suffix and memory! */
+    if (1 != fread(&nIn, sizeof(nIn), 1, in)) {
+      nIn = 0;
+    }
+    rewind(in);
+  } else {
+    nIn = sqlite3_value_int(argv[1]);
+  }
+  if( nIn > 0 ) {
+    gzf = gzdopen(dup(fileno(in)), "rb");
+    if (gzf != 0) {
+      inBuf = sqlite3_malloc( nIn );
+      // WARNING only works for file sizes <= 2^31 bytes
+      nOut = gzread(gzf, inBuf, nIn);
+      gzclose(gzf);
+      if( nOut < 0) {
+        free(inBuf);
+      } else {
+        if ( nOut < nIn) {
+          sqlite3_realloc(inBuf, nOut);
+        }
+        sqlite3_result_blob(context, inBuf, nOut, sqlite3_free);
+      }
+    }
+  }
+  fclose(in);
+}
+
+
+
 int sqlite3_extension_init(
                            sqlite3 *db,
                            char **pzErrMsg,
                            const sqlite3_api_routines *pApi
                            ) {
   SQLITE_EXTENSION_INIT2(pApi);
-  sqlite3_create_function(db, "bz2compress", 1, SQLITE_UTF8, 0, &compressFunc, 0, 0);
-  sqlite3_create_function(db, "bz2uncompress", 2, SQLITE_UTF8, 0, &uncompressFunc, 0, 0);
+  sqlite3_create_function(db, "bz2compress", 1, SQLITE_UTF8, 0, &BZ2compressFunc, 0, 0);
+  sqlite3_create_function(db, "bz2uncompress", 2, SQLITE_UTF8, 0, &BZ2uncompressFunc, 0, 0);
+  sqlite3_create_function(db, "gzreadfile", -1, SQLITE_UTF8, 0, &GZreadFile, 0, 0);
   sqlite3_create_function(db, "readfile", 1, SQLITE_UTF8, 0, readfileFunc, 0, 0);
   sqlite3_create_function(db, "writefile", 3, SQLITE_UTF8, 0, writefileFunc, 0, 0);
   return 0;
