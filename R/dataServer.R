@@ -1,5 +1,3 @@
-## FIXME: for Lotek-375, 380, seems to be working, but nothing in the final DB, despite its size.  WTF?
-
 #' serve http requests for tag detection data
 #'
 #' @param port integer; local port on which to listen for requests
@@ -176,7 +174,7 @@ authenticate_user = function(env) {
                    userID = rv$userID)
         },
         error = function(e) {
-            rv <<- list(error="authentication with motus failed")
+            rv <<- list(error=paste("query to main motus server failed"))
         })
     }
     res$body = makeBody(rv)
@@ -215,29 +213,42 @@ validate_request = function(json, res, needProjectID=TRUE) {
 
     openMotusDB() ## ensure connection is still valid after a possibly long time between requests
 
-    tryCatch({
-        authToken = (json$authToken %>% as.character)[1]
-        projectID = (json$projectID %>% as.integer)[1]
-        now = as.numeric(Sys.time())
-        rv = AuthDB("select userID, (select group_concat(key, ',') from json_each(projects)) as projects from auth where token=:token and expiry > :now",
-                    token = authToken,
-                    now = now)
-        if (! isTRUE(nrow(rv) > 0)) {
-            ## authToken invalid or expired
+    authToken = (json$authToken %>% as.character)[1]
+    projectID = (json$projectID %>% as.integer)[1]
+    now = as.numeric(Sys.time())
+    rv = AuthDB("
+select
+   userID,
+   (select
+      group_concat(key, ',')
+    from
+      json_each(projects)
+   ) as projects,
+   expiry
+from
+   auth
+where
+   token=:token",
+token = authToken)
+    if (! isTRUE(nrow(rv) > 0)) {
+        ## authToken invalid
+        okay = FALSE
+        msg = "token invalid"
+    } else if (all(rv$expiry < now)) {
+        ## authToken expired
+        okay = FALSE
+        msg = "token expired"
+    } else  {
+        rv = list(userID=rv$userID, projects = scan(text=rv$projects, sep=",", quiet=TRUE), projectID=projectID)
+        if (needProjectID && ! isTRUE(length(projectID) == 1 && projectID %in% rv$projects)) {
+            ## user not authorized for project
             okay = FALSE
-        } else  {
-            rv = list(userID=rv$userID, projects = scan(text=rv$projects, sep=",", quiet=TRUE), projectID=projectID)
-            if (needProjectID && ! isTRUE(length(projectID) == 1 && projectID %in% rv$projects)) {
-                ## user not authorized for project
-            okay = FALSE
-            }
+            msg = "not authorized for project"
         }
-    }, error=function(e) {
-        okay <<- FALSE
-    })
+    }
     if (! okay) {
         sendHeader(res)
-        sendError(res, "authorization failed")
+        sendError(res, msg)
         rv = NULL
     }
     return(rv)
