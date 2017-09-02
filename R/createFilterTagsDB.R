@@ -33,9 +33,33 @@ createFilterTagsDB = function(tsRange, outFile) {
 
     meta = safeSQL(getMotusMetaDB())
 
-    tags = meta("select ifnull(t3.label, 'NA') as proj, t2.mfgID as id, t2.nomFreq as tagFreq, t2.period as bi from tagDeps as t1 join tags as t2 on t1.tagID=t2.tagID join projs as t3 on t1.projectID=t3.id where t1.tsEnd >= :ts1 and t1.tsStart <= :ts2", ts1=tsRange[1], ts2=tsRange[2])
+    ## grab tags with deployment periods overlapping the date range
+    tags = meta("
+select
+   ifnull(t3.label, 'NA') as proj,
+   t2.mfgID               as id,
+   t2.nomFreq             as tagFreq,
+   t2.period              as bi
+from
+   tagDeps as t1
+join
+   tags as t2 on t1.tagID=t2.tagID
+join
+   projs as t3 on t1.projectID=t3.id
+where
+   t1.tsEnd >= :ts1 and t1.tsStart <= :ts2
+order by
+   t1.tsStart
+", ts1=tsRange[1], ts2=tsRange[2])
 
-    tags = subset(tags, ! duplicated(paste(id, round(bi,3))))
+    ## remove conflicting tags, since the filter_tags version of the
+    ## tag finder can't handle ambiguous detections; due to the "order
+    ## by" clause in the query above, priority is given to the
+    ## earliest deployed tag in any group of conflicting tags.  And
+    ## because tag BI are probably only factory-specified to a
+    ## precisision of 0.01 seconds, we round bi to 2 decimal places.
+
+    tags = subset(tags, ! duplicated(paste(id, round(bi, 3))))
     tags$id = as.numeric(tags$id)
     write.csv(tags, outFile, row.names=FALSE)
 
