@@ -472,7 +472,6 @@ batches_for_receiver = function(env) {
     MAX_ROWS_PER_REQUEST = 10000
     json = fromJSON(parent.frame()$postBody["json"])
     res = Rook::Response$new()
-    cat(format(Sys.time(), "%Y-%m-%dT%H-%M-%S"), ": batches_for_receiver: ", json, '\n', sep="", file=stderr())
 
     if (tracing)
         browser()
