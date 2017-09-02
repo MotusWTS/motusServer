@@ -127,6 +127,8 @@ authenticate_user = function(env) {
     if (tracing)
         browser()
 
+    ts_req <<- as.numeric(Sys.time())
+
     res = Rook::Response$new()
     rv = NULL
     sendHeader(res)
@@ -470,6 +472,7 @@ batches_for_receiver = function(env) {
     MAX_ROWS_PER_REQUEST = 10000
     json = fromJSON(parent.frame()$postBody["json"])
     res = Rook::Response$new()
+    cat(format(Sys.time(), "%Y-%m-%dT%H-%M-%S"), ": batches_for_receiver: ", json, '\n', sep="", file=stderr())
 
     if (tracing)
         browser()
@@ -926,14 +929,21 @@ select
     t2.lon,
     t2.alt
 from
-   recvDeps as t3
-   join batches as t1 on t3.deviceID = t1.motusDeviceID
+   batches as t1
    join gps as t2 on t2.batchID=t1.batchID
 where
    t1.batchID = %d
-   and t3.projectID in (%s)
+   and (select
+           count(*)
+        from
+           recvDeps as t3
+        where
+           t3.deviceID=t1.motusDeviceID
+           and t3.projectID in (%s)
+           and (t3.tsStart <= t1.tsEnd and (t3.tsEnd is null or t3.tsEnd = 0 or t1.tsStart <= t3.tsEnd))
+        limit 1
+   ) > 0
    and t2.ts > %f
-   and (t3.tsStart <= t1.tsEnd and (t3.tsEnd is null or t3.tsEnd = 0 or t1.tsStart <= t3.tsEnd))
 order by
    t2.ts
 limit %d
