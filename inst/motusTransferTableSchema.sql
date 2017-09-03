@@ -30,11 +30,14 @@ CREATE TABLE IF NOT EXISTS batches (
     tsMotus FLOAT(53) NOT NULL DEFAULT -1,               -- timestamp this record received by motus
     motusUserID INT,                                     -- user who uploaded the data leading to this batch
     motusProjectID INT,                                  -- user-selected motus project ID for this batch
-    motusJobID INT                                       -- processing job which created this batch
+    motusJobID INT,                                      -- processing job which created this batch
+    recvDepProjectID INT                                 -- projectID of the receiver deployment this batch belongs to (NULL if not known).
+                                                         -- this field allows much simpler queries for fetching data
 
 );--
 
 CREATE INDEX IF NOT EXISTS batches_tsMotus on batches(tsMotus);--
+CREATE INDEX IF NOT EXISTS batches_recvDepProjectID ON batches(recvDepProjectID);--
 
 -- GPS fixes are recorded separately from tag detections.
 
@@ -66,12 +69,15 @@ CREATE TABLE IF NOT EXISTS runs (
                                                       -- table; a negative value correspond to an entry in the tagAmbig table.
     ant TINYINT NOT NULL,                             -- antenna number (USB Hub port # for SG; antenna port
                                                       -- # for Lotek)
-    len BIGINT NOT NULL                               -- number of detections in run ( so far ); this number
+    len BIGINT NOT NULL,                              -- number of detections in run ( so far ); this number
                                                       -- can increase
+    tagDepProjectID INT                               -- projectID of tag deployment the hits in this run belong to (NULL if not known).
+                                                      -- this field allows much simpler queries for fetching data
 );--
 
 CREATE INDEX IF NOT EXISTS runs_motusTagID ON runs(motusTagID);--
 CREATE INDEX IF NOT EXISTS runs_batchIDbegin ON runs(batchIDbegin);--
+CREATE INDEX IF NOT EXISTS runs_tagDepProjectID ON runs(tagDepProjectID);--
 
 -- Because runs can span multiple batches, we want a way to
 -- keep track of which runs overlap which batches.

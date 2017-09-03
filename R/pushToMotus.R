@@ -179,6 +179,20 @@ order by
                 ## rename batchIDbegin column so we can use it as batchID in batchRuns table
                 names(runs)[grep("batchIDbegin", names(runs))] = "batchID"
                 dbWriteTable(mtcon, "batchRuns", runs[, c("batchID", "runID")], append=TRUE, row.names=FALSE)
+
+                ## Set the tagDepProjectID for each run; it will be
+                ## the project ID of the latest deployment of that tag
+                ## that which begins no later than the start of the
+                ## run.  We allow for tsEnd of a tagDep to be null or
+                ## 0, meaning "still active".  And we allow a slop of
+                ## 20 minutes in the deployment time, to catch runs which
+                ## started slightly before the nominal deployment time
+                ## (see https://github.com/jbrzusto/find_tags/issues/41 )
+
+                MotusDB("update runs as t1 set t1.tagDepProjectID = (select t2.projectID from tagDeps as t2 where t2.motusTagID=t1.motusTagID and t2.tsStart - 1200 <= t1.tsBegin order by t2.tsStart desc limit 1) where t1.runID between %d and %d",
+                        runs$runID[1],
+                        tail(runs$runID, 1))
+
             }
             dbClearResult(res)
         }
@@ -277,12 +291,21 @@ order by t1.runID
             )
     }
 
+    ## Set the recvDepProjectID for each batch; it will be the project
+    ## ID of the latest deployment of that receiver which overlaps the
+    ## batch.  We allow for tsEnd of a recvDep to be null or 0, meaning
+    ## "still active".
+
+    MotusDB("update batches as t1 set t1.recvDepProjectID = (select t2.projectID from recvDeps as t2 where t2.deviceID=t1.motusDeviceID and t2.tsStart <= t1.tsEnd and (t2.tsEnd is null or t2.tsEnd = 0 or t1.tsStart <= t2.tsEnd) order by t2.tsStart desc limit 1) where t1.batchID between %d and %d",
+            txBatches$batchID[1],
+            tail(txBatches$batchID, 1))
+
     ## To indicate they are complete and ready for transfer, set
     ## tsMotus on these batches.
 
-    MotusDB("update batches set tsMotus = 0 where tsMotus = -1 and batchID >= %d and batchID <= %d",
-            offsetBatchID + newBatches$batchID[1],
-            offsetBatchID + tail(newBatches$batchID, 1))
+    MotusDB("update batches set tsMotus = 0 where tsMotus = -1 and batchID between %d and %d",
+            txBatches$batchID[1],
+            tail(txBatches$batchID, 1))
 
     invisible(NULL)
 }
