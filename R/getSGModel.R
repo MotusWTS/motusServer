@@ -29,7 +29,7 @@ getSGModel = function(serno) {
     ## get model portion of string
     model = toupper(substring(serno, 8, 12))
 
-    select(model,
+    switch(model,
            "BBBK" = "BBBK",
            "RPI2" = "RPI2",
            "RPI3" = "RPI3",
