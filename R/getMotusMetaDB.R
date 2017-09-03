@@ -223,12 +223,13 @@ getMotusMetaDB = function() {
             ## End any unterminated deployments of tags which have a later deployment.
             ## The earlier deployment is ended 1 second before the (earliest) later one begins.
 
-            dbGetQuery(s$con, "update tagDeps set tsEnd = (select min(t2.tsStart) - 1 from tagDeps as t2 where t2.tsStart > tagDeps.tsStart and tagDeps.tagID=t2.tagID) where tsEnd is null and tsStart is not null");
+            dbExecute(s$con, "update tagDeps set tsEnd = (select min(t2.tsStart) - 1 from tagDeps as t2 where t2.tsStart > tagDeps.tsStart and tagDeps.tagID=t2.tagID) where tsEnd is null and tsStart is not null");
 
             ## replace slim copy of tag deps in mysql database
             MotusDB("delete from tagDeps")
             dbWriteTable(MotusDB$con, "tagDeps", dbGetQuery(s$con, "select projectID, tagID as motusTagID, tsStart, tsEnd from tagDeps order by projectID, tagID"),
                          append=TRUE, row.names=FALSE)
+            dbExecute(MotusDB$con, "update tagDeps set tsEnd = (select min(t2.tsStart) - 1 from tagDeps as t2 where t2.tsStart > tagDeps.tsStart and tagDeps.tagID=t2.tagID) where tsEnd is null and tsStart is not null");
         }
     })
 
