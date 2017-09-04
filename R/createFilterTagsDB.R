@@ -22,6 +22,7 @@
 #' \item tagFreq: floating point nominal tag frequency, in MHz
 #' \item bi: floating point burst interval, in seconds
 #' }
+#' sorted in order by id and bi within project.
 #'
 #' @export
 #'
@@ -48,20 +49,27 @@ join
    projs as t3 on t1.projectID=t3.id
 where
    t1.tsEnd >= :ts1 and t1.tsStart <= :ts2
+group by
+   t1.tagID
 order by
    t1.tsStart
 ", ts1=tsRange[1], ts2=tsRange[2])
 
-    ## remove conflicting tags, since the filter_tags version of the
-    ## tag finder can't handle ambiguous detections; due to the "order
-    ## by" clause in the query above, priority is given to the
-    ## earliest deployed tag in any group of conflicting tags.  And
-    ## because tag BI are probably only factory-specified to a
+    ## Remove conflicting tags, since the filter_tags version of the
+    ## tag finder doesn't properly handle ambiguous detections; due to
+    ## the "order by" clause in the query above, priority is given to
+    ## the earliest deployed tag in any group of conflicting tags.
+    ## And because tag BI are probably only factory-specified to a
     ## precisision of 0.01 seconds, we round bi to 2 decimal places.
+    ##
+    ## Such issues are why this approach is obsolete.
 
-    tags = subset(tags, ! duplicated(paste(id, round(bi, 3))))
+    tags = subset(tags, ! duplicated(paste(round(as.numeric(id)), round(bi, 2))))
     tags$id = as.numeric(tags$id)
-    write.csv(tags, outFile, row.names=FALSE)
+    tags$bi = round(tags$bi,4)
+
+    ## there might still be tags with
+    write.csv(tags[order(tags$proj,round(tags$id), tags$bi),], outFile, row.names=FALSE)
 
     return(nrow(tags))
 }
