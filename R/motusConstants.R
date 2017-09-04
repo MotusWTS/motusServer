@@ -19,6 +19,22 @@ MOTUS_API_SEARCH_TAGS           = "https://motus.org/data/api/v1.0/searchtags.js
 MOTUS_API_DEBUG                 = "https://motus.org/data/api/v1.0/debug.jsp"
 MOTUS_API_DELETE_TAG_DEPLOYMENT = "https://motus.org/data/api/v1.0/deletetagdeployment.jsp"
 
+## central repo where we track changes to motus metadata
+## this repo is cloned locally, and changes noticed when we cache motus metadata
+## are checked in and pushed back; This requires a public/private keypair in the
+## /home/XXX/.ssh folder on this server, where XXX is the user running the motusServers,
+## and an entry in /home/XXX/.ssh/config for the host 'github-motus-metadata-history' there
+## which indicates the ssh key to be used.
+## e.g. /home/sg/.ssh/config might contain:
+##
+##    Host github-motus-metadata-history
+##       HostName github.com
+##       User git
+##       IdentityFile ~/.ssh/id_dsa_github_motus_metadata_history
+##       IdentitiesOnly yes
+
+MOTUS_METADATA_HISTORY_REPO     = "git@github-motus-metadata-history:jbrzusto/motus-metadata-history"
+
 # a list of field names which must be formatted as floats so that
 # the motus API recognizes them correctly.  This means that if they
 # happen to have integer values, a ".0" must be appended to the JSON
@@ -96,6 +112,7 @@ MOTUS_PATH = list(
     LOCKS            = "/sgm/locks/",                ## locks for process queues and receiver DBs
     LOGS             = "/sgm/logs/",                 ## processing logs
     MAIL_QUEUE       = "/sgm/queue/E/",              ## queue for processing emails by emailServer()
+    METADATA_HISTORY = "/sgm/metadata_history/",     ## .git repo tracking metadata changes
     MOTR             = "/sgm/motr/",                 ## links to receiver DBs by motus ID
     OLDROOT          = "/SG/",                       ## root of old-style folder hierarchy
     OUTBOX           = "/sgm/outbox/",               ## copies of all sent emails

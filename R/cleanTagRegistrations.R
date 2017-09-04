@@ -1,11 +1,11 @@
 #' Fix systematic problems with the tag registration database.
 #'
-#' Some tag registrations had problems.  This All available motus metadata are
-#' The list of all registered tags is obtained from the motus-wts.org
-#' server.  A cleaned-up database suitable for the find_tags_motus
-#' program is generated, including an events table which indicates
-#' when tags were activated and inactivated.  This allows the database
-#' to be used against any receiver dataset, regardless of the dates.
+#' Some tag registrations had problems.  The list of all registered
+#' tags is obtained from the motus-wts.org server.  A cleaned-up
+#' database suitable for the find_tags_motus program is generated,
+#' including an events table which indicates when tags were activated
+#' and inactivated.  This allows the database to be used against any
+#' receiver dataset, regardless of the dates.
 #'
 #' @param m tbl with full tag info from motus, as returned by
 #' motusSearchTags()
@@ -300,6 +300,12 @@ cleanTagRegistrations = function(m, s, cleanBI = FALSE) {
 
 
     dbWriteTable(s$con, "tags", nodups %>% as.data.frame, overwrite=TRUE)
+
+    ## record tags table summary to the history repo
+    write.csv(nodups %>%
+              select (tagID, manufacturer, model, codeSet, nomFreq, mfgID, period) %>%
+              arrange(tagID) %>% as.data.frame,
+              file.path(MOTUS_PATH$METADATA_HISTORY, "tags.csv"), row.names=FALSE)
 
     ## now create events table
     ## This has the columns: ts, tagID, event (0 or 1)

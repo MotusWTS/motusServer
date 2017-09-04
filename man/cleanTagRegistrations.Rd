@@ -46,12 +46,12 @@ path to an sqlite database usable by the tag finder; it will have these tables:
 }
 }
 \description{
-Some tag registrations had problems.  This All available motus metadata are
-The list of all registered tags is obtained from the motus-wts.org
-server.  A cleaned-up database suitable for the find_tags_motus
-program is generated, including an events table which indicates
-when tags were activated and inactivated.  This allows the database
-to be used against any receiver dataset, regardless of the dates.
+Some tag registrations had problems.  The list of all registered
+tags is obtained from the motus-wts.org server.  A cleaned-up
+database suitable for the find_tags_motus program is generated,
+including an events table which indicates when tags were activated
+and inactivated.  This allows the database to be used against any
+receiver dataset, regardless of the dates.
 }
 \note{
 :

@@ -168,6 +168,13 @@ getMotusMetaDB = function() {
         return (cachedDB)
     }
 
+    ## make sure we have a local copy of the motus-metadata-repo, for tracking changes
+    ## to metadata
+
+    if (! file.exists(file.path(MOTUS_PATH$METADATA_HISTORY, ".git"))) {
+        safeSys(paste("git clone", MOTUS_METADATA_HISTORY_REPO, MOTUS_PATH$METADATA_HISTORY), quote=FALSE)
+    }
+
     ## make sure the database has correct tables
     safeSys("sqlite3", cachedDB, noQuote="<", system.file("motusMetadataSchema.sql", package="motusServer"))
 
@@ -196,6 +203,7 @@ getMotusMetaDB = function() {
 
         ## clean up tag registrations (only runs on server with access to full Lotek codeset)
         ## creates tables "tags" and "events" from the first parameter
+        ## and records tags table to the metadata history repo
 
         t = cleanTagRegistrations(t, s)
 
@@ -218,18 +226,43 @@ getMotusMetaDB = function() {
         if (nrow(t) > 1000) { ## arbitrary sanity check
             bkup("tagDeps")
             ## write just the deployment portion of the records to tagDeps
-            dbWriteTable(s$con, "tagDeps", t, append=TRUE, row.names=FALSE)
+            ## first writing to a temporary table to perform a deployment-closing query
+            dbWriteTable(s$con, "tmpTagDeps", t, overwrite=TRUE, row.names=FALSE, temporary=TRUE)
 
             ## End any unterminated deployments of tags which have a later deployment.
             ## The earlier deployment is ended 1 second before the (earliest) later one begins.
 
-            dbExecute(s$con, "update tagDeps set tsEnd = (select min(t2.tsStart) - 1 from tagDeps as t2 where t2.tsStart > tagDeps.tsStart and tagDeps.tagID=t2.tagID) where tsEnd is null and tsStart is not null");
+            dbExecute(s$con, "update tmpTagDeps set tsEnd = (select min(t2.tsStart) - 1 from tmpTagDeps as t2 where t2.tsStart > tmpTagDeps.tsStart and tmpTagDeps.tagID=t2.tagID) where tsEnd is null and tsStart is not null");
+
+            ## Copy to the real table (we do this, rather than write
+            ## directly with dbWriteTable, to preserve existence of
+            ## indexes on tagDeps)
+
+            dbExecute(s$con, "insert into tagDeps select * from tmpTagDeps")
+            dbExecute(s$con, "drop table tmpTagDeps")
 
             ## replace slim copy of tag deps in mysql database
             MotusDB("delete from tagDeps")
             dbWriteTable(MotusDB$con, "tagDeps", dbGetQuery(s$con, "select projectID, tagID as motusTagID, tsStart, tsEnd from tagDeps order by projectID, tagID"),
                          append=TRUE, row.names=FALSE)
-            dbExecute(MotusDB$con, "update tagDeps set tsEnd = (select min(t2.tsStart) - 1 from tagDeps as t2 where t2.tsStart > tagDeps.tsStart and tagDeps.tagID=t2.tagID) where tsEnd is null and tsStart is not null");
+
+            ## write tagDeps table into the metadata history repo
+            write.csv(dbGetQuery(s$con, "
+select
+   tagID,
+   projectID,
+   tsStart,
+   tsEnd,
+   tsStartCode,
+   tsEndCode
+from
+   tagDeps
+order by
+   tagID,
+   tsStart
+"
+                                 ),
+                      file.path(MOTUS_PATH$METADATA_HISTORY, "tag_deployments.csv"), row.names=FALSE)
         }
     })
 
@@ -318,10 +351,15 @@ getMotusMetaDB = function() {
         if (nrow(t) > 1) { ## arbitrary sanity check
             bkup("paramOverrides")
             dbWriteTable(s$con, "paramOverrides", t, append=TRUE, row.names=FALSE)
+            write.csv(t[order(t$projectID, t$serno, t$tsStart),],
+                      file.path(MOTUS_PATH$METADATA_HISTORY, "parameter_overrides.csv"), row.names=FALSE)
         }
     })
 
     sql(.CLOSE=TRUE)
     dbDisconnect(s$con)
+    ## in case there were any changes, commit them to the repo and push to git hub
+    safeSys(paste0("cd ", MOTUS_PATH$METADATA_HISTORY, "; if ( git commit -a -m 'revised upstream' ); then git push; fi"), quote=FALSE)
+
     return (cachedDB)
 }
