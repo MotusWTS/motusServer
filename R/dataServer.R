@@ -1339,29 +1339,48 @@ size_of_update_for_tag_project = function(env) {
     ## not yet seen but for this tag project
 
     query = sprintf("
-select count(*) as numBatches, sum(numRuns) as numRuns, sum(numHits) as numHits, sum(numGPS) as numGPS from
-(select t1.batchID as bid, numRuns, numHits, count(*) as numGPS from
-(select
-   batchIDbegin as batchID, count(*) as numRuns, sum(len) as numHits, min(tsBegin) as tsStart, max(tsEnd) as tsEnd
+select
+   count(*) as numBatches,
+   sum(numRuns) as numRuns,
+   sum(numHits) as numHits,
+   sum(numGPS) as numGPS
 from
-  runs
-where
-  batchIDbegin > %d
-  and tagDepProjectID = %d
-  group by batchIDbegin) as t1 left outer join
-gps as t2
-on t1.batchID=t2.batchID and (t2.ts >=t1.tsStart -3600 and t2.ts <= t1.tsEnd + 3600)
-group by t1.batchID) as t3
+   (select
+       t1.batchID as bid,
+       numRuns,
+       numHits,
+       count(*) as numGPS
+    from
+       (select
+           batchIDbegin as batchID,
+           count(*) as numRuns,
+           sum(len) as numHits,
+           min(tsBegin) as tsStart,
+           max(tsEnd) as tsEnd
+        from
+           runs
+        where
+           batchIDbegin > %d
+           and tagDepProjectID = %d
+        group by
+           batchIDbegin
+       ) as t1
+       left outer join gps as t2
+          on t1.batchID=t2.batchID and (t2.ts >=t1.tsStart -3600 and t2.ts <= t1.tsEnd + 3600)
+    group by
+       t1.batchID
+   ) as t3
 ",
 batchID, auth$projectID)
-    rv = unclass(MotusDB(query))
+    rv = MotusDB(query)
 
-    rv$numBytes = with(rv, 110 + 90 * numBatches +
+    rv$numBytes = with(rv,
+        110 + 90 * numBatches +
         75 + 64 * numRuns +
         80 + 100 * numHits +
         50 + 52 * numGPS)
 
-    res$body = makeBody(rv)
+    res$body = makeBody(unclass(rv))
     res$finish()
 }
 
@@ -1406,76 +1425,41 @@ size_of_update_for_receiver = function(env) {
 
     query = sprintf("
 select
-   count(*)
+   count(*) as numBatches,
+   sum(numRuns) as numRuns,
+   sum(numHits) as numHits,
+   sum(numGPS) as numGPS
 from
-   recvDeps as t1
-   join batches as t2 on t1.deviceID=t2.motusDeviceID
-where
-   t1.projectID in (%s)
-   and t2.batchID > %d
-   and (t1.tsStart <= t2.tsEnd and (t1.tsEnd is null or t1.tsEnd = 0 or t2.tsStart <= t1.tsEnd))
+   (select
+       t1.batchID,
+       count(*) as numRuns,
+       sum(t2.len) as numHits,
+       (select
+           count(*)
+        from
+           gps as t3
+        where
+           t3.batchID=t1.batchID
+       ) as numGPS
+       from
+          batches as t1
+          join runs as t2 on t2.batchIDbegin=t1.batchId
+       where
+          t1.batchID > %d
+          and t1.motusDeviceID = %d
+          and t1.recvDepProjectID in (%s)
+       group by t1.batchID
+    ) as t3
 ",
-paste(auth$projects, collapse=","), batchID)
-    numBatches = MotusDB(query)
+batchID, deviceID, paste(auth$projects, collapse=","))
+    rv = MotusDB(query)
 
-    ## get number of runs in new batches
-
-    query = sprintf("
-select
-   count(*)
-from
-   batches as t1
-   join batchRuns as t2 on t2.batchID = t1.batchID
-   join runs as t3 on t3.runID=t2.runID
-   join recvDeps as t4 on t4.deviceID=t1.motusDeviceID
-where
-   t1.batchID > %d
-   and t4.projectID in (%s)
-   and (t4.tsStart <= t1.tsEnd and (t4.tsEnd is null or t4.tsEnd = 0 or t1.tsStart <= t4.tsEnd))
-",
-batchID, paste(auth$projects, collapse=","))
-
-    numRuns = MotusDB(query)
-
-    ## get number of hits in new batches
-
-    query = sprintf("
-select
-   count(*)
-from
-   recvDeps as t3
-   join batches as t1 on t3.deviceID = t1.motusDeviceID
-   join hits as t2 on t2.batchID=t1.batchID
-where
-   t1.batchID > %d
-   and t3.projectID in (%s)
-   and (t3.tsStart <= t1.tsEnd and (t3.tsEnd is null or t3.tsEnd = 0 or t1.tsStart <= t3.tsEnd))
-",
-batchID, paste(auth$projects, collapse=","))
-    numHits = MotusDB(query)
-
-    ## get # of GPS fixes
-    query = sprintf("
-select
-    count(*)
-from
-   recvDeps as t3
-   join batches as t1 on t3.deviceID = t1.motusDeviceID
-   join gps as t2 on t2.batchID=t1.batchID
-where
-   t1.batchID > %d
-   and t3.projectID in (%s)
-   and (t3.tsStart <= t1.tsEnd and (t3.tsEnd is null or t3.tsEnd = 0 or t1.tsStart <= t3.tsEnd))
-",
-batchID, paste(auth$projects, collapse=","))
-    numGPS = MotusDB(query)
-
-    numBytes = 110 + 90 * numBatches +
+    rv$numBytes = with(rv,
+        110 + 90 * numBatches +
         75 + 64 * numRuns +
         80 + 100 * numHits +
-        50 + 52 * numGPS
+        50 + 52 * numGPS)
 
-    rv = list(numBatches=numBatches, numRuns=numRuns, numHits=numHits, numGPS=numGPS, numBytes=numBytes)
-    res$body = makeBody(rv)
+    res$body = makeBody(unclass(rv))
     res$finish()
 }
