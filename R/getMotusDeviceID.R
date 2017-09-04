@@ -1,6 +1,7 @@
 #' Get the motus device ID for a receiver, given its database.
 #'
-#' @param src dplyr src_sqlite to receiver database
+#' @param src dplyr src_sqlite to receiver database, or a character
+#' serial number
 #'
 #' @param useFirst if TRUE, the first receiver matching the given
 #' serial number is used. if FALSE and more than one
@@ -16,6 +17,9 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 getMotusDeviceID = function(src, useFirst=TRUE) {
+    if (! inherits(src, "src"))
+        src = getRecvSrc(src)
+
     ## try get this information from the receiver database.
     m = getMap(src)
     deviceID = m$deviceID

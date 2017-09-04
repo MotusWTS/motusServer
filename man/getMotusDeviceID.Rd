@@ -7,7 +7,8 @@
 getMotusDeviceID(src, useFirst = TRUE)
 }
 \arguments{
-\item{src}{dplyr src_sqlite to receiver database}
+\item{src}{dplyr src_sqlite to receiver database, or a character
+serial number}
 
 \item{useFirst}{if TRUE, the first receiver matching the given
 serial number is used. if FALSE and more than one
