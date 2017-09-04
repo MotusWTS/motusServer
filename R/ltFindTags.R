@@ -31,6 +31,8 @@ ltFindTags = function(src, tagDB, par = NULL) {
     else
         pars = paste(par, collapse=" ")
 
+    pars = paste0(pars, " --external_param=metadata_hash=", getMetadataHash())
+
     ## add the Lotek flag, so tag finder knows input is already in
     ## form of ID'd burst detections
 

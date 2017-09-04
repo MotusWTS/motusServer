@@ -48,6 +48,8 @@ sgFindTags = function(src, tagDB, resume=TRUE, par = NULL, mbn) {
     else
         pars = paste(par, collapse=" ")
 
+    pars = paste0(pars, " --external_param=metadata_hash=", getMetadataHash())
+
     sql = function(...) dbGetQuery(src$con, sprintf(...))
 
     for (bn in sort(mbn)) {
