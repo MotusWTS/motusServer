@@ -5,12 +5,19 @@
 #' need here.
 
 
-ltDTAregex = 
+ltDTAregex =
 "(?sx)
 
 # We're looking for model information at top of file:
 
 (?<model>SRX[^ \\n]++)[^\\n]+Information:\\n
+
+# or an 'Environment History' message that seems to indicate
+# a receiver restart, giving its date and time:
+
+|
+(?:Environment[[:blank:]]++History:\\n
+changed:[[:blank:]]++(?<boottime>[0-9]{2}/[0-9]{2}/[0-9]{2}[[:blank:]]++[0-9]{2}:[0-9]{2}:[0-9]{2}))
 
 # or an active scan table:
 
@@ -22,7 +29,7 @@ CHANNEL[[:blank:]]++FREQUENCY[[:blank:]]++STATUS[[:blank:]]++TYPE\\n
 
 # or an antenna gain table:
 
- | 
+ |
 (?:Antenna[[:blank:]]++Gain\\n
 (?<antenna_gain>(?:[^\\n]++\\n)++)
 \\n)

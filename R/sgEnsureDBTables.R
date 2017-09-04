@@ -123,6 +123,17 @@ primary key(ts, ant, id)                          -- no more than one detection 
         sql("create index DTAtags_ts on DTAtags ( ts )")
     }
 
+    if (! "DTAboot" %in% tables) {
+        sql("
+create table DTAboot (
+ts       integer not null unique primary key,      -- boot time; seconds since unix epoch
+relboot  integer,                                  -- relative boot number; 1 + count of smaller boot times
+fileID   integer                                   -- ID of file where this boot record came from
+)
+");
+
+        sql("create index DTAboot_relboot on DTAboot ( relboot )")
+    }
 
     ## A table of corrections applied to timestamps, e.g. for periods
     ## when chrony has not updated the SG system clock from the GPS (or

@@ -84,6 +84,7 @@ readDTA = function(filename="", lines=NULL, numLines=-1) {
     ## Interpret these now.
 
     codeset = as.character(NA)
+    boottimes = character(0)
 
     for (ip in seq(along=pieces)) {
         if (nchar(pieces[ip]) == 0)
@@ -104,6 +105,10 @@ readDTA = function(filename="", lines=NULL, numLines=-1) {
 
                serial_no = {
                    serno = tab[1,1]
+               },
+
+               boottime = {
+                   boottimes = c(boottimes, paste(tab[1,1], tab[1, 2]))
                },
 
                code_set = {
@@ -209,5 +214,5 @@ readDTA = function(filename="", lines=NULL, numLines=-1) {
         tags = subset(tags, ! is.na(tags$ts))
         tags = tags[order(tags$ts),]
     }
-    return (list(tags=tags, recv = paste0("Lotek-", serno), pieces=pieces, piece.lines.before=piece.lines.before))
+    return (list(tags=tags, recv = paste0("Lotek-", serno), pieces=pieces, piece.lines.before=piece.lines.before, boottimes=boottimes))
 }

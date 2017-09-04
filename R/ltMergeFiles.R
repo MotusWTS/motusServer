@@ -67,7 +67,7 @@ ltMergeFiles = function(files, j, dbdir=MOTUS_PATH$RECV) {
 
         on.exit(lockSymbol(serno, lock=FALSE))
 
-        src = getRecvSrc(serno)
+        src = getRecvSrc(serno, dbdir=dbdir)
         sql = safeSQL(src)
         files = tbl(src, "DTAfiles")
 
@@ -166,6 +166,18 @@ ltMergeFiles = function(files, j, dbdir=MOTUS_PATH$RECV) {
                             antFreq = x$tags$antfreq,
                             gain    = x$tags$gain,
                             codeSet = x$tags$codeset
+                        ) %>% as.data.frame
+                    )
+                }
+
+                ## write boottime records
+                if (isTRUE(length(x$boottimes) > 0)) {
+                    dbGetPreparedQuery(
+                        con,
+                        "insert or ignore into DTAboot (ts, fileID) values (:ts, :fileID)",
+                        data_frame(
+                            ts = mdy_hms(x$boottimes),
+                            fileID  = rv$fid[i]
                         ) %>% as.data.frame
                     )
                 }

@@ -27,6 +27,11 @@ corresponding to registered (ID, burst interval) pairs and adds
 them to the hits, runs, batches etc. tables in the receiver
 database.
 }
+\details{
+the tag finder is run once for each boot session that
+has at least one detection record.  Boot session numbers
+are first generated from all the boottime records.
+}
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
