@@ -169,7 +169,7 @@ makeReceiverPlot = function(recv, meta=NULL, title="", condense=3600, ts = NULL,
 
     ## group by antenna, tag, and time bin
 
-    tags = tags %>% group_by(ant, tagID, bin)
+    tags = tags %>% group_by(ant, motusTagID, bin)
 
     ## summarize detections in group into a data.frame
 
@@ -186,13 +186,13 @@ makeReceiverPlot = function(recv, meta=NULL, title="", condense=3600, ts = NULL,
         tags$fullID[fixup] = sub(".0@", "@", tags$fullID[fixup], fixed=TRUE)
 
     ## append motus ID
-    tags$fullID = sprintf("%s M.%d", tags$fullID, tags$tagID)
+    tags$fullID = sprintf("%s M.%d", tags$fullID, tags$motusTagID)
 
     ## make into a factor, sorting levels by project label, and then increasing mfgID
     tags$fullID = factor(tags$fullID, levels = unique(tags$fullID[order(tags$proj, as.numeric(tags$mfgID))]))
 
     ## for ambiguous tags, add items to the y-axis label
-    mID = unique(tags$tagID)
+    mID = unique(tags$motusTagID)
 
     xlabExtra = ""
     heightExtra = 0
@@ -203,11 +203,11 @@ select ambigID, motusTagID1, motusTagID2, motusTagID3, motusTagID4, motusTagID5,
 from tagAmbig where ambigID in (", paste0(aID, collapse=","), ")"))
         xlabExtra = paste0("\nAmbiguous Tags: ",
                            paste( sapply(seq_len(nrow(ambig)),
-                                         function(i) {
-                                             a = ambig[i, -1]
-                                             a = a[!is.na(a)]
-                                             paste0("M.", ambig[i, 1], " = ", paste0("M.", a, collapse=" or "))
-                                         }
+                                              function(i) {
+                                                  a = ambig[i, -1]
+                                                  a = a[!is.na(a)]
+                                                  paste0("M.", ambig[i, 1], " = ", paste0("M.", a, collapse=" or "))
+                                              }
                                          ), collapse="; "
                                  ))
         ## adjust plot height for extra lines
@@ -217,7 +217,7 @@ from tagAmbig where ambigID in (", paste0(aID, collapse=","), ")"))
     ## remove fields we no longer need, so we don't have to pad the
     ## pulse and boot pseudo-tag records
 
-    tags$mfgID = tags$proj = tags$tagID = NULL
+    tags$mfgID = tags$proj = tags$motusTagID = NULL
 
     ## if all frequencies are the same, remove from fullID and append to axis label
 
