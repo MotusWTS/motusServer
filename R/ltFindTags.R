@@ -16,11 +16,14 @@
 #' @param par list of parameters to the filtertags code.  Defaults
 #' to NULL;
 #'
-#' @return a list with these items
+#' @return a data.frame with these columns:
 #' \itemize{
 #'   \item batchID the batch number
 #'   \item numHits the number of unfiltered tag detections in the stream.
 #' }
+#' and one row per boot session with detection records in the .DTA file
+#' (though not necessarily any detections from this package's tag finder).
+#'
 #' @export
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
@@ -74,5 +77,5 @@ ltFindTags = function(src, tagDB, par = NULL) {
     ## get ID and stats for new batch of tag detections
     rv = dbGetQuery(src$con, paste0("select batchID, numHits from batches order by batchID desc limit ", length(bn)))
 
-    return (c(rv))
+    return (rv)
 }

@@ -15,11 +15,13 @@ ltFindTags(src, tagDB, par = NULL)
 to NULL;}
 }
 \value{
-a list with these items
+a data.frame with these columns:
 \itemize{
   \item batchID the batch number
   \item numHits the number of unfiltered tag detections in the stream.
 }
+and one row per boot session with detection records in the .DTA file
+(though not necessarily any detections from this package's tag finder).
 }
 \description{
 This function searches for sequences of tag detections
