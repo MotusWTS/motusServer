@@ -202,16 +202,19 @@ makeReceiverPlot = function(recv, meta=NULL, title="", condense=3600, ts = NULL,
 select ambigID, motusTagID1, motusTagID2, motusTagID3, motusTagID4, motusTagID5, motusTagID6
 from tagAmbig where ambigID in (", paste0(aID, collapse=","), ")"))
         xlabExtra = paste0("\nAmbiguous Tags: ",
-                           paste( sapply(seq_len(nrow(ambig)),
+                           paste(
+                               paste0( sapply(seq_len(nrow(ambig)),
                                               function(i) {
                                                   a = ambig[i, -1]
                                                   a = a[!is.na(a)]
                                                   paste0("M.", ambig[i, 1], " = ", paste0("M.", a, collapse=" or "))
                                               }
-                                         ), collapse="; "
-                                 ))
+                                              ),
+                                      c("; ", "; ", "; ", "\n" )),
+                               collapse="")
+                           )
         ## adjust plot height for extra lines
-        heightExtra = 20
+        heightExtra = floor(20 * nrow(ambig) / 4)
     }
 
     ## remove fields we no longer need, so we don't have to pad the
