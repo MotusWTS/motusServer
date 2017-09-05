@@ -307,7 +307,16 @@ from batches where monoBN between %d and %d and tsStart >= 1262304000 group by m
 monoBNlo, monoBNhi))
         reboots$fullID = as.factor(reboots$fullID)
     } else {
-        reboots = NULL
+        reboots = dbGetQuery(recv$con, sprintf("
+select relboot%%10 as ant,
+' Reboot Odometer' as fullID,
+round(ts / 3600) as bin,
+ts,
+1 as n,
+0 as freq,
+0 as sig
+from DTAboot where ts between %f and %f",
+ts[1], ts[2]))
     }
     tags = rbind(tags, pulses, gps, reboots)
 
