@@ -242,13 +242,24 @@ sgMergeFiles = function(files, j, dbdir = MOTUS_PATH$RECV) {
 
                 ## calculate length of uncompressed file contents
 
-                len = if (newf$Fcomp[i] == "") {
-                          ## just the file size, for a text file
-                          newf$nsize[i]
-                      } else {
-                          ## as much as zcat can get, for a .gz file
-                          as.integer(safeSys("zcat", nq1="-q", newf$fullname[i], nq2="2>/dev/null | wc -c"))
-                      }
+                if (newf$Fcomp[i] == "") {
+                    ## just the file size, for a text file
+                    len = newf$nsize[i]
+                } else {
+                    ## as much as zcat can get, for a .gz file
+                    len = as.integer(safeSys("zcat", nq1="-q", newf$fullname[i], nq2="2>/dev/null | wc -c"))
+
+                    ## check whether we have also processed the uncompressed version of this file,
+                    ## which would have been the previous file, given the alphabetical sorting (".txt" < ".txt.gz")
+                    if (i > 1 && newf$Fname[i-1] == newf$Fname[i]) {
+                        ## we only keep the compressed version if its uncompressed contents are at least as
+                        ## large as those of the compressed version
+                        if (len < newf$nsize[i - 1])
+                            next
+                        ## mark this file as not really new, to get the correct query below
+                        newf$new[i] = FALSE
+                    }
+                }
 
                 if (newf$new[i]) {
                     ## not yet in database
