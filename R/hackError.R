@@ -4,6 +4,8 @@
 #'
 #' @param type the type of subjob to examine.  If not specified,
 #'  the first such subjob is examined.
+#'
+#' @export
 
 hackError = function(j, type, index) {
     if(missing(j))
