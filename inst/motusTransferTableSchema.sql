@@ -176,7 +176,7 @@ CREATE TABLE IF NOT EXISTS batchParams (
     progName VARCHAR(16) NOT NULL,             -- identifier of program; e.g. 'find_tags',
                                                -- 'lotek-plugins.so'
     paramName VARCHAR(32) NOT NULL,            -- name of parameter (e.g. 'minFreq')
-    paramVal FLOAT(53) NOT NULL,               -- value of parameter
+    paramVal TEXT(53) NOT NULL,                -- value of parameter as a string
     PRIMARY KEY (batchID, progName, paramName) -- only one value of a given parameter per program per batch
 );--
 

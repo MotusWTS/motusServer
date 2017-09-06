@@ -268,7 +268,7 @@ order by t1.runID
         ## ----------  copy batchParams  ----------
         bpa = sql("select * from batchParams where batchID = %d", b$batchID)
         bpa$batchID = bpa$batchID + offsetBatchID
-
+        bpa$paramVal = as.character(bpa$paramVal)
         if (nrow(bpa) > 0)
             dbWriteTable(mtcon, "batchParams", bpa, append=TRUE, row.names=FALSE)
 
