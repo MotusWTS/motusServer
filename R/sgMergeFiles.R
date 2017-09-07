@@ -231,7 +231,7 @@ sgMergeFiles = function(files, j, dbdir = MOTUS_PATH$RECV) {
             meta$recvSerno = recv
             meta$recvType = "SENSORGNOME"
             meta$recvModel = getSGModel(newf$Fserno[1])
-            meta$fileRepo = file.path(MOTUS_PATH$FILE_REPO, newf$Fserno[1])
+            meta$fileRepo = file.path(MOTUS_PATH$FILE_REPO, recv)
         }
         now = as.numeric(Sys.time())
         if (nrow(newf) > 0) {
