@@ -179,7 +179,6 @@ sgMergeFiles = function(files, j, dbdir = MOTUS_PATH$RECV) {
 
         con = src$con
         dbExecute(con, "pragma journal_mode=wal")
-        dbExecute(con, sprintf("insert or replace into meta values ('fileRepo', '%s')", MOTUS_PATH$FILE_REPO))
 
         ## existing files in database
 
