@@ -27,7 +27,7 @@ a dataframe of components, with one row per filename and these columns:
  \item "tsString": timestamp in YYYY-MM-DDTHH-MM-SS.SSSS format
  \item "ts":  timestamp embedded in name (double, with class \code{c("POSIXt", "POSIXct")} )
  \item "tsCode":  timestamp code ('P' means before GPS fix, 'Z' means accurate to 1e-6 s, 'Y' to 1e-5s, 'X' to 1e-4s, ..., 'T' to 1s)
- \item "port":  port number, if this file is associated with a single port (e.g. a .WAV file); NA if all ports
+ \item "port":  character; port label, if this file is associated with a single port (e.g. a .WAV file); "all" if all ports
  \item "extension":  character extension of uncompressed file; e.g. ".txt"; lower case
  \item "comp":  character; file compression type, if any:  "", or ".gz"; lower case
 
