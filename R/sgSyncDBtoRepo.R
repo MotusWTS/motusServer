@@ -47,15 +47,47 @@ sgSyncDBtoRepo = function(serno, dbdir=MOTUS_PATH$RECV, repo=MOTUS_PATH$FILE_REP
     db = getRecvSrc(serno, dbdir=dbdir)
     sql = safeSQL(db$con)
     meta = getMap(db)
+
+    ## drop all but largest file with given ts, bootnum
+    sql("create temporary table badfiles as select t1.fileID from files as t1 left outer join files as t2 on t1.ts=t2.ts and t1.size <= t2.size and t1.fileID<>t2.fileID and t1.bootnum=t2.bootnum where t2.fileID is not null")
+    sql("delete from files where fileID in (select fileID from badfiles)")
+    sql("drop table badfiles")
     ## two data_frames: fdb = files in database; frp = files in file repo
 
-    fdb = tbl(db, "files") %>% collect
+
+    fdb = tbl(db, "files") %>% arrange(fileID) %>% collect (n=Inf)
     fdb$tsString = sprintf("%.4f", fdb$ts)
     frp = data_frame(name=dir(file.path(repo, serno), full.names=TRUE, recursive=TRUE))
     frp = frp %>% mutate (basename = basename(name))
     frp = with(frp, cbind(frp, parseFilenames(name, basename, checkDOS=FALSE), file.info(name)))
     frp = frp %>% mutate(tsString = sprintf("%.4f", as.numeric(ts)))
 
+    class(fdb$ts) = class(Sys.time())
+    ## clean up any blank names for DB files
+    badname = is.na(fdb$name) | grepl("^NA-", fdb$name)
+    if (any(badname)) {
+        if (all(badname)) {
+            stop("Can't sync - names not reconstructible")
+        }
+        ## for each badname, find the lastest good name that's before it
+        ## because we want the prefix appropriate for each boot session (it sometimes was changed by users)
+        goodname = fdb$name[infimum(which(badname), which(! badname))]
+        parts = as.list(parseFilenames(goodname, checkDOS=FALSE))
+        parts$serno = substring(parts$serno, 4)
+        bad = subset(fdb, badname)
+        fdb$name[badname] = with(bad,
+                                 sprintf("%s-%s-%06d-%s%s-%s%s",
+                                        parts$prefix,
+                                        parts$serno,
+                                        bootnum,
+                                        format(ts, "%Y-%m-%dT%H-%M-%OS4"),
+                                        tscode,
+                                        parts$port,
+                                        parts$extension))
+        for (i in which(badname)) {
+            sql("update files set name=:name where fileID=:fileID", name=fdb$name[i], fileID=fdb$fileID[i])
+        }
+    }
     ## hash values are paste(numeric timestamp, boot number)
     fdb = fdb %>% mutate(hash = paste(tsString, monoBN))
     frp = frp %>% mutate(hash = paste(tsString, bootnum))
@@ -240,4 +272,47 @@ uncompressedSize = function(gzfile) {
 
 compressedFileDone = function(gzfile) {
     isTRUE(0 == attr(safeSys("gzip", "-t", gzfile, minErrorCode=1000), "exitCode"))
+}
+
+#' get the greatest lower bound of each number in one set from the other
+#'
+#' @param s1 set of numbers to find lower bounds for
+#' @param s2 set of numbers among which to find the greatest lower bounds.
+#'
+#' @return vector rv with same type as s2 and length as s1, with
+#' rv[i] = max(s2[s2 <= s1[i]]), if any(s2 <= s1[i]);
+#'         or NA, if all(s2 > s1[i])
+#' i.e. for each number in s1, its greatest lower bound among the numbers in s2,
+#' or NA if none exists.
+#'
+#' @details the algorithm run time is O(n log(n)), where n = max(length(s1), length(s2))
+#'
+#' @export
+#'
+#' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
+
+infimum = function(s1, s2) {
+    n1 = length(s1)
+    n2 = length(s2)
+    rv = rep(s2[n2+1], n1)
+    if (n1 > 0 && n2 > 0) {
+        os1 = order(s1)
+        s1 = s1[os1]
+        s2 = sort(s2)
+        i1 = 1L
+        i2 = 1L
+        glb = s2[1]
+        while (i1 <= n1) {
+            if (i2 <= n2 && s2[i2] <= s1[i1]) {
+                glb = s2[i2]         ## RHS is *a* lower bound, and eventually the greatest
+                i2 = i2 + 1L         ## maybe we can find a larger lower bound
+            } else {
+                if (glb <= s1[i1]) {
+                    rv[os1[i1]] = glb
+                }
+                i1 = i1 + 1L         ## maybe s2[i2] is a lower bound for the next larger item from s1
+            }
+        }
+    }
+    return(rv)
 }
