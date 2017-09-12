@@ -36,7 +36,7 @@ fi
 
 
 for i in $PNUMS; do
-    if $(( $i < 100 )); then
+    if [[ $i < 100 ]]; then
         KILLFILE=/sgm/queue/0/kill$i
     else
         KILLFILE=/sgm/priority/kill$i
