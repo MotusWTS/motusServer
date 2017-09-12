@@ -121,7 +121,11 @@ trap onExit EXIT
 
 echo $$ > /sgm/processServer$N.pid
 
-killFile=/sgm/queue/0/kill$N
+if $(( $N < 100 )); then
+    killFile=/sgm/queue/0/kill$N
+else
+    killFile=/sgm/priority/kill$N
+fi
 rm -f $killFile
 
 ## restart the process whenever it dies, allowing a

@@ -36,7 +36,11 @@ fi
 
 
 for i in $PNUMS; do
-    KILLFILE=/sgm/queue/0/kill$i
+    if $(( $i < 100 )); then
+        KILLFILE=/sgm/queue/0/kill$i
+    else
+        KILLFILE=/sgm/priority/kill$i
+    fi
     touch $KILLFILE
     if [[ ! $GRACEFUL ]]; then
         PID=`cat /sgm/processServer$i.pid`
