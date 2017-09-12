@@ -170,19 +170,20 @@ dumpJobDetails = function(res, j, i) {
     if (is.null(replyTo))
         replyTo = "none"
 
-    log = info$log
-    summary = info$summary
-    info = info[! names(info) %in% c("log", "summary", "replyTo")]
+    log = info$log_
+    summary = info$summary_
+    info = info[! (grepl("_$", names(info)) | names(info) == "replyTo")]
     params = paste(names(info), info, sep="=", collapse=", ")
     if (isTRUE(nchar(log) > 10000))
         log = paste0(substr(log, 1, 5000), "\n   ...\n", substring(log, nchar(log)-5000), "\n")
-    res$write(sprintf("<h3>Status for job %d</h3><pre><b>Created Date:</b> %s\n<b>Last Activity:</b> %s\n<b>Sender:</b> %s\n<b>Parameters:</b> %s\n<b>Queue: </b>%s\n<b>Summary: </b>%s</pre><h4>Log:</h4><pre>%s\n</pre>",
+    res$write(sprintf("<h3>Status for job %d</h3><pre><b>Created Date:</b> %s\n<b>Last Activity:</b> %s\n<b>Sender:</b> %s\n<b>Parameters:</b> %s\n<b>Queue: </b>%s\n<b>Products:</b><pre>%s</pre><b>Summary: </b>%s</pre><h4>Log:</h4><pre>%s\n</pre>",
                       j,
                       format(TS(ctime(j))),
                       format(TS(mtime(j))),
                       replyTo,
                       params,
                       if (is.na(j$queue)) "None" else paste(j$queue),
+                      if (is.na(j$products_)) "None" else paste(sprintf("   <a href=\"%s\">%s</a>", j$products_, basename(j$products_)), collapse="\n"),
                       if (is.null(summary)) "" else summary,
                       paste0("   ", gsub("\n", "\n   ", log, fixed=TRUE))
                       )

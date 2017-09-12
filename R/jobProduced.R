@@ -16,14 +16,14 @@
 
 jobProduced = function(j, u) {
     tj = topJob(Jobs[[j]])
-    p = tj$products
+    p = tj$products_
     if (is.null(p))
         p = character(0)
     if (! missing(u)) {
         if (! is.character(u))
             stop("u must be a character vector")
         p = c(p, u)
-        tj$products = p
+        tj$products_ = p
     }
     return(p)
 }

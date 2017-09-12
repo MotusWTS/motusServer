@@ -20,7 +20,7 @@ jobLog = function(j, msg, summary=FALSE) {
     if (!inherits(j, "Twig"))
         stop("jobLog: j must have class 'Twig'")
     C = copse(j)
-    field = ifelse(isTRUE(summary), "summary", "log")
+    field = ifelse(isTRUE(summary), "summary_", "log_")
     C$sql(paste0("update ", C$table, " set data=json_set(data, '$.", field, "', ifnull(json_extract(data, '$.", field, "'), '') || :msg) where id=", stump(j)),
           msg = paste(msg, "\n", collapse="", sep=""))
     return(invisible(NULL))
