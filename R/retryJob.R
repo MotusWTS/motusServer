@@ -66,8 +66,10 @@ retryJob = function(j, msg="external error corrected") {
     ## mark cronies as needing re-run
     cronies$done = 0
 
-    ## move top leve job to queue 0
-    moveJob(j, MOTUS_PATH[[paste0("QUEUE", j$queue)]])
-    jobLog(j, sprintf("===============================================================================\nRestarted job after error(s) found.\nReason: %s\n===============================================================================\n", msg), summary=TRUE)
+    ## move top level job to queue 0 so it can be reclaimed by one of the processes
+    j$queue = 0
+    moveJob(j, MOTUS_PATH$QUEUE0)
+    jobLog(j, sprintf("===============================================================================\nRestarted job after error(s) found.\nReason: %s\n===============================================================================\n", msg))
+    jobLog(j, "=== Restarted ===", summary=TRUE)
     return(TRUE)
 }
