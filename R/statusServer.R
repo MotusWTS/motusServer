@@ -183,7 +183,7 @@ dumpJobDetails = function(res, j, i) {
                       replyTo,
                       params,
                       if (is.na(j$queue)) "None" else paste(j$queue),
-                      if (is.na(j$products_)) "None" else paste(sprintf("   <a href=\"%s\">%s</a>", j$products_, basename(j$products_)), collapse="\n"),
+                      if (is.null(j$products_)) "None" else paste(sprintf("   <a href=\"%s\">%s</a>", j$products_, basename(j$products_)), collapse="\n"),
                       if (is.null(summary)) "" else summary,
                       paste0("   ", gsub("\n", "\n   ", log, fixed=TRUE))
                       )
