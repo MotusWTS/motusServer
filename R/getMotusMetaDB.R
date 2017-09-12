@@ -359,7 +359,7 @@ order by
     sql(.CLOSE=TRUE)
     dbDisconnect(s$con)
     ## in case there were any changes, commit them to the repo and push to git hub
-    safeSys(paste0("cd ", MOTUS_PATH$METADATA_HISTORY, "; if ( git commit -a -m 'revised upstream' ); then git push; fi"), quote=FALSE)
+    safeSys(paste0("cd ", MOTUS_PATH$METADATA_HISTORY, "; if ( git commit --author='motus_data_server <sgdata@motus.org>' -a -m 'revised upstream' ); then git push; fi"), quote=FALSE)
 
     return (cachedDB)
 }
