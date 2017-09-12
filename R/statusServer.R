@@ -114,7 +114,7 @@ window.onload = function() {
 '));
     showSync = ifelse(isTRUE(req$GET()[['sync']]==1), '=', '<>')
     user = as.character(req$GET()[['user']])[1]
-    if (! is.na(user) && user != "john" && user != "stuart" && user != "zcrysler" && user != "ptaylor" && user != "tlcrewe") {
+    if (! isTRUE(user %in% adminUsers)) {
         jj = ServerDB(sprintf("select id from jobs where user=:user and pid is null and type %s 'syncReceiver' order by id desc", showSync), user=user)[[1]]
         k = 0
     } else {
@@ -586,3 +586,5 @@ getUploadTokenApp =  function(env) {
     res$write(sprintf('<pre>Token: %s<br><br>Email: %s<br><br>Expires:%s</pre>', rv$token, email, format(rv$expiry, "%Y %b %d %H:%M:%S GMT")))
     res$finish()
 }
+
+adminUsers = c("tlcrewe", "zcrysler", "dlepage", "john", "ptaylor", "stuart.mackenzie")
