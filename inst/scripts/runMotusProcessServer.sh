@@ -121,7 +121,7 @@ trap onExit EXIT
 
 echo $$ > /sgm/processServer$N.pid
 
-if (( $N < 100 )); then
+if [[ $N -lt 100 ]]; then
     killFile=/sgm/queue/0/kill$N
 else
     killFile=/sgm/priority/kill$N
