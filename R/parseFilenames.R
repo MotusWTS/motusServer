@@ -52,12 +52,20 @@ parseFilenames = function(f, base=basename(f), checkDOS=TRUE) {
     rv$ts = ymd_hms(rv$tsString)
     rv$bootnum = as.integer(rv$bootnum)
 
-    ## fix only known (as of Sept. 2016) serial number collision
+    ## fix serial number collisions
 
+    ## Pt. Lepreau (Motus) and Sugarloaf (CT)
     fix = which(rv$serno == "SG-1614BBBK1911" & rv$prefix != "Lepreau")
     if (length(fix) > 0) {
         rv$serno[fix] = "SG-1614BBBK1911_1"
         file.rename(f[fix], sub("1614BBBK1911", "1614BBBK1911_1", f[fix], fixed=TRUE))
+    }
+
+    ## Bookton (Motus) and Seaview Harbour (NJ)
+    fix = which(rv$serno == "SG-0517BBBK1111" & rv$prefix != "Bookton")
+    if (length(fix) > 0) {
+        rv$serno[fix] = "SG-0517BBBK1111_1"
+        file.rename(f[fix], sub("0517BBBK1111", "0517BBBK1111_1", f[fix], fixed=TRUE))
     }
 
     ## fix cases
