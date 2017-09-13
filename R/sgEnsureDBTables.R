@@ -174,18 +174,16 @@ alt     double                               -- altitude, metres
 
     if (! "params" %in% tables) {
         sql( "
-create table params (
-ts      double,                              -- timestamp for this record
-tscode  character(1),                        -- timestamp code: 'P'=prior to GPS fix; 'Z' = after GPS fix
-port    integer,                             -- hub port -- for which device setting applies
-param   text,                                -- parameter name
-val     double,                              -- parameter setting
-error   integer,                             -- 0 if parameter setting succeeded; error code otherwise
-errinfo character                            -- non-empty if error code non-zero
+CREATE TABLE params (
+batchID INTEGER,      -- batchID this setting is from
+ts      FLOAT(53),    -- timestamp for this record
+ant     INTEGER,      -- hub port for which device setting applies
+param   VARCHAR,      -- parameter name
+val     FLOAT(53),    -- parameter setting
+error   INTEGER,      -- 0 if parameter setting succeeded; error code otherwise
+errinfo VARCHAR       -- non-empty if error code non-zero
 )");
-
         sql("create index params_ts on params ( ts )")
-        sql("create unique index params_all on params ( ts, port)")
     }
 
     if (! "pulseCounts" %in% tables) {
