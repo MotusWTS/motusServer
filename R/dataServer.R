@@ -58,17 +58,17 @@ dataServer = function(port=0xda7a, tracing=FALSE) {
     AuthDB("create table if not exists auth (token TEXT UNIQUE PRIMARY KEY, expiry REAL, userID INTEGER, projects TEXT, receivers TEXT)")
     AuthDB("create index if not exists auth_expiry on auth (expiry)")
 
+    ## start time for processing each request that passes through
+    ## validate_request()
+
+    ts_req <<- 0
+
     ## add each function below as an app
 
     for (f in allDataApps)
         Server$add(RhttpdApp$new(app = get(f), name = f))
 
     motusLog("Data server started")
-
-    ## start time for processing each request that passes through
-    ## validate_request()
-
-    ts_req <<- 0
 
     Server$start(port = port)
 
@@ -95,7 +95,10 @@ allDataApps = c("authenticate_user",
                 "metadata_for_receivers",
                 "tags_for_ambiguities",
                 "size_of_update_for_tag_project",
-                "size_of_update_for_receiver"
+                "size_of_update_for_receiver",
+                ## and these administrative (local-use-only) apps, not reverse proxied
+                ## from the internet at large
+                "_shutdown"
                 )
 
 #' authenticate_user return a list of projects and receivers the user is authorized to receive data for
@@ -1462,4 +1465,16 @@ batchID, deviceID, paste(auth$projects, collapse=","))
 
     res$body = makeBody(unclass(rv))
     res$finish()
+}
+
+#' shut down this server.  The leading '_', which requires the appname to be
+#' quoted, marks this as an app that won't be exposed to the internet via
+#' the apache reverse proxy
+
+`_shutdown` = function(env) {
+    res = Rook::Response$new()
+    sendHeader(res)
+    sendError(res, "data server shutting down")
+    res$finish()
+    q(save="no")
 }

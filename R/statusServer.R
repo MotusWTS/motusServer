@@ -41,7 +41,7 @@ statusServer = function(port, tracing=FALSE) {
 
 ## a string giving the list of apps for this server
 
-allApps = c("latestJobsApp", "queueStatusApp", "connectedReceiversApp", "allReceiversApp", "getUploadTokenApp")
+allApps = c("latestJobsApp", "queueStatusApp", "connectedReceiversApp", "allReceiversApp", "getUploadTokenApp", "_shutdown")
 
 latestJobsApp = function(env) {
 
@@ -588,6 +588,18 @@ getUploadTokenApp =  function(env) {
 
     res$write(sprintf('<pre>Token: %s<br><br>Email: %s<br><br>Expires:%s</pre>', rv$token, email, format(rv$expiry, "%Y %b %d %H:%M:%S GMT")))
     res$finish()
+}
+
+#' shut down this server.  The leading '_', which requires the appname to be
+#' quoted, marks this as an app that won't be exposed to the internet via
+#' the apache reverse proxy
+
+`_shutdown` = function(env) {
+    res = Rook::Response$new()
+    sendHeader(res)
+    sendError(res, "status server shutting down")
+    res$finish()
+    q(save="no")
 }
 
 adminUsers = c("tlcrewe", "zcrysler", "dlepage", "john", "ptaylor", "stuart.mackenzie")

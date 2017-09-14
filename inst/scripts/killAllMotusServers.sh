@@ -41,8 +41,8 @@ fi
 
 ## DISABLED: /sgm/bin/killMotusEmailServer.sh $GRACEFUL
 /sgm/bin/killMotusUploadServer.sh
-/sgm/bin/killMotusStatusServer.sh
-/sgm/bin/killMotusDataServer.sh
+/sgm/bin/killMotusStatusServer.sh $GRACEFUL
+/sgm/bin/killMotusDataServer.sh $GRACEFUL
 /sgm/bin/killMotusSyncServer.sh
 /sgm/bin/killMotusProcessServers.sh -a $GRACEFUL
 
