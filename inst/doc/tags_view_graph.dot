@@ -4,7 +4,7 @@ digraph tags_join {
                 batches [shape=record,label="batches|{<batchID>batchID|<motusDeviceID>motusDeviceID|...}"];
                 hits [shape=record,label="hits|{<batchID>batchID|<runID>runID|<ts>ts|...}"];
                 graph[label="Data (from receiver)", center=1, fontsize=24]
-        };
+        }
         subgraph cluster_metadata {
                 tags [shape=record,label="tags|{<tagID>tagID|mfgID|model|...}"];
                 projs [shape=record,label="projs|{<id>id|project Name|...}"];
@@ -30,6 +30,6 @@ digraph tags_join {
         batches:motusDeviceID -> recvGPS:deviceID;
         tagDeps:speciesID     -> species:id;
         tagDeps:projectID     -> projs:id;
-        graph[center=1];
+        graph[center=1, ranksep=2, nodesep=5];
 
 }
