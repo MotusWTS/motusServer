@@ -452,26 +452,16 @@ select
    t1.motusProjectID,
    t1.motusJobID
 from
-   batches as t1
-where
-   t1.batchID > %d
-   and
-   exists (
-      select
-         *
-      from
-         batchRuns as t2
-      join
-         runs as t3 on t3.runID=t2.runID
-      where
-         t2.batchID=t1.batchID
-         and t3.tagDepProjectID = %d
-   )
+   projBatch as t2
+   join batches as t1
+   on t2.tagDepProjectID=%d
+   and t2.batchID > %d
+   and t1.batchID = t2.batchID
 order by
-   t1.batchID
+   t2.batchID
 limit %d
 ",
-batchID, auth$projectID, MAX_ROWS_PER_REQUEST)
+auth$projectID, batchID, MAX_ROWS_PER_REQUEST)
     rv = MotusDB(query)
     res$body = makeBody(rv)
     res$finish()
@@ -588,17 +578,17 @@ select
    t1.ant,
    t1.len
 from
-   runs as t1
-   join batchRuns as t2 on t1.runID=t2.runID
+   batchRuns as t2
+   join runs as t1 on t2.runID=t1.runID
 where
-   t2.batchID = %d
-   and t1.runID > %d
-   and t1.tagDepProjectID = %d
+   t2.tagDepProjectID = %d
+   and t2.batchID = %d
+   and t2.runID > %f
 order by
-   t1.runID
-limit %d
+   t2.runID
+limit 10000
 ",
-batchID, runID, auth$projectID, MAX_ROWS_PER_REQUEST)
+auth$projectID, batchID, runID, auth$projectID, MAX_ROWS_PER_REQUEST)
     rv = MotusDB(query)
     res$body = makeBody(rv)
     res$finish()
@@ -651,7 +641,7 @@ from
    join batchRuns as t2 on t2.runID = t1.runID
    join batches as t3 on t3.batchID=t2.batchID
 where
-   t1.runID > %d
+   t1.runID > %f
    and t2.batchID = %d
    and t3.recvDepProjectID in (%s)
 order by
@@ -699,30 +689,28 @@ hits_for_tag_project = function(env) {
 
     query = sprintf("
 select
-   t1.hitID,
-   t1.runID,
-   t1.batchID,
-   t1.ts,
-   t1.sig,
-   t1.sigSD,
-   t1.noise,
-   t1.freq,
-   t1.freqSD,
-   t1.slop,
-   t1.burstSlop
+   hitID,
+   runID,
+   batchID,
+   ts,
+   sig,
+   sigSD,
+   noise,
+   freq,
+   freqSD,
+   slop,
+   burstSlop
 from
-   hits as t1
-   join runs as t2 on t2.runID = t1.runID
-   join batchRuns as t3 on t3.runID = t2.runID
+   hits
 where
-   t1.hitID > %d
-   and t3.batchID = %d
-   and t2.tagDepProjectID = %d
+   tagDepProjectID = %d
+   and batchID = %d
+   and hitID > %f
 order by
-   t1.hitID
+   hitID
 limit %d
 ",
-hitID, batchID, auth$projectID, MAX_ROWS_PER_REQUEST)
+auth$projectID, batchID, hitID, MAX_ROWS_PER_REQUEST)
     rv = MotusDB(query)
     res$body = makeBody(rv)
     res$finish()
@@ -830,9 +818,11 @@ gps_for_tag_project = function(env) {
         return(res$finish())
     }
 
-    ## pull out appropriate gps records
-    ## grab runs in the given batch for tags in the given project,
-    ## pull out gps fixes for those runs, and remove duplicates
+    ## pull out appropriate gps records we look for the first and last
+    ## tag detection for the project in this batch to get the maximal
+    ## timestamp for that project in the batch, add a 1-hour buffer to
+    ## each end, then pull out gps fixes for that period, further
+    ## limited by minimum timestamp
 
     query = sprintf("
 select
@@ -844,27 +834,36 @@ select
     t1.alt
 from
    gps as t1
-   join (
-      select
-         min(t3.tsBegin) as tsBegin,
-         max(t3.tsEnd) as tsEnd
+   join
+      (select
+         min(t3.ts) as tsBegin,
+         max(t3.ts) as tsEnd
       from
-         batchRuns as t2
-         join runs as t3 on t3.runID = t2.runID
-      where
-         t2.batchID = %d
-         and t3.tagDepProjectID = %d
+         (select t2.ts from
+            hits as t2
+         join
+            (select
+                min(t5.hitID) as hitIDlo,
+                max(t5.hitID) as hitIDhi
+             from
+                hits as t5
+             where
+                t5.tagDepProjectID = %d
+                and t5.batchID = %d
+             ) as t6
+          on t2.hitID in (hitIDlo, hitIDhi)
+          ) as t3
     ) as t4
 where
    t1.batchID = %d
-   and t1.ts > %f
+   and t1.ts > %16.4f
    and t1.ts >= t4.tsBegin - 3600
    and t1.ts <= t4.tsEnd + 3600
 order by
    t1.ts
 limit %d
 ",
-batchID, auth$projectID, batchID, ts, MAX_ROWS_PER_REQUEST)
+auth$projectID, batchID, batchID, ts, MAX_ROWS_PER_REQUEST)
     rv = MotusDB(query)
     res$body = makeBody(rv)
     res$finish()
@@ -1316,9 +1315,11 @@ order by
 #' \item numRuns
 #' \item numHits
 #' \item numGPS
+#' \item numBytes
 #' }
-
-### FIXME #### size_of_update*
+#' @details the value of numHits and so numBytes is an overestimate, because
+#' it counts the full length of each run, rather than just of those hits
+#' added by new batches to existing runs.
 
 size_of_update_for_tag_project = function(env) {
 

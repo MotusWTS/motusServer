@@ -39,6 +39,16 @@ CREATE TABLE IF NOT EXISTS batches (
 CREATE INDEX IF NOT EXISTS batches_tsMotus on batches(tsMotus);--
 CREATE INDEX IF NOT EXISTS batches_recvDepProjectID ON batches(recvDepProjectID);--
 
+-- A table to speed queries about which new batches are relevant to a given project.
+-- This table has a record for each pair (projectID, batchID) where the latter has
+-- a detection of a tag from the former.
+
+CREATE TABLE IF NOT EXISTS projBatch (
+       tagDepProjectID SMALLINT NOT NULL,
+       batchID INTEGER NOT NULL,
+       PRIMARY KEY(tagDepProjectID, batchID)
+);--
+
 -- GPS fixes are recorded separately from tag detections.
 
 CREATE TABLE IF NOT EXISTS gps (
@@ -50,7 +60,6 @@ CREATE TABLE IF NOT EXISTS gps (
     alt     FLOAT(24),                           -- altitude, metres
     PRIMARY KEY (batchID, ts)
 );--
-
 
 -- A run is a sequence of detections of a single tag by a single
 -- antenna of a single receiver.  A run can start in one batch and
@@ -87,11 +96,15 @@ CREATE INDEX IF NOT EXISTS runs_tagDepProjectID ON runs(tagDepProjectID);--
 CREATE TABLE IF NOT EXISTS batchRuns (
     batchID INT NOT NULL REFERENCES batches,  -- batch ID
     runID BIGINT NOT NULL REFERENCES runs,    -- run ID
+    tagDepProjectID SMALLINT,                 -- projectID that deployed tag for this run;
+                                              -- (redundant since runs table has same info, but
+                                              -- greatly speeds up queries used by `dataServer`
     PRIMARY KEY (batchID, runID)              -- only one update per run per batch
 );--
 
 CREATE INDEX IF NOT EXISTS batchRuns_batchID ON batchRuns(batchID);--
 CREATE INDEX IF NOT EXISTS batchRuns_runID ON batchRuns(runID);--
+CREATE INDEX IF NOT EXISTS batchRuns_tagDepProjectID_batchID_runID on batchRuns(tagDepProjectID, batchID, runID);--
 
 -- Hits are detections of tags.  They are grouped in two ways:
 -- by runs (consecutive detections of a single tag by a single antenna)
@@ -115,13 +128,17 @@ CREATE TABLE IF NOT EXISTS hits (
                                                       -- e.g. Lotek)
     slop FLOAT(24),                                   -- discrepancy of pulse timing, in msec (NULL okay
                                                       -- e.g. Lotek)
-    burstSlop FLOAT (24)                              -- discrepancy of burst timing, in msec (NULL okay
+    burstSlop FLOAT (24),                             -- discrepancy of burst timing, in msec (NULL okay
                                                       -- e.g. Lotek)
+    tagDepProjectID SMALLINT                          -- projectID that deployed tag this is a hit for
+                                                      -- (redundant; same info is in matching record in runs
+                                                      -- table, but allows for much faster queries by `dataServer`
 );--
 
 CREATE INDEX IF NOT EXISTS hits_batchID ON hits(batchID);--
 CREATE INDEX IF NOT EXISTS hits_runID ON hits(runID);--
 CREATE INDEX IF NOT EXISTS hits_ts on hits(ts);--
+CREATE INDEX IF NOT EXISTS hits_tagDepProjectID_batchID_hitID ON hits(tagDepProjectID, batchID, hitID);
 
 -- Table tagAmbig records sets of physically identical tags which have
 -- overlapping deployment periods.  When the motusTagID field in a row
