@@ -134,6 +134,10 @@ pushToMotus = function(src) {
     for (i in seq_len(nrow(newBatches))) {
 
         b = newBatches[i,]
+        txBatchID = txBatches$batchID[i]
+
+        ## accumulate unique tag project IDs:
+        tagDepProjIDs = c()
 
         ## ----------  copy new runs  ----------
 
@@ -174,11 +178,8 @@ order by
                 if (nrow(runs) == 0)
                     break
                 runs$runID        = runs$runID        + offsetRunID
-                runs$batchIDbegin = runs$batchIDbegin + offsetBatchID
+                runs$batchIDbegin = txBatchID
                 dbWriteTable(mtcon, "runs", runs, append=TRUE, row.names=FALSE)
-                ## rename batchIDbegin column so we can use it as batchID in batchRuns table
-                names(runs)[grep("batchIDbegin", names(runs))] = "batchID"
-                dbWriteTable(mtcon, "batchRuns", runs[, c("batchID", "runID")], append=TRUE, row.names=FALSE)
 
                 ## Set the tagDepProjectID for each run; it will be
                 ## the project ID of the latest deployment of that tag
@@ -189,9 +190,41 @@ order by
                 ## started slightly before the nominal deployment time
                 ## (see https://github.com/jbrzusto/find_tags/issues/41 )
 
-                MotusDB("update runs as t1 set t1.tagDepProjectID = (select t2.projectID from tagDeps as t2 where t2.motusTagID=t1.motusTagID and t2.tsStart - 1200 <= t1.tsBegin order by t2.tsStart desc limit 1) where t1.runID between %d and %d",
-                        runs$runID[1],
-                        tail(runs$runID, 1))
+                MotusDB("
+update
+   runs as t1
+set
+   t1.tagDepProjectID = (
+      select
+         t2.projectID
+      from
+         tagDeps as t2
+      where
+         t2.motusTagID=t1.motusTagID
+         and t2.tsStart - 1200 <= t1.tsBegin
+      order by
+         t2.tsStart desc
+      limit 1)
+where
+   t1.runID between %d and %d
+",
+runs$runID[1], tail(runs$runID, 1))
+
+            ## append these runs to the batchRuns table
+                MotusDB("
+insert
+   into batchRuns (
+      select
+         batchIDbegin as batchID,
+         runID,
+         tagDepProjectID
+      from
+         runs
+      where
+         runID between %d and %d
+   )
+",
+runs$runID[1], tail(runs$runID, 1))
 
             }
             dbClearResult(res)
@@ -200,7 +233,7 @@ order by
         ## ----------  update existing runs that overlap this batch  ----------
 
         ## For runs which began before this batch and which were processed
-        ## during this batch, update their length and tsEnd fields
+        ## during this batch, update their length, tsEnd, and done fields
 
         res = dbSendQuery(con, sprintf("
 select
@@ -219,12 +252,48 @@ order by t1.runID
                 break
 
             runUpd$runID        = runUpd$runID        + runUpd$offsetRunID    ## offsetRunID depends on batchID via the join above
-            runUpd$batchIDbegin = runUpd$batchIDbegin + runUpd$offsetBatchID  ## offsetBatchID depends on batchID via the join above
-            dbInsertOrReplace(mtcon, "runs", runUpd[, c("runID", "batchIDbegin", "tsBegin", "tsEnd", "done", "motusTagID", "ant", "len")])
 
-            ## add records to batchRuns table
-            runUpd$batchID = b$batchID + offsetBatchID  ## current batch ID
-            dbWriteTable(mtcon, "batchRuns", runUpd[, c("batchID", "runID")], append=TRUE, row.names=FALSE)
+            ## create a temporary table from which to update using an update with join
+            MotusDB("
+create temporary table if not exists
+   tempRunUpdates (
+      runID bigint(20) primary key,
+      tsEnd double,
+      len int(11),
+      done tinyint(4)
+")
+            MotusDB("truncate table tempRunUpdates")
+
+            ## add updated portions of records to the temporary table)
+            dbWriteTable(mtcon, "tempRunUpdates", runUpd[, c("runID", "tsEnd", "len", "done")], append=TRUE, row.names=FALSE)
+
+            ## update the runs table via a join with tempRunUpdates
+            MotusDB("
+update
+   tempRunUpdates as t1
+   join runs as t2 on t2.runID = t1.runID
+set
+   t2.tsEnd = t1.tsEnd,
+   t2.len   = t1.len,
+   t2.done  = t1.done
+")
+
+            ## add records to batchRuns table; unlike the case of new runs, the runIDs for this
+            ## set are not necessarily consecutive, so we have to explicitly supply them.
+            MotusDB("
+insert
+   into batchRuns (
+      select
+         %d as batchID,
+         runID,
+         tagDepProjectID
+      from
+         runs
+      where
+         runID in (%s)
+   )
+",
+txBatchID, paste(runUpd$runID, collapse=","))
         }
         dbClearResult(res)
 
@@ -248,6 +317,18 @@ order by t1.runID
                 hits$runID   = hits$runID   + offsetRunID
                 hits$batchID = hits$batchID + offsetBatchID
                 dbWriteTable(mtcon, "hits", hits, append=TRUE, row.names=FALSE)
+
+                ## copy the helper field tagDepProjectID from the value for the associated run
+                MotusDB("
+update
+   hits as t1
+join
+   runs as t2 on t2.runID=t1.runID
+set
+   t1.tagDepProjectID = t2.tagDepProjectID
+where
+   t1.hitID between %.0f and %.0f
+", hits$hitID[1], tail(hits$hitID, 1))
             }
             dbClearResult(res)
         }
@@ -279,6 +360,34 @@ order by t1.runID
         if (nrow(pcs) > 0)
             dbWriteTable(mtcon, "pulseCounts", pcs, append=TRUE, row.names=FALSE)
 
+        ## --------- update projBatch helper table -----
+
+        ## Note: we do this as a nested query so that the inner one
+        ## can take advantage of a covering index on the batchRuns
+        ## table.  i.e. if instead we used the flat query `select %d
+        ## as batchID, distinct (tagDepProjectID) from batchRuns where
+        ## batchID=%d` then mariadb, apparently not smart enough to
+        ## grab the distinct values of tagDepProjectID from the index,
+        ## would instead scan a portion of the batchRuns table, which
+        ## can be very large (e.g. 6.9M runs for batch 68902)
+
+        MotusDB("
+insert
+   into projBatch (
+      select
+         tagDepProjectID,
+         %d as batchID
+      from
+         (
+            select
+               distinct tagDepProjectID
+            from
+               batchRuns
+            where
+               batchID = %d
+         ) as t
+   )
+", txBatchID, txBatchID)
         ## Mark what has been transferred
 
         sql("insert into motusTX (batchID, tsMotus, offsetBatchID, offsetRunID, offsetHitID) \
