@@ -9,5 +9,6 @@ all: modelLotekTagLifeSpan.pdf modelLotekTagLifeSpan.rda tags_view_graph.pdf dat
 %.pdf %.rda: %.Rmd
 	Rscript -e "library(rmarkdown);render(commandArgs(TRUE)[1])" $<
 
-%.pdf: %.dot
+%.pdf %.svg: %.dot
 	dot -Tpdf $< -o $@
+	dot -Tsvg $< -o $(subst pdf,svg,$@)
