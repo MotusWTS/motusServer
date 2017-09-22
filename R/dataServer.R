@@ -6,18 +6,24 @@
 #' @param tracing logical; if TRUE, run interactively, allowing local user
 #' to enter commands.
 #'
+#' @param maxRows integer; the maximum number of rows to return for any query.
+#' Default: 10000
+#'
 #' @return does not return; meant to be run as a server.
 #'
 #' @export
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-dataServer = function(port=0xda7a, tracing=FALSE) {
+dataServer = function(port=0xda7a, tracing=FALSE, maxRows=10000) {
 
     library(Rook)
     library(hwriter)
     library(RCurl)
     library(jsonlite)
+
+    ## save maxRows in a global variable so methods can obtain it
+    MAX_ROWS_PER_REQUEST <<- maxRows
 
     ## make sure the server database exists, is open, and put a safeSQL object in the global ServerDB
     ensureServerDB()
@@ -80,7 +86,8 @@ dataServer = function(port=0xda7a, tracing=FALSE) {
 
 ## a string giving the list of apps for this server
 
-allDataApps = c("authenticate_user",
+allDataApps = c("api_info",
+                "authenticate_user",
                 "deviceID_for_receiver",
                 "receivers_for_project",
                 "batches_for_tag_project",
@@ -100,6 +107,31 @@ allDataApps = c("authenticate_user",
                 ## from the internet at large
                 "_shutdown"
                 )
+
+#' return information about the api
+#'
+#' @return a list with these items:
+#'    \itemize{
+#'       \item maxRows; integer maximum number of rows returned by other API calls
+#'    }
+
+api_info = function(env) {
+
+    json = fromJSON(parent.frame()$postBody["json"])
+    res = Rook::Response$new()
+
+    if (tracing)
+        browser()
+
+    sendHeader(res)
+
+    rv = list(
+        maxRows = MAX_ROWS_PER_REQUEST
+    )
+
+    res$body = makeBody(rv)
+    res$finish()
+}
 
 #' authenticate_user return a list of projects and receivers the user is authorized to receive data for
 #'
@@ -419,7 +451,6 @@ where
 
 batches_for_tag_project = function(env) {
 
-    MAX_ROWS_PER_REQUEST = 10000
     json = fromJSON(parent.frame()$postBody["json"])
     res = Rook::Response$new()
 
@@ -477,7 +508,6 @@ auth$projectID, batchID, MAX_ROWS_PER_REQUEST)
 
 batches_for_receiver = function(env) {
 
-    MAX_ROWS_PER_REQUEST = 10000
     json = fromJSON(parent.frame()$postBody["json"])
     res = Rook::Response$new()
 
@@ -543,7 +573,6 @@ batchID, deviceID, paste(auth$projects, collapse=","), MAX_ROWS_PER_REQUEST)
 
 runs_for_tag_project = function(env) {
 
-    MAX_ROWS_PER_REQUEST = 10000
     json = fromJSON(parent.frame()$postBody["json"])
     res = Rook::Response$new()
 
@@ -603,7 +632,6 @@ auth$projectID, batchID, runID, auth$projectID, MAX_ROWS_PER_REQUEST)
 
 runs_for_receiver = function(env) {
 
-    MAX_ROWS_PER_REQUEST = 10000
     json = fromJSON(parent.frame()$postBody["json"])
     res = Rook::Response$new()
 
@@ -664,7 +692,6 @@ runID, batchID, paste(auth$projects, collapse=","), MAX_ROWS_PER_REQUEST)
 
 hits_for_tag_project = function(env) {
 
-    MAX_ROWS_PER_REQUEST = 10000
     json = fromJSON(parent.frame()$postBody["json"])
     res = Rook::Response$new()
 
@@ -725,7 +752,6 @@ auth$projectID, batchID, hitID, MAX_ROWS_PER_REQUEST)
 
 hits_for_receiver = function(env) {
 
-    MAX_ROWS_PER_REQUEST = 10000
     json = fromJSON(parent.frame()$postBody["json"])
     res = Rook::Response$new()
 
@@ -797,7 +823,6 @@ hitID, batchID, paste(auth$projects, collapse=","), MAX_ROWS_PER_REQUEST)
 
 gps_for_tag_project = function(env) {
 
-    MAX_ROWS_PER_REQUEST = 10000
     json = fromJSON(parent.frame()$postBody["json"])
     res = Rook::Response$new()
 
@@ -878,7 +903,6 @@ auth$projectID, batchID, batchID, ts, MAX_ROWS_PER_REQUEST)
 
 gps_for_receiver = function(env) {
 
-    MAX_ROWS_PER_REQUEST = 10000
     json = fromJSON(parent.frame()$postBody["json"])
     res = Rook::Response$new()
 
