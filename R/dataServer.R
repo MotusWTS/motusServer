@@ -117,7 +117,6 @@ allDataApps = c("api_info",
 
 api_info = function(env) {
 
-    json = fromJSON(parent.frame()$postBody["json"])
     res = Rook::Response$new()
 
     if (tracing)
