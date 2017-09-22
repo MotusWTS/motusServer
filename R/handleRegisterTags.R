@@ -133,6 +133,9 @@ handleRegisterTags = function(j) {
     codeSet = "Lotek4"
     if (! is.null(meta$codeSet)) {
         codeSet = switch( meta$codeSet,
+                         "2003" = "Lotek4",
+                         "Lotek-2003" = "Lotek4",
+                         "Lotek 2003" = "Lotek4",
                          "4" = "Lotek4",
                          "3" = "Lotek3",
                          "Lotek4" = "Lotek4",
