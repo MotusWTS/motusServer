@@ -18,8 +18,14 @@ a list with these items:
 \item numRuns
 \item numHits
 \item numGPS
+\item numBytes
 }
 }
 \description{
 get count of update items for a tag project
+}
+\details{
+the value of numHits and so numBytes is an overestimate, because
+it counts the full length of each run, rather than just of those hits
+added by new batches to existing runs.
 }
