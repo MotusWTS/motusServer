@@ -61,7 +61,7 @@ dataServer = function(port=0xda7a, tracing=FALSE, maxRows=10000) {
     ## get user auth database
 
     AuthDB <<- safeSQL(file.path(MOTUS_PATH$USERAUTH, "data_user_auth.sqlite"))
-    AuthDB("create table if not exists auth (token TEXT UNIQUE PRIMARY KEY, expiry REAL, userID INTEGER, projects TEXT, receivers TEXT)")
+    AuthDB("create table if not exists auth (token TEXT UNIQUE PRIMARY KEY, expiry REAL, userID INTEGER, projects TEXT, receivers TEXT, userType TEXT)")
     AuthDB("create index if not exists auth_expiry on auth (expiry)")
 
     ## start time for processing each request that passes through
@@ -92,6 +92,7 @@ allDataApps = c("api_info",
                 "receivers_for_project",
                 "batches_for_tag_project",
                 "batches_for_receiver",
+                "batches_for_all",
                 "runs_for_tag_project",
                 "runs_for_receiver",
                 "hits_for_tag_project",
@@ -190,17 +191,19 @@ authenticate_user = function(env) {
                 authToken = unclass(RCurl::base64(readBin("/dev/urandom", raw(), n=ceiling(OPT_TOKEN_BITS / 8)))),
                 expiry = as.numeric(Sys.time()) + OPT_AUTH_LIFE,
                 userID = resp$userID,
-                projects = resp$projects,
-                receivers = NULL
+                projects = paste(names(resp$projects), collapse=","),
+                receivers = NULL,
+                userType = resp$userType
             )
 
             ## add the auth info to the database for lookup by token
             ## we're using replace into to cover the 0-probability case where token has been used before.
-            AuthDB("replace into auth (token, expiry, userID, projects) values (:token, :expiry, :userID, :projects)",
+            AuthDB("replace into auth (token, expiry, userID, projects, userType) values (:token, :expiry, :userID, :projects, :userType)",
                    token = rv$authToken,
                    expiry = rv$expiry,
                    userID = rv$userID,
-                   projects = rv$projects %>% toJSON (auto_unbox=TRUE) %>% unclass
+                   projects = rv$projects,
+                   userType = resp$userType
                    )
             ## delete any expired tokens for user, while we're here.
             AuthDB("delete from auth where expiry < :now and userID = :userID",
@@ -228,6 +231,9 @@ authenticate_user = function(env) {
 #' @param needProjectID logical; if TRUE, a projectID to which the user
 #' has permission must be in \code{json}; default:  TRUE
 #'
+#' @param needAdmin logical; if TRUE, the user must have userType="administrator"
+#' in order to use the entry point; default:  FALSE
+#'
 #' @return if \code{authToken} represents a valid unexpired token, and needProjectID is FALSE or projectID is
 #' a project for which the user is authorized, returns
 #' a list with these items:
@@ -239,7 +245,7 @@ authenticate_user = function(env) {
 #' Otherwise, send a JSON-formatted reply with the single item "error": "authorization failed"
 #' and return NULL.
 
-validate_request = function(json, res, needProjectID=TRUE) {
+validate_request = function(json, res, needProjectID=TRUE, needAdmin=FALSE) {
 
     ts_req <<- as.numeric(Sys.time())
 
@@ -250,34 +256,36 @@ validate_request = function(json, res, needProjectID=TRUE) {
     authToken = (json$authToken %>% as.character)[1]
     projectID = (json$projectID %>% as.integer)[1]
     now = as.numeric(Sys.time())
-    rv = AuthDB("
+    auth = AuthDB("
 select
    userID,
-   (select
-      group_concat(key, ',')
-    from
-      json_each(projects)
-   ) as projects,
-   expiry
+   projects,
+   expiry,
+   userType
 from
    auth
 where
    token=:token",
 token = authToken)
-    if (! isTRUE(nrow(rv) > 0)) {
+    if (! isTRUE(nrow(auth) > 0)) {
         ## authToken invalid
         okay = FALSE
         msg = "token invalid"
-    } else if (all(rv$expiry < now)) {
+    } else if (all(auth$expiry < now)) {
         ## authToken expired
         okay = FALSE
         msg = "token expired"
     } else  {
-        rv = list(userID=rv$userID, projects = scan(text=rv$projects, sep=",", quiet=TRUE), projectID=projectID)
+        rv = list(userID=auth$userID, projects = scan(text=auth$projects, sep=",", quiet=TRUE), projectID=projectID)
         if (needProjectID && ! isTRUE(length(projectID) == 1 && projectID %in% rv$projects)) {
             ## user not authorized for project
             okay = FALSE
             msg = "not authorized for project"
+        }
+        if (needAdmin && ! isTRUE(auth$userType == "administrator")) {
+            ## user not authorized for call
+            okay = FALSE
+            msg = "not authorized for this API call"
         }
     }
     if (! okay) {
@@ -557,6 +565,58 @@ order by
 limit %d
 ",
 batchID, deviceID, paste(auth$projects, collapse=","), MAX_ROWS_PER_REQUEST)
+    rv = MotusDB(query)
+    res$body = makeBody(rv)
+    res$finish()
+}
+
+#' get batches for any receiver
+#'
+#' @param batchID integer batch ID of largest batch already obtained
+#'
+#' @return a data frame with the same schema as the batches table, but JSON-encoded as a list of columns
+
+batches_for_all = function(env) {
+
+    json = fromJSON(parent.frame()$postBody["json"])
+    res = Rook::Response$new()
+
+    if (tracing)
+        browser()
+
+    auth = validate_request(json, res, needProjectID = FALSE, needAdmin = TRUE)
+    if (is.null(auth))
+        return(res$finish())
+
+    sendHeader(res)
+
+    batchID = (json$batchID %>% as.integer)[1]
+    if (!isTRUE(is.finite(batchID)))
+        batchID = 0
+
+    ## select batches larger than the one specified
+
+    query = sprintf("
+select
+   batchID,
+   motusDeviceID,
+   monoBN,
+   tsStart,
+   tsEnd,
+   numHits,
+   ts,
+   motusUserID,
+   motusProjectID,
+   motusJobID
+from
+   batches
+where
+   batchID > %d
+order by
+   batchID
+limit %d
+",
+batchID, MAX_ROWS_PER_REQUEST)
     rv = MotusDB(query)
     res$body = makeBody(rv)
     res$finish()

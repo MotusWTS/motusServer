@@ -4,7 +4,7 @@
 \alias{validate_request}
 \title{validate a request by looking up its token, failing gracefully}
 \usage{
-validate_request(json, res, needProjectID = TRUE)
+validate_request(json, res, needProjectID = TRUE, needAdmin = FALSE)
 }
 \arguments{
 \item{json}{named list with at least these items:
@@ -17,6 +17,9 @@ validate_request(json, res, needProjectID = TRUE)
 
 \item{needProjectID}{logical; if TRUE, a projectID to which the user
 has permission must be in \code{json}; default:  TRUE}
+
+\item{needAdmin}{logical; if TRUE, the user must have userType="administrator"
+in order to use the entry point; default:  FALSE}
 }
 \value{
 if \code{authToken} represents a valid unexpired token, and needProjectID is FALSE or projectID is
