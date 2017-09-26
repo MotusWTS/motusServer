@@ -64,11 +64,6 @@ dataServer = function(port=0xda7a, tracing=FALSE, maxRows=10000) {
     AuthDB("create table if not exists auth (token TEXT UNIQUE PRIMARY KEY, expiry REAL, userID INTEGER, projects TEXT, receivers TEXT, userType TEXT)")
     AuthDB("create index if not exists auth_expiry on auth (expiry)")
 
-    ## start time for processing each request that passes through
-    ## validate_request()
-
-    ts_req <<- 0
-
     ## add each function below as an app
 
     for (f in allDataApps)
@@ -160,15 +155,14 @@ authenticate_user = function(env) {
     if (tracing)
         browser()
 
-    ts_req <<- as.numeric(Sys.time())
-
     res = Rook::Response$new()
     rv = NULL
     sendHeader(res)
 
     tryCatch({
         json = parent.frame()$postBody["json"]
-        cat(format(Sys.time(), "%Y-%m-%dT%H-%M-%S"), ": authenticate_user: ", json, '\n', sep="", file=stderr())
+        ## for debugging only; log username and password
+        ## cat(format(Sys.time(), "%Y-%m-%dT%H-%M-%S"), ": authenticate_user: ", json, '\n', sep="", file=stderr())
         json = fromJSON(json)
     }, error = function(e) {
         rv <<- list(error="request is missing a json field or it has invalid JSON")
@@ -247,8 +241,6 @@ authenticate_user = function(env) {
 
 validate_request = function(json, res, needProjectID=TRUE, needAdmin=FALSE) {
 
-    ts_req <<- as.numeric(Sys.time())
-
     okay = TRUE
 
     openMotusDB() ## ensure connection is still valid after a possibly long time between requests
@@ -310,7 +302,6 @@ token = authToken)
 #' @return a raw vector
 
 makeBody = function(x) {
-    cat("Request time: ", as.numeric(Sys.time()) - ts_req, "\n", file=stderr())
     memCompress(toJSON(x, auto_unbox=TRUE, dataframe="columns"), "bzip2")
 }
 
