@@ -57,7 +57,7 @@
 
 repackageRecoveredSGdata = function(filename, serno, bootnum=1000, path=getwd(), submit=FALSE) {
 
-    chunkSize = 10000
+    chunkSize = 100000
     outf = NULL
     lastdate = ""
     i = chunkSize + 1
@@ -72,57 +72,44 @@ repackageRecoveredSGdata = function(filename, serno, bootnum=1000, path=getwd(),
 
     f = file(filename, "r")
 
+    nowdate = format(Sys.time(), "%Y-%m-%dT%H")
+
     while (TRUE) {
-        ## process one line at a time, but do reading and splitting in chunks
-        if (i > chunkSize) {
-            x = readLines(f, n=chunkSize)
-            if (length(x) == 0)
-                break
-            parts = strsplit(x, ",", fixed=TRUE)
-            ## grab timestamps
-            ts = structure(as.numeric(sapply(parts, function(x) x[2])), class=c("POSIXt", "POSIXct"))
-            dates = strftime(ts, "%Y-%m-%dT%H")
-            i = 1
-        }
-        ## whole lines are stored in x
-        ## their timestamps are stored in ts
-        ## their formatted dates are stored in dates
-        ## in each case, the current line is indexed by i
-
-        if (length(parts[[i]]) < 3 || is.na(ts[i])) {
-            i = i + 1
+        ## process one chunk at a time
+        x = readLines(f, n=chunkSize)
+        if (length(x) == 0)
+            break
+        parts = strsplit(x, ",", fixed=TRUE)
+        ## grab timestamps to hour precision
+        ts = structure(as.numeric(sapply(parts, function(x) x[2])), class=c("POSIXt", "POSIXct"))
+        dates = strftime(ts, "%Y-%m-%dT%H")
+        keep = sapply(parts, length) >= 3 & ! is.na(ts) & (dates >= "2000-01-01T00" & dates <= nowdate)
+        ts = ts[keep]
+        if (length(ts) == 0)
             next
-        }
+        x = x[keep]
+        dates = dates[keep]
+        ## calculate bootnums each record, bumping it up wherever the timestamp goes backward by at least an hour
+        GPS = grepl("^G", perl=TRUE, x)
+        bootnums = rep(bootnum, length(x))
+        bootnums[! GPS] = bootnum + cumsum(c(FALSE, diff(ts[! GPS]) < -3600))
+        ## bootnum, dates for each GPS record are those for latest non-GPS record preceding it
+        lookup = infimum(which(GPS), c(1, which(! GPS))) ## c(1,...) is in case GPS record comes first
+        bootnums[GPS] = bootnums[lookup]
+        dates[GPS] = dates[lookup]
 
-        ## for non-GPS records
-        if (parts[[i]][1] != "G") {
-            ## check for a time reversal (jump back by at least 1 hour)
-            if (ts[i] < lastts - 3600) {
-                bootnum = bootnum + 1
-                if (!is.null(outf))
-                    close(outf)
-                outf = NULL
-            } else if (dates[i] != lastdate) {
-                ## check for a new date
-                if (!is.null(outf))
-                    close(outf)
-                outf = NULL
-                lastdate = dates[i]
-            }
-            lastts = ts[i]
-        }
-        ## ensure we have an output file
-        if (is.null(outf)) {
-            datedir = file.path(filedir, substring(lastdate, 1, 10))
+        ## write out blocks of records by unique (bootnum, hourly date) value
+        tapply(1:length(dates), sprintf("%6d %s", bootnums, dates), function(i) {
+            datedir = file.path(filedir, substring(dates[i[1]], 1, 10))
             if (! file.exists(datedir))
                 dir.create(datedir)
-            outf = gzfile(file.path(datedir, sprintf(outfTemplate, bootnum, lastdate)), "a")
-            cat ("Doing ", sprintf(outfTemplate, bootnum, lastdate), "\n")
-        }
-        cat(x[i], "\n", file=outf)
-        i = i + 1
+            outf = gzfile(file.path(datedir, sprintf(outfTemplate, bootnums[i[1]], dates[i[1]])), "a")
+            cat ("Doing ", sprintf(outfTemplate, bootnums[i[1]], dates[i[1]]), "\n")
+            cat(paste(x[i], collapse="\n"), "\n", file=outf)
+            close(outf)
+        })
+        bootnum = max(bootnums)
     }
     close(f)
-    close(outf)
     safeSys("cd ", filedir, ";", "zip", "-r",  sprintf("../%s_recovered_files.zip", serno), ".", quote=FALSE)
 }
