@@ -5,7 +5,8 @@
 
 MOTUS_API_ENTRY_POINTS          = "http://motus.org/data/api/entrypoints.jsp"
 MOTUS_API_REGISTER_TAG          = "https://motus.org/api/tag/register"
-MOTUS_API_DEPLOY_TAG            = "https://motus.org/api/tag/deploy"
+## As of 2017-09-28, use the beta server until further notice
+MOTUS_API_DEPLOY_TAG            = "https://beta.motus.org/api/tag/deploy"
 MOTUS_API_USER_VALIDATE         = "https://motus.org/api/user/validate"
 MOTUS_API_REGISTER_PROJECT      = "https://motus.org/data/api/v1.0/registerproject.jsp"
 MOTUS_API_REGISTER_RECEIVER     = "https://motus.org/data/api/v1.0/registersensor.jsp"
