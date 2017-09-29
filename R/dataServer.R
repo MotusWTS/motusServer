@@ -97,6 +97,7 @@ allDataApps = c("api_info",
                 "metadata_for_tags",
                 "metadata_for_receivers",
                 "tags_for_ambiguities",
+                "project_ambiguities_for_tag_project",
                 "size_of_update_for_tag_project",
                 "size_of_update_for_receiver",
                 ## and these administrative (local-use-only) apps, not reverse proxied
@@ -1541,6 +1542,58 @@ batchID, deviceID, paste(auth$projects, collapse=","))
     res$body = makeBody(unclass(rv))
     res$finish()
 }
+
+#' get project ambiguity groups for a given project
+#'
+#' @param projectID integer scalar project ID
+#'
+#' @return a list with these vector items:
+#' \itemize{
+#'    \item ambigProjectID; negative integer project ambiguity ID
+#'    \item projectID1; positive integer motus project ID
+#'    \item projectID2; positive integer motus project ID
+#'    \item projectID3; positive integer motus project ID or null
+#'    \item projectID4; positive integer motus project ID or null
+#'    \item projectID5; positive integer motus project ID or null
+#'    \item projectID6; positive integer motus project ID or null
+#' }
+
+ambiguous_projects_for_tag_project = function(env) {
+
+    json = fromJSON(parent.frame()$postBody["json"])
+    res = Rook::Response$new()
+
+    if (tracing)
+        browser()
+
+    auth = validate_request(json, res)
+    if (is.null(auth))
+        return(res$finish())
+
+    sendHeader(res)
+
+    query = sprintf("
+select
+   ambigProjectID,
+   projectID1,
+   projectID2,
+   projectID3,
+   projectID4,
+   projectID5,
+   projectID6
+from
+   projAmbig
+where
+   %d in (projectID1, projectID2, projectID3, projectID4, projectID5, projectID6)
+order by
+   ambigProjectID desc
+", auth$projectID)
+
+    ambig = MotusDB(query)
+    res$body = makeBody(ambig)
+    res$finish()
+}
+
 
 #' shut down this server.  The leading '_', which requires the appname to be
 #' quoted, marks this as an app that won't be exposed to the internet via

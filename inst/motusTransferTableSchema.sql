@@ -268,3 +268,30 @@ CREATE TABLE IF NOT EXISTS batchParams (
     paramVal FLOAT(53) NOT NULL,               -- value of parameter
     PRIMARY KEY (batchID, progName, paramName) -- only one value of a given parameter per program per batch
 );--
+
+-- Table projAmbig records sets of real projects that share an identical
+-- tag with overlapping deployment periods.  When the tagDepProjectID field in a row
+-- of the 'runs' or 'hits' table is negative, it refers to the ambigProjectID field in
+-- this table.  The set of possible projects whose tag might have been detected
+-- is given by the projectIDX fields of the corresponding row in this table joined like so.
+--
+-- e.g. the record (-10, 11, 17, null, null, null, null)
+-- means that if a detection has tagDepProjectID = -10, the detection might be of
+-- a tag in project 11, or of a tag in project 17.
+-- (the motusTagID in this case will also be negative, and a corresponding row in the
+-- tagAmbig table will list which real tags the detection could be).
+-- Depending on which real tag was detected, any of these projects could be the owner
+-- of that detection (i.e. Any of these tags could, given the deployment dates, be the
+-- detected tag.  Users can try to resolve ambiguities using other
+-- context.
+
+CREATE TABLE IF NOT EXISTS tagAmbig (
+    ambigProjectID INTEGER PRIMARY KEY NOT NULL,  -- identifies a set of projects which a tag detection *could* belong to; negative
+    projectID1 INT NOT NULL,              -- projectID of project in set(not null because there have to be at least 2)
+    projectID2 INT,                       -- projectID of project in set
+    projectID3 INT,                       -- projectID of project in set
+    projectID4 INT,                       -- projectID of project in set
+    projectID5 INT,                       -- projectID of project in set
+    projectID6 INT,                       -- projectID of project in set
+    tsMotus FLOAT(53) NOT NULL DEFAULT -1  -- timestamp this record received by motus
+);--
