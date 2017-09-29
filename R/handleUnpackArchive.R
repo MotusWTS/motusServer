@@ -26,7 +26,7 @@ handleUnpackArchive = function(j) {
         cmd = switch(suffix,
                      "zip" = c("unzip", "-o"),       ## N.B.: put args in own strings
                      "7z"  = c("7z", "x", "-y"),
-                     "rar" = c("unrar", "x", "-o+"),
+                     "rar" = c("unar", "-f"),
                      NULL)
     }
 
