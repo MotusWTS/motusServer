@@ -182,11 +182,32 @@ authenticate_user = function(env) {
         tryCatch({
             resp = getForm(motusServer:::MOTUS_API_USER_VALIDATE, json=motusReq, curl=Curl) %>% fromJSON
             ## generate a new authentication token for this user
+
+            ## First, grab a list of ambiguous projects that this user
+            ## gets access to by virtue of having access to real projects involved in them.
+
+            realProjIDs = as.integer(names(resp$projects))
+            realProjIDString = paste(realProjIDs, collapse=",")
+            ambigProjIDs = MotusDB("
+select
+   distinct ambigProjectID
+from
+   projAmbig
+where
+   projectID1 in (%s)
+   or projectID2 in (%s)
+   or projectID3 in (%s)
+   or projectID4 in (%s)
+   or projectID5 in (%s)
+   or projectID6 in (%s)
+", realProjIDString, realProjIDString, realProjIDString, realProjIDString, realProjIDString, realProjIDString, .QUOTE=FALSE
+)[[1]]
+            projectIDs = c(realProjIDs, ambigProjIDs)
             rv = list(
                 authToken = unclass(RCurl::base64(readBin("/dev/urandom", raw(), n=ceiling(OPT_TOKEN_BITS / 8)))),
                 expiry = as.numeric(Sys.time()) + OPT_AUTH_LIFE,
                 userID = resp$userID,
-                projects = paste(names(resp$projects), collapse=","),
+                projects = paste(projectIDs, collapse=","),
                 receivers = NULL,
                 userType = resp$userType
             )
@@ -1329,6 +1350,7 @@ where
 #'    \item motusTagID4; positive integer motus tag ID or null
 #'    \item motusTagID5; positive integer motus tag ID or null
 #'    \item motusTagID6; positive integer motus tag ID or null
+#'    \item ambigProjectID; negative integer ambiguous project ID
 #' }
 
 tags_for_ambiguities = function(env) {
@@ -1365,7 +1387,8 @@ select
    t1.motusTagID3,
    t1.motusTagID4,
    t1.motusTagID5,
-   t1.motusTagID6
+   t1.motusTagID6,
+   t1.ambigProjectID
 from
    tagAmbig as t1
 where
@@ -1558,7 +1581,7 @@ batchID, deviceID, paste(auth$projects, collapse=","))
 #'    \item projectID6; positive integer motus project ID or null
 #' }
 
-ambiguous_projects_for_tag_project = function(env) {
+project_ambiguities_for_tag_project = function(env) {
 
     json = fromJSON(parent.frame()$postBody["json"])
     res = Rook::Response$new()

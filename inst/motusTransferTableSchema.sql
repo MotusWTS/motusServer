@@ -159,6 +159,7 @@ CREATE TABLE IF NOT EXISTS tagAmbig (
     motusTagID4 INT,                       -- motus ID of tag in group.
     motusTagID5 INT,                       -- motus ID of tag in group.
     motusTagID6 INT,                       -- motus ID of tag in group.
+    ambigProjectID INT REFERENCES projAmbig, -- identifier of set of projects that could own this ambiguous tag
     tsMotus FLOAT(53) NOT NULL DEFAULT -1  -- timestamp this record received by motus
 );--
 
@@ -285,9 +286,9 @@ CREATE TABLE IF NOT EXISTS batchParams (
 -- detected tag.  Users can try to resolve ambiguities using other
 -- context.
 
-CREATE TABLE IF NOT EXISTS tagAmbig (
+CREATE TABLE IF NOT EXISTS projAmbig (
     ambigProjectID INTEGER PRIMARY KEY NOT NULL,  -- identifies a set of projects which a tag detection *could* belong to; negative
-    projectID1 INT NOT NULL,              -- projectID of project in set(not null because there have to be at least 2)
+    projectID1 INT NOT NULL,              -- projectID of project in set
     projectID2 INT,                       -- projectID of project in set
     projectID3 INT,                       -- projectID of project in set
     projectID4 INT,                       -- projectID of project in set

@@ -93,11 +93,37 @@ pushToMotus = function(src) {
                                                  motusTagID4 = "motusTagID4",
                                                  motusTagID5 = "motusTagID5",
                                                  motusTagID6 = "motusTagID6",
-                                                 tsMotus     = 0) %>% as.data.frame
+                                                 ambigProjectID = 0,
+                                                 tsMotus     = -1) %>% as.data.frame
             ## write new tag ambiguities
             ## but work around bug in RMySQL
             dbWriteTable(mtcon, "temptagAmbig", newAmbig, overwrite=TRUE, row.names=FALSE)
-            MotusDB("replace into tagAmbig select * from temptagAmbig")
+            MotusDB("
+replace into
+   tagAmbig (
+      ambigID,
+      motusTagID1,
+      motusTagID2,
+      motusTagID3,
+      motusTagID4,
+      motusTagID5,
+      motusTagID6,
+      ambigProjectID,
+      tsMotus
+   )
+   select
+      ambigID,
+      motusTagID1,
+      motusTagID2,
+      motusTagID3,
+      motusTagID4,
+      motusTagID5,
+      motusTagID6,
+      ambigProjectID,
+      tsMotus
+   from
+      temptagAmbig
+")
             MotusDB("drop table temptagAmbig")
         }
 
@@ -261,6 +287,7 @@ create temporary table if not exists
       tsEnd double,
       len int(11),
       done tinyint(4)
+   )
 ")
             MotusDB("truncate table tempRunUpdates")
 
@@ -385,6 +412,7 @@ insert
                batchRuns
             where
                batchID = %d
+               and tagDepProjectID is not null
          ) as t
    )
 ", txBatchID, txBatchID)
