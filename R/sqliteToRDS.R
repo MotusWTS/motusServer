@@ -120,19 +120,19 @@ sqliteToRDS = function(con, query, bind.data=data.frame(x=0L), out, classes = NU
     dbClearResult(res)
 
     ## make sure column names specified in parameter 'classes' exist in result:
-    if (! all(names(classes) %in% col$name))
-        stop("You specified classes for these columns which are not in the result:\n", paste(setdiff(names(classes), col$name), collapse=", "))
+    if (! all(names(classes) %in% col[[1]]))
+        stop("You specified classes for these columns which are not in the result:\n", paste(setdiff(names(classes), col[[1]]), collapse=", "))
 
     n = nrow(col)
 
     ## classes for each column, indexed numerically; NULL
     ## for those where there's none
-    useClass = lapply(col$name, function(n) classes[[n]])
+    useClass = lapply(col[[1]], function(n) classes[[n]])
 
     ## which columns are to be coded as factors?
 
-    fact = which(col$Sclass == "character" & (stringsAsFactors | sapply(seq_len(n), function(x) 'factor' %in% useClass[[x]])))
-    col$Sclass[fact] = "factor"
+    fact = which(col[[2]] == "character" & (stringsAsFactors | sapply(seq_len(n), function(x) 'factor' %in% useClass[[x]])))
+    col[[2]][fact] = "factor"
     for (i in fact)
         useClass[[i]] = unique(c(useClass[[i]], "factor"))
 
@@ -141,11 +141,11 @@ sqliteToRDS = function(con, query, bind.data=data.frame(x=0L), out, classes = NU
 
     ## get levels for each of these columns; we wrap the original query in a select distinct
     for (f in fact)
-        colLevels[[f]] = dbGetPreparedQuery(con, paste0("select distinct ", col$name[f], " from (", query, ")"), bind.data)[[1]]
+        colLevels[[f]] = dbGetPreparedQuery(con, paste0("select distinct ", col[[1]][f], " from (", query, ")"), bind.data)[[1]]
 
     ## which columns are to be exported as logical?
-    logi = which(col$Sclass == "integer" &  sapply(seq_len(n), function(x) 'logical' %in% useClass[[x]]))
-    col$Sclass[logi] = "logical"
+    logi = which(col[[2]] == "integer" &  sapply(seq_len(n), function(x) 'logical' %in% useClass[[x]]))
+    col[[2]][logi] = "logical"
 
     ## open temporary files for each column, and file prefix and suffix
     colFiles = tempfile(tmpdir=MOTUS_PATH$TMP, fileext=rep(".bin", n+2))
@@ -163,7 +163,7 @@ sqliteToRDS = function(con, query, bind.data=data.frame(x=0L), out, classes = NU
     hasAttr = logical(n)
 
     for (i in seq_len(n)) {
-        type = colTypeMap[col$Sclass[i]]
+        type = colTypeMap[col[[2]][i]]
         ## add Object and Attribute flags to columns which are factors,
         ## or which have class values other than "logical"
         if (i %in% fact || (!is.null(useClass[[i]]) & ! identical(useClass[[i]], "logical"))) {
@@ -186,7 +186,7 @@ sqliteToRDS = function(con, query, bind.data=data.frame(x=0L), out, classes = NU
         nr = nr + nrow(block)
         resRow = block[1,] ## save a row for later
         for (i in seq_len(n)) {
-            switch(col$Sclass[i],
+            switch(col[[2]][i],
                    factor = {
                        ## write a plain integer vector
                        writeBin(match(block[[i]], colLevels[[i]]), colCon[[i]], endian="little")
