@@ -29,7 +29,10 @@
 // in the file /etc/apache2/mods-available/auth_tkt.conf replacing
 // ... with the value of $SECRET_KEY below.
 //
-$SECRET_KEY = 'PYZDVyZ4cm+cPWMIFSEwxUJ8ZdWNMAHzmAZqECzioY+atLuPDJjhGgLprJa/j7MMErRtGtsEbO++oTBNO6VssA';
+$SECRET_KEY = file_get_contents("/etc/apache2/sites-available/000-default-le-ssl.conf");
+$SECRET_KEY = preg_replace('/(?s).*TKTAuthSecret "/', '', $SECRET_KEY);
+$SECRET_KEY = preg_replace('/(?s)".*/', '', $SECRET_KEY);
+
 //
 // URL to which we redirect after a successful login if 'back' isn't specified.
 //
