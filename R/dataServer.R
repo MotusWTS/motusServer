@@ -100,6 +100,7 @@ allDataApps = c("api_info",
                 "project_ambiguities_for_tag_project",
                 "size_of_update_for_tag_project",
                 "size_of_update_for_receiver",
+                "pulse_counts_for_receiver",
                 ## and these administrative (local-use-only) apps, not reverse proxied
                 ## from the internet at large
                 "_shutdown"
@@ -1614,6 +1615,76 @@ order by
 
     ambig = MotusDB(query)
     res$body = makeBody(ambig)
+    res$finish()
+}
+
+#' get pulse counts from a batch
+#'
+#' @param batchID integer batchID
+#' @param ant integer
+#' @param hourBin numeric hourBin of latest pulseCounts already obtained
+#'
+#' The pair (ant, hourBin) is for the latest record already obtained.
+#' For each \code{batchID}, records are returned sorted by
+#' \code{hourBin} within \code{ant}.  For the first call with each \code{batchID},
+#' the caller should specify \code{hourBin=0}, in which case \code{ant} is ignored.
+#'
+#' @return a data frame with the same schema as the pulseCounts table, but
+#'     JSON-encoded as a list of columns
+
+pulse_counts_for_receiver = function(env) {
+
+    json = fromJSON(parent.frame()$postBody["json"])
+    res = Rook::Response$new()
+
+    if (tracing)
+        browser()
+
+    auth = validate_request(json, res, needProjectID=FALSE)
+    if (is.null(auth))
+        return(res$finish())
+
+    sendHeader(res)
+
+    batchID = (json$batchID %>% as.integer)[1]
+    hourBin = (json$hourBin %>% as.numeric)[1]
+    ant = (json$ant %>% as.integer)[1]
+
+    if (!isTRUE(is.finite(batchID) && is.finite(hourBin) && is.finite(ant))) {
+        sendError(res, "invalid parameter(s)")
+        return(res$finish())
+    }
+
+    if (hourBin == 0)
+        ## for first call on this batch, set antenna to a value smaller than
+        ## any real antenna
+        ant = -32767
+
+    ## pull pulse count records provided the batch is for a deployment of the
+    ## receiver by one of the projects the user is authorized for
+
+    query = sprintf("
+select
+    t1.batchID,
+    t1.ant,
+    t1.hourBin,
+    t1.count
+from
+   pulseCounts as t1
+   join batches as t2 on t2.batchID=t1.batchID
+where
+   t2.batchID = %d
+   and t2.recvDepProjectID in (%s)
+   and t1.ant > %d
+   and t1.hourBin > %f
+order by
+   t1.ant,
+   t1.hourBin
+limit %d
+",
+batchID, paste(auth$projects, collapse=","), ant, hourBin, MAX_ROWS_PER_REQUEST)
+    rv = MotusDB(query)
+    res$body = makeBody(rv)
     res$finish()
 }
 
