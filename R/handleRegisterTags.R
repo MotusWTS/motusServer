@@ -219,10 +219,9 @@ handleRegisterTags = function(j) {
                 if (isTRUE(bi.sd <= maxBISD))
                     break
                 ## allow for possibly missed bursts by retrying with successively
-                ## refined estimates of BI; start with the median, as mean
-                ## can easily prevent convergence in the presence of missing bursts.
+                ## refined estimates of BI; start with the minimum
                 if (tries == 0)
-                    meanbi = median(bi)
+                    meanbi = min(bi)
                 tries = tries + 1L
                 bi = bi / round(bi / meanbi)
                 meanbi = mean(bi)
