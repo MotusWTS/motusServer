@@ -306,5 +306,7 @@ getMotusMetaDB = function() {
 
     sql(.CLOSE=TRUE)
     dbDisconnect(s$con)
+    ## update the public plot of tag registrations / deployments
+    plotTagTimeline()
     return (cachedDB)
 }
