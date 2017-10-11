@@ -7,7 +7,7 @@ if [[ "$1" == "-h" ]]; then
 
     cat <<EOF
 
-Usage: runAllMotusServers.sh [-h] [N]
+Usage: runAllMotusServers.sh [-h] [-s] [N]
 
 Run all motus servers by invoking these scripts:
 
@@ -29,9 +29,20 @@ Defaults to N=4.
 
 Specifying -h gives this message.
 
+Specifying -s forces deletion of all entries in the server's symLocks table.
+This should be used at boot time, and only at boot time, to delete stale locks
+from an unclean shutdown (e.g. power outage).
+
+Note:
+
 EOF
     exit 1
 
+fi
+
+if [[ "$1" == "-s" ]]; then
+    sqlite3 /sgm/server.sqlite "delete from symLocks"
+    shift
 fi
 
 N=4
@@ -53,4 +64,4 @@ for i in `seq 1 $N` 101 102; do
 done
 setsid /sgm/bin/runMotusSyncServer.sh &
 
-echo "Started email, upload, status, sync and $N + 2 process servers, one for high-priority jobs."
+echo "Started upload, status, sync and $N + 2 process servers, two for high-priority jobs."
