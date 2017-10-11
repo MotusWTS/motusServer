@@ -50,7 +50,10 @@ handleSyncReceiver = function(j) {
     ## use rsync to grab files into the file repo, and return a list of their names
     ## relative to repoDir; returned as a '\n'-delimited string
     ## we ignore errors, and user whatever list of files is returned
-    rv = safeSys(sprintf("rsync --rsync-path='ionice -c 2 -n 7 nice -n 10 rsync' --size-only --out-format '%%n' -r -e 'sshpass -p bone ssh -oStrictHostKeyChecking=no -p %d' bone@localhost:/media/*/SGdata/* /sgm/file_repo/%s/", port, serno), quote=FALSE, minErrorCode=100, splitOutput=TRUE)
+    ## Note:  we only pull files which include the bare (without "SG-") serial number
+    ## of the receiver.  Otherwise, we might grab files on a card or memory stick which
+    ## had files from other receivers.
+    rv = safeSys(sprintf("rsync --rsync-path='ionice -c 2 -n 7 nice -n 10 rsync' --size-only --out-format '%%n' -r -e 'sshpass -p bone ssh -oStrictHostKeyChecking=no -p %d' --filter='+ **/' --filter='+ **%s**' --filter='- **' bone@localhost:/media/*/SGdata/ /sgm/file_repo/%s/", port, substring(serno, 4), serno), quote=FALSE, minErrorCode=100, splitOutput=TRUE)
 
     ## remove directories, else these will be traversed, leading to double
     ## listings of files
