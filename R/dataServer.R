@@ -115,19 +115,14 @@ allDataApps = c("api_info",
 
 api_info = function(env) {
 
-    res = Rook::Response$new()
-
     if (tracing)
         browser()
 
-    sendHeader(res)
-
-    rv = list(
-        maxRows = MAX_ROWS_PER_REQUEST
+    return_from_app(
+        list(
+            maxRows = MAX_ROWS_PER_REQUEST
+        )
     )
-
-    res$body = makeBody(rv)
-    res$finish()
 }
 
 #' authenticate_user return a list of projects and receivers the user is authorized to receive data for
@@ -157,9 +152,7 @@ authenticate_user = function(env) {
     if (tracing)
         browser()
 
-    res = Rook::Response$new()
     rv = NULL
-    sendHeader(res)
 
     tryCatch({
         json = parent.frame()$postBody["json"]
@@ -231,123 +224,7 @@ where
             rv <<- list(error=paste("query to main motus server failed"))
         })
     }
-    res$body = makeBody(rv)
-    res$finish()
-}
-
-#' validate a request by looking up its token, failing gracefully
-#'
-#' @param json named list with at least these items:
-#' \itemize{
-#' \item authToken authorization token
-#' \item projectID (optional) projectID
-#' }
-#'
-#' @param res the rook result object
-#'
-#' @param needProjectID logical; if TRUE, a projectID to which the user
-#' has permission must be in \code{json}; default:  TRUE
-#'
-#' @param needAdmin logical; if TRUE, the user must have userType="administrator"
-#' in order to use the entry point; default:  FALSE
-#'
-#' @return if \code{authToken} represents a valid unexpired token, and needProjectID is FALSE or projectID is
-#' a project for which the user is authorized, returns
-#' a list with these items:
-#' \itemize{
-#' \item userID integer user ID
-#' \item projects integer vector of *all* project IDs user has permission to
-#' \item projectID the projectID specified in the request (and it is guaranteed the user has permission to this project)
-#' }
-#' Otherwise, send a JSON-formatted reply with the single item "error": "authorization failed"
-#' and return NULL.
-
-validate_request = function(json, res, needProjectID=TRUE, needAdmin=FALSE) {
-
-    okay = TRUE
-
-    openMotusDB() ## ensure connection is still valid after a possibly long time between requests
-
-    authToken = (json$authToken %>% as.character)[1]
-    projectID = (json$projectID %>% as.integer)[1]
-    now = as.numeric(Sys.time())
-    auth = AuthDB("
-select
-   userID,
-   projects,
-   expiry,
-   userType
-from
-   auth
-where
-   token=:token",
-token = authToken)
-    if (! isTRUE(nrow(auth) > 0)) {
-        ## authToken invalid
-        okay = FALSE
-        msg = "token invalid"
-    } else if (all(auth$expiry < now)) {
-        ## authToken expired
-        okay = FALSE
-        msg = "token expired"
-    } else  {
-        rv = list(userID=auth$userID, projects = scan(text=auth$projects, sep=",", quiet=TRUE), projectID=projectID)
-        if (needProjectID && ! isTRUE(length(projectID) == 1 && projectID %in% rv$projects)) {
-            ## user not authorized for project
-            okay = FALSE
-            msg = "not authorized for project"
-        }
-        if (needAdmin && ! isTRUE(auth$userType == "administrator")) {
-            ## user not authorized for call
-            okay = FALSE
-            msg = "not authorized for this API call"
-        }
-    }
-    if (! okay) {
-        sendHeader(res)
-        sendError(res, msg)
-        rv = NULL
-    }
-    return(rv)
-}
-
-#' make the body for a reply
-#' converts a list or data.frame to json using toJSON with options:
-#' \itemize{
-#' \item auto_unbox=TRUE
-#' \item dataframe="columns"
-#' }
-#' then compresses the result
-#' with memCompress and method "bzip2"
-#'
-#' @param x list or data.frame to encode and compress
-#'
-#' @return a raw vector
-
-makeBody = function(x) {
-    memCompress(toJSON(x, auto_unbox=TRUE, dataframe="columns"), "bzip2")
-}
-
-#' send the header for a reply
-#' @param res Rook::Response object
-#' @return no return value
-#'
-#' @details the reply will always be a bzip2-compressed JSON-encoded value.
-#' We also disable caching.
-#'
-sendHeader = function(res) {
-    res$header("Cache-control", "no-cache")
-    res$header("Content-type", "application/json")
-    res$header("Content-Encoding", "bzip2")
-}
-
-#' send an error as the reply
-#' @param res Rook::Response object
-#' @param error character vector with error message(s)
-#' @return no return value
-
-sendError = function(res, error) {
-    res$body = makeBody(list(error=error))
+    return_from_app(rv)
 }
 
 #' get deviceIDs for receiver serial numbers
@@ -363,18 +240,17 @@ sendError = function(res, error) {
 deviceID_for_receiver = function(env) {
 
     json = fromJSON(parent.frame()$postBody["json"])
-    res = Rook::Response$new()
 
     if (tracing)
         browser()
 
-    auth = validate_request(json, res, needProjectID=FALSE)
+    auth = validate_request(json, needProjectID=FALSE)
+    if (inherits(auth, "error")) return(auth)
+
     serno = json$serno %>% as.character
 
-    if (is.null(auth) || length(serno) == 0)
-        return(res$finish())
-
-    sendHeader(res)
+    if (length(serno) == 0)
+        return(error_from_app("invalid parameter(s)"))
 
     ## select deviceIDs for those receivers deployed by projects the user has permissions to
 
@@ -394,9 +270,7 @@ where
 group by t2.serno
 ", paste(auth$projects, collapse=","))
 
-    devIds = MetaDB(query)
-    res$body = makeBody(devIds)
-    res$finish()
+    return_from_app(MetaDB(query))
 }
 
 #' get receivers for a project
@@ -423,16 +297,12 @@ group by t2.serno
 receivers_for_project = function(env) {
 
     json = fromJSON(parent.frame()$postBody["json"])
-    res = Rook::Response$new()
 
     if (tracing)
         browser()
 
-    auth = validate_request(json, res)
-    if (is.null(auth))
-        return(res$finish())
-
-    sendHeader(res)
+    auth = validate_request(json)
+    if (inherits(auth, "error")) return(auth)
 
     ## select all deployments of the receivers from the specified project
 
@@ -458,8 +328,7 @@ where
 ", auth$projectID)
 
     recvDeps = MetaDB(query)
-    res$body = makeBody(recvDeps)
-    res$finish()
+    return_from_app(recvDeps)
 }
 
 
@@ -473,16 +342,11 @@ where
 batches_for_tag_project = function(env) {
 
     json = fromJSON(parent.frame()$postBody["json"])
-    res = Rook::Response$new()
-
     if (tracing)
         browser()
 
-    auth = validate_request(json, res)
-    if (is.null(auth))
-        return(res$finish())
-
-    sendHeader(res)
+    auth = validate_request(json)
+    if (inherits(auth, "error")) return(auth)
 
     batchID = (json$batchID %>% as.integer)[1]
     if (!isTRUE(is.finite(batchID)))
@@ -514,9 +378,7 @@ order by
 limit %d
 ",
 auth$projectID, batchID, MAX_ROWS_PER_REQUEST)
-    rv = MotusDB(query)
-    res$body = makeBody(rv)
-    res$finish()
+    return_from_app(MotusDB(query))
 }
 
 
@@ -530,21 +392,16 @@ auth$projectID, batchID, MAX_ROWS_PER_REQUEST)
 batches_for_receiver = function(env) {
 
     json = fromJSON(parent.frame()$postBody["json"])
-    res = Rook::Response$new()
 
     if (tracing)
         browser()
 
-    auth = validate_request(json, res, needProjectID=FALSE)
-    if (is.null(auth))
-        return(res$finish())
-
-    sendHeader(res)
+    auth = validate_request(json, needProjectID=FALSE)
+    if (inherits(auth, "error")) return(auth)
 
     deviceID = (json$deviceID %>% as.integer)[1]
     if (!isTRUE(is.finite(deviceID))) {
-        sendError(res, "invalid parameter(s)")
-        return(res$finish())
+        return(error_from_app("invalid parameter(s)"))
     }
 
     batchID = (json$batchID %>% as.integer)[1]
@@ -579,9 +436,7 @@ order by
 limit %d
 ",
 batchID, deviceID, paste(auth$projects, collapse=","), MAX_ROWS_PER_REQUEST)
-    rv = MotusDB(query)
-    res$body = makeBody(rv)
-    res$finish()
+    return_from_app(MotusDB(query))
 }
 
 #' get batches for any receiver
@@ -593,16 +448,12 @@ batchID, deviceID, paste(auth$projects, collapse=","), MAX_ROWS_PER_REQUEST)
 batches_for_all = function(env) {
 
     json = fromJSON(parent.frame()$postBody["json"])
-    res = Rook::Response$new()
 
     if (tracing)
         browser()
 
-    auth = validate_request(json, res, needProjectID = FALSE, needAdmin = TRUE)
-    if (is.null(auth))
-        return(res$finish())
-
-    sendHeader(res)
+    auth = validate_request(json, needProjectID = FALSE, needAdmin = TRUE)
+    if (inherits(auth, "error")) return(auth)
 
     batchID = (json$batchID %>% as.integer)[1]
     if (!isTRUE(is.finite(batchID)))
@@ -631,9 +482,7 @@ order by
 limit %d
 ",
 batchID, MAX_ROWS_PER_REQUEST)
-    rv = MotusDB(query)
-    res$body = makeBody(rv)
-    res$finish()
+    return_from_app(MotusDB(query))
 }
 
 #' get runs by tag project from a batch
@@ -647,23 +496,18 @@ batchID, MAX_ROWS_PER_REQUEST)
 runs_for_tag_project = function(env) {
 
     json = fromJSON(parent.frame()$postBody["json"])
-    res = Rook::Response$new()
 
     if (tracing)
         browser()
 
-    auth = validate_request(json, res)
-    if (is.null(auth))
-        return(res$finish())
-
-    sendHeader(res)
+    auth = validate_request(json)
+    if (inherits(auth, "error")) return(auth)
 
     batchID = (json$batchID %>% as.integer)[1]
     runID = (json$runID %>% as.integer)[1]
 
     if (!isTRUE(is.finite(batchID) && is.finite(runID))) {
-        sendError(res, "invalid parameter(s)")
-        return(res$finish())
+        return(error_from_app("invalid parameter(s)"))
     }
 
     ## get all runs of a tag within a deployment of that tag by the
@@ -691,9 +535,7 @@ order by
 limit 10000
 ",
 auth$projectID, batchID, runID, auth$projectID, MAX_ROWS_PER_REQUEST)
-    rv = MotusDB(query)
-    res$body = makeBody(rv)
-    res$finish()
+    return_from_app(MotusDB(query))
 }
 
 #' get all runs from a batch for a receiver
@@ -706,23 +548,18 @@ auth$projectID, batchID, runID, auth$projectID, MAX_ROWS_PER_REQUEST)
 runs_for_receiver = function(env) {
 
     json = fromJSON(parent.frame()$postBody["json"])
-    res = Rook::Response$new()
 
     if (tracing)
         browser()
 
-    auth = validate_request(json, res, needProjectID=FALSE)
-    if (is.null(auth))
-        return(res$finish())
-
-    sendHeader(res)
+    auth = validate_request(json, needProjectID=FALSE)
+    if (inherits(auth, "error")) return(auth)
 
     batchID = (json$batchID %>% as.integer)[1]
     runID = (json$runID %>% as.integer)[1]
 
     if (!isTRUE(is.finite(batchID) && is.finite(runID))) {
-        sendError(res, "invalid parameter(s)")
-        return(res$finish())
+        return(error_from_app("invalid parameter(s)"))
     }
 
     ## pull out appropriate runs
@@ -750,9 +587,7 @@ order by
 limit %d
 ",
 runID, batchID, paste(auth$projects, collapse=","), MAX_ROWS_PER_REQUEST)
-    rv = MotusDB(query)
-    res$body = makeBody(rv)
-    res$finish()
+    return_from_app(MotusDB(query))
 }
 
 #' get hits by tag project from a batch
@@ -766,23 +601,18 @@ runID, batchID, paste(auth$projects, collapse=","), MAX_ROWS_PER_REQUEST)
 hits_for_tag_project = function(env) {
 
     json = fromJSON(parent.frame()$postBody["json"])
-    res = Rook::Response$new()
 
     if (tracing)
         browser()
 
-    auth = validate_request(json, res)
-    if (is.null(auth))
-        return(res$finish())
-
-    sendHeader(res)
+    auth = validate_request(json)
+    if (inherits(auth, "error")) return(auth)
 
     batchID = (json$batchID %>% as.integer)[1]
     hitID = (json$hitID %>% as.integer)[1]
 
     if (!isTRUE(is.finite(batchID) && is.finite(hitID))) {
-        sendError(res, "invalid parameter(s)")
-        return(res$finish())
+        return(error_from_app("invalid parameter(s)"))
     }
 
     ## pull out appropriate hits
@@ -811,9 +641,7 @@ order by
 limit %d
 ",
 auth$projectID, batchID, hitID, MAX_ROWS_PER_REQUEST)
-    rv = MotusDB(query)
-    res$body = makeBody(rv)
-    res$finish()
+    return_from_app(MotusDB(query))
 }
 
 #' get all hits from a batch for a receiver
@@ -826,23 +654,18 @@ auth$projectID, batchID, hitID, MAX_ROWS_PER_REQUEST)
 hits_for_receiver = function(env) {
 
     json = fromJSON(parent.frame()$postBody["json"])
-    res = Rook::Response$new()
 
     if (tracing)
         browser()
 
-    auth = validate_request(json, res, needProjectID=FALSE)
-    if (is.null(auth))
-        return(res$finish())
-
-    sendHeader(res)
+    auth = validate_request(json, needProjectID=FALSE)
+    if (inherits(auth, "error")) return(auth)
 
     batchID = (json$batchID %>% as.integer)[1]
     hitID = (json$hitID %>% as.integer)[1]
 
     if (!isTRUE(is.finite(batchID) && is.finite(hitID))) {
-        sendError(res, "invalid parameter(s)")
-        return(res$finish())
+        return(error_from_app("invalid parameter(s)"))
     }
 
     ## pull out appropriate hits
@@ -872,9 +695,7 @@ order by
 limit %d
 ",
 hitID, batchID, paste(auth$projects, collapse=","), MAX_ROWS_PER_REQUEST)
-    rv = MotusDB(query)
-    res$body = makeBody(rv)
-    res$finish()
+    return_from_app(MotusDB(query))
 }
 
 #' get all GPS fixes from a batch "relevant to" detections of tags
@@ -897,23 +718,18 @@ hitID, batchID, paste(auth$projects, collapse=","), MAX_ROWS_PER_REQUEST)
 gps_for_tag_project = function(env) {
 
     json = fromJSON(parent.frame()$postBody["json"])
-    res = Rook::Response$new()
 
     if (tracing)
         browser()
 
-    auth = validate_request(json, res)
-    if (is.null(auth))
-        return(res$finish())
-
-    sendHeader(res)
+    auth = validate_request(json)
+    if (inherits(auth, "error")) return(auth)
 
     batchID = (json$batchID %>% as.integer)[1]
     ts = (json$ts %>% as.numeric)[1]
 
     if (!isTRUE(is.finite(batchID) && is.finite(ts))) {
-        sendError(res, "invalid parameter(s)")
-        return(res$finish())
+        return(error_from_app("invalid parameter(s)"))
     }
 
     ## pull out appropriate gps records we look for the first and last
@@ -962,9 +778,7 @@ order by
 limit %d
 ",
 auth$projectID, batchID, batchID, ts, MAX_ROWS_PER_REQUEST)
-    rv = MotusDB(query)
-    res$body = makeBody(rv)
-    res$finish()
+    return_from_app(MotusDB(query))
 }
 
 #' get all GPS fixes from a batch
@@ -977,23 +791,18 @@ auth$projectID, batchID, batchID, ts, MAX_ROWS_PER_REQUEST)
 gps_for_receiver = function(env) {
 
     json = fromJSON(parent.frame()$postBody["json"])
-    res = Rook::Response$new()
 
     if (tracing)
         browser()
 
-    auth = validate_request(json, res, needProjectID=FALSE)
-    if (is.null(auth))
-        return(res$finish())
-
-    sendHeader(res)
+    auth = validate_request(json, needProjectID=FALSE)
+    if (inherits(auth, "error")) return(auth)
 
     batchID = (json$batchID %>% as.integer)[1]
     ts = (json$ts %>% as.numeric)[1]
 
     if (!isTRUE(is.finite(batchID) && is.finite(ts))) {
-        sendError(res, "invalid parameter(s)")
-        return(res$finish())
+        return(error_from_app("invalid parameter(s)"))
     }
 
     ## pull gps records provided the batch is for a deployment of the
@@ -1019,9 +828,7 @@ order by
 limit %d
 ",
 batchID, paste(auth$projects, collapse=","), ts, MAX_ROWS_PER_REQUEST)
-    rv = MotusDB(query)
-    res$body = makeBody(rv)
-    res$finish()
+    return_from_app(MotusDB(query))
 }
 
 #' get metadata for tags
@@ -1084,22 +891,17 @@ batchID, paste(auth$projects, collapse=","), ts, MAX_ROWS_PER_REQUEST)
 metadata_for_tags = function(env) {
 
     json = fromJSON(parent.frame()$postBody["json"])
-    res = Rook::Response$new()
 
     if (tracing)
         browser()
 
-    auth = validate_request(json, res, needProjectID=FALSE)
-    if (is.null(auth))
-        return(res$finish())
-
-    sendHeader(res)
+    auth = validate_request(json, needProjectID=FALSE)
+    if (inherits(auth, "error")) return(auth)
 
     motusTagIDs = json$motusTagIDs %>% as.integer
 
     if (!isTRUE(all(is.finite(motusTagIDs)))) {
-        sendError(res, "invalid parameter(s)")
-        return(res$finish())
+        return(error_from_app("invalid parameter(s)"))
     }
 
     ## determine which projects have tag deployments overlapping with public
@@ -1188,8 +990,7 @@ where
 ", paste(speciesIDs, collapse=","))
 
     species = MetaDB(query)
-    res$body = makeBody(list(tags=tags, tagDeps=tagDeps, species=species, projs=projs))
-    res$finish()
+    return_from_app(list(tags=tags, tagDeps=tagDeps, species=species, projs=projs))
 }
 
 #' get metadata for receivers
@@ -1246,22 +1047,17 @@ where
 metadata_for_receivers = function(env) {
 
     json = fromJSON(parent.frame()$postBody["json"])
-    res = Rook::Response$new()
 
     if (tracing)
         browser()
 
-    auth = validate_request(json, res, needProjectID=FALSE)
-    if (is.null(auth))
-        return(res$finish())
-
-    sendHeader(res)
+    auth = validate_request(json, needProjectID=FALSE)
+    if (inherits(auth, "error")) return(auth)
 
     deviceIDs = json$deviceIDs %>% as.integer
 
     if (!isTRUE(all(is.finite(deviceIDs)))) {
-        sendError(res, "invalid parameter(s)")
-        return(res$finish())
+        return(error_from_app("invalid parameter(s)"))
     }
 
     ## determine which projects have receiver deployments overlapping with public
@@ -1334,8 +1130,7 @@ where
 ", paste(projIDs, collapse=","), paste(deviceIDs, collapse=","))
 
     antDeps = MetaDB(query)
-    res$body = makeBody(list(recvDeps=recvDeps, antDeps=antDeps, projs=projs))
-    res$finish()
+    return_from_app(list(recvDeps=recvDeps, antDeps=antDeps, projs=projs))
 }
 
 #' get motus tagIDs for ambiguity IDs
@@ -1357,22 +1152,17 @@ where
 tags_for_ambiguities = function(env) {
 
     json = fromJSON(parent.frame()$postBody["json"])
-    res = Rook::Response$new()
 
     if (tracing)
         browser()
 
-    auth = validate_request(json, res, needProjectID=FALSE)
-    if (is.null(auth))
-        return(res$finish())
-
-    sendHeader(res)
+    auth = validate_request(json, needProjectID=FALSE)
+    if (inherits(auth, "error")) return(auth)
 
     ambigIDs = json$ambigIDs %>% as.integer
 
     if (!isTRUE(all(is.finite(ambigIDs)) && all(ambigIDs < 0)) && length(ambigIDs) > 0) {
-        sendError(res, "invalid parameter(s)")
-        return(res$finish())
+        return(error_from_app("invalid parameter(s)"))
     }
 
     ## to work around invalid syntax of '()', use an invalid ID
@@ -1398,9 +1188,7 @@ order by
    t1.ambigID desc
 ", paste(ambigIDs, collapse=","))
 
-    ambig = MotusDB(query)
-    res$body = makeBody(ambig)
-    res$finish()
+    return_from_app(MotusDB(query))
 }
 
 #' get count of update items for a tag project
@@ -1423,16 +1211,12 @@ order by
 size_of_update_for_tag_project = function(env) {
 
     json = fromJSON(parent.frame()$postBody["json"])
-    res = Rook::Response$new()
 
     if (tracing)
         browser()
 
-    auth = validate_request(json, res)
-    if (is.null(auth))
-        return(res$finish())
-
-    sendHeader(res)
+    auth = validate_request(json)
+    if (inherits(auth, "error")) return(auth)
 
     batchID = json$batchID %>% as.integer
     if (!isTRUE(is.finite(batchID)))
@@ -1483,8 +1267,7 @@ batchID, auth$projectID)
         80 + 100 * numHits +
         50 + 52 * numGPS)
 
-    res$body = makeBody(unclass(rv))
-    res$finish()
+    return_from_app(unclass(rv))
 }
 
 #' get count of update items for a receiver
@@ -1503,20 +1286,17 @@ batchID, auth$projectID)
 size_of_update_for_receiver = function(env) {
 
     json = fromJSON(parent.frame()$postBody["json"])
-    res = Rook::Response$new()
 
     if (tracing)
         browser()
 
-    auth = validate_request(json, res, needProjectID=FALSE)
-    if (is.null(auth))
-        return(res$finish())
-
-    sendHeader(res)
+    auth = validate_request(json, needProjectID=FALSE)
+    if (inherits(auth, "error")) return(auth)
 
     deviceID = json$deviceID %>% as.integer
     if (!isTRUE(is.finite(deviceID)))
-        return(res$finish())
+        return(error_from_app("invalid deviceID"))
+
     batchID = json$batchID %>% as.integer
     if (!isTRUE(is.finite(batchID)))
         batchID = 0
@@ -1563,8 +1343,7 @@ batchID, deviceID, paste(auth$projects, collapse=","))
         80 + 100 * numHits +
         50 + 52 * numGPS)
 
-    res$body = makeBody(unclass(rv))
-    res$finish()
+    return_from_app(unclass(rv))
 }
 
 #' get project ambiguity groups for a given project
@@ -1585,16 +1364,12 @@ batchID, deviceID, paste(auth$projects, collapse=","))
 project_ambiguities_for_tag_project = function(env) {
 
     json = fromJSON(parent.frame()$postBody["json"])
-    res = Rook::Response$new()
 
     if (tracing)
         browser()
 
-    auth = validate_request(json, res)
-    if (is.null(auth))
-        return(res$finish())
-
-    sendHeader(res)
+    auth = validate_request(json)
+    if (inherits(auth, "error")) return(auth)
 
     query = sprintf("
 select
@@ -1613,9 +1388,7 @@ order by
    ambigProjectID desc
 ", auth$projectID)
 
-    ambig = MotusDB(query)
-    res$body = makeBody(ambig)
-    res$finish()
+    return_from_app(MotusDB(query))
 }
 
 #' get pulse counts from a batch
@@ -1635,24 +1408,19 @@ order by
 pulse_counts_for_receiver = function(env) {
 
     json = fromJSON(parent.frame()$postBody["json"])
-    res = Rook::Response$new()
 
     if (tracing)
         browser()
 
-    auth = validate_request(json, res, needProjectID=FALSE)
-    if (is.null(auth))
-        return(res$finish())
-
-    sendHeader(res)
+    auth = validate_request(json, needProjectID=FALSE)
+    if (inherits(auth, "error")) return(auth)
 
     batchID = (json$batchID %>% as.integer)[1]
     hourBin = (json$hourBin %>% as.numeric)[1]
     ant = (json$ant %>% as.integer)[1]
 
     if (!isTRUE(is.finite(batchID) && is.finite(hourBin) && is.finite(ant))) {
-        sendError(res, "invalid parameter(s)")
-        return(res$finish())
+        return(error_from_app("invalid parameter(s)"))
     }
 
     if (hourBin == 0)
@@ -1683,9 +1451,7 @@ order by
 limit %d
 ",
 batchID, paste(auth$projects, collapse=","), ant, hourBin, MAX_ROWS_PER_REQUEST)
-    rv = MotusDB(query)
-    res$body = makeBody(rv)
-    res$finish()
+    return_from_app(MotusDB(query))
 }
 
 
@@ -1694,9 +1460,6 @@ batchID, paste(auth$projects, collapse=","), ant, hourBin, MAX_ROWS_PER_REQUEST)
 #' the apache reverse proxy
 
 `_shutdown` = function(env) {
-    res = Rook::Response$new()
-    sendHeader(res)
-    sendError(res, "data server shutting down")
-    res$finish()
-    q(save="no")
+    on.exit(q(save="no"))
+    error_from_app("data server shutting down")
 }
