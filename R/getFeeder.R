@@ -7,7 +7,9 @@
 #' typically email messages with attached data files or links to
 #' download them, or folders of data files already on the server.
 #'
-#' @param incoming the full path to the incoming folder.
+#' @param incoming the full path to the incoming folder(s).  If this has
+#' more than one element, only the first is watched for new files,
+#' but files initially in all of them are queued.
 #'
 #' @param tracing boolean; if TRUE, each event on the incoming folder
 #' is printed.  Default: FALSE.
@@ -73,7 +75,7 @@
 getFeeder = function(incoming, tracing = FALSE, messages=c("close_write", "moved_to", "create")) {
 
     ## watch the directory
-    evtCon = pipe(paste("inotifywait -q -m", paste("-e", messages, collapse=" "), "--format %e:%f", incoming), "r")
+    evtCon = pipe(paste("inotifywait -q -m", paste("-e", messages, collapse=" "), "--format %e:%f", incoming[1]), "r")
 
     ## grab list of items already there, with full path, sorted by mtime
     old = dirSortedBy(incoming, "mtime")
@@ -95,7 +97,7 @@ getFeeder = function(incoming, tracing = FALSE, messages=c("close_write", "moved
             ## process group which is watching the same directory.
             ## There should only be one of these!
 
-            system(sprintf("pkill -KILL -g %d -f inotifywait.*%s", getPGID(), incoming))
+            system(sprintf("pkill -KILL -g %d -f inotifywait.*%s", getPGID(), incoming[1]))
             close(evtCon)
             evtCon <<- NULL
             return(NULL)

@@ -8,7 +8,9 @@ getFeeder(incoming, tracing = FALSE, messages = c("close_write", "moved_to",
   "create"))
 }
 \arguments{
-\item{incoming}{the full path to the incoming folder.}
+\item{incoming}{the full path to the incoming folder(s).  If this has
+more than one element, only the first is watched for new files,
+but files initially in all of them are queued.}
 
 \item{tracing}{boolean; if TRUE, each event on the incoming folder
 is printed.  Default: FALSE.}

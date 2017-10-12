@@ -51,7 +51,7 @@ processServer = function(N, tracing=FALSE) {
     INQUEUE = if (N > 100) MOTUS_PATH$PRIORITY else MOTUS_PATH$QUEUE0
     ## get a feed of email messages
 
-    feed = getFeeder(INQUEUE, tracing=tracing)
+    feed = getFeeder(c(INQUEUE, MOTUS_PATH[[sprintf("QUEUE%d",N)]]), tracing=tracing)
 
     ## kill off the inotifywait process when we exit this function
     on.exit(feed(TRUE), add=TRUE)
@@ -82,10 +82,14 @@ processServer = function(N, tracing=FALSE) {
             ## queue those subjobs which are not already done
             nsj = queueUnfinishedSubjobs(j)
 
-            ## log this enqueuing in job and globally
-            msg = sprintf("Job %d with %d pending subjobs entered processing queue #%d", j, nsj, N)
-            motusLog(msg)
-            jobLog(j, msg)
+            if (nsj > 0) {
+                ## log this enqueuing in job and globally
+                msg = sprintf("Job %d with %d pending subjobs entered processing queue #%d", j, nsj, N)
+                motusLog(msg)
+                jobLog(j, msg)
+            } else {
+                maybeRetireJob(j)
+            }
             next
 
         } else {
@@ -123,16 +127,7 @@ processServer = function(N, tracing=FALSE) {
                 j$done = -1
             }
         }
-
-        ## If the job is done (even with errors), and there are no related subjobs left in the queue,
-        ## move the topjob to MOTUS_PATH$DONE
-
-        if (! isTRUE(j$done == 0)) {
-                    tj = topJob(j)
-                    if (0 == length(subjobsInQueue(tj))) {
-                        moveJob(tj, MOTUS_PATH$DONE)
-                    }
-        }
+        maybeRetireJob(j)
 
         ## check for a killN file
         if (file.exists(killFile))
@@ -140,4 +135,22 @@ processServer = function(N, tracing=FALSE) {
     }
     motusLog("Process server stopped for queue %d", N)
     quit(save="no")
+}
+
+#' if a job is done and none of its subjobs are left in the queue, then move
+#' it to the 'done' folder
+#'
+#' @param j a job
+#'
+#' @return TRUE if the job is being retired; FALSE otherwise
+
+maybeRetireJob = function(j) {
+    if (! isTRUE(j$done == 0)) {
+        tj = topJob(j)
+        if (0 == length(subjobsInQueue(tj))) {
+            moveJob(tj, MOTUS_PATH$DONE)
+            return(TRUE)
+        }
+    }
+    return(FALSE)
 }
