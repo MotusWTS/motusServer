@@ -21,23 +21,25 @@ connections.}
 a function, S with class "safeSQL" taking two or more
     parameters:
 \itemize{
-\item \code{query} sqlite query; parameters are:
+    \item \code{query} sqlite query with parameter handling indicated by:
     \itemize{
-       \item words beginning with ":" for  RSQLite,
-       \item sprintf-style formatting codes (e.g. "\%d") for
-         MySQL
-     }
-\item \code{...} list of named (RSQLite) or unnamed (MySQL) items
-specifying values for parameters in query.
+       \item words beginning with ":", which does parameter binding for RSQLite,
+       \item \bold{or} sprintf-style formatting codes (e.g. "\%d") which does parameter substitution for RSQLite or MySQL
+    }
+    \item \code{...} list of named (for ":" binding) or unnamed
+    (for "%" substitution) items specifying values for parameters in
+    query.  For ":" binding, all items must be named and have the same
+    length.  For "%" substitution, all items must be unnamed scalars.
+}
 
 For RSQLite, these items are passed to \code{data.frame}, along with the
 parameter \code{stringsAsFactors=FALSE}.
 \itemize{
-\item \emph{SQLite example}:
+\item \emph{":"-binding example; SQLite only}:
 \code{
 S("insert into contacts values(:address, :phone)", address=c("123 West Blvd, Truro, NS", "5 East St., Digby, NS"), phone=c("902-555-1234", "902-555-6789"))
 }
-\item \emph{MySQL example}:
+\item \emph{"%"-substitution example; SQLite or MySQL}:
 \code{
 S("insert into contacts values(\"%s\", \"%s\")", "123 West Blvd, Truro, NS", "902-555-1234")
 S("insert into contacts values(\"%s\", \"%s\")", "5 East St., Digby, NS", "902-555-6789")
@@ -66,8 +68,10 @@ Without using \link{\code{DBI::SQL}}, the resulting query would be the incorrect
 }
 }
 \description{
-This uses dbGetPreparedQuery (for RSQLite) or dbQuoteStrings
-(for MySQL).  It should prevent e.g. SQL injection attacks.
+This uses the `params` parameter for \code{\link{DBI::dbGetQuery}}
+and \code{\link{DBI::dbExecute}} (for RSQLite and ":" parameters)
+or dbQuoteStrings (for MySQL or RSQLite "%" parameters).  It should
+prevent e.g. SQL injection attacks.
 }
 \note{
 for convenience, access is provided to some safeSQL internals, via the

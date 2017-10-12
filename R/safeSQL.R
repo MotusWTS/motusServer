@@ -1,7 +1,9 @@
 #' Return a function that safely performs sql queries on a connection.
 #'
-#' This uses dbGetPreparedQuery (for RSQLite) or dbQuoteStrings
-#' (for MySQL).  It should prevent e.g. SQL injection attacks.
+#' This uses the `params` parameter for \code{\link{DBI::dbGetQuery}}
+#' and \code{\link{DBI::dbExecute}} (for RSQLite and ":" parameters)
+#' or dbQuoteStrings (for MySQL or RSQLite "%" parameters).  It should
+#' prevent e.g. SQL injection attacks.
 #'
 #' @param con RSQLite connection to database, as returned by
 #'     dbConnect(SQLite(), ...), or character scalar giving path
@@ -16,23 +18,25 @@
 #' @return a function, S with class "safeSQL" taking two or more
 #'     parameters:
 #' \itemize{
-#' \item \code{query} sqlite query; parameters are:
+#'     \item \code{query} sqlite query with parameter handling indicated by:
 #'     \itemize{
-#'        \item words beginning with ":" for  RSQLite,
-#'        \item sprintf-style formatting codes (e.g. "\%d") for
-#'          MySQL
-#'      }
-#' \item \code{...} list of named (RSQLite) or unnamed (MySQL) items
-#' specifying values for parameters in query.
+#'        \item words beginning with ":", which does parameter binding for RSQLite,
+#'        \item \bold{or} sprintf-style formatting codes (e.g. "\%d") which does parameter substitution for RSQLite or MySQL
+#'     }
+#'     \item \code{...} list of named (for ":" binding) or unnamed
+#'     (for "%" substitution) items specifying values for parameters in
+#'     query.  For ":" binding, all items must be named and have the same
+#'     length.  For "%" substitution, all items must be unnamed scalars.
+#' }
 #'
 #' For RSQLite, these items are passed to \code{data.frame}, along with the
 #' parameter \code{stringsAsFactors=FALSE}.
 #' \itemize{
-#' \item \emph{SQLite example}:
+#' \item \emph{":"-binding example; SQLite only}:
 #' \code{
 #' S("insert into contacts values(:address, :phone)", address=c("123 West Blvd, Truro, NS", "5 East St., Digby, NS"), phone=c("902-555-1234", "902-555-6789"))
 #' }
-#' \item \emph{MySQL example}:
+#' \item \emph{"%"-substitution example; SQLite or MySQL}:
 #' \code{
 #' S("insert into contacts values(\"%s\", \"%s\")", "123 West Blvd, Truro, NS", "902-555-1234")
 #' S("insert into contacts values(\"%s\", \"%s\")", "5 East St., Digby, NS", "902-555-6789")
@@ -102,22 +106,34 @@ safeSQL = function(con, busyTimeout = 300) {
         structure(
             function(query, ..., .CLOSE=FALSE, .QUOTE) {
                 if (! missing(.QUOTE))
-                    stop(".QUOTE is only for RMySQL connections; for RSQLite connections, safeSQL uses a prepared query that doesn't require quoting")
+                    stop(".QUOTE is only for RMySQL connections; for RSQLite connections, safeSQL uses `params`, which doesn't require quoting")
                 if (.CLOSE) {
                     dbDisconnect(con)
                     return(con <<- NULL)
                 }
+                queryFun = if(grepl("(?i)^[[:space:]]*select", query, perl=TRUE)) dbGetQuery else DBI::dbExecute
                 repeat {
-                    tryCatch(
-                        if (length(list(...)) > 0) {
-                            return(dbGetPreparedQuery(con, query, data.frame(..., stringsAsFactors=FALSE)))
+                    tryCatch({
+                        a = list(...)
+                        if (length(a) > 0) {
+                            if (!is.null(names(a))) {
+                                return(queryFun(con, query, params=a))
+                            } else {
+                                if (.QUOTE) {
+                                    ## there are some parameters to the query, so escape those which are strings
+                                    a = c(query, lapply(a, function(x) if (is.character(x)) dbQuoteString(con=con, x) else x ))
+                                }
+                                q = do.call(sprintf, a)
+                                return(queryFun(con, q))
+                            }
                         } else {
-                            return(dbGetQuery(con, query))
-                        },
-                        error = function(e) {
-                            if (! grepl("database is locked", as.character(e)))
-                                stop(e) ## re-throw if the error isn't due to a locked database
-                        })
+                            return(queryFun(con, query))
+                        }
+                    },
+                    error = function(e) {
+                        if (! grepl("database is locked", as.character(e)))
+                            stop(e) ## re-throw if the error isn't due to a locked database
+                    })
                     ## failed due to locked database; wait a while and retry
                     Sys.sleep(10 * runif(1))
                 }
@@ -134,16 +150,17 @@ safeSQL = function(con, busyTimeout = 300) {
                     dbDisconnect(con)
                     return(con <<- NULL)
                 }
+                queryFun = if(grepl("(?i)^[[:space:]]*select", query, perl=TRUE)) dbGetQuery else DBI::dbExecute
                 a = list(...)
                 if (length(a) > 1 && .QUOTE) {
-                    ## there are some paramters to the query, so escape those which are strings
+                    ## there are some parameters to the query, so escape those which are strings
                     a = c(a[[1]], lapply(a[-1], function(x) if (is.character(x)) dbQuoteString(con=con, x) else x ))
                 }
                 q = do.call(sprintf, a)
                 Encoding(q) = "UTF-8"
                 repeat {
                     tryCatch(
-                        return(dbGetQuery(con, q)),
+                        return(queryFun(con, q)),
                         error = function(e) {
                             if (! grepl("Deadlock.*try restarting transaction", as.character(e), perl=TRUE))
                                 stop(e) ## re-throw if error isn't due to a locked database
@@ -168,7 +185,7 @@ safeSQL = function(con, busyTimeout = 300) {
 `$.safeSQL` = function(x, name) {
     con = environment(x)$con
     switch(substitute(name),
-           db = if(inherits(con, "MySQLConnection")) "MySQL connect; FIXME: no way to get dbname?" else con@dbname,
+           db = if(inherits(con, "MySQLConnection")) con@db else con@dbname,
            con = con,
            NULL
            )
