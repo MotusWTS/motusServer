@@ -111,7 +111,7 @@ safeSQL = function(con, busyTimeout = 300) {
                     dbDisconnect(con)
                     return(con <<- NULL)
                 }
-                queryFun = if(grepl("(?i)^[[:space:]]*select", query, perl=TRUE)) dbGetQuery else DBI::dbExecute
+                queryFun = if(grepl("(?i)^[[:space:]]*select|pragma", query, perl=TRUE)) dbGetQuery else DBI::dbExecute
                 repeat {
                     tryCatch({
                         a = list(...)
