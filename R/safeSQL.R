@@ -104,9 +104,7 @@ safeSQL = function(con, busyTimeout = 300) {
 
         dbGetQuery(con, sprintf("pragma busy_timeout=%d", round(busyTimeout * 1000)))
         structure(
-            function(query, ..., .CLOSE=FALSE, .QUOTE) {
-                if (! missing(.QUOTE))
-                    stop(".QUOTE is only for RMySQL connections; for RSQLite connections, safeSQL uses `params`, which doesn't require quoting")
+            function(query, ..., .CLOSE=FALSE, .QUOTE=FALSE) {
                 if (.CLOSE) {
                     dbDisconnect(con)
                     return(con <<- NULL)
@@ -122,6 +120,8 @@ safeSQL = function(con, busyTimeout = 300) {
                                 if (.QUOTE) {
                                     ## there are some parameters to the query, so escape those which are strings
                                     a = c(query, lapply(a, function(x) if (is.character(x)) dbQuoteString(con=con, x) else x ))
+                                } else {
+                                    a = c(query, a)
                                 }
                                 q = do.call(sprintf, a)
                                 return(queryFun(con, q))
@@ -150,7 +150,6 @@ safeSQL = function(con, busyTimeout = 300) {
                     dbDisconnect(con)
                     return(con <<- NULL)
                 }
-                queryFun = if(grepl("(?i)^[[:space:]]*select", query, perl=TRUE)) dbGetQuery else DBI::dbExecute
                 a = list(...)
                 if (length(a) > 1 && .QUOTE) {
                     ## there are some parameters to the query, so escape those which are strings
@@ -158,6 +157,7 @@ safeSQL = function(con, busyTimeout = 300) {
                 }
                 q = do.call(sprintf, a)
                 Encoding(q) = "UTF-8"
+                queryFun = if(grepl("(?i)^[[:space:]]*select", q, perl=TRUE)) dbGetQuery else DBI::dbExecute
                 repeat {
                     tryCatch(
                         return(queryFun(con, q)),
