@@ -97,6 +97,7 @@ function getTKTHash( $ip, $user, $tokens, $data, $key) {
     $ipts = pack( "NN", ip2long($ip), $ts );
 
     // make the cookie signature
+
     $digest0 = md5( $ipts . $key . $user . "\0" . $tokens . "\0" . $data );
     $digest = md5( $digest0 . $key );
 
@@ -140,7 +141,7 @@ if (isset($_GET['login_form_user'])) {
     if (! isset($data['errorCode'])) {
         $tokens = implode(',', array_keys($data['projects']));
         $addr = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : "0.0.0.0";
-        $cookie = getTKTHash($addr, $login_form_user, $tokens, null, $SECRET_KEY);
+        $cookie = getTKTHash($addr, $login_form_user, $tokens, $data['userType'], $SECRET_KEY);
         $need_login_form = false;
         header("Location: " . (isset($_GET['back']) && $_GET['back'] != '' ? $_GET['back'] : $DEFAULT_URL));
         setcookie('auth_tkt', $cookie, time() + 60*60*24*30, '/');

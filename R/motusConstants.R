@@ -258,3 +258,7 @@ MOTUS_TAGREG_MANIFEST_REGEXP = ".*tagreg.*\\.txt$"
 
 ## sprintf-format string for URL of downloadable files; %d is for projectID
 MOTUS_DOWNLOAD_URL_FMT = "https://sgdata.motus.org/download/%d"
+
+## location of secret key for mod_auth_tkt authorization used by some
+## of the XXXServer() functions in this package
+MOTUS_MODAUTHTKT_SECRET_KEYFILE = "/etc/apache2/sites-available/000-default-le-ssl.conf"
