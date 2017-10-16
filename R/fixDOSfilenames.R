@@ -97,7 +97,13 @@ fixDOSfilenames = function(f, info, onDisk=FALSE) {
             ## file timestamp; 2nd column is timestamps; we grab 100 lines
             ## in case there are NA timestamps
 
-            dat = read.csv(gzfile(f[i], "r"), header=FALSE, as.is=TRUE, nrow=100, comment.char="#")
+            haveLines = FALSE
+            try({
+                dat = read.csv(gzfile(f[i], "r"), header=FALSE, as.is=TRUE, nrow=100, comment.char="#")
+                haveLines = TRUE
+                }, silent=TRUE)
+            if (! haveLines)
+                next
             ## use timestamp from pulse record; don't use GPS record, as GPS might be stuck
             ts = dat[grep("^p", dat[, 1], perl=TRUE), 2]
             ts = ts[! is.na(ts)][1]  ## drop NA timestamps; might not have any left
