@@ -602,4 +602,4 @@ getUploadTokenApp =  function(env) {
     q(save="no")
 }
 
-adminUsers = c("tlcrewe", "zcrysler", "dlepage", "john", "ptaylor", "stuart.mackenzie")
+adminUsers = c("tlcrewe", "zcrysler", "dlepage.motus", "john", "ptaylor", "stuart.mackenzie")
