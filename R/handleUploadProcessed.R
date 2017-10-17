@@ -28,9 +28,9 @@ handleUploadProcessed = function(j) {
                  paste(sapply(jobProduced(tj), URLencode), collapse="\n   "),
                  "\n\nProcessing Summary:\n\n", tj$summary, "\n\nYou can see the detailed log here:
 
-   https://sensorgnome.org/My_Job_Status
+   https://sgdata.motus.org/status
 
-if you are logged-in with your sensorgnome.org credentials.
+if you log in with your motus.org credentials.
 
 Regards,
 
