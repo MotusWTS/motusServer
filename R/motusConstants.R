@@ -51,14 +51,6 @@ MOTUS_FLOAT_FIELDS = c("tsStart", "tsStartAnticipated", "tsEnd", "regStart", "re
 MOTUS_FLOAT_REGEX = sprintf("((%s):-?[0-9]+)([,}])",
                              paste(sprintf("\"%s\"", MOTUS_FLOAT_FIELDS), collapse="|"))
 
-## a pre-amble that gets pasted before upload tokens so they can easily be found in emails
-
-MOTUS_UPLOAD_TOKEN_PREFIX = "3cQejZ7j"
-
-## the regular expression for recognizing an authorization token in an email
-
-MOTUS_UPLOAD_TOKEN_REGEX = paste0(MOTUS_UPLOAD_TOKEN_PREFIX, "(?<token>[A-Za-z0-9]{10,100})")
-
 ## format of date/time in logfiles
 
 MOTUS_LOG_TIME_FORMAT = "%Y-%m-%dT%H-%M-%OS6"
@@ -105,16 +97,10 @@ MOTUS_PATH = list(
     DOWNLOADS        = "/sgm/downloads/",            ## manually-downloaded files; downloadXXX() checks here before (re) grabbing file
     ERRORS           = "/sgm/errors/",               ## save dumped call stacks of server errors
     FILE_REPO        = "/sgm/file_repo/",            ## as-is copies of files from all receivers; stored in SERNO/YYYY-MM-DD/ subfolders
-    INBOX            = "/sgm/inbox/",                ## emails go here, unless /sgm/EMBARGO exists
-    INBOX_EMBARGOED  = "/sgm/inbox_embargoed/",      ## incoming emails under embargo (not processed)
     INCOMING         = "/sgm/incoming/",             ## files / dirs moved here are processed by server(); this is the external / asynchronous
                                                      ## access point to the processing queue
-    LOCKS            = "/sgm/locks/",                ## locks for process queues and receiver DBs
     LOGS             = "/sgm/logs/",                 ## processing logs
-    MAIL_QUEUE       = "/sgm/queue/E/",              ## queue for processing emails by emailServer()
     METADATA_HISTORY = "/sgm/metadata_history/",     ## .git repo tracking metadata changes
-    MOTR             = "/sgm/motr/",                 ## links to receiver DBs by motus ID
-    OLDROOT          = "/SG/",                       ## root of old-style folder hierarchy
     OUTBOX           = "/sgm/outbox/",               ## copies of all sent emails
     OUTBOX_EMBARGOED = "/sgm/outbox_embargoed/",     ## unsent outgoing emails
     PARAM_OVERRIDES  = "/sgm/paramOverrides.sqlite", ## DB with table of receiver-boot-session-specific overrides for the tag finder
@@ -138,7 +124,6 @@ MOTUS_PATH = list(
     QUEUE104         = "/sgm/queue/104/",
     RECV             = "/sgm/recv/",                 ## receiver databases
     RECVLOG          = "/sgm/recvlog/",              ## logfiles from receivers
-    REFS             = "/sgm/refs/",                 ## links to receiver DBs by year, projCode, siteCode
 
     REMOTE           = structure("/sgm/remote/",     ## items dealing with remote attached receivers
                        owner="sg:sg_remote",
@@ -149,7 +134,6 @@ MOTUS_PATH = list(
     REMOTE_LIVE      = "/sgm/remote/live.sqlite",    ## DB of live client connections to receivers via our web server
     REMOTE_STREAMS   = "/sgm/remote/streams/",       ## .sqlite databases of all live content streamed from receivers
     REMOTE_SOCKETS   = "/sgm/remote/sockets/",       ## sockets used for the live webpage to connected receivers
-    SPAM             = "/sgm/spam/",                 ## saved invalid emails
     SYNC             = "/sgm/remote/sync/",          ## when an empty file having a receiver serial number as its name is placed here,
                                                      ## the receiver is sync'd remotely
     TAGS             = "/sgm/tags/",                 ## ??
@@ -191,22 +175,6 @@ MOTUS_ARCHIVE_REGEX = paste0("(?i)\\.(?<suffix>",
 
 ## silly dir() can't handle perl-style regex, so make another for that
 MOTUS_ARCHIVE_DIR_REGEX = paste0("\\.(", paste(MOTUS_ARCHIVE_SUFFIXES, collapse="|"), ")$")
-
-## allowed file suffixes for emailed data files:
-
-MOTUS_FILE_ATTACHMENT_SUFFIXES = c(
-    MOTUS_ARCHIVE_SUFFIXES,
-    "txt",                 ## Some users directly attach raw sensorgome files
-    "txt\\.gz",            ## to an email.
-    "dta"                  ## File from lotek receiver
-    )
-
-## regex to match filenames against for checking suffix
-
-MOTUS_FILE_ATTACHMENT_REGEX = paste0("(?i)\\.(?<suffix>",
-                                     paste(MOTUS_FILE_ATTACHMENT_SUFFIXES, collapse="|"),
-                                     ")$")
-
 
 ## regex to match receiver serial numbers (adapted from sgFilenameRegex, which differs
 ## in not using the 'SG-' prefix).
