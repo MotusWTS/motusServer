@@ -57,20 +57,26 @@ statusServer2 = function(port = 0x57A7, tracing=FALSE, maxRows=1000L) {
 
 ## a string giving the list of apps for this server
 
-allApps = c("status_api_info", "list_jobs", "_shutdown")
+allApps = c("status_api_info", "list_jobs", "subjobs_for_job", "_shutdown")
 
 sortColumns = c("ctime", "mtime", "id", "type", "motusProjectID", "motusUserID")
 sortCriteria = c(sortColumns, paste(sortColumns, "desc"))
 
 #' add condition(s) to the where clause
-addToWhere = function(where, new) {
+addToWhere = function(where, new, conj="and") {
+    if (missing(new)) {
+        new = where
+        where = ""
+    } else {
+        where = sub("^where ", "", where)
+    }
     for (n in new) {
         if (where == "")
-            where = paste0("where (", n, ")")
+            where = n
         else
-            where = paste0(where, " and (", n, ")")
+            where = paste("(", where, ")", conj, "(", n, ")")
     }
-    return(where)
+    return(paste0("where ", where))
 }
 
 #' add condition(s) to the order by clause
@@ -103,16 +109,17 @@ status_api_info = function(env) {
     )
 }
 
+#' return a list of jobs, sorted by user-selected criteria
+
 list_jobs = function(env) {
     json = fromJSON(parent.frame()$postBody["json"])
 
     if (tracing)
         browser()
 
-    auth = validate_request(json, remoteIP=env$HTTP_X_FORWARDED_FOR)
+    auth = validate_request(json, remoteIP=env$HTTP_X_FORWARDED_FOR, needProjectID=FALSE)
     if (inherits(auth, "error")) return(auth)
 
-    ## list_jobs (projectID, userID, sortBy, lastKey, includeNoProject, countOnly, full, authToken)
     projectID = (json$projectID %>% as.integer)[1]
     userID = (json$userID %>% as.integer)[1]
     sortBy = json$sortBy %>% as.character
@@ -139,9 +146,11 @@ list_jobs = function(env) {
         return(error_from_app("invalid number of `lastKey` values for given `sortBy`"))
     }
 
-    where = ""
+    where = addToWhere("pid is null")
     if (length(projectID) > 0)
         where = addToWhere(where, sprintf("motusProjectID in (%s)", paste(projectID, collapse=",")))
+    if (isTRUE(includeUnknownProjects))
+        where = addToWhere(where, "motusProjectID is null", conj="or")
     if (! is.na(userID))
         where = addToWhere(where, sprintf("motusUserID = %d", userID))
 
@@ -194,6 +203,49 @@ MAX_ROWS_PER_REQUEST
     return_from_app(ServerDB(query))
 }
 
+#' return the list of subjobs for a job, if any.
+
+subjobs_for_job = function(env) {
+    json = fromJSON(parent.frame()$postBody["json"])
+
+    if (tracing)
+        browser()
+
+    auth = validate_request(json, remoteIP=env$HTTP_X_FORWARDED_FOR, needProjectID=FALSE)
+    if (inherits(auth, "error")) return(auth)
+
+    jobID = (json$jobID %>% as.integer)[1]
+    if (length(jobID) == 0) {
+        return(error_from_app("missing jobID"))
+    }
+    where = addToWhere(sprintf("pid is not null and stump = %f", jobID))
+    if (auth$userType != "administrator") {
+        where = addToWhere(where, sprintf("motusProjectID in (%s)", paste(auth$projectIDs, collapse=",")))
+    }
+
+    query = sprintf("
+select
+   id,
+   pid,
+   stump,
+   ctime,
+   mtime,
+   type,
+   done,
+   queue,
+   path,
+   motusUserID,
+   motusProjectID,
+   data
+from
+   jobs
+%s
+limit %d",
+where,
+MAX_ROWS_PER_REQUEST
+)
+    return_from_app(ServerDB(query))
+}
 
 #' shut down this server.  The leading '_', which requires the appname to be
 #' quoted, marks this as an app that won't be exposed to the internet via

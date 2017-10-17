@@ -43,16 +43,16 @@ The server is at [https://sgdata.motus.org](https://sgdata.motus.org) and the UR
 
 ## API calls ##
 
-### api info ###
+### status_api info ###
 
-   api_info (authToken)
+   status_api_info (authToken)
 
    - return a list with these items:
 
       - maxRows: integer, maximum number of rows returned by a query
 
       e.g.
-      curl https://sgdata.motus.org/status/api_info
+      curl https://sgdata.motus.org/status/status_api_info
 
 
 ### authenticate user ###
@@ -79,7 +79,12 @@ The server is at [https://sgdata.motus.org](https://sgdata.motus.org) and the UR
 
 ### Notes ###
 
-1. The `authToken` returned by this API must be included in most other API calls.
+1. The `authToken` returned by this API must be included in most other
+API calls.  Alternatively, the non-URL-encoded value of the cookie
+called `auth_tkt`, obtained by logging in via
+the [main login page](https://sgdata.motus.org/login.php), can be used
+as `authToken`, which avoids having to call `authenticate_user` if the user
+has already logged in that way.
 
 2. Authorization is by project: if a user has permission for a
 project, then that user can see:
@@ -123,7 +128,7 @@ projects.
 
    - return a list of jobs for the given project and/or user.  If neither is specified, all jobs to which the
      user has permission are returned.  Otherwise, only jobs for the specified user and/or projectID are
-     returned.
+     returned.  The jobs returned are *top-level*, so don't include sub-jobs.
 
    - if `countOnly` is `false`, items in the return value are arrays:
       - `id`: job ids
@@ -131,10 +136,35 @@ projects.
       - `stump`: top-level job ids
       - `ctime`: creation times (unix timestamp; seconds since 1 Jan 1970 GMT)
       - `mtime`: modification time (unix timestamp; seconds since 1 Jan 1970 GMT)
-      - `type`: type of job; e.g. "ltFindtags"
+      - `type`: type of job; e.g. "uploadFile"
       - `done`: 0 if not yet run; +1 if successful; < 0 if error
       - `queue`: number of queue job is in; 0 means waiting
       - `path`: file system path to job folder, if any
       - `motusUserID`: motus user ID of person who submitted job
       - `motusProjectID`: project ID for results of job
       - `data`: (if `full` was `true` in the request) sub-object representing job parameters, log, summary, products
+
+### subjobs_for_job ###
+
+   subjobs_for_job (jobID, authToken)
+
+       - jobID: integer motus job ID, as given in the `id` column returned by `list_jobs()`
+
+      e.g.
+      curl --data-urlencode json='{"jobID":112034,"authToken":"XXX"}' https://sgdata.motus.org/status/subjobs_for_job
+
+   - return a list of sub jobs for the given job.
+
+   - items in the return value are arrays:
+      - `id`: job ids
+      - `pid`: parent job ids (these will all be non-NA, as the jobs are subjobs)
+      - `stump`: top-level job id (this will be the supplied `jobID` value)
+      - `ctime`: creation times (unix timestamp; seconds since 1 Jan 1970 GMT)
+      - `mtime`: modification time (unix timestamp; seconds since 1 Jan 1970 GMT)
+      - `type`: type of job; e.g. "uploadFile"
+      - `done`: 0 if not yet run; +1 if successful; < 0 if error
+      - `queue`: number of queue job is in; 0 means waiting
+      - `path`: file system path to job folder, if any
+      - `motusUserID`: motus user ID of person who submitted job
+      - `motusProjectID`: project ID for results of job
+      - `data`: sub-object representing job parameters, log, summary, products
