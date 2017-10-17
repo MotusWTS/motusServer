@@ -42,7 +42,7 @@ the secrets for a session, and saveSecrets() to store them permanently.")
     ## parse out the 'TKTAuthSecret' field from the apache config file
     tktsecret = grep("TKTAuthSecret", readLines(MOTUS_MODAUTHTKT_SECRET_KEYFILE), val=TRUE)
 
-    MOTUS_SECRETS$mod_auth_tkt = charToRaw(read.table(textConnection(tktsecret), as.is=TRUE)[[2]])
+    MOTUS_SECRETS$mod_auth_tkt <<- charToRaw(read.table(textConnection(tktsecret), as.is=TRUE)[[2]])
 
     return (TRUE)
 }
