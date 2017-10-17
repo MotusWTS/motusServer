@@ -18,5 +18,5 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 error_from_app = function(error) {
-    return_from_app(list(error=error))
+    structure(return_from_app(list(error=error)), class="error")
 }
