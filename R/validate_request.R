@@ -24,6 +24,7 @@
 #' \item userID integer user ID
 #' \item projects integer vector of *all* project IDs user has permission to
 #' \item projectID the projectID specified in the request (and it is guaranteed the user has permission to this project)
+#' \item userType character scalar; one of "administrator", "contributor"
 #' }
 #'
 #' If the request was not valid, a value of class "error" and suitable
@@ -139,11 +140,11 @@ token = authToken)
         if (ticket_digest != digest) {
             msg = "invalid authorization ticket"
         } else {
-            auth = list(userID=user_id, projects=token_list, userType=user_data)
+            auth = list(userID=as.integer(user_id), projects=token_list, userType=user_data)
         }
     }
     if (is.null(msg)) {
-        rv = list(userID=auth$userID, projects = scan(text=auth$projects, sep=",", quiet=TRUE), projectID=projectID)
+        rv = list(userID=auth$userID, projects = scan(text=auth$projects, sep=",", quiet=TRUE), projectID=projectID, userType=auth$userType)
         if (needProjectID && ! isTRUE(length(projectID) == 1 && projectID %in% rv$projects)) {
             ## user not authorized for project
             msg = "not authorized for project"

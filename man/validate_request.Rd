@@ -33,6 +33,7 @@ If the request was valid, a list with these items:
 \item userID integer user ID
 \item projects integer vector of *all* project IDs user has permission to
 \item projectID the projectID specified in the request (and it is guaranteed the user has permission to this project)
+\item userType character scalar; one of "administrator", "contributor"
 }
 
 If the request was not valid, a value of class "error" and suitable
