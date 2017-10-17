@@ -11,11 +11,10 @@ Usage: runAllMotusServers.sh [-h] [-s] [N]
 
 Run all motus servers by invoking these scripts:
 
-## DISABLED:  - runMotusEmailServer.sh
-
    - runMotusUploadServer.sh
 
    - runMotusStatusServer.sh
+   - runMotusStatusServer2.sh
 
    - runMotusProcessServer.sh 1
    - runMotusProcessServer.sh 2
@@ -41,7 +40,7 @@ EOF
 fi
 
 if [[ "$1" == "-s" ]]; then
-    sqlite3 /sgm/server.sqlite "delete from symLocks"
+    sqlite3 /sgm_hd/server.sqlite "delete from symLocks"
     shift
 fi
 
@@ -52,9 +51,9 @@ fi
 
 ## use 'setsid' to launch each server in its own process group
 
-## DISABLED: setsid /sgm/bin/runMotusEmailServer.sh &
 setsid /sgm/bin/runMotusUploadServer.sh &
 setsid /sgm/bin/runMotusStatusServer.sh &
+setsid /sgm/bin/runMotusStatusServer2.sh &
 setsid /sgm/bin/runMotusDataServer.sh &
 
 ## '99' is the priority server, for short fast jobs; it won't
