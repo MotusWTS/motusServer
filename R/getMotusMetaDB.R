@@ -151,7 +151,7 @@
 
 getMotusMetaDB = function() {
     ## location we store a cached copy of the motus tag DB
-    cachedDB = "/sgm/cache/motus_meta_db.sqlite"
+    cachedDB = file.path(MOTUS_PATH$CACHE, "motus_meta_db.sqlite")
 
     ## try to lock the cachedDB (by trying to lock its name)
     lockSymbol(cachedDB)

@@ -91,40 +91,39 @@ MOTUS_BADFILE_ARCHIVE = "bad_files.zip.NOAUTO"
 MOTUS_PATH = list(
     ROOT             = "/sgm",
     BIN              = "/sgm/bin/",                  ## executable scripts
-    CACHE            = "/sgm/cache/",                ## recent results of large queries from motus.org
+    CACHE            = "/sgm_hd/cache/",             ## recent results of large queries from motus.org (store on HD)
     CRYPTO           = "/sgm/crypto/",               ## public/private keypairs for ssh etc. by receivers
     DONE             = "/sgm/done/",                 ## folders for completed jobs
     DOWNLOADS        = "/sgm/downloads/",            ## manually-downloaded files; downloadXXX() checks here before (re) grabbing file
     ERRORS           = "/sgm/errors/",               ## save dumped call stacks of server errors
     FILE_REPO        = "/sgm/file_repo/",            ## as-is copies of files from all receivers; stored in SERNO/YYYY-MM-DD/ subfolders
-    INCOMING         = "/sgm/incoming/",             ## files / dirs moved here are processed by server(); this is the external / asynchronous
+    INCOMING         = "/sgm_hd/incoming/",          ## files / dirs moved here are processed by server(); this is the external / asynchronous
                                                      ## access point to the processing queue
     LOGS             = "/sgm/logs/",                 ## processing logs
     METADATA_HISTORY = "/sgm/metadata_history/",     ## .git repo tracking metadata changes
     OUTBOX           = "/sgm/outbox/",               ## copies of all sent emails
     OUTBOX_EMBARGOED = "/sgm/outbox_embargoed/",     ## unsent outgoing emails
-    PARAM_OVERRIDES  = "/sgm/paramOverrides.sqlite", ## DB with table of receiver-boot-session-specific overrides for the tag finder
+    PARAM_OVERRIDES  = "/sgm_hd/paramOverrides.sqlite", ## DB with table of receiver-boot-session-specific overrides for the tag finder
     PLOTS            = "/sgm/plots/",                ## generated plots
-    PRIORITY         = "/sgm/priority/",             ## jobs created here run on a processServer dedicated to short, fast jobs; e.g. updating attached SGs
+    PRIORITY         = "/sgm_hd/priority/",          ## jobs created here run on a processServer dedicated to short, fast jobs; e.g. updating attached SGs
     PUB              = "/sgm/pub/",                  ## web-visible public content
-    QUEUES           = "/sgm/queue/",                ## queues for processing items
-    QUEUE0           = "/sgm/queue/0/",              ## queue 0 is watched for new entries by each of the processServers;
+    QUEUES           = "/sgm_hd/queue/",                ## queues for processing items
+    QUEUE0           = "/sgm_hd/queue/0/",              ## queue 0 is watched for new entries by each of the processServers;
                                                      ## at most one of them will claim the new job.
-    QUEUE1           = "/sgm/queue/1/",              ## queue 1..8 for processServers
-    QUEUE2           = "/sgm/queue/2/",
-    QUEUE3           = "/sgm/queue/3/",
-    QUEUE4           = "/sgm/queue/4/",
-    QUEUE5           = "/sgm/queue/5/",
-    QUEUE6           = "/sgm/queue/6/",
-    QUEUE7           = "/sgm/queue/7/",
-    QUEUE8           = "/sgm/queue/8/",
-    QUEUE101         = "/sgm/queue/101/",            ## priority job queues 101..104; for the processServer dedicated to short, fast jobs; e.g. updating attached SGs.
-    QUEUE102         = "/sgm/queue/102/",
-    QUEUE103         = "/sgm/queue/103/",
-    QUEUE104         = "/sgm/queue/104/",
+    QUEUE1           = "/sgm_hd/queue/1/",              ## queue 1..8 for processServers
+    QUEUE2           = "/sgm_hd/queue/2/",
+    QUEUE3           = "/sgm_hd/queue/3/",
+    QUEUE4           = "/sgm_hd/queue/4/",
+    QUEUE5           = "/sgm_hd/queue/5/",
+    QUEUE6           = "/sgm_hd/queue/6/",
+    QUEUE7           = "/sgm_hd/queue/7/",
+    QUEUE8           = "/sgm_hd/queue/8/",
+    QUEUE101         = "/sgm_hd/queue/101/",            ## priority job queues 101..104; for the processServer dedicated to short, fast jobs; e.g. updating attached SGs.
+    QUEUE102         = "/sgm_hd/queue/102/",
+    QUEUE103         = "/sgm_hd/queue/103/",
+    QUEUE104         = "/sgm_hd/queue/104/",
     RECV             = "/sgm/recv/",                 ## receiver databases
     RECVLOG          = "/sgm/recvlog/",              ## logfiles from receivers
-
     REMOTE           = structure("/sgm/remote/",     ## items dealing with remote attached receivers
                        owner="sg:sg_remote",
                        perm="g+rwx"),
@@ -142,15 +141,13 @@ MOTUS_PATH = list(
     TMP              = "/sgm/tmp/",                  ## intermediate storage; persistent across reboots
     TRASH            = "/sgm/trash/",                ## files to be deleted once we know they've been processed
 
-    UPLOADS          = structure("/sgm/uploads/",    ## target in which the ProjectSend server makes hardlinks to its newly-uploaded files
+    UPLOADS          = structure("/sgm_hd/uploads/", ## target in which the ProjectSend server makes hardlinks to its newly-uploaded files
                        perm="g+rwsx"),               ## www-data user belongs to group "sg" so can write there
 
-    UPLOAD_ARCHIVE   = "/raid5tb/uploads/files",     ## folder where ProjectSend stores uploaded files, filed by username
+    UPLOAD_ARCHIVE   = "/sgm/uploaded/files",        ## folder where ProjectSend stores uploaded files, filed by username
 
                                                      ## must be writable by the user running the ProjectSend webserver (www-data)
-    USERAUTH         = structure("/sgm/userauth/",   ## folder to store sqlite database of user authentication cached from motus.org
-                       owner="sg:www-data",          ## this folder needs to have permissions g+rwx so that
-                       perm="g+rswx"),               ## Apache web server's mod_auth_external can read/write to it (user www-data belongs to group sg)
+    USERAUTH         = "/sgm_hd/user_auth.sqlite",   ## database of user authentication tokens
 
     WWW              = structure("/sgm/www/",        ## File hierarchy to be served by apache to authenticated motus users
                        perm = "g+rsx")               ## listable/readable
@@ -203,7 +200,7 @@ MOTUS_ADMIN_EMAIL = "jbrzusto@fastmail.fm"
 MOTUS_ADMIN_USERNAME = "john"
 
 ## the database used to record server activity
-MOTUS_SERVER_DB = "/sgm/server.sqlite"
+MOTUS_SERVER_DB = "/sgm_hd/server.sqlite"
 
 ## the database to hold info on remote receivers
 MOTUS_REMOTE_RECV_DB = file.path(MOTUS_PATH$REMOTE, "receivers.sqlite")

@@ -60,7 +60,7 @@ dataServer = function(port=0xda7a, tracing=FALSE, maxRows=10000) {
 
     ## get user auth database
 
-    AuthDB <<- safeSQL(file.path(MOTUS_PATH$USERAUTH, "data_user_auth.sqlite"))
+    AuthDB <<- safeSQL(MOTUS_PATH$USERAUTH)
     AuthDB("create table if not exists auth (token TEXT UNIQUE PRIMARY KEY, expiry REAL, userID INTEGER, projects TEXT, receivers TEXT, userType TEXT)")
     AuthDB("create index if not exists auth_expiry on auth (expiry)")
 

@@ -74,7 +74,7 @@ function onExit {
     fi
 
     ## delete locks held by this process
-    sqlite3 /sgm/server.sqlite "pragma busy_timeout=10000; delete from symLocks where owner=$SPID" > /dev/null
+    sqlite3 /sgm_hd/server.sqlite "pragma busy_timeout=10000; delete from symLocks where owner=$SPID" > /dev/null
 }
 
 ## call the cleanup handler on exit

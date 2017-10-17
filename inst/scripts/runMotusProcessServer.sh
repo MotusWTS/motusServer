@@ -112,7 +112,7 @@ function onExit {
     fi
 
     ## delete receiver locks held by this process
-    sqlite3 /sgm/server.sqlite "pragma busy_timeout=10000; delete from symLocks where owner=$SPID" > /dev/null
+    sqlite3 /sgm_hd/server.sqlite "pragma busy_timeout=10000; delete from symLocks where owner=$SPID" > /dev/null
 }
 
 ## call the cleanup handler on exit
@@ -141,7 +141,7 @@ if [[ $TRACE == 0 ]]; then
         pkill -g $$ inotifywait
 
         ## delete receiver locks held by this process
-        sqlite3 /sgm/server.sqlite "pragma busy_timeout=10000; delete from symLocks where owner=$SPID" > /dev/null
+        sqlite3 /sgm_hd/server.sqlite "pragma busy_timeout=10000; delete from symLocks where owner=$SPID" > /dev/null
 
         ## check for a file called $killFile, and if it exists, delete it and quit
         if [[ -f $killFile ]]; then
