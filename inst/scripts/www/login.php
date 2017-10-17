@@ -141,7 +141,7 @@ if (isset($_GET['login_form_user'])) {
     if (! isset($data['errorCode'])) {
         $tokens = implode(',', array_keys($data['projects']));
         $addr = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : "0.0.0.0";
-        $cookie = getTKTHash($addr, $login_form_user, $tokens, $data['userType'], $SECRET_KEY);
+        $cookie = getTKTHash($addr, $data['userID'], $tokens, $data['userType'], $SECRET_KEY);
         $need_login_form = false;
         header("Location: " . (isset($_GET['back']) && $_GET['back'] != '' ? $_GET['back'] : $DEFAULT_URL));
         setcookie('auth_tkt', $cookie, time() + 60*60*24*30, '/');
