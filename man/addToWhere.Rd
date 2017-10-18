@@ -4,7 +4,7 @@
 \alias{addToWhere}
 \title{add condition(s) to the where clause}
 \usage{
-addToWhere(where, new)
+addToWhere(where, new, conj = "and")
 }
 \description{
 add condition(s) to the where clause

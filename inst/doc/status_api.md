@@ -103,32 +103,50 @@ projects.
 
 ### list_jobs ###
 
-   list_jobs (projectID, userID, sortBy, lastKey, includeUnknownProjects, full, countOnly, authToken)
+   list_jobs (projectID, select, order, options, authToken)
 
-       - projectID: integer motus project ID
-       - userID: integer motus user ID
-       - sortBy: character array; the sort key, zero or more of these string constants, each of which
-         can be optionally followed by the string constant 'desc' for descending order
-          - "ctime", "ctime desc": job creation time
-          - "mtime", "mtime desc": last job activity time
-          - "id", "id desc": job ID number
-          - "type", "type desc": job type
-          - "motusProjectID", "motusProjectID desc": motus project ID
-          - "motusUserID", "motusUserID desc": motus user ID
-         if `sortBy` is not specified, it is set to `["mtime desc"]`
-       - lastKey: optional; vector giving "last" obtained value of each field specified in `sortBy`, in the same order; for paging
-       - includeUnknownProjects: include jobs with no associated motus project; typically for
-         jobs initiated by staff or otherwise not having a useful concept of project
-       - full: if `true`, then full details for the job (typically its parameters, log, summary, and list of
-         product files) are returned in a JSON-formatted column called `data`
-       - countOnly: if true, return only a count of jobs for the given projectID and/or userID
+       - projectID: integer motus projectID (s); jobs must belong to the given project(s)
+       - select: object with fields for selecting which jobs to list.  A job must match all
+         fields provided in order to be included in the list.  Fields are:
+          - userID: integer motus user ID
+          - type: character array; the job type(s)
+          - done: integer; 0: job not yet complete; 1: job completed successfully; -1: job had error
+          - log: character; job whose log matches the string `log`, which can include globbing
+            characters ('*' and '.')
+       - order: object with fields for ordering and paging the selected jobs:
+          - sortBy: character array; the sort key, zero or more of these string constants, each of which
+            can be optionally followed by the string constant 'desc' for descending order
+             - "ctime", "ctime desc": job creation time
+             - "mtime", "mtime desc": last job activity time
+             - "id", "id desc": job ID number
+             - "type", "type desc": job type
+             - "motusProjectID", "motusProjectID desc": motus project ID
+             - "motusUserID", "motusUserID desc": motus user ID
+            if `sortBy` is not specified, it is set to `["mtime desc"]`
+          - lastKey: optional; vector giving "last" obtained value of each field specified in `sortBy`, in the same order;
+            used for paging.  If not specified, returns the first page according to `sortBy` criteria.
+       - options: object with fields giving options:
+          - includeUnknownProjects: include jobs with no associated motus project; typically for
+            jobs initiated by staff or otherwise not having a useful concept of project
+          - includeSubjobs: logical: include jobs which are not top-level jobs?; default FALSE
+          - full: if `true`, then full details for the job (typically its parameters, log, summary, and list of
+            product files) are returned in a JSON-formatted column called `data`
+          - countOnly: if true, return only a count of jobs for the given projectID and/or userID
 
       e.g.
-      curl --data-urlencode json='{"userno":232,"authToken":"XXX"}' https://sgdata.motus.org/status/list_jobs
+      curl --data-urlencode json='{"select":{"userno":232},"order":{"sortBy":"id","lastKey":[5000]},"authToken":"XXX"}' https://sgdata.motus.org/status/list_jobs
 
-   - return a list of jobs for the given project and/or user.  If neither is specified, all jobs to which the
-     user has permission are returned.  Otherwise, only jobs for the specified user and/or projectID are
-     returned.  The jobs returned are *top-level*, so don't include sub-jobs.
+   - return a list of jobs; unless includeSubjobs is true, return only top-level jobs.
+     A top level job has one of these types:
+     - 'uploadFiles': process a batch of receiver files uploaded by user
+     - 'syncReceiver': poll an online receiver for new data and process them
+     - 'serverFiles': process a batch of files manually copied to server
+     - 'rerunReceiver': rerun the tag finder on existing data files
+     Top-level jobs generate sub jobs; e.g. `uploadFiles` will typically generate one or more
+     tag finder jobs of types `LtFindtags` or `SGfindtags`, a data summary job of type `plotData`,
+     and a data merging job of tyep `exportData`.
+
+     Only jobs to which the  user has permission are returned.
 
    - if `countOnly` is `false`, items in the return value are arrays:
       - `id`: job ids
@@ -157,8 +175,8 @@ projects.
 
    - items in the return value are arrays:
       - `id`: job ids
-      - `pid`: parent job ids (these will all be non-NA, as the jobs are subjobs)
-      - `stump`: top-level job id (this will be the supplied `jobID` value)
+      - `pid`: parent job ids (this is NA for top-level jobs)
+      - `stump`: top-level job id (job of which this is a subjob; for a top-level job, id==stump)
       - `ctime`: creation times (unix timestamp; seconds since 1 Jan 1970 GMT)
       - `mtime`: modification time (unix timestamp; seconds since 1 Jan 1970 GMT)
       - `type`: type of job; e.g. "uploadFile"

@@ -120,41 +120,68 @@ list_jobs = function(env) {
     auth = validate_request(json, remoteIP=env$HTTP_X_FORWARDED_FOR, needProjectID=FALSE)
     if (inherits(auth, "error")) return(auth)
 
-    projectID = (json$projectID %>% as.integer)[1]
-    userID = (json$userID %>% as.integer)[1]
-    sortBy = json$sortBy %>% as.character
-    lastKey = json$lastKey %>% as.numeric
-    includeUnknownProjects = (json$includeUnknownProjects %>% as.logical)[1]
-    countOnly = (json$countOnly %>% as.logical)[1]
-    full = (json$full %>% as.logical)[1]
+    projectID = auth$projectID
 
-    if (length(projectID) == 0 && auth$userType != "administrator") {
-        projectID = auth$projectIDs
-    } else  if (! (projectID %in% auth$projectIDs || auth$userType == "administrator")) {
-        return(error_from_app("not authorized for that project"))
-    }
-    if (! (length(userID) == 0 || userID == auth$userID || auth$userType == "administrator")) {
+    select  = json$select
+    order   = json$order
+    options = json$options
+
+    ## selectors
+    userID    = safe_arg(select, userID, int)
+    type      = safe_arg(select, type, char)
+    done      = safe_arg(select, done, int)
+    log       = safe_arg(select, log, char)
+
+    ## ordering
+    sortBy = safe_arg(order, sortBy, char, scalar=FALSE)
+    lastKey = safe_arg(order, lastKey, num, scalar=FALSE)
+
+    ## options
+    includeUnknownProjects = isTRUE(safe_arg(options, includeUnknownProjects, logical))
+    countOnly              = isTRUE(safe_arg(options, countOnly, logical))
+    full                   = isTRUE(safe_arg(options, full, logical))
+    includeSubjobs         = isTRUE(safe_arg(options, includeSubjobs, logical))
+
+    ## validate access
+
+    if (is.null(projectID))
+        projectID = auth$projects
+    if (! (is.null(userID) || userID == auth$userID || auth$userType == "administrator")) {
         return(error_from_app("not authorized for that userID"))
     }
-    if (length(sortBy) == 0) {
+
+    ## generate where clause from selectors
+
+    if (includeSubjobs)
+        where = ""
+    else
+        where = addToWhere("pid is null")  ## only top-level jobs; these have no parent id
+    if (!is.null(projectID))
+        where = addToWhere(where, sprintf("motusProjectID in (%s)", paste(projectID, collapse=",")))
+    if (isTRUE(includeUnknownProjects))
+        where = addToWhere(where, "motusProjectID is null", conj="or")
+    if (!is.null(userID))
+        where = addToWhere(where, sprintf("motusUserID = %d", userID))
+    if (!is.null(type))
+        where = addToWhere(where, sprintf("type in (%s)", paste0("'", type, "'", collapse=",")))
+    if (!is.null(done))
+        where = addToWhere(where, switch(as.character(done), `1` = "done > 0", `0` = "done = 0", `-1` = "done < 0"))
+    if (!is.null(log))
+        where = addToWhere(where, sprintf("data glob '%s'", log))
+
+    ## generate order by and additional where clause items for paging
+
+    if (is.null(sortBy)) {
         sortBy = c("mtime desc")
     } else if (! all (sortBy %in% sortCriteria)) {
         return(error_from_app("invalid sort criterion"))
     }
 
-    if (! (length(lastKey) == 0 || length(lastKey) == length(sortBy))) {
+    if (! (is.null(lastKey) || length(lastKey) == length(sortBy))) {
         return(error_from_app("invalid number of `lastKey` values for given `sortBy`"))
     }
 
-    where = addToWhere("pid is null")
-    if (length(projectID) > 0)
-        where = addToWhere(where, sprintf("motusProjectID in (%s)", paste(projectID, collapse=",")))
-    if (isTRUE(includeUnknownProjects))
-        where = addToWhere(where, "motusProjectID is null", conj="or")
-    if (! is.na(userID))
-        where = addToWhere(where, sprintf("motusUserID = %d", userID))
-
-    if (length(lastKey) > 0) {
+    if (! is.null(lastKey)) {
         sortByCols = sub(" desc$", "", sortBy)
         sortByOp = ifelse(grepl(" desc$", sortBy), "<", ">")
         where = addToWhere(where, sprintf("%s %s %f", sortByCols, sortByOp, lastKey))
@@ -214,13 +241,13 @@ subjobs_for_job = function(env) {
     auth = validate_request(json, remoteIP=env$HTTP_X_FORWARDED_FOR, needProjectID=FALSE)
     if (inherits(auth, "error")) return(auth)
 
-    jobID = (json$jobID %>% as.integer)[1]
-    if (length(jobID) == 0) {
+    jobID = safe_arg(json, jobID, int)
+    if (is.null(jobID)) {
         return(error_from_app("missing jobID"))
     }
     where = addToWhere(sprintf("pid is not null and stump = %f", jobID))
     if (auth$userType != "administrator") {
-        where = addToWhere(where, sprintf("motusProjectID in (%s)", paste(auth$projectIDs, collapse=",")))
+        where = addToWhere(where, sprintf("motusProjectID in (%s)", paste(auth$projects, collapse=",")))
     }
 
     query = sprintf("
