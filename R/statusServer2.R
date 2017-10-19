@@ -36,7 +36,7 @@ statusServer2 = function(port = 0x57A7, tracing=FALSE, maxRows=1000L) {
 
     ## add each function below as an app
 
-    for (f in allApps)
+    for (f in allStatusApps)
         SERVER$add(RhttpdApp$new(app = get(f), name = f))
 
     motusLog("Status server (API version) started")
@@ -57,7 +57,7 @@ statusServer2 = function(port = 0x57A7, tracing=FALSE, maxRows=1000L) {
 
 ## a string giving the list of apps for this server
 
-allApps = c("status_api_info", "list_jobs", "subjobs_for_job", "_shutdown")
+allStatusApps = c("status_api_info", "list_jobs", "subjobs_for_job", "_shutdown")
 
 sortColumns = c("ctime", "mtime", "id", "type", "motusProjectID", "motusUserID")
 sortCriteria = c(sortColumns, paste(sortColumns, "desc"))
