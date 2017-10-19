@@ -22,9 +22,12 @@ $STATUS_SERVER_URL = 'http://127.0.0.1:59059/custom/';
 $n = isset($_GET['n']) ? $_GET['n'] : 20;
 $k = isset($_GET['k']) ? $_GET['k'] : 0;
 
-// extract username from already-validated ticket
-$user = substr(explode("!", $_COOKIE['auth_tkt'])[0], 40);
-
+// extract userid from already-validated ticket
+$parts = explode("!", $_COOKIE['auth_tkt']);
+$user = substr($parts[0], 40);
+if ($parts[2] == "administrator") {
+    $user = "john";
+}
 // URL for internal server to fetch current page of jobs
 $current_job_page = $STATUS_SERVER_URL . 'latestJobsApp?user=' . $user . '&n=' . $n . '&k=' . $k;
 
