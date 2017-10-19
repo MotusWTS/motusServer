@@ -115,7 +115,7 @@ window.onload = function() {
     showSync = ifelse(isTRUE(req$GET()[['sync']]==1), '=', '<>')
     user = as.character(req$GET()[['user']])[1]
     if (! isTRUE(user %in% adminUsers)) {
-        jj = ServerDB(sprintf("select id from jobs where user=:user and pid is null and type %s 'syncReceiver' order by id desc", showSync), user=user)[[1]]
+        jj = ServerDB(sprintf("select id from jobs where motusUserID=:user and pid is null and type %s 'syncReceiver' order by id desc", showSync), user=user)[[1]]
         k = 0
     } else {
         n = as.integer(req$GET()[['n']])[1]
