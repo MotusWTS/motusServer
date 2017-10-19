@@ -17,7 +17,7 @@ ensureServerDB = function() {
     if (exists("ServerDB", .GlobalEnv))
         return()
 
-    ServerDB <<- safeSQL(MOTUS_SERVER_DB)
+    ServerDB <<- safeSQL(MOTUS_PATH$SERVER_DB)
 
     lockSymbol("ServerDB")
     on.exit(lockSymbol("ServerDB", lock=FALSE))
@@ -28,7 +28,7 @@ owner INTEGER
 )" ,
 MOTUS_SYMBOLIC_LOCK_TABLE))
 
-    ServerDB(sprintf("ATTACH DATABASE '%s' as remote", MOTUS_REMOTE_RECV_DB))
+    ServerDB(sprintf("ATTACH DATABASE '%s' as remote", MOTUS_PATH$REMOTE_RECV_DB))
 
     ServerDB('
 CREATE TABLE IF NOT EXISTS remote.receivers (

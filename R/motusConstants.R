@@ -90,7 +90,7 @@ MOTUS_BADFILE_ARCHIVE = "bad_files.zip.NOAUTO"
 
 MOTUS_PATH = list(
     ROOT             = "/sgm",
-    BIN              = "/sgm/bin/",                  ## executable scripts
+    BIN              = "/sgm_hd/bin/",               ## executable scripts and programs (store on HD)
     CACHE            = "/sgm_hd/cache/",             ## recent results of large queries from motus.org (store on HD)
     CRYPTO           = "/sgm/crypto/",               ## public/private keypairs for ssh etc. by receivers
     DONE             = "/sgm/done/",                 ## folders for completed jobs
@@ -130,9 +130,12 @@ MOTUS_PATH = list(
 
     REMOTE_ATJOBS    = "/sgm/remote/atjobs/",        ## at-job IDs for syncReceiver jobs, by receiver serial number
     REMOTE_CONNECTIONS = "/sgm/remote/connections/", ## empty files whose names are serial numbers of connected receivers
-    REMOTE_LIVE      = "/sgm/remote/live.sqlite",    ## DB of live client connections to receivers via our web server
+    REMOTE_LIVE      = "/sgm_hd/live.sqlite",        ## DB of live client connections to receivers via our web server
+    REMOTE_RECV_DB   = "/sgm_hd/receivers.sqlite",   ## the database to hold info on remote receivers
     REMOTE_STREAMS   = "/sgm/remote/streams/",       ## .sqlite databases of all live content streamed from receivers
     REMOTE_SOCKETS   = "/sgm/remote/sockets/",       ## sockets used for the live webpage to connected receivers
+    SERVER_DB        = "/sgm_hd/server.sqlite",      ## the database used to record server activity
+
     SYNC             = "/sgm/remote/sync/",          ## when an empty file having a receiver serial number as its name is placed here,
                                                      ## the receiver is sync'd remotely
     TAGS             = "/sgm/tags/",                 ## ??
@@ -178,12 +181,6 @@ MOTUS_ARCHIVE_DIR_REGEX = paste0("\\.(", paste(MOTUS_ARCHIVE_SUFFIXES, collapse=
 
 MOTUS_SG_SERNO_REGEX = "(?i)(?<serno>SG-[0-9A-Z]{4}(?:RPi[123z]|BBBK|(BB[0-9][0-9A-Z]))[0-9A-Z]{4}(?:_[0-9])?)"
 
-## deprecated: path to db for looking up proj, site by serial number
-## and timestamp or bootnumber. This is for generating output in the
-## old format.
-
-MOTUS_RECV_MAP_DB = "/SG/receiver_map.sqlite"
-
 ## regex for matching DOS filenames (names of SG data files which have
 ## been shortened to 8.3 form)
 ## see https://en.wikipedia.org/wiki/8.3_filename#VFAT_and_Computer-generated_8.3_filenames
@@ -198,12 +195,6 @@ MOTUS_ADMIN_EMAIL = "jbrzusto@fastmail.fm"
 ## the sensorgnome.org username for the administrator
 
 MOTUS_ADMIN_USERNAME = "john"
-
-## the database used to record server activity
-MOTUS_SERVER_DB = "/sgm_hd/server.sqlite"
-
-## the database to hold info on remote receivers
-MOTUS_REMOTE_RECV_DB = file.path(MOTUS_PATH$REMOTE, "receivers.sqlite")
 
 ## the table used to record locks on arbitrary symbols
 MOTUS_SYMBOLIC_LOCK_TABLE = "symLocks"

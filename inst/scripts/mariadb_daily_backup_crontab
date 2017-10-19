@@ -1,0 +1,15 @@
+# do full (monthly) and incremental (daily) backups for mariadb/mysqldb
+
+#=======================================================================
+#=  THIS FILE MUST BE OWNED BY ROOT AND SYMLINKED FROM /etc/cron.d
+#=  To accomplish this, after installing the motusServer package, do:
+#=
+#=   sudo chown root:root /sgm_hd/bin/mariadb_daily_backup_crontab
+#=   sudo chmod og-w /sgm_hd/bin/mariadb_daily_backup_crontab
+#=   sudo ln -s /sgm_hd/bin/mariadb_daily_backup_crontab /etc/cron.d
+#=
+#=======================================================================
+
+# do a daily backup at 3:13 AM GMT
+#m h    dom mon dow    user   cmd
+13 3     *   *   *     root   [ -x /sgm_hd/bin/mariadb_daily_backup.sh ] && /sgm_hd/bin/mariadb_daily_backup.sh
