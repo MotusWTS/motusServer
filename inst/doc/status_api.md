@@ -1,7 +1,8 @@
 # The motusServer status API #
 
 This API provides access to information about the motus data processing
-server, jobs, and errors.
+server, jobs, and errors.  It also permits some server-side tasks to
+be executed (job retry, server restart, processing of new uploaded file, ...)
 
 ## API summary ##
 
@@ -80,13 +81,49 @@ The server is at [https://sgdata.motus.org](https://sgdata.motus.org) and the UR
 ### Notes ###
 
 1. The `authToken` returned by this API must be included in most other
-API calls.  Alternatively, the non-URL-encoded value of the cookie
-called `auth_tkt`, obtained by logging in via
-the [main login page](https://sgdata.motus.org/login.php), can be used
-as `authToken`, which avoids having to call `authenticate_user` if the user
-has already logged in that way.
+API calls (for an alternative, see 2.)
 
-2. Authorization is by project: if a user has permission for a
+2.  Instead of obtaining the token from this API entry, you can use
+the non-URL-encoded value of the cookie called `auth_tkt`, obtained by
+logging in via
+the [main login page](https://sgdata.motus.org/login.php).  The
+non-URL-encoded value of the `auth_tkt` cookie can be used as
+`authToken`, which avoids having to call `authenticate_user` if the
+user has already logged in.  To use `auth_tkt`, the IP address from
+which the login occurred must be passed as a dotted-quad string in the
+header field `X-Forwarded-For` to any of the requests in this API,
+along with passing the cookie value in the JSON field `authToken`.
+
+The correct `X-Forwarded-For` header is generated automatically if the status
+API is accessed  from
+client-side javascript.  However, if the URL is accessed from a PHP
+script on a server, the automatically-generated IP address for the
+header will be that of the server running the PHP script, rather than
+of the ultimate client, which is wrong.  So to call this API from
+a server-side script, you need to specify the `X-Forwarded-For`
+header explicitly, in which case no value will be generated automatically.
+Here's an example in php:
+
+``` php
+/// @param $url: full URL of API entry
+/// @param $par: associative array of API parameters
+
+function post ($url, $par) {
+    $ch = curl_init($url);
+    $par['authToken'] = $_COOKIE['auth_tkt'];
+    $json = 'json=' . urlencode(json_encode($par));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HEADER, false);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/x-www-form-urlencoded',
+                                               'X-Forwarded-For: ' . $_SERVER['REMOTE_ADDR']));
+    curl_setopt($ch, CURLOPT_POSTFIELDS,  $json);
+    $res = curl_exec($ch);
+    curl_close($ch);
+    return(json_decode(bzdecompress($res), true));
+}
+```
+
+3. Authorization is by project: if a user has permission for a
 project, then that user can see:
 
    - status of all jobs submitted for that project
@@ -109,6 +146,7 @@ projects.
        - select: object with fields for selecting which jobs to list.  A job must match all
          fields provided in order to be included in the list.  Fields are:
           - userID: integer motus user ID
+          - jobID: integer vector; to select only those jobs specified
           - type: character array; the job type(s)
           - done: integer; 0: job not yet complete; 1: job completed successfully; -1: job had error
           - log: character; job whose log matches the string `log`, which can include globbing
