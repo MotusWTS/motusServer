@@ -117,7 +117,7 @@ list_jobs = function(env) {
     if (tracing)
         browser()
 
-    auth = validate_request(json, remoteIP=env$HTTP_X_FORWARDED_FOR, needProjectID=FALSE)
+    auth = validate_request(json, needProjectID=FALSE)
     if (inherits(auth, "error")) return(auth)
 
     projectID = auth$projectID
@@ -128,7 +128,8 @@ list_jobs = function(env) {
 
     ## selectors
     userID    = safe_arg(select, userID, int)
-    type      = safe_arg(select, type, char)
+    jobID     = safe_arg(select, jobID, int, scalar=FALSE)
+    type      = safe_arg(select, type, char, scalar=FALSE)
     done      = safe_arg(select, done, int)
     log       = safe_arg(select, log, char)
 
@@ -162,6 +163,8 @@ list_jobs = function(env) {
         where = addToWhere(where, "motusProjectID is null", conj="or")
     if (!is.null(userID))
         where = addToWhere(where, sprintf("motusUserID = %d", userID))
+    if (!is.null(jobID))
+        where = addToWhere(where, sprintf("id in (%s)", paste0("'", jobID, "'", collapse=",")))
     if (!is.null(type))
         where = addToWhere(where, sprintf("type in (%s)", paste0("'", type, "'", collapse=",")))
     if (!is.null(done))
@@ -238,7 +241,7 @@ subjobs_for_job = function(env) {
     if (tracing)
         browser()
 
-    auth = validate_request(json, remoteIP=env$HTTP_X_FORWARDED_FOR, needProjectID=FALSE)
+    auth = validate_request(json, needProjectID=FALSE)
     if (inherits(auth, "error")) return(auth)
 
     jobID = safe_arg(json, jobID, int)
