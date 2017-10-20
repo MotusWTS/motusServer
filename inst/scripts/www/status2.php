@@ -18,7 +18,10 @@
  ***/
 
 // back-end API server, and various entries
-$STATUS_SERVER_URL = 'http://127.0.0.1:22439/status2/';
+$STATUS_SERVER_URL = 'https://sgdata.motus.org/status2';
+// if we know this script will run from the same server, we can use this
+// direct URL to save one layer of forwarding with encryption overhead.
+// $STATUS_SERVER_URL = 'http://localhost:22439/custom';
 
 $API_STATUS_INFO     = $STATUS_SERVER_URL . '/status_api_info';
 $API_LIST_JOBS       = $STATUS_SERVER_URL . '/list_jobs';
@@ -36,14 +39,19 @@ $authToken = $_COOKIE['auth_tkt'];
 // $url: URL of request
 // $par: array of items to be included in 'json' request object
 // $auth: authentication object, to be added as 'authToken' to request object
+//
+// Note that this function runs on the server side, so the API call happens
+// from there and requires use of the X-Forwarded-For header to pass the
+// client's IP address.
 
-function post ($url, $par, $auth) {
+function post ($url, $par) {
+    global $authToken;
     $ch = curl_init($url);
-    $par['authToken'] = $auth;
+    $par['authToken'] = $authToken;
     $json = 'json=' . urlencode(json_encode($par));
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_HEADER, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/x-www-form-urlencoded'));
+    curl_setopt($ch, CURLOPT_HEADER, false);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/x-www-form-urlencoded', 'X-Forwarded-For: ' . $_SERVER['REMOTE_ADDR']));
     curl_setopt($ch, CURLOPT_POSTFIELDS,  $json);
     $res = curl_exec($ch);
     curl_close($ch);
@@ -52,19 +60,38 @@ function post ($url, $par, $auth) {
 
 
 ?>
-    <html>
+<html>
     <head>
         <title>Status of Motus Processing Version 2 (using API back-end)</title>
-        <script language="javascript" type="text/javascript"
-                src="/javascript/jquery/jquery.min.js"></script>
     </head>
     <body>
         <h3> Status of your motus data-processing jobs </h3>
         <div id="job_status">
             <pre>
-            <?php
-            echo (post($API_LIST_JOBS, array(), $authToken));
-            ?>
+                <?php
+                $tbl = post($API_LIST_JOBS,
+                            array(
+                                'options' => array(
+                                    'includeUnknownProjects' => true,
+                                ),
+                                'order' => array(
+                                    'sortBy' => 'mtime desc'
+                                )
+                            )
+                );
+                ?>
+                <table id="jobs">
+                    <tr>
+                        <th>ID</th><th>MotusUserID</th><th>Type</th><th>Created</th><th>Last Activity</th><th>Status</th>
+                    </tr>
+                    <?php
+                    $n = count($tbl['id']);
+                    for ($i=0; $i < $n; $i++) {
+                        $cdate = strftime("%Y %m %d %H:%M:%S", $tbl['ctime'][$i]);
+                        echo ("<tr class=\"jobSummary\" id=\"job{$tbl['id'][$i]}\"><td>{$tbl['id'][$i]}</td><td>{$tbl['motusUserID'][$i]}</td><td>{$tbl['type'][$i]}</td><td>$cdate</td><td>{$tbl['mtime'][$i]}</td><td>{$tbl['done'][$i]}</td></tr>");
+                    }
+                    ?>
+                </table>
             </pre>
         </div>
     </body>
