@@ -20,7 +20,7 @@
 return_from_app = function(rv) {
     res = Rook::Response$new()
     res$header("Cache-control", "no-cache")
-    res$header("Content-type", "application/json")
+    res$header("Content-Type", "application/json")
     res$header("Content-Encoding", "bzip2")
     res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "bzip2")
     res$finish()
