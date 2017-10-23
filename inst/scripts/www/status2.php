@@ -63,6 +63,8 @@ function post ($url, $par) {
 <html>
     <head>
         <title>Status of Motus Processing Version 2 (using API back-end)</title>
+        <script language="javascript" type="text/javascript"
+                src="/javascript/jquery/jquery.min.js"></script>
     </head>
     <body>
         <h3> Status of your motus data-processing jobs </h3>
@@ -80,15 +82,25 @@ function post ($url, $par) {
                             )
                 );
                 ?>
-                <table id="jobs">
+                <table id="job_list">
                     <tr>
                         <th>ID</th><th>MotusUserID</th><th>Type</th><th>Created</th><th>Last Activity</th><th>Status</th>
                     </tr>
                     <?php
                     $n = count($tbl['id']);
                     for ($i=0; $i < $n; $i++) {
-                        $cdate = strftime("%Y %m %d %H:%M:%S", $tbl['ctime'][$i]);
-                        echo ("<tr class=\"jobSummary\" id=\"job{$tbl['id'][$i]}\"><td>{$tbl['id'][$i]}</td><td>{$tbl['motusUserID'][$i]}</td><td>{$tbl['type'][$i]}</td><td>$cdate</td><td>{$tbl['mtime'][$i]}</td><td>{$tbl['done'][$i]}</td></tr>");
+                        $ctime = strftime("%Y %m %d %H:%M:%S", $tbl['ctime'][$i]);
+                        $mtime = strftime("%Y %m %d %H:%M:%S", $tbl['mtime'][$i]);
+                        echo <<<"JOB_LIST_ROW"
+<tr class="job_list_row" id="job{$tbl['id'][$i]}">
+   <td class="job_list_id">          {$tbl['id'][$i]}          </td>
+   <td class="job_list_motusUserID"> {$tbl['motusUserID'][$i]} </td>
+   <td class="job_list_type">        {$tbl['type'][$i]}        </td>
+   <td class="job_list_ctime">       $ctime                    </td>
+   <td class="job_list_mtime">       $mtime                    </td>
+   <td class="job_list_done">        {$tbl['done'][$i]}        </td>
+</tr>
+JOB_LIST_ROW;
                     }
                     ?>
                 </table>
