@@ -2,7 +2,12 @@
 #'
 #' This includes generating headers, bzip2-compressing the object payload, and
 #' returning the response.  Even app errors are returned by this function,
-#' through a call to \link{\code{error_from_app}}
+#' through a call to \link{\code{error_from_app}}.  If the env() variable
+#' in the parent frame contains a value called `HTTP_ACCEPT_ENCODING` and
+#' that value includes the string "gzip", then as a special case, this
+#' function returns its data gzip-compressed with header `Content-Encoding: gzip`.
+#' This is to support directly calling this API from client-side javascript, which
+#' in Firefox, at least, doesn't support bzip2-compression.
 #'
 #' @param rv the object to return.
 #'
@@ -18,10 +23,27 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 return_from_app = function(rv) {
+    env = parent.frame()$env
+    if (isTRUE(grepl("gzip", env$HTTP_ACCEPT_ENCODING)))
+        compress = "gzip"
+    else
+        compress = "bzip2"
     res = Rook::Response$new()
     res$header("Cache-control", "no-cache")
     res$header("Content-Type", "application/json")
-    res$header("Content-Encoding", "bzip2")
-    res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "bzip2")
+    res$header("Content-Encoding", compress)
+    payload = unclass(toJSON(rv, auto_unbox=TRUE, dataframe="columns"))
+    if (compress == "gzip") {
+        ## sigh: another R edge case: memCompress (, type="gzip") doesn't include headers
+        ## so we use gzcon() instead
+        gzf = tempfile()
+        gzbody = gzfile(gzf, "wb")
+        writeChar(payload, gzbody, eos=NULL)
+        close(gzbody)
+        res$body = readBin(gzf, raw(0), n=file.info(gzf)$size)
+        file.remove(gzf)
+    } else {
+        res$body = memCompress(payload, compress)
+    }
     res$finish()
 }

@@ -17,7 +17,12 @@ the return value suitable as a return value for a Rook app.
 \description{
 This includes generating headers, bzip2-compressing the object payload, and
 returning the response.  Even app errors are returned by this function,
-through a call to \link{\code{error_from_app}}
+through a call to \link{\code{error_from_app}}.  If the env() variable
+in the parent frame contains a value called `HTTP_ACCEPT_ENCODING` and
+that value includes the string "gzip", then as a special case, this
+function returns its data gzip-compressed with header `Content-Encoding: gzip`.
+This is to support directly calling this API from client-side javascript, which
+in Firefox, at least, doesn't support bzip2-compression.
 }
 \note{
 This function is called to return a value by all API entries
