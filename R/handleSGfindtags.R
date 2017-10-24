@@ -1,8 +1,8 @@
-#' run the tag finder on one sensorgnome boot session, in the new style.
+#' handle the job of running the tag finder on one sensorgnome boot session
 #'
-#' Called by \code{\link{server}}.
+#' Called by \code{\link{processServer}}.
 #'
-#' Runs the new tag finder for one boot session of a single SG.
+#' Runs the tag finder for one boot session of a single SG.
 #' The files for that boot session have already been merged into
 #' the DB for that receiver.
 #'
@@ -51,6 +51,8 @@ handleSGfindtags = function(j) {
     ## run the tag finder
     tryCatch({
         rv = sgFindTags(src, getMotusMetaDB(), resume=j$canResume, par = paste(sgDefaultFindTagsParams, por), mbn=j$monoBN)
+        if (any(por == "--pulses_only"))
+            newSubJob(j, "exportPulses", serno=serno, batchID=rv$batchID)
     }, error = function(e) {
         jobLog(j, paste(as.character(e), collapse="   \n"))
     })

@@ -2,7 +2,7 @@
 % Please edit documentation in R/handleSGfindtags.R
 \name{handleSGfindtags}
 \alias{handleSGfindtags}
-\title{run the tag finder on one sensorgnome boot session, in the new style.}
+\title{handle the job of running the tag finder on one sensorgnome boot session}
 \usage{
 handleSGfindtags(j)
 }
@@ -18,10 +18,10 @@ handleSGfindtags(j)
 TRUE on success, or FALSE if the tag finder has an error.
 }
 \description{
-Called by \code{\link{server}}.
+Called by \code{\link{processServer}}.
 }
 \details{
-Runs the new tag finder for one boot session of a single SG.
+Runs the tag finder for one boot session of a single SG.
 The files for that boot session have already been merged into
 the DB for that receiver.
 }

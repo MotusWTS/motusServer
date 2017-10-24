@@ -182,8 +182,28 @@ param   VARCHAR,      -- parameter name
 val     FLOAT(53),    -- parameter setting
 error   INTEGER,      -- 0 if parameter setting succeeded; error code otherwise
 errinfo VARCHAR       -- non-empty if error code non-zero
-)");
-        sql("create index params_ts on params ( ts )")
+)")
+        sql("CREATE INDEX params_ts ON params ( ts )")
+        sql("CREATE INDEX params_batchID ON params ( batchID )")
+    }
+
+    if (! "pulses" %in% tables) {
+        ## pulses table; only populated for batches where find_tags_motus
+        ## is run with `--pulses_only` option
+        ## Meant as an interim data product for beeper tags.
+
+        sql("
+CREATE TABLE IF NOT EXISTS pulses (
+   batchID INTEGER,    -- batchID these pulses belong to
+   ts      FLOAT(53),  -- timestamp of pulse
+   ant     INTEGER,    -- antenna number
+   antFreq FLOAT(53),  -- antenna tuner frequency (MHz)
+   dfreq   FLOAT(53),  -- frequency offset of pulse (kHz)
+   sig     FLOAT,      -- relative signal strength (dB max)
+   noise   FLOAT       -- relative noise level (dB max)
+)")
+        sql("CREATE INDEX IF NOT EXISTS pulses_ts ON pulses(ts)")
+        sql("CREATE INDEX IF NOT EXISTS pulses_batchID ON pulses(batchID)")
     }
 
     if (! "pulseCounts" %in% tables) {
@@ -398,6 +418,6 @@ CREATE TABLE motusTX (
 
 ## list of tables needed in the receiver database
 
-sgTableNames = c("meta", "files", "fileContents", "timeFixes", "GPS", "params", "pulseCounts", "batches",
+sgTableNames = c("meta", "files", "fileContents", "timeFixes", "GPS", "params", "pulses", "pulseCounts", "batches",
                  "runs", "hits", "batchProgs", "batchParams", "batchState", "tagAmbig", "DTAfiles",
                  "DTAtags", "motusTX")
