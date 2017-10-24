@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS paramOverrides (
     progName VARCHAR(16) NOT NULL,             -- identifier of program; e.g. 'find_tags',
                                                -- 'lotek-plugins.so'
     paramName VARCHAR(16) NOT NULL,            -- name of parameter (e.g. 'minFreq')
-    paramVal FLOAT(53) NOT NULL,               -- value of parameter
+    paramVal FLOAT(53),                        -- value of parameter (call be null if parameter is just a flag)
     why TEXT                                   -- human-readable reason for this override
 );")
     sql("CREATE INDEX IF NOT EXISTS paramOverrides_serno ON paramOverrides(serno);")
