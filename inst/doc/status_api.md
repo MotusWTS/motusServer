@@ -183,7 +183,7 @@ projects.
      - 'rerunReceiver': rerun the tag finder on existing data files
      Top-level jobs generate sub jobs; e.g. `uploadFiles` will typically generate one or more
      tag finder jobs of types `LtFindtags` or `SGfindtags`, a data summary job of type `plotData`,
-     and a data merging job of tyep `exportData`.
+     and a data merging job of type `exportData`.
 
      Only jobs to which the  user has permission are returned.
 
