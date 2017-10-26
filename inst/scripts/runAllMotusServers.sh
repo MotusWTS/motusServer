@@ -40,7 +40,7 @@ EOF
 fi
 
 if [[ "$1" == "-s" ]]; then
-    sqlite3 /sgm_hd/server.sqlite "delete from symLocks"
+    sqlite3 /sgm/server.sqlite "delete from symLocks"
     shift
 fi
 

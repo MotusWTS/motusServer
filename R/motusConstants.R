@@ -90,8 +90,8 @@ MOTUS_BADFILE_ARCHIVE = "bad_files.zip.NOAUTO"
 
 MOTUS_PATH = list(
     ROOT             = "/sgm",
-    BIN              = "/sgm_hd/bin/",               ## executable scripts and programs (store on HD)
-    CACHE            = "/sgm_hd/cache/",             ## recent results of large queries from motus.org (store on HD)
+    BIN              = "/sgm/bin/",                  ## executable scripts and programs (store on HD)
+    CACHE            = "/sgm/cache/",                ## recent results of large queries from motus.org (store on HD)
     CRYPTO           = "/sgm/crypto/",               ## public/private keypairs for ssh etc. by receivers
     DONE             = "/sgm/done/",                 ## folders for completed jobs
     DOWNLOADS        = "/sgm/downloads/",            ## manually-downloaded files; downloadXXX() checks here before (re) grabbing file
@@ -103,7 +103,7 @@ MOTUS_PATH = list(
     METADATA_HISTORY = "/sgm/metadata_history/",     ## .git repo tracking metadata changes
     OUTBOX           = "/sgm/outbox/",               ## copies of all sent emails
     OUTBOX_EMBARGOED = "/sgm/outbox_embargoed/",     ## unsent outgoing emails
-    PARAM_OVERRIDES  = "/sgm_hd/paramOverrides.sqlite", ## DB with table of receiver-boot-session-specific overrides for the tag finder
+    PARAM_OVERRIDES  = "/sgm/paramOverrides.sqlite", ## DB with table of receiver-boot-session-specific overrides for the tag finder
     PLOTS            = "/sgm/plots/",                ## generated plots
     PRIORITY         = "/sgm/priority/",             ## jobs created here run on a processServer dedicated to short, fast jobs; e.g. updating attached SGs
     PUB              = "/sgm/pub/",                  ## web-visible public content
@@ -130,11 +130,11 @@ MOTUS_PATH = list(
 
     REMOTE_ATJOBS    = "/sgm/remote/atjobs/",        ## at-job IDs for syncReceiver jobs, by receiver serial number
     REMOTE_CONNECTIONS = "/sgm/remote/connections/", ## empty files whose names are serial numbers of connected receivers
-    REMOTE_LIVE      = "/sgm_hd/live.sqlite",        ## DB of live client connections to receivers via our web server
-    REMOTE_RECV_DB   = "/sgm_hd/receivers.sqlite",   ## the database to hold info on remote receivers
+    REMOTE_LIVE      = "/sgm/live.sqlite",           ## DB of live client connections to receivers via our web server
+    REMOTE_RECV_DB   = "/sgm/receivers.sqlite",      ## the database to hold info on remote receivers
     REMOTE_STREAMS   = "/sgm/remote/streams/",       ## .sqlite databases of all live content streamed from receivers
     REMOTE_SOCKETS   = "/sgm/remote/sockets/",       ## sockets used for the live webpage to connected receivers
-    SERVER_DB        = "/sgm_hd/server.sqlite",      ## the database used to record server activity
+    SERVER_DB        = "/sgm/server.sqlite",         ## the database used to record server activity
 
     SYNC             = "/sgm/remote/sync/",          ## when an empty file having a receiver serial number as its name is placed here,
                                                      ## the receiver is sync'd remotely
@@ -150,7 +150,7 @@ MOTUS_PATH = list(
     UPLOAD_ARCHIVE   = "/sgm/uploaded/files",        ## folder where ProjectSend stores uploaded files, filed by username
 
                                                      ## must be writable by the user running the ProjectSend webserver (www-data)
-    USERAUTH         = "/sgm_hd/user_auth.sqlite",   ## database of user authentication tokens
+    USERAUTH         = "/sgm/user_auth.sqlite",      ## database of user authentication tokens
 
     WWW              = structure("/sgm/www/",        ## File hierarchy to be served by apache to authenticated motus users
                        perm = "g+rsx")               ## listable/readable
