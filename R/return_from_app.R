@@ -23,7 +23,14 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 return_from_app = function(rv) {
-    env = parent.frame()$env
+    n = 1
+    ## ascend up to 10 frames to find an environment called `env`
+    while (n < 10) {
+        env = parent.frame(n)$env
+        if (! is.null(env) && is.environment(env))
+            break
+        n = n + 1
+    }
     if (isTRUE(grepl("gzip", env$HTTP_ACCEPT_ENCODING)))
         compress = "gzip"
     else
