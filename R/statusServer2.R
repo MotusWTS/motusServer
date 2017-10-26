@@ -56,8 +56,9 @@ statusServer2 = function(port = 0x57A7, tracing=FALSE, maxRows=1000L) {
 }
 
 ## a string giving the list of apps for this server
+## Note that we re-use authenticate_user from statusServer.
 
-allStatusApps = c("status_api_info", "list_jobs", "subjobs_for_job", "_shutdown")
+allStatusApps = c("status_api_info", "list_jobs", "_shutdown", "authenticate_user")
 
 sortColumns = c("ctime", "mtime", "id", "type", "motusProjectID", "motusUserID")
 sortCriteria = c(sortColumns, paste(sortColumns, "desc"))
@@ -229,50 +230,6 @@ order,
 MAX_ROWS_PER_REQUEST
 )
     }
-    return_from_app(ServerDB(query))
-}
-
-#' return the list of subjobs for a job, if any.
-
-subjobs_for_job = function(env) {
-    json = fromJSON(parent.frame()$postBody["json"])
-
-    if (tracing)
-        browser()
-
-    auth = validate_request(json, needProjectID=FALSE)
-    if (inherits(auth, "error")) return(auth)
-
-    jobID = safe_arg(json, jobID, int)
-    if (is.null(jobID)) {
-        return(error_from_app("missing jobID"))
-    }
-    where = addToWhere(sprintf("pid is not null and stump = %f", jobID))
-    if (auth$userType != "administrator") {
-        where = addToWhere(where, sprintf("motusProjectID in (%s)", paste(auth$projects, collapse=",")))
-    }
-
-    query = sprintf("
-select
-   id,
-   pid,
-   stump,
-   ctime,
-   mtime,
-   type,
-   done,
-   queue,
-   path,
-   motusUserID,
-   motusProjectID,
-   data
-from
-   jobs
-%s
-limit %d",
-where,
-MAX_ROWS_PER_REQUEST
-)
     return_from_app(ServerDB(query))
 }
 

@@ -201,27 +201,6 @@ projects.
       - `motusProjectID`: project ID for results of job
       - `data`: (if `full` was `true` in the request) sub-object representing job parameters, log, summary, products
 
-### subjobs_for_job ###
 
-   subjobs_for_job (jobID, authToken)
 
-       - jobID: integer motus job ID, as given in the `id` column returned by `list_jobs()`
 
-      e.g.
-      curl --data-urlencode json='{"jobID":112034,"authToken":"XXX"}' https://sgdata.motus.org/status/subjobs_for_job
-
-   - return a list of sub jobs for the given job.
-
-   - items in the return value are arrays:
-      - `id`: job ids
-      - `pid`: parent job ids (this is NA for top-level jobs)
-      - `stump`: top-level job id (job of which this is a subjob; for a top-level job, id==stump)
-      - `ctime`: creation times (unix timestamp; seconds since 1 Jan 1970 GMT)
-      - `mtime`: modification time (unix timestamp; seconds since 1 Jan 1970 GMT)
-      - `type`: type of job; e.g. "uploadFile"
-      - `done`: 0 if not yet run; +1 if successful; < 0 if error
-      - `queue`: number of queue job is in; 0 means waiting
-      - `path`: file system path to job folder, if any
-      - `motusUserID`: motus user ID of person who submitted job
-      - `motusProjectID`: project ID for results of job
-      - `data`: sub-object representing job parameters, log, summary, products
