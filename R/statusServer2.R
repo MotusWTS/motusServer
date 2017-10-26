@@ -120,6 +120,7 @@ list_jobs = function(env) {
     ## selectors
     userID    = safe_arg(select, userID, int)
     jobID     = safe_arg(select, jobID, int, scalar=FALSE)
+    stump     = safe_arg(select, stump, int)
     type      = safe_arg(select, type, char, scalar=FALSE)
     done      = safe_arg(select, done, int)
     log       = safe_arg(select, log, char)
@@ -160,6 +161,8 @@ list_jobs = function(env) {
         where = c(where, sprintf("motusUserID = %d", userID))
     if (!is.null(jobID))
         where = c(where, sprintf("id in (%s)", paste0("'", jobID, "'", collapse=",")))
+    if (!is.null(stump))
+        where = c(where, sprintf("stump = %d", stump))
     if (!is.null(type))
         where = c(where, sprintf("type in (%s)", paste0("'", type, "'", collapse=",")))
     if (!is.null(done))
