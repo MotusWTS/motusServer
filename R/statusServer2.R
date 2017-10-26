@@ -17,6 +17,8 @@
 
 statusServer2 = function(port = 0x57A7, tracing=FALSE, maxRows=1000L) {
 
+    serverCommon()
+
     ## save maxRows in a global variable so methods can obtain it
     MAX_ROWS_PER_REQUEST <<- maxRows
 
@@ -24,9 +26,6 @@ statusServer2 = function(port = 0x57A7, tracing=FALSE, maxRows=1000L) {
 
     ## ensure a large cache - we use the server DB intensively
     ServerDB("pragma cache_size=60000")
-
-    library(Rook)
-    library(hwriter)
 
     ## save server in a global variable in case we are tracing
 
@@ -40,12 +39,6 @@ statusServer2 = function(port = 0x57A7, tracing=FALSE, maxRows=1000L) {
         SERVER$add(RhttpdApp$new(app = get(f), name = f))
 
     motusLog("Status server (API version) started")
-
-    ## get user auth database
-
-    AuthDB <<- safeSQL(MOTUS_PATH$USERAUTH)
-    AuthDB("create table if not exists auth (token TEXT UNIQUE PRIMARY KEY, expiry REAL, userID INTEGER, projects TEXT, receivers TEXT, userType TEXT)")
-    AuthDB("create index if not exists auth_expiry on auth (expiry)")
 
     SERVER$start(port = port)
 

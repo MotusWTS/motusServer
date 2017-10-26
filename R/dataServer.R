@@ -17,36 +17,13 @@
 
 dataServer = function(port=0xda7a, tracing=FALSE, maxRows=10000) {
 
-    library(Rook)
-    library(hwriter)
-    library(RCurl)
-    library(jsonlite)
+    serverCommon()
 
     ## save maxRows in a global variable so methods can obtain it
     MAX_ROWS_PER_REQUEST <<- maxRows
 
-    ## make sure the server database exists, is open, and put a safeSQL object in the global ServerDB
-    ensureServerDB()
-
-    ## open the "motus transfer" database, putting a safeSQL object in the global MotusDB
-    openMotusDB()
-
     ## assign global MotusCon to be the low-level connection behind MotusDB, as some
     ## functions must us that
-
-    MotusCon <<- MotusDB$con
-
-    ## assign global MetaDB to be a safeSQL connection to the cached motus metadatabase
-    MetaDB <<- safeSQL(getMotusMetaDB())
-
-    ## options for this server:
-
-    ## lifetime of authorization token: 3 days
-    OPT_AUTH_LIFE <<- 3 * 24 * 3600
-
-    ## number of random bits in authorization token;
-    ## gets rounded up to nearest multiple of 8
-    OPT_TOKEN_BITS <<- 33 * 8
 
     tracing <<- tracing
 
@@ -55,14 +32,6 @@ dataServer = function(port=0xda7a, tracing=FALSE, maxRows=10000) {
     ## which is on our search path)
 
     .GlobalEnv$Server = Rhttpd$new()
-
-    Curl <<- getCurlHandle()
-
-    ## get user auth database
-
-    AuthDB <<- safeSQL(MOTUS_PATH$USERAUTH)
-    AuthDB("create table if not exists auth (token TEXT UNIQUE PRIMARY KEY, expiry REAL, userID INTEGER, projects TEXT, receivers TEXT, userType TEXT)")
-    AuthDB("create index if not exists auth_expiry on auth (expiry)")
 
     ## add each function below as an app
 
