@@ -62,21 +62,12 @@ allStatusApps = c("status_api_info", "list_jobs", "subjobs_for_job", "_shutdown"
 sortColumns = c("ctime", "mtime", "id", "type", "motusProjectID", "motusUserID")
 sortCriteria = c(sortColumns, paste(sortColumns, "desc"))
 
-#' add condition(s) to the where clause
-addToWhere = function(where, new, conj="and") {
-    if (missing(new)) {
-        new = where
-        where = ""
-    } else {
-        where = sub("^where ", "", where)
-    }
-    for (n in new) {
-        if (where == "")
-            where = n
-        else
-            where = paste("(", where, ")", conj, "(", n, ")")
-    }
-    return(paste0("where ", where))
+#' add condition(s) to the where clause; strip
+#' any leading "where " from the items in clauses,
+#' then join them together using conj and add a preceding "where "
+makeWhere = function(clauses, conj="and") {
+    clauses = sub("^where ", "", clauses, ignore.case=TRUE)
+    return(paste0("where ", paste0("(", clauses, ")", collapse = conj)))
 }
 
 #' add condition(s) to the order by clause
@@ -154,30 +145,35 @@ list_jobs = function(env) {
     ## generate where clause from selectors
 
     if (includeSubjobs)
-        where = ""
+        where = NULL
     else
-        where = addToWhere("pid is null")  ## only top-level jobs; these have no parent id
-    if (!is.null(projectID))
-        where = addToWhere(where, sprintf("motusProjectID in (%s)", paste(projectID, collapse=",")))
+        where = makeWhere("pid is null")  ## only top-level jobs; these have no parent id
+    if (is.null(projectID)) {
+        projwhere = NULL
+    } else {
+        projwhere = sprintf("motusProjectID in (%s)", paste(projectID, collapse=","))
+    }
     if (isTRUE(includeUnknownProjects))
-        where = addToWhere(where, "motusProjectID is null", conj="or")
+        projwhere = makeWhere(c(projwhere, "motusProjectID is null"), conj="or")
+    where = c(where, projwhere)
     if (!is.null(userID))
-        where = addToWhere(where, sprintf("motusUserID = %d", userID))
+        where = c(where, sprintf("motusUserID = %d", userID))
     if (!is.null(jobID))
-        where = addToWhere(where, sprintf("id in (%s)", paste0("'", jobID, "'", collapse=",")))
+        where = c(where, sprintf("id in (%s)", paste0("'", jobID, "'", collapse=",")))
     if (!is.null(type))
-        where = addToWhere(where, sprintf("type in (%s)", paste0("'", type, "'", collapse=",")))
+        where = c(where, sprintf("type in (%s)", paste0("'", type, "'", collapse=",")))
     if (!is.null(done))
-        where = addToWhere(where, switch(as.character(done), `1` = "done > 0", `0` = "done = 0", `-1` = "done < 0"))
+        where = c(where, switch(as.character(done), `1` = "done > 0", `0` = "done = 0", `-1` = "done < 0"))
     if (!is.null(log))
-        where = addToWhere(where, sprintf("data glob '%s'", log))
+        where = c(where, sprintf("data glob '%s'", log))
 
+    where = makeWhere(where)
     ## generate order by and additional where clause items for paging
 
     if (is.null(sortBy)) {
         sortBy = c("mtime desc")
     } else if (! all (sortBy %in% sortCriteria)) {
-        return(error_from_app("invalid sort criterion"))
+        return(error_from_app("invalid sortBy"))
     }
 
     if (! (is.null(lastKey) || length(lastKey) == length(sortBy))) {
@@ -187,7 +183,7 @@ list_jobs = function(env) {
     if (! is.null(lastKey)) {
         sortByCols = sub(" desc$", "", sortBy)
         sortByOp = ifelse(grepl(" desc$", sortBy), "<", ">")
-        where = addToWhere(where, sprintf("%s %s %f", sortByCols, sortByOp, lastKey))
+        where = makeWhere(where, sprintf("%s %s %f", sortByCols, sortByOp, lastKey))
     }
 
     order = ""
