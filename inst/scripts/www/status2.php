@@ -13,7 +13,10 @@
 
    - on the client, using javascript; specifically, using jquery's
    $.query() function; this is how the detailed view of a single
-   job is generated
+   job is generated. Moreover, this shows using JS templating using
+   a modified 'mustache.js' which can handle data packaged as
+   an Ojbect of Arrays, which is how motusServer APIs return values,
+   in keeping with the natural JSON representation of R data.frames
 
    There was no specific reason to do it this way, except to
    demonstrate both approaches.
@@ -25,7 +28,7 @@
    except that they are gzip-compressed if the request includes an
    `Accept-Encoding` header containing the word 'gzip'.  This is a
    special case to allow AJAX queries, for which bzip2 compression is
-   not supported on some clients (e.g Firefox)
+   not supported on some (any?) clients (e.g Firefox)
 
    API documentation is here:
 
@@ -84,8 +87,12 @@ function post ($url, $par) {
                 src="/download/status2.js"></script>
         <script language="javascript" type="text/javascript"
                 src="/download/jquery.mustache.min.js"></script>
+        <!--
         <script language="javascript" type="text/javascript"
                 src="/download/mustache.min.js"></script>
+        -->
+        <script language="javascript" type="text/javascript"
+                src="/download/mustache.js"></script>
         <script language="javascript"  type="text/javascript"
                 src="/download/jquery-ui-1.12.1.custom/jquery-ui.min.js">script</script>
         <link rel="stylesheet" href="/download/jquery-ui-1.12.1.custom/jquery-ui.min.css">
@@ -94,16 +101,16 @@ function post ($url, $par) {
          $(function() {
              $(document).on('click', '.job_list_row', function() {show_job_details(this.id.replace(/^job/, ""))});
              $.Mustache.add("job_details",
-`
+                            `
 <b>Log:</b>
 <pre>
 {{log}}
 </pre>
 <b>Sub Jobs:</b>
 <table>
-<tr><th>id</th><th>ctime</th><th>type</th><th>done</th></tr>
+<tr><th>id</th><th>ctime</th><th>type</th><th>done</th><th>params</th></tr>
 {{@details}}
-<tr><td>{{id}}</td><td>{{ctime}}</td><td>{{type}}</td><td>{{done}}</td></tr>
+<tr><td>{{id}}</td><td>{{fmt_ctime}}</td><td>{{type}}</td><td>{{done}}</td><td>{{params}}</td></tr>
 {{/details}}
 </table>
 `);

@@ -55,6 +55,17 @@ function show_job_details(jobID) {
                      }, show_job_details2);
 };
 
+function fmt_time(x) {
+  return (new Date(1000 * x)).toISOString();
+};
+
+function fmt_params(x) {
+  x = JSON.parse(x);
+  if (x == null)
+    return "";
+  return Object.keys(x).map(function(k) {if (k[k.length - 1] == '_') return null; else return k +" = " + x[k]}).join(", ");
+};
+
 // @function show_job_details2: display a pop-up div with details of a job and its subjobs
 //
 // @param x: detailed list of subjobs for a job (including the job itself), as
@@ -63,6 +74,21 @@ function show_job_details(jobID) {
 // @details receive details for subjobs and display them in a popup div
 
 function show_job_details2(x) {
-  $("#job_details").mustache("job_details", {details:x, log:JSON.parse(x.data[0]).log_}, {method:"html"});
-  $("#job_details").dialog({position:{"my":"left top", "at":"left top"}, title:"Details for top-level job " + x.id[0]});
+  $("#job_details").mustache("job_details",
+                             {
+                               details:x,
+                               log:JSON.parse(x.data[0]).log_,
+                               fmt_ctime:function(i) {
+                                 return fmt_time(this.ctime[i])
+                               },
+                               params:function(i) {
+                                 return fmt_params(this.data[i])
+                               }
+                             },
+                             {
+                               method:"html"
+                             }
+                            );
+
+  $("#job_details").dialog({closeOnEscape:true, width:800, position:{"my":"left top", "at":"left top"}, title:"Details for top-level job " + x.id[0]});
 };
