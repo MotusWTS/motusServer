@@ -63,5 +63,6 @@ function show_job_details(jobID) {
 // @details receive details for subjobs and display them in a popup div
 
 function show_job_details2(x) {
-    console.log(JSON.stringify(x))
+  $("#job_details").mustache("job_details", {details:x, log:JSON.parse(x.data[0]).log_}, {method:"html"});
+  $("#job_details").dialog({position:{"my":"left top", "at":"left top"}, title:"Details for top-level job " + x.id[0]});
 };

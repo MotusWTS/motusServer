@@ -82,10 +82,32 @@ function post ($url, $par) {
                 src="/javascript/jquery/jquery.min.js"></script>
         <script language="javascript" type="text/javascript"
                 src="/download/status2.js"></script>
+        <script language="javascript" type="text/javascript"
+                src="/download/jquery.mustache.min.js"></script>
+        <script language="javascript" type="text/javascript"
+                src="/download/mustache.min.js"></script>
+        <script language="javascript"  type="text/javascript"
+                src="/download/jquery-ui-1.12.1.custom/jquery-ui.min.js">script</script>
+        <link rel="stylesheet" href="/download/jquery-ui-1.12.1.custom/jquery-ui.min.css">
         <script language="javascript" type="text/javascript">
          // handle user click on job row by calling `show_job_details` for the appropriate job
          $(function() {
              $(document).on('click', '.job_list_row', function() {show_job_details(this.id.replace(/^job/, ""))});
+             $.Mustache.add("job_details",
+`
+<b>Log:</b>
+<pre>
+{{log}}
+</pre>
+<b>Sub Jobs:</b>
+<table>
+<tr><th>id</th><th>ctime</th><th>type</th><th>done</th></tr>
+{{@details}}
+<tr><td>{{id}}</td><td>{{ctime}}</td><td>{{type}}</td><td>{{done}}</td></tr>
+{{/details}}
+</table>
+`);
+
          })
         </script>
     </head>
@@ -105,6 +127,8 @@ function post ($url, $par) {
                             )
                 );
                 ?>
+                <div id="job_details">
+                </div>
                 <table id="job_list">
                     <tr>
                         <th>ID</th><th>MotusUserID</th><th>Type</th><th>Created</th><th>Last Activity</th><th>Status</th>
