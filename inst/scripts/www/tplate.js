@@ -31,12 +31,12 @@
 tplate = function(s, c, E, F) {
     var e = [];
     c = c || {};
-    E = E.substr(0, 1) || '@';
-    F = F.substr(0, 1) || E;
+    E = E ? E[0] : '@';
+    F = F ? F[0] : E;
     var r = RegExp(E + '([^' + E + F + ']*)' + F, "g");
     s.replace(r, function(m, x) {e.push(x.replace(/([^\\])"/g, '$1\\"') || '"' + E  + '"')});
     e = eval('with(c){[' + e.join(",") + ']}');
     var i=0;
-    s = s.replace(rx, function(m, x) {return(e[i++]);});
+    s = s.replace(r, function(m, x) {return(e[i++]);});
     return(s);
 }
