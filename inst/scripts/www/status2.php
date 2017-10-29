@@ -87,12 +87,8 @@ function post ($url, $par) {
                 src="/download/status2.js"></script>
         <script language="javascript" type="text/javascript"
                 src="/download/jquery.mustache.min.js"></script>
-        <!--
         <script language="javascript" type="text/javascript"
                 src="/download/mustache.min.js"></script>
-        -->
-        <script language="javascript" type="text/javascript"
-                src="/download/mustache.js"></script>
         <script language="javascript"  type="text/javascript"
                 src="/download/jquery-ui-1.12.1.custom/jquery-ui.min.js">script</script>
         <link rel="stylesheet" href="/download/jquery-ui-1.12.1.custom/jquery-ui.min.css">
@@ -109,7 +105,7 @@ function post ($url, $par) {
 <b>Sub Jobs:</b>
 <table>
 <tr><th>id</th><th>ctime</th><th>type</th><th>done</th><th>params</th></tr>
-{{@details}}
+{{#details}}
 <tr><td>{{id}}</td><td>{{fmt_ctime}}</td><td>{{type}}</td><td>{{done}}</td><td>{{params}}</td></tr>
 {{/details}}
 </table>

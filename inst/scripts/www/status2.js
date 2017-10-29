@@ -74,6 +74,7 @@ function fmt_params(x) {
 // @details receive details for subjobs and display them in a popup div
 
 function show_job_details2(x) {
+  x.__transpose__ = true;
   $("#job_details").mustache("job_details",
                              {
                                details:x,
