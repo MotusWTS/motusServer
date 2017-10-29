@@ -15,7 +15,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-statusServer2 = function(port = 0x57A7, tracing=FALSE, maxRows=1000L) {
+statusServer2 = function(port = 0x57A7, tracing=FALSE, maxRows=100L) {
 
     serverCommon()
 
@@ -220,7 +220,7 @@ limit %d",
 if (isTRUE(full)) ", data" else "",
 where,
 order,
-MAX_ROWS_PER_REQUEST
+if (is.null(stump)) MAX_ROWS_PER_REQUEST else -1
 )
     }
     return_from_app(ServerDB(query))
