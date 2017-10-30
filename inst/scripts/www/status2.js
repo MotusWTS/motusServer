@@ -8,6 +8,21 @@ var authToken = decodeURIComponent(document.cookie.match(/(^|;)auth_tkt=([^;]*)(
 // where to send API requests
 var serverURL = "https://sgdata.motus.org/status2/";
 
+// @function toArray: guarantee argument is an array
+//
+// @param x: scalar, array, or object
+// @return x as an array; if x is already an array, just return it.
+// If `x` is a scalar, wrap it into an array with one element.
+// If 'x' is an object, return its values, in the order indexed by Object.keys(x)
+
+toArray = function(x) {
+  if (Array.isArray(x))
+    return x;
+  if (typeof(x) == "object")
+    return Object.keys(x).map((i)=>x[i]);
+  return [x];
+};
+
 // @function motus_status_api: call one of the motus status API entries
 //
 // @param api: entry, e.g. "authenticate_user", "status_api_info", "list_jobs", "subjobs_for_job", ...
@@ -30,6 +45,56 @@ function motus_status_api(api, par, cb) {
         cb = function(x) {authToken = x.authToken; oldcb(x)};
     }
     $.post(serverURL + api, {"json":JSON.stringify(par)}, cb);
+};
+
+// @function show_job_list: display a list of jobs
+//
+// @param sortBy; sort order; default: "mtime"
+// @param keyVal: last key for given sort order; default: null
+//
+// @details fetch summary list of jobs, then chains to show_job_list2
+
+function show_job_list(sortBy, keyVal) {
+  sortyBy = sortBy || "mtime desc";
+  keyval = (keyVal === undefined) ? null : keyVal;
+    motus_status_api("list_jobs",
+                     {
+                         options:{
+                             includeUnknownProjects:true,
+                         },
+                         order:{
+                           sortBy:sortBy,
+                           keyVal:keyval
+                         }
+                     }, show_job_list2);
+};
+
+// @function show_job_list2: display the summary list of jobs
+//
+// @param x: summary list of jobs
+//
+// @details receive details for jobs and display them in main div
+
+function show_job_list2(x) {
+  x.__transpose__ = true;
+
+  $(".job_list").mustache("tpl_job_list",
+                          {
+                            jobs:x,
+                            fmt_ctime:function(i) {
+                              return fmt_time(this.ctime[i])
+                            },
+                            fmt_mtime:function(i) {
+                              return fmt_time(this.mtime[i])
+                            },
+                            fmt_done:function(i) {
+                              return fmt_done(this.done[i])
+                            }
+                          },
+                          {
+                            method:"html"
+                          }
+                         );
 };
 
 // @function show_job_details: display a pop-up with details of a job and its subjobs
@@ -56,14 +121,29 @@ function show_job_details(jobID) {
 };
 
 function fmt_time(x) {
-  return (new Date(1000 * x)).toISOString();
+  return (new Date(1000 * x)).toGMTString();
 };
 
 function fmt_params(x) {
   x = JSON.parse(x);
-  if (x == null)
+  if (x == null) {
     return "";
-  return Object.keys(x).map(function(k) {if (k[k.length - 1] == '_') return null; else return k +" = " + x[k]}).join(", ");
+  }
+  return Object.keys(x).filter(k=>k[k.length-1] != '_').map(k=>k +" = " + x[k]).join("; ");
+};
+
+function fmt_done(x) {
+  switch (x) {
+  case 0:
+    return '<span class="status_not_run">(not run)</span>';
+    break;
+  case 1:
+    return '<span class="status_okay">Okay</span>';
+    break;
+  default:
+    return '<span class="status_error">Error</span>';
+    break;
+  }
 };
 
 // @function show_job_details2: display a pop-up div with details of a job and its subjobs
@@ -75,21 +155,42 @@ function fmt_params(x) {
 
 function show_job_details2(x) {
   x.__transpose__ = true;
-  $("#job_details").mustache("job_details",
+  json = x.data.map(JSON.parse);
+
+  // Currently we're using auto_unbox = TRUE in toJSON() when storing
+  // job properties in the `data` column of the server's jobs
+  // database.  Unfortunately, this means vectors of length 1 are
+  // JSON-encoded as scalars, instead of arrays.  This is a problem
+  // for fields such as `products_` which should always be an array, even if
+  // of length 1.  For now,t he workaround is to wrap fields which *should be*
+  // arrays in the `toArray()` function defined above.
+
+  // Note that this doesn't apply to columns returned by the API, which are
+  // always arrays.
+
+  $(".job_details").mustache("tpl_job_details",
                              {
                                details:x,
-                               log:JSON.parse(x.data[0]).log_,
+                               log:json[0].log_,
                                fmt_ctime:function(i) {
                                  return fmt_time(this.ctime[i])
                                },
                                params:function(i) {
                                  return fmt_params(this.data[i])
-                               }
+                               },
+                               fmt_done:function(i) {
+                                 return fmt_done(this.done[i])
+                               },
+                               products: json[0].products_ && json[0] ? {
+                                 __transpose__: true,
+                                 link: toArray(json[0].products_),
+                                 name: toArray(json[0].products_).map(i=>String.replace(i, /^.*\//, ""))
+                               } : null
                              },
                              {
                                method:"html"
                              }
                             );
 
-  $("#job_details").dialog({closeOnEscape:true, width:800, position:{"my":"left top", "at":"left top"}, title:"Details for top-level job " + x.id[0]});
+  $(".job_details").dialog({position:{my:"top", at:"top"},dragable:false, closeOnEscape:true, width:800, title:"Details for top-level job " + x.id[0]});
 };

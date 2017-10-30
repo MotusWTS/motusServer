@@ -34,7 +34,6 @@
 
    https://github.com/jbrzusto/motusServer/blob/new_server/inst/doc/status_api.md
 
-   Note that the PHP code below still runs the query from the
  ***/
 
 // because PHP runs on the proxy server, we can send API requests
@@ -92,23 +91,49 @@ function post ($url, $par) {
         <script language="javascript"  type="text/javascript"
                 src="/download/jquery-ui-1.12.1.custom/jquery-ui.min.js">script</script>
         <link rel="stylesheet" href="/download/jquery-ui-1.12.1.custom/jquery-ui.min.css">
+        <link rel="stylesheet" href="/download/status2.css">
         <script language="javascript" type="text/javascript">
          // handle user click on job row by calling `show_job_details` for the appropriate job
          $(function() {
              $(document).on('click', '.job_list_row', function() {show_job_details(this.id.replace(/^job/, ""))});
-             $.Mustache.add("job_details",
-                            `
-<b>Log:</b>
-<pre>
-{{log}}
-</pre>
-<b>Sub Jobs:</b>
-<table>
-<tr><th>id</th><th>ctime</th><th>type</th><th>done</th><th>params</th></tr>
-{{#details}}
-<tr><td>{{id}}</td><td>{{fmt_ctime}}</td><td>{{type}}</td><td>{{done}}</td><td>{{params}}</td></tr>
-{{/details}}
+             $.Mustache.add("job_details", `
+{{=⟦ ⟧=}}
+<span class="job_product_heading">Products:</span>
+<div id="job_product_list">
+<ul>
+   ⟦#products⟧
+      <li class="job_product_list_item"><a href="⟦link⟧" target="_blank">⟦name⟧</a></li>
+   ⟦/products⟧
+   ⟦^products⟧
+      (none)
+   ⟦/products⟧
+</ul>
+</div>
+<span class="subjobs_heading">Sub Jobs:</span>
+<table class="subjobs_table">
+<tr class="subjobs_table_heading">
+   <th>Job ID</th>
+   <th>Created</th>
+   <th>Type</th>
+   <th>Status</th>
+   <th>Parameters</th>
+</tr>
+⟦#details⟧
+   <tr class="subjob_table_row" job_id="⟦id⟧">
+      <td>⟦id⟧</td>
+      <td>⟦fmt_ctime⟧</td>
+      <td>⟦type⟧</td>
+      <td>⟦&fmt_done⟧</td>
+      <td>⟦params⟧</td>
+   </tr>
+⟦/details⟧
 </table>
+<div>
+   <span class="log_heading">Log:</span>
+   <div class="job_log">
+      ⟦log⟧
+   </div>
+</div>
 `);
 
          })

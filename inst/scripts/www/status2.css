@@ -1,0 +1,41 @@
+/*! css for motus status2 page
+
+*/
+
+.job_log {
+    white-space: pre-wrap;
+    font-family: monospace;
+}
+
+.subjobs_heading {
+    font-weight: bold;
+}
+
+.subjobs_table_heading {
+    font-weight: bold;
+}
+
+.log_heading {
+    font-weight: bold;
+}
+
+.status_okay {
+    background-color: #20FF2040;
+}
+
+.status_error {
+    background-color: #FF202040;
+}
+
+.status_not_run {
+    background-color: #FFFF2040;
+}
+
+.job_product_heading {
+    font-weight: bold;
+}
+
+.job_list {
+    font-weight: bold;
+    font-size: 2x;
+}
