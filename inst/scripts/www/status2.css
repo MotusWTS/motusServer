@@ -59,3 +59,7 @@
     font-weight: bold;
     font-size-adjust: 0.75;
 }
+
+.highlighted_jobs_table_row {
+    background-color: #E0E00080;
+}

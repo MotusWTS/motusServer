@@ -203,7 +203,21 @@ function show_job_details2(x) {
                              }
                             );
 
-  $(".job_details").dialog({top:$("html").offset().top,maxHeight: 600, dragable:false, closeOnEscape:true, width:800, title:"Details for top-level job " + x.id[0]});
+  var rowid = '#jobs_table_row' + x.id[0];
+  $(".jobs_table_row").removeClass("highlighted_jobs_table_row");
+  $(rowid).addClass("highlighted_jobs_table_row");
+  $(".job_details").dialog(
+    {
+      top: $("html").offset().top,
+      maxHeight: 600,
+      dragable:false,
+      closeOnEscape:true,
+      width:800,
+      title:"Details for top-level job " + x.id[0]
+    }).on(
+      "dialogclose",
+      function(){$(rowid).removeClass("highlighted_jobs_table_row")}
+    );
 };
 
 function on_click_jobs_table_row(event) {
@@ -219,6 +233,8 @@ function initStatus2Page() {
   $(show_job_list);
   // attach a click handler to rows in the job table
   // Because they haven't been created yet, we need an existing static selector (".job_list")
-  // on which to hang the handler, which then delegates when an event hits the dynamic  selector (".jobs_table_row")
+  // on which to hang the handler, which then delegates the events to the appropriate element
+  // chosen by the dynamic selector (".jobs_table_row")
+
   $(".job_list").on("click", ".jobs_table_row", on_click_jobs_table_row);
 };
