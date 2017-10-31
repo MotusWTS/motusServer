@@ -168,6 +168,8 @@ extraCols,"
  data JSON)"))
     sql(paste("CREATE INDEX IF NOT EXISTS", paste0(table,"_pid"), "ON", table, "(pid)"))
     sql(paste("CREATE INDEX IF NOT EXISTS", paste0(table,"_stump"), "ON", table, "(stump)"))
+    sql(paste("CREATE INDEX IF NOT EXISTS", paste0(table,"_ctime"), "ON", table, "(ctime)"))
+    sql(paste("CREATE INDEX IF NOT EXISTS", paste0(table,"_mtime"), "ON", table, "(mtime)"))
     for (i in seq(along=extraIndex))
         sql(extraIndex[i])
     rv = new.env(parent=emptyenv())
