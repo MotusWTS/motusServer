@@ -60,7 +60,8 @@ function show_job_list(sortBy, keyVal) {
     motus_status_api("list_jobs",
                      {
                          options:{
-                             includeUnknownProjects:true,
+                           includeUnknownProjects:true,
+                           full:true
                          },
                          order:{
                            sortBy:sortBy,
@@ -81,6 +82,9 @@ function show_job_list2(x) {
   $(".job_list").mustache("tpl_job_list",
                           {
                             jobs:x,
+                            params:function(i) {
+                              return fmt_params(this.data[i])
+                            },
                             fmt_ctime:function(i) {
                               return fmt_time(this.ctime[i])
                             },
@@ -88,7 +92,7 @@ function show_job_list2(x) {
                               return fmt_time(this.mtime[i])
                             },
                             fmt_done:function(i) {
-                              return fmt_done(this.done[i])
+                              return fmt_done(this.sjDone[i], this.queue[i])
                             }
                           },
                           {
@@ -132,10 +136,17 @@ function fmt_params(x) {
   return Object.keys(x).filter(k=>k[k.length-1] != '_').map(k=>k +" = " + x[k]).join("; ");
 };
 
-function fmt_done(x) {
-  switch (x) {
+// @function fmt_done: format a status code
+// @param status: integer status code: < 0 means error, 0 means not run, 1 means run successfully
+// @param queue: integer queue number: non-zero means has entered (and possibly finished) that queue
+
+function fmt_done(status, queue) {
+  switch (status) {
   case 0:
-    return '<span class="status_not_run">(not run)</span>';
+    if (! queue || ! (queue > 0))
+      return '<span class="status_waiting">Waiting</span>';
+    else
+      return '<span class="status_running">Running on Queue # ' + Math.round(queue) + '</span>';
     break;
   case 1:
     return '<span class="status_okay">Okay</span>';
@@ -179,7 +190,7 @@ function show_job_details2(x) {
                                  return fmt_params(this.data[i])
                                },
                                fmt_done:function(i) {
-                                 return fmt_done(this.done[i])
+                                 return fmt_done(this.done[i], this.queue[i])
                                },
                                products: json[0].products_ && json[0] ? {
                                  __transpose__: true,
@@ -192,5 +203,22 @@ function show_job_details2(x) {
                              }
                             );
 
-  $(".job_details").dialog({position:{my:"top", at:"top"},dragable:false, closeOnEscape:true, width:800, title:"Details for top-level job " + x.id[0]});
+  $(".job_details").dialog({top:$("html").offset().top,maxHeight: 600, dragable:false, closeOnEscape:true, width:800, title:"Details for top-level job " + x.id[0]});
+};
+
+function on_click_jobs_table_row(event) {
+  // extract the job_id from the "currentTarget" of the event; that will be
+  // the jobs table row, as chosen by the dynamic selector in the .on("click", ...) call
+  // which registered this handler.
+
+  show_job_details(event.currentTarget.getAttribute("job_id"));
+};
+
+function initStatus2Page() {
+  $.Mustache.addFromDom();
+  $(show_job_list);
+  // attach a click handler to rows in the job table
+  // Because they haven't been created yet, we need an existing static selector (".job_list")
+  // on which to hang the handler, which then delegates when an event hits the dynamic  selector (".jobs_table_row")
+  $(".job_list").on("click", ".jobs_table_row", on_click_jobs_table_row);
 };

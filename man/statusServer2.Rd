@@ -4,7 +4,7 @@
 \alias{statusServer2}
 \title{reply to http requests for information on the processing queue; API version}
 \usage{
-statusServer2(port = 22439, tracing = FALSE, maxRows = 1000L)
+statusServer2(port = 22439, tracing = FALSE, maxRows = 100L)
 }
 \arguments{
 \item{port}{integer; local port on which to listen for requests;

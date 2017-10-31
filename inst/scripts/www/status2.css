@@ -7,6 +7,10 @@
     font-family: monospace;
 }
 
+.timestamp {
+    font-family: monospace;
+}
+
 .subjobs_heading {
     font-weight: bold;
 }
@@ -27,15 +31,31 @@
     background-color: #FF202040;
 }
 
-.status_not_run {
+.status_waiting {
     background-color: #FFFF2040;
+}
+
+.status_running {
+    background-color: #2020FF40;
 }
 
 .job_product_heading {
     font-weight: bold;
 }
 
-.job_list {
+.job_id {
+    text-align: right;
+}
+
+.job_id {
+    text-align: right;
+}
+
+.job_motus_user_id {
+    text-align: center;
+}
+
+.jobs_heading {
     font-weight: bold;
-    font-size: 2x;
+    font-size-adjust: 0.75;
 }
