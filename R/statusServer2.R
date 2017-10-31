@@ -142,35 +142,37 @@ list_jobs = function(env) {
     if (includeSubjobs)
         where = NULL
     else
-        where = makeWhere("pid is null")  ## only top-level jobs; these have no parent id
+        where = makeWhere("t1.pid is null")  ## only top-level jobs; these have no parent id
     if (is.null(projectID)) {
         projwhere = NULL
     } else {
-        projwhere = sprintf("motusProjectID in (%s)", paste(projectID, collapse=","))
+        projwhere = sprintf("t1.motusProjectID in (%s)", paste(projectID, collapse=","))
     }
     if (isTRUE(includeUnknownProjects))
-        projwhere = makeWhere(c(projwhere, "motusProjectID is null"), conj="or")
+        projwhere = makeWhere(c(projwhere, "t1.motusProjectID is null"), conj="or")
     where = c(where, projwhere)
     if (!is.null(userID))
-        where = c(where, sprintf("motusUserID = %d", userID))
+        where = c(where, sprintf("t1.motusUserID = %d", userID))
     if (!is.null(jobID))
-        where = c(where, sprintf("id in (%s)", paste0("'", jobID, "'", collapse=",")))
+        where = c(where, sprintf("t1.id in (%s)", paste0("'", jobID, "'", collapse=",")))
     if (!is.null(stump))
-        where = c(where, sprintf("stump = %d", stump))
+        where = c(where, sprintf("t1.stump = %d", stump))
     if (!is.null(type))
-        where = c(where, sprintf("type in (%s)", paste0("'", type, "'", collapse=",")))
+        where = c(where, sprintf("t1.type in (%s)", paste0("'", type, "'", collapse=",")))
     if (!is.null(done))
-        where = c(where, switch(as.character(done), `1` = "done > 0", `0` = "done = 0", `-1` = "done < 0"))
+        where = c(where, switch(as.character(done), `1` = "t1.done > 0", `0` = "t1.done = 0", `-1` = "t1.done < 0"))
     if (!is.null(log))
-        where = c(where, sprintf("data glob '%s'", log))
+        where = c(where, sprintf("t1.data glob '%s'", log))
 
     where = makeWhere(where)
     ## generate order by and additional where clause items for paging
 
     if (is.null(sortBy)) {
-        sortBy = c("mtime desc")
+        sortBy = c("t1.mtime desc")
     } else if (! all (sortBy %in% sortCriteria)) {
         return(error_from_app("invalid sortBy"))
+    } else {
+        sortBy = paste0("t1.", sortBy)
     }
 
     if (! (is.null(lastKey) || length(lastKey) == length(sortBy))) {
@@ -194,31 +196,37 @@ list_jobs = function(env) {
         query = sprintf("
 select
    count(*)
-from jobs
+from jobs as t1
 %s",
 where)
     } else {
         query = sprintf("
 select
-   id,
-   pid,
-   stump,
-   ctime,
-   mtime,
-   type,
-   done,
-   queue,
-   path,
-   motusUserID,
-   motusProjectID
+   t1.id,
+   t1.pid,
+   t1.stump,
+   t1.ctime,
+   t1.mtime,
+   t1.type,
+   t1.done,
+   t1.queue,
+   t1.path,
+   t1.motusUserID,
+   t1.motusProjectID
+   %s
    %s
 from
-   jobs
+   jobs as t1
+   %s
+%s
 %s
 %s
 limit %d",
-if (isTRUE(full)) ", data" else "",
+if (isTRUE(full)) ", t1.data" else "",
+if (isTRUE(includeSubjobs)) "" else ", min(t2.done) as sjDone",
+if (isTRUE(includeSubjobs)) "" else " left join jobs as t2 on t2.stump=t1.id",
 where,
+if (isTRUE(includeSubjobs)) "" else " group by t1.id",
 order,
 if (is.null(stump)) MAX_ROWS_PER_REQUEST else -1
 )
@@ -235,39 +243,6 @@ if (is.null(stump)) MAX_ROWS_PER_REQUEST else -1
     error_from_app("status server (API version) shutting down")
 }
 
-#' dump details of job j to res, as ith job listing
-#' @param res Rook::response object
-#' @param j job
-#' @param i integer; index in list of jobs to be displayed
-
-dumpJobDetails = function(res, j, i) {
-    j = Jobs[[j]]
-    res$write(paste0('<div class="jobDetails jobDetails', i, '" style="display:none">'))
-    info = blob(j)
-    replyTo = paste(info$replyTo, collapse=", ")
-    if (is.null(replyTo))
-        replyTo = "none"
-
-    log = info$log_
-    summary = info$summary_
-    info = info[! (grepl("_$", names(info)) | names(info) == "replyTo")]
-    params = paste(names(info), info, sep="=", collapse=", ")
-    if (isTRUE(nchar(log) > 10000))
-        log = paste0(substr(log, 1, 5000), "\n   ...\n", substring(log, nchar(log)-5000), "\n")
-    res$write(sprintf("<h3>Status for job %d</h3><pre><b>Created Date:</b> %s\n<b>Last Activity:</b> %s\n<b>Sender:</b> %s\n<b>Parameters:</b> %s\n<b>Queue: </b>%s\n<b>Products:</b><pre>%s</pre><b>Summary: </b>%s</pre><h4>Log:</h4><pre>%s\n</pre>",
-                      j,
-                      format(TS(ctime(j))),
-                      format(TS(mtime(j))),
-                      replyTo,
-                      params,
-                      if (is.na(j$queue)) "None" else paste(j$queue),
-                      if (is.null(j$products_)) "None" else paste(sprintf("   <a href=\"%s\">%s</a>", j$products_, basename(j$products_)), collapse="\n"),
-                      if (is.null(summary)) "" else summary,
-                      paste0("   ", gsub("\n", "\n   ", log, fixed=TRUE))
-                      )
-              )
-    res$write("</div>")
-}
 
 queueStatusApp = function(env) {
     ## return summary of master queue and processing queues

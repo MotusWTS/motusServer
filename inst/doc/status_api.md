@@ -21,7 +21,7 @@ be executed (job retry, server restart, processing of new uploaded file, ...)
 ### Reply ###
  - is a json object: header `Content-Type = application/json`
  - is bzip2-compressed: header `Content-Encoding = bzip2`
- - most return values are lists of vectors of
+ - most return values are objects whose fields are arrays
    equal length, which is the natural JSON encoding of an R data.frame
  - errors are indicated by including a field called `error` in the reply; other
    fields might be present, giving additional information.  If no field `error`
@@ -67,11 +67,11 @@ The server is at [https://sgdata.motus.org](https://sgdata.motus.org) and the UR
       curl --data-urlencode json='{"user":"someone","password":"bigsecret"}' https://sgdata.motus.org/status/authenticate_user
 
    - returns a list with these items:
-      - authToken: character string; 264 random bits, base64-encoded
-      - expiry: numeric timestamp of expiry for token
-      - userID: integer motus ID for user
-      - projects: integer vector of project #s user is allowed to request tag detections for
-      - receivers: character vector of serial #s of receivers user is allowed to request tag detections for
+      - authToken: string; 264 random bits, base64-encoded
+      - expiry: double; timestamp of expiry for token
+      - userID: integer; motus ID for user
+      - projects: integer array; of project #s user is allowed to request tag detections for
+      - receivers: string array of serial #s of receivers user is allowed to request tag detections for
 
    or
 
@@ -142,18 +142,18 @@ projects.
 
    list_jobs (projectID, select, order, options, authToken)
 
-       - projectID: integer motus projectID (s); jobs must belong to the given project(s)
+       - projectID: integer; motus projectID (s); jobs must belong to the given project(s)
        - select: object with fields for selecting which jobs to list.  A job must match all
          fields provided in order to be included in the list.  Fields are:
-          - userID: integer motus user ID
+          - userID: integer; motus user ID
           - stump: ID of top level job; select only from that job and its descendents
-          - jobID: integer vector; to select only those jobs specified
-          - type: character array; the job type(s)
+          - jobID: integer array;; to select only those jobs specified
+          - type: string array; the job type(s)
           - done: integer; 0: job not yet complete; 1: job completed successfully; -1: job had error
-          - log: character; job whose log matches the string `log`, which can include globbing
+          - log: string; job whose log matches the string `log`, which can include globbing
             characters ('*' and '.')
        - order: object with fields for ordering and paging the selected jobs:
-          - sortBy: character array; the sort key, zero or more of these string constants, each of which
+          - sortBy: string array; the sort key, zero or more of these string constants, each of which
             can be optionally followed by the string constant 'desc' for descending order
              - "ctime", "ctime desc": job creation time
              - "mtime", "mtime desc": last job activity time
@@ -185,22 +185,34 @@ projects.
      tag finder jobs of types `LtFindtags` or `SGfindtags`, a data summary job of type `plotData`,
      and a data merging job of type `exportData`.
 
-     Only jobs to which the  user has permission are returned.
+     Only jobs to which the user has permission are returned.
 
-   - if `countOnly` is `false`, items in the return value are arrays:
-      - `id`: job ids
-      - `pid`: parent job ids
-      - `stump`: top-level job ids
-      - `ctime`: creation times (unix timestamp; seconds since 1 Jan 1970 GMT)
-      - `mtime`: modification time (unix timestamp; seconds since 1 Jan 1970 GMT)
-      - `type`: type of job; e.g. "uploadFile"
-      - `done`: 0 if not yet run; +1 if successful; < 0 if error
-      - `queue`: number of queue job is in; 0 means waiting
-      - `path`: file system path to job folder, if any
-      - `motusUserID`: motus user ID of person who submitted job
-      - `motusProjectID`: project ID for results of job
-      - `data`: (if `full` was `true` in the request) sub-object representing job parameters, log, summary, products
+   - if `countOnly` is `false`, fields in the returned object are these arrays:
+      - `id`: integer array; job ids
+      - `pid`: integer array; parent job ids
+      - `stump`: integer array; top-level job ids
+      - `ctime`: double array; creation times (unix timestamp; seconds since 1 Jan 1970 GMT)
+      - `mtime`: double array; modification time (unix timestamp; seconds since 1 Jan 1970 GMT)
+      - `type`: string array; type of job; e.g. "uploadFile"
+      - `done`: integer array; 0 if not yet run; +1 if successful; < 0 if error
+      - `queue`: integer array; number of queue job is in; 0 means waiting
+      - `path`: string array; file system path to job folder, if any
+      - `motusUserID`: integer array; motus user ID of person who submitted job
+      - `motusProjectID`: integer array; project ID for results of job
+      - `data`: (if `full` was `true` in the request) string array; json-encoded job parameters, log, summary, products
+      - `sjDone`: (if `includeSubjobs` is not `true` in the request) integer array; minimum `done` value for all subjobs
+         of the top-level job, including that of the top-level job itself.  So: 0, if all subjobs are either not yet done
+         or completed without error; < 0 if at least one subjob had an error; +1 if all subjobs completed successfully
 
+### process new upload ###
 
+   process_new_upload (userID, projectID, path, authToken)
 
+      - userID: integer scalar; motus user ID (who uploaded the file)
+      - projectID; integer scalar; motus projectID (what project should own the products)
+      - path; string scalar; path to the new file on the NAS, relative to the 'sgdata/uploads' volume there.
+        e.g. if `path` is given as 'user123/2017-10-20T11-12-33_upload.zip`, then
+        on linux, we'll expect to find the file at `nfs://174.140.177.35:/volume1/sgdata/uploads/user123/2017-10-20T11-12-33_upload.zip`
+        which will have actual path /mnt/sgdata/uploads/user123/2017-10-20T11-12-33_upload.zip, since the nfs is mounted there.
 
+   - return the integer motus jobID for the new job.
