@@ -79,6 +79,8 @@ function show_job_list(sortBy, keyVal) {
 function show_job_list2(x) {
   x.__transpose__ = true;
 
+  if ($(".job_details").dialog('instance'))
+      $(".job_details").dialog('close');
   $(".job_list").mustache("tpl_job_list",
                           {
                             jobs:x,
