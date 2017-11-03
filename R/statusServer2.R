@@ -53,7 +53,7 @@ statusServer2 = function(port = 0x57A7, tracing=FALSE, maxRows=100L) {
 
 allStatusApps = c("status_api_info", "list_jobs", "_shutdown", "authenticate_user")
 
-sortColumns = c("ctime", "mtime", "id", "type", "motusProjectID", "motusUserID")
+sortColumns = c("ctime", "mtime", "id", "type", "motusProjectID", "motusUserID", "sjDone")
 sortCriteria = c(sortColumns, paste(sortColumns, "desc"))
 
 #' add condition(s) to the where clause; strip
@@ -65,8 +65,15 @@ makeWhere = function(clauses, conj="and") {
 }
 
 #' add condition(s) to the order by clause
-addToOrder = function(order, new) {
+#' @param order existing order clause
+#' @param new new order by field; either "FIELD" or "FIELD desc"
+#' @param toggle says whether to toggle descending/ascending order
+
+addToOrder = function(order, new, toggle) {
     for (n in new) {
+        bare = sub(" desc", "", new)
+        isDesc = grepl(" desc$", new)
+        new = paste0(bare, ifelse(xor(isDesc, toggle), " desc", ""))
         if (order == "")
             order = paste0("order by ", new)
         else
@@ -122,6 +129,7 @@ list_jobs = function(env) {
     ## ordering
     sortBy = safe_arg(order, sortBy, char, scalar=FALSE)
     lastKey = safe_arg(order, lastKey, num, scalar=FALSE)
+    forwardFromKey = safe_arg(order, forwardFromKey, logical, scalar=FALSE)
 
     ## options
     includeUnknownProjects = isTRUE(safe_arg(options, includeUnknownProjects, logical))
@@ -175,19 +183,37 @@ list_jobs = function(env) {
         sortBy = paste0("t1.", sortBy)
     }
 
+    ## add primary key as inferior sort order, if not already present
+    if (! any(c("id", "id desc") %in% sortBy)) {
+        if (grepl(" desc", sortBy[1])) {
+            sortBy = c(sortBy, "id desc")
+            lastKey = c(lastKey, 1e20)
+        } else {
+            sortBy = c(sortBy, "id")
+            lastKey = c(lastKey, 0)
+        }
+        forwardFromKey = c(forwardFromKey, TRUE)
+    }
+
     if (! (is.null(lastKey) || length(lastKey) == length(sortBy))) {
         return(error_from_app("invalid number of `lastKey` values for given `sortBy`"))
     }
 
+    if (! (is.null(forwardFromKey) || length(forwardFromKey) == length(sortBy))) {
+        return(error_from_app("invalid number of `forwardFromKey` values for given `sortBy`"))
+    }
+    if (is.null(forwardFromKey))
+        forwardFromKey = rep(TRUE, length(sortBy))
+
     if (! is.null(lastKey)) {
         sortByCols = sub(" desc$", "", sortBy)
-        sortByOp = ifelse(grepl(" desc$", sortBy), "<", ">")
-        where = makeWhere(where, sprintf("%s %s %f", sortByCols, sortByOp, lastKey))
+        sortByOp = ifelse(xor(grepl(" desc$", sortBy), forwardFromKey), ">", "<")
+        where = makeWhere(c(where, sprintf("%s %s %f", sortByCols, sortByOp, lastKey)))
     }
 
     order = ""
-    for (sb in sortBy)
-        order = addToOrder(order, sb)
+    for (i in 1:length(sortBy))
+        order = addToOrder(order, sortBy[i], ! forwardFromKey[i])
 
     ## pull out appropriate jobs and details
 
@@ -231,6 +257,15 @@ order,
 if (is.null(stump)) MAX_ROWS_PER_REQUEST else -1
 )
     }
+    ## if any forwardFromKey were FALSE, we need to re-order results to match the
+    ## desired sort order
+    if (any(! forwardFromKey)) {
+        order = ""
+        for (i in 1:length(sortBy))
+            order = addToOrder(order, sortBy[i], FALSE)
+        query = sprintf("select * from (%s) as t1 %s", query, order)
+    }
+    motusLog(paste(Sys.time(), query))
     return_from_app(ServerDB(query))
 }
 
