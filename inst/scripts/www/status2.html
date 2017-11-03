@@ -14,12 +14,11 @@
     API.  Data rendering uses the jquery mustache plugin, with white
     mathematical square brackets as tag delimiters.  We've modifed
     mustache.js to allow tagging javascript objects with a logical
-    attribute called "__transpose__".  If this is truthy, the object is
-    treated as a list of arrays, whose elements are recycled to the
+    attribute called "__transpose__".  If this is truthy, the object
+    is treated as a list of arrays, whose elements are recycled to the
     length of the longest array.  This is an alternative layout to the
     usual array of objects, wherein each object has the same named
-    items, and is directly compatible with the JSON returned by the
-    status API.
+    items, and is compatible with the JSON returned by the status API.
 
     Replies from the status API are normally bz2-compressed
     JSON-encoded objects,but if the request includes an
@@ -62,6 +61,13 @@
       {{! template to render the table of jobs }}
       {{=⟦ ⟧=}}
       <span class="jobs_heading">Status of your motus data-processing jobs</span>
+      <div class="jobs_navigation">
+        <span class="navigate" target="top"></span>
+        <span class="navigate" target="up"></span>
+        <span class="search"></span>
+        <span class="navigate" target="down"></span>
+        <span class="navigate" target="bottom"></span>
+      </div>
       <table class="jobs_table">
         <tr class="jobs_table_heading">
           <th><span class="sort_heading" sort_field="id">Job ID</span></th>

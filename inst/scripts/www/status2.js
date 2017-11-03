@@ -12,8 +12,11 @@ var serverURL = "https://sgdata.motus.org/status2/";
 var state = {
     sortBy :"mtime",
     sortDesc: true,
-    keyVal : null
+    lastKey : null,
+    forwardFromKey: true
 };
+
+var latest_job_list = null;
 
 // @function toArray: guarantee argument is an array
 //
@@ -28,6 +31,14 @@ toArray = function(x) {
     if (typeof(x) == "object")
         return Object.keys(x).map((i)=>x[i]);
     return [x];
+};
+
+// @method Array.last
+// @return last element of array
+if (!Array.prototype.last) {
+    Array.prototype.last = function() {
+        return this[this.length - 1];
+    };
 };
 
 // @function motus_status_api: call one of the motus status API entries
@@ -58,7 +69,7 @@ function motus_status_api(api, par, cb) {
 // @function show_job_list: display a list of jobs
 //
 // @param sortBy; sort order; default: "mtime"
-// @param keyVal: last key for given sort order; default: null
+// @param lastKey: last key for given sort order; default: null
 //
 // @details fetch summary list of jobs, then chains to show_job_list2
 
@@ -70,8 +81,9 @@ function show_job_list() {
                              full:true
                          },
                          order:{
-                             sortBy:state.sortBy + (state.sortDesc ?" desc" : ""),
-                             keyVal:state.keyVal
+                             sortBy: state.sortBy + (state.sortDesc ?" desc" : ""),
+                             lastKey: state.lastKey,
+                             forwardFromKey: state.forwardFromKey
                          }
                      }, show_job_list2);
 };
@@ -85,6 +97,11 @@ function show_job_list() {
 function show_job_list2(x) {
     x.__transpose__ = true;
 
+    if (x.id.length == 0) {
+        if (latest_job_list)
+            return;
+    }
+    latest_job_list = x;
     if ($(".job_details").dialog('instance'))
         $(".job_details").dialog('close');
     $(".job_list").mustache("tpl_job_list",
@@ -109,9 +126,16 @@ function show_job_list2(x) {
                            );
     // style the sort-order buttons
     $(".sort_heading").button({icon:"ui-icon-blank"});
+
     // add an appropriate icon to the column header by which we sorted
     var sorter = $('.sort_heading[sort_field="' + state.sortBy + '"]');
-    sorter.button({icon: "ui-icon-triangle-1-" + (state.sortDesc ? "s" : "n")});
+    sorter.button({icon: "ui-icon-triangle-1-" + (state.sortDesc ? "s" : "n"), minHeight:200});
+    // add navigation buttons
+    $(".navigate").button();
+    $('.navigate[target="top"]').button({icon:"ui-icon-arrowthickstop-1-w"});
+    $('.navigate[target="bottom"]').button({icon:"ui-icon-arrowthickstop-1-e"});
+    $('.navigate[target="up"]').button({icon:"ui-icon-arrowthick-1-w"});
+    $('.navigate[target="down"]').button({icon:"ui-icon-arrowthick-1-e"});
 };
 
 // @function show_job_details: display a pop-up with details of a job and its subjobs
@@ -249,6 +273,30 @@ function on_click_sort_heading(event) {
     show_job_list();
 };
 
+function on_click_navigate(event) {
+    // extract the navigation target from the "currentTarget" of the event
+    var target = event.currentTarget.getAttribute("target");
+    switch(target) {
+    case "top":
+        state.lastKey = null;
+        state.forwardFromKey = true;
+        break;
+    case "bottom":
+        state.lastKey = latest_job_list ? latest_job_list[state.sortBy].last() : null;
+        state.forwardFromKey = false;
+        break;
+    case "up":
+        state.lastKey = latest_job_list ? latest_job_list[state.sortBy][0] : null;
+        state.forwardFromKey = false;
+        break;
+    case "down":
+        state.lastKey = latest_job_list ? latest_job_list[state.sortBy].last() : null;
+        state.forwardFromKey = true;
+        break;
+    };
+    show_job_list();
+};
+
 
 function initStatus2Page() {
     $.Mustache.addFromDom();
@@ -261,4 +309,7 @@ function initStatus2Page() {
 
     // attach a click handler to column headings.
     $(".job_list").on("click", ".sort_heading", on_click_sort_heading);
+
+    // attach a click handler to navigation buttons.
+    $(".job_list").on("click", ".navigate", on_click_navigate);
 };
