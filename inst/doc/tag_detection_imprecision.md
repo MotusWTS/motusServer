@@ -43,7 +43,7 @@ increase memory consumption and running time of the tag finder).
 - excessive noise on the USB system can cause data packets to be
   dropped, which, because funcubedongles use USB isochronous transfer mode
   (where low latency is prioritized over correctness), means that packets
-  are simply lost.  This discrupts short-scale time calculations, again
+  are simply lost.  This disrupts short-scale time calculations, again
   leading to a non-recognized burst.
 
 - antennas might be multiplexed (e.g. on Lotek receivers), meaning
@@ -103,7 +103,7 @@ Our traditional filtering criteria have been:
 
 - freqsd < 0.1  (SG detections only; this enforces a fairly tight level of
   offset frequency coherence among pulses within a single burst; we don't
-  enforce this across bursts because there are temperature, doppler, and
+  enforce this across bursts because there are temperature, Doppler, and
   body configuration effects that can change offset frequency significantly
   between bursts; the 4 pulses from a burst are generated in ~250 ms or less,
   while bursts can be up to 40 seconds apart, so the time scales are quite
