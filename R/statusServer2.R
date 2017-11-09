@@ -104,7 +104,7 @@ status_api_info = function(env) {
 #' return a list of jobs, sorted by user-selected criteria
 
 list_jobs = function(env) {
-    json = fromJSON(parent.frame()$postBody["json"])
+    json = fromJSON(parent.frame()$postBody["json"], simplifyVector=FALSE)
 
     if (tracing)
         browser()
@@ -127,15 +127,22 @@ list_jobs = function(env) {
     log       = safe_arg(select, log, char)
 
     ## ordering
-    sortBy = safe_arg(order, sortBy, char, scalar=FALSE)
-    lastKey = safe_arg(order, lastKey, num, scalar=FALSE)
-    forwardFromKey = safe_arg(order, forwardFromKey, logical, scalar=FALSE)
+    sortBy = safe_arg(order, sortBy, char, scalar=TRUE)
+    lastKey = safe_arg(order, lastKey, list, scalar=FALSE)
+    isByType = isTRUE(grepl("^type", sortBy))
+    if (! isByType && length(lastKey) > 0) {
+        lastKey[[1]] = as.numeric(lastKey[[1]])
+    }
+    forwardFromKey = safe_arg(order, forwardFromKey, logical)
 
     ## options
     includeUnknownProjects = isTRUE(safe_arg(options, includeUnknownProjects, logical))
     countOnly              = isTRUE(safe_arg(options, countOnly, logical))
     full                   = isTRUE(safe_arg(options, full, logical))
     includeSubjobs         = isTRUE(safe_arg(options, includeSubjobs, logical))
+    maxRows                = safe_arg(select, maxRows, int)
+    if (is.null(maxRows))
+        maxRows = MAX_ROWS_PER_REQUEST
 
     ## validate access
 
@@ -176,44 +183,44 @@ list_jobs = function(env) {
     ## generate order by and additional where clause items for paging
 
     if (is.null(sortBy)) {
-        sortBy = c("t1.mtime desc")
-    } else if (! all (sortBy %in% sortCriteria)) {
+        sortBy = "mtime desc"
+    } else if (! sortBy %in% sortCriteria) {
         return(error_from_app("invalid sortBy"))
-    } else {
-        sortBy = paste0("t1.", sortBy)
     }
-
-    ## add primary key as inferior sort order, if not already present
-    if (! any(c("id", "id desc") %in% sortBy)) {
-        if (grepl(" desc", sortBy[1])) {
-            sortBy = c(sortBy, "id desc")
-            lastKey = c(lastKey, 1e20)
-        } else {
-            sortBy = c(sortBy, "id")
-            lastKey = c(lastKey, 0)
-        }
-        forwardFromKey = c(forwardFromKey, TRUE)
+    isDesc = isTRUE(grepl(" desc", sortBy))
+    if (sortBy != "id" && sortBy != "id desc") {
+        sortBy = c(sortBy, if(isDesc) "id desc" else "id")
     }
+    sortBy = paste0("t1.", sortBy)
 
-    if (! (is.null(lastKey) || length(lastKey) == length(sortBy))) {
+    if (! (length(lastKey) == 0 || length(lastKey) <= length(sortBy))) {
         return(error_from_app("invalid number of `lastKey` values for given `sortBy`"))
     }
 
-    if (! (is.null(forwardFromKey) || length(forwardFromKey) == length(sortBy))) {
-        return(error_from_app("invalid number of `forwardFromKey` values for given `sortBy`"))
-    }
     if (is.null(forwardFromKey))
-        forwardFromKey = rep(TRUE, length(sortBy))
+        forwardFromKey = TRUE
 
+    sortByCol = sub(" desc$", "", sortBy[1])
     if (! is.null(lastKey)) {
-        sortByCols = sub(" desc$", "", sortBy)
-        sortByOp = ifelse(xor(grepl(" desc$", sortBy), forwardFromKey), ">", "<")
-        where = makeWhere(c(where, sprintf("%s %s %f", sortByCols, sortByOp, lastKey)))
+        op = if (xor(isDesc, forwardFromKey)) ">" else "<"
+        if (isByType) {
+            w = sprintf("%s %s '%s'", sortByCol, op, lastKey[[1]])
+        } else {
+            w = sprintf("%s %s %f", sortByCol, op, lastKey[[1]])
+        }
+        if (length(lastKey) > 1) {
+            if (isByType) {
+                w = paste0(w, sprintf(" or (%s = '%s' and t1.id %s %f)", sortByCol, lastKey[[1]], op, lastKey[[2]]))
+            } else {
+                w = paste0(w, sprintf(" or (%s =  %f  and t1.id %s %f)", sortByCol, lastKey[[1]], op, lastKey[[2]]))
+            }
+        }
+        where = makeWhere(c(where, w))
     }
 
     order = ""
-    for (i in 1:length(sortBy))
-        order = addToOrder(order, sortBy[i], ! forwardFromKey[i])
+    for (i in seq(along=sortBy))
+        order = addToOrder(order, sortBy[i], ! forwardFromKey)
 
     ## pull out appropriate jobs and details
 
@@ -254,18 +261,17 @@ if (isTRUE(includeSubjobs)) "" else " left join jobs as t2 on t2.stump=t1.id",
 where,
 if (isTRUE(includeSubjobs)) "" else " group by t1.id",
 order,
-if (is.null(stump)) MAX_ROWS_PER_REQUEST else -1
+if (is.null(stump)) maxRows else -1
 )
     }
-    ## if any forwardFromKey were FALSE, we need to re-order results to match the
+    ## if forwardFromKey was FALSE, we need to re-order results to match the
     ## desired sort order
-    if (any(! forwardFromKey)) {
+    if (! isTRUE(forwardFromKey)) {
         order = ""
-        for (i in 1:length(sortBy))
+        for (i in seq(along=sortBy))
             order = addToOrder(order, sortBy[i], FALSE)
         query = sprintf("select * from (%s) as t1 %s", query, order)
     }
-    motusLog(paste(Sys.time(), query))
     return_from_app(ServerDB(query))
 }
 

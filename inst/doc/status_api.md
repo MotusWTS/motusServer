@@ -153,24 +153,30 @@ projects.
           - log: string; job whose log matches the string `log`, which can include globbing
             characters ('*' and '.')
        - order: object with fields for ordering and paging the selected jobs:
-          - sortBy: string array; the sort key, zero or more of these string constants, each of which
-            can be optionally followed by the string constant 'desc' for descending order
-             - "ctime", "ctime desc": job creation time
-             - "mtime", "mtime desc": last job activity time
-             - "id", "id desc": job ID number
-             - "type", "type desc": job type
-             - "motusProjectID", "motusProjectID desc": motus project ID
-             - "motusUserID", "motusUserID desc": motus user ID
-            if `sortBy` is not specified, it is set to `["mtime desc"]`
-          - lastKey: optional; vector giving "last" obtained value of each field specified in `sortBy`, in the same order;
+      - sortBy: string scalar; null, or the sort key, i.e. one of these string constants, each of which
+        can be optionally followed by the string constant 'desc' for descending order
+         - "ctime", "ctime desc": job creation time
+         - "mtime", "mtime desc": last job activity time
+         - "id", "id desc": job ID number
+         - "type", "type desc": job type
+         - "motusProjectID", "motusProjectID desc": motus project ID
+         - "motusUserID", "motusUserID desc": motus user ID
+        If `sortBy` is not specified, it is set to `"mtime desc"`. To allow paging, an implicity "id" is
+        added to sortBy if it is not already there, with a "desc" if `sortBy` has it.
+          - lastKey: optional; vector giving "last" obtained value of the field specified in `sortBy`; an optional
+            second element gives the "last" obtained value of the "id", if `sortBy` is not "id".  This is
             used for paging.  If not specified, returns the first page according to `sortBy` criteria.
+          - forwardFromKey: boolean; default: true.  If `lastKey` is specified and this field is true,
+            return a page of items past the key in the forward (sort) direction.  Otherwise, if this field is false,
+            return a page of items past the key in the backward (reverse sort) direction.
        - options: object with fields giving options:
           - includeUnknownProjects: include jobs with no associated motus project; typically for
             jobs initiated by staff or otherwise not having a useful concept of project
           - includeSubjobs: logical: include jobs which are not top-level jobs?; default FALSE
           - full: if `true`, then full details for the job (typically its parameters, log, summary, and list of
             product files) are returned in a JSON-formatted column called `data`
-          - countOnly: if true, return only a count of jobs for the given projectID and/or userID
+          - countOnly: boolean; if true, return only a count of jobs for the given projectID and/or userID
+          - limit: integer; if present, maximum number of records to return.
 
       e.g.
       curl --data-urlencode json='{"select":{"userno":232},"order":{"sortBy":"id","lastKey":[5000]},"authToken":"XXX"}' https://sgdata.motus.org/status/list_jobs
