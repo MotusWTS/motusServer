@@ -63,3 +63,27 @@
 .highlighted_jobs_table_row {
     background-color: #E0E00080;
 }
+
+.job_error_message {
+    line-height: 2;
+    background-color: #FF202040;
+}
+
+.job_error_api {
+    line-height: 2;
+    font-weight: bold;
+}
+
+.job_error_json {
+    white-space: pre-wrap;
+    font-family: monospace;
+}
+
+.job_error_state {
+    white-space: pre-wrap;
+    font-family: monospace;
+}
+
+.job_no_results_message {
+    background-color: #FF202040;
+}

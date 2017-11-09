@@ -3,16 +3,20 @@
 // Assumes jquery has already been loaded.
 
 // assume there's an authTicket available in the auth_tkt cookie:
-var authToken = decodeURIComponent(document.cookie.match(/(^|;)auth_tkt=([^;]*)(;|$)/)[2]);
+
 
 // where to send API requests
 var serverURL = "https://sgdata.motus.org/status2/";
 
 // state of page
 var state = {
+    authToken : decodeURIComponent(document.cookie.match(/(^|;)auth_tkt=([^;]*)(;|$)/)[2]),
+    // selectors
+    selector : {},
+    // ordering
     sortBy :"mtime",
     sortDesc: true,
-    lastKey : null,
+    lastKey : [],
     forwardFromKey: true
 };
 
@@ -48,22 +52,78 @@ if (!Array.prototype.last) {
 // @param cb: callback; a function accepting a javascript object which is the return from the API
 //
 // @return nothing
-// @note If `api` == `authenticate_user`, then the authToken returned by the API is saved in the
-// global variable `authToken`, and this field is automatically added to any subsequent calls
-// to `motus_status_api()`
 
 function motus_status_api(api, par, cb) {
     if (api != "authenticate_user") {
-        par.authToken = authToken;
-    } else {
-        // This was a call to the authenticate_user API entry, so
-        // we wrap the callback in one that sets the global variable `authToken`,
-        // thereby automatically making it available to subsequent API calls.
-        // This should not normally be needed.
-        oldcb = cb;
-        cb = function(x) {authToken = x.authToken; oldcb(x)};
+        par.authToken = state.authToken;
     }
-    $.post(serverURL + api, {"json":JSON.stringify(par)}, cb);
+    $.post(serverURL + api, {"json":JSON.stringify(par)}, function(x) {motus_status_replied(x, api, par, cb)});
+    console.log(api + ":" + JSON.stringify(par));
+};
+
+// @function omit_authToken: remove the authToken from a JSON-serialization of an object
+// @param key: name of item
+// @param val: value of item
+//
+// This function is used as the `replacer` argument in a call to JSON.stringify().
+
+function omit_authToken (key, val) {
+    return key == "authToken" ? "(omitted)" : val;
+};
+
+// @function motus_status_replied: handle the return from a motus status API call
+//
+// @param x: object returned by API
+//
+// The remaining parameters are the parameters specified in the call to motus_status_api():
+// @param api: api called
+// @param par: object, passed as the POST parameter 'json'
+// @param cb: callback specified by user
+//
+// @return nothing
+function motus_status_replied(x, api, par, cb) {
+    if (x.error) {
+        $(".job_error").mustache("tpl_job_error",
+                                 {
+                                     error:x.error,
+                                     api: serverURL + api,
+                                     state: JSON.stringify(state, omit_authToken, 3),
+                                     json: JSON.stringify(par, omit_authToken, 3)
+                                 },
+                                 {
+                                     method:"html"
+                                 }
+                                );
+        $(".job_error").dialog(
+            {
+                top: $("html").offset().top,
+                maxHeight: 800,
+                dragable:false,
+                closeOnEscape:true,
+                width:800,
+                title:"Error from Motus Status Server!"
+            });
+        $(".copy_error_message").button({icon:"ui-icon-copy"}).on("click", function() {copyToClipboard(".job_error_contents")});
+        return;
+    }
+    if (api == "authenticate_user") {
+        state.authToken = x.authToken;
+        return;
+    }
+    if (! (x.id && x.id.length)) {
+        $(".job_no_results").mustache("tpl_job_no_results", {}, {method:"html"});
+        $(".job_no_results").dialog(
+            {
+                top: $("html").offset().top,
+                maxHeight: 300,
+                dragable:true,
+                closeOnEscape:true,
+                width:300,
+                title:"No jobs found!"
+            });
+        return;
+    }
+    cb(x);
 };
 
 // @function show_job_list: display a list of jobs
@@ -71,21 +131,41 @@ function motus_status_api(api, par, cb) {
 // @param sortBy; sort order; default: "mtime"
 // @param lastKey: last key for given sort order; default: null
 //
-// @details fetch summary list of jobs, then chains to show_job_list2
+// @details construct query according to search criteria, fetch
+// summary list of jobs, then chains to show_job_list2
 
 function show_job_list() {
-    motus_status_api("list_jobs",
-                     {
-                         options:{
-                             includeUnknownProjects:true,
-                             full:true
-                         },
-                         order:{
-                             sortBy: state.sortBy + (state.sortDesc ?" desc" : ""),
-                             lastKey: state.lastKey,
-                             forwardFromKey: state.forwardFromKey
-                         }
-                     }, show_job_list2);
+    var pars = {
+        options:{
+            includeUnknownProjects:true,
+            full:true
+        },
+        order:{
+            sortBy: state.sortBy + (state.sortDesc ?" desc" : ""),
+            lastKey: state.lastKey,
+            forwardFromKey: state.forwardFromKey
+        }
+    };
+    if (state.selector.motusUserID) {
+        pars.select = {userID: state.selector.motusUserID}
+    } else if (state.selector.id) {
+        pars.select = {jobID: state.selector.id}
+        pars.order.sortBy = "id";
+    } else if (state.selector.idnear) {
+        pars.order.sortBy = "id";
+        pars.order.lastKey = [state.selector.idnear - 10];
+        pars.order.sortDesc = false;
+        pars.order.forwardFromKey = true;
+    } else if (state.selector.type) {
+        pars.select = {type: state.selector.type};
+    } else if (state.selector.log) {
+        // add globbing wildcards to match anywhere in log
+        pars.select = {log: "*" + state.selector.log + "*"};
+    }
+    if (state.maxRows) {
+        pars.options.maxRows = state.maxRows;
+    }
+    motus_status_api("list_jobs", pars, show_job_list2);
 };
 
 // @function show_job_list2: display the summary list of jobs
@@ -136,6 +216,8 @@ function show_job_list2(x) {
     $('.navigate[target="bottom"]').button({icon:"ui-icon-arrowthickstop-1-e"});
     $('.navigate[target="up"]').button({icon:"ui-icon-arrowthick-1-w"});
     $('.navigate[target="down"]').button({icon:"ui-icon-arrowthick-1-e"});
+    $('#find_job_button').button({icon:"ui-icon-search", }).on("click", on_click_search);
+
 };
 
 // @function show_job_details: display a pop-up with details of a job and its subjobs
@@ -268,8 +350,14 @@ function on_click_jobs_table_row(event) {
 function on_click_sort_heading(event) {
     // extract the sort_field from the "currentTarget" of the event
     var oldSortBy = state.sortBy;
-    state.sortBy = [event.currentTarget.getAttribute("sort_field")];
-    state.sortDesc = (oldSortBy[0] == state.sortBy[0]) ? (! state.sortDesc) : state.sortDesc;
+    state.sortBy = event.currentTarget.getAttribute("sort_field");
+    if (oldSortBy == state.sortBy) {
+        state.sortDesc =! state.sortDesc;
+    } else {
+        state.lastKey = [latest_job_list[state.sortBy][0]];
+        state.forwardFromKey = true;
+        state.sortDesc = false;
+    }
     show_job_list();
 };
 
@@ -278,29 +366,79 @@ function on_click_navigate(event) {
     var target = event.currentTarget.getAttribute("target");
     switch(target) {
     case "top":
-        state.lastKey = null;
+        state.lastKey = [];
         state.forwardFromKey = true;
         break;
     case "bottom":
-        state.lastKey = latest_job_list ? latest_job_list[state.sortBy].last() : null;
+        state.lastKey = [];
         state.forwardFromKey = false;
         break;
     case "up":
-        state.lastKey = latest_job_list ? latest_job_list[state.sortBy][0] : null;
+        state.lastKey = [latest_job_list[state.sortBy][0]];
+        if (state.sortBy != "id")
+            state.lastKey.push(latest_job_list.id[0]);
         state.forwardFromKey = false;
         break;
     case "down":
-        state.lastKey = latest_job_list ? latest_job_list[state.sortBy].last() : null;
+        state.lastKey = [latest_job_list[state.sortBy].last()];
+        if (state.sortBy != "id")
+            state.lastKey.push(latest_job_list.id.last());
         state.forwardFromKey = true;
         break;
     };
     show_job_list();
 };
 
+function on_click_search(event) {
+    var findVal = $("#find_job_key").val();
+    switch($("#find_job_selector").val()) {
+    case "id":
+        state.selector = {id: parseInt(findVal)};
+        break;
+    case "idnear":
+        state.selector = {idnear: parseInt(findVal)};
+        break;
+    case "motusUserID":
+        state.selector = {motusUserID: findVal};
+        break;
+    case "log":
+        state.selector = {log: findVal};
+        break;
+    case "all":
+        state.selector = {};
+        break;
+    }
+    show_job_list();
+};
+
+function on_keyup_find_job_key(evt) {
+    if (evt.keyCode==13)
+        $("#find_job_button").click();
+};
+
+function on_change_find_job_selector(evt) {
+    var vis;
+    switch($("#find_job_selector").val()) {
+    case "all":
+        vis = false
+        break;
+    default:
+        vis = true;
+        break;
+    };
+    $("#find_job_key").toggle(vis);
+    $("#find_job_button").toggle(vis);
+
+    // we've switched to the "all" jobs view, which has no other
+    // controls, so (re)load the list
+    if (!vis) {
+        state.selector = {};
+        show_job_list();
+    }
+};
 
 function initStatus2Page() {
     $.Mustache.addFromDom();
-    $(show_job_list);
     // attach a click handler to rows in the job table
     // Because they haven't been created yet, we need an existing static selector (".job_list")
     // on which to hang the handler, which then delegates the events to the appropriate element
@@ -311,5 +449,25 @@ function initStatus2Page() {
     $(".job_list").on("click", ".sort_heading", on_click_sort_heading);
 
     // attach a click handler to navigation buttons.
-    $(".job_list").on("click", ".navigate", on_click_navigate);
+    $(".jobs_navigation").on("click", ".navigate", on_click_navigate);
+
+    // attach a click handler to the find_jobs_selector
+    $("#find_job_selector").selectmenu();
+    $("#find_job_selector").on("selectmenuchange", on_change_find_job_selector);
+    $("#find_job_selector").val("all").selectmenu("refresh");
+    on_change_find_job_selector();
+    $("#find_job_key").on("keyup", on_keyup_find_job_key);
 };
+
+// @function copyToClipboard: copy the text from an element to the client's clipboard
+// @param element: jquery element selector
+//
+// source: Alvaro Montaro via https://stackoverflow.com/a/30905277
+
+function copyToClipboard(element) {
+    var $temp = $("<textarea>");
+    $("body").append($temp);
+    $temp.val($(element).text()).select();
+    document.execCommand("copy");
+    $temp.remove();
+}

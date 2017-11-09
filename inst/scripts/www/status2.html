@@ -43,8 +43,8 @@
     <script language="javascript" type="text/javascript"
             src="/download/status2.js"></script>
     <script language="javascript"  type="text/javascript"
-            src="/download/jquery-ui-1.12.1.custom/jquery-ui.min.js">script</script>
-    <link rel="stylesheet" href="/download/jquery-ui-1.12.1.custom/jquery-ui.min.css">
+            src="/download/jquery-ui-1.12.1/jquery-ui.min.js">script</script>
+    <link rel="stylesheet" href="/download/jquery-ui-1.12.1/jquery-ui.min.css">
     <link rel="stylesheet" href="/download/status2.css">
     <script language="javascript" type="text/javascript">
       // once the page and scripts have loaded, launch the business logic to populate it.
@@ -52,22 +52,35 @@
     </script>
   </head>
   <body>
+      <span class="jobs_heading">Status of your motus data-processing jobs</span>
+      <div class="jobs_navigation">
+        <span class="navigate" target="top"></span>
+        <span class="navigate" target="up"></span>
+        <span class="navigate" target="down"></span>
+        <span class="navigate" target="bottom"></span>
+        <label for="find_job_selector">Listing shows</label>
+        <select id="find_job_selector">
+          <option value="all" selected>all jobs</option>
+          <option value="id">only job with ID = </option>
+          <option value="idnear">only jobs with ID >= </option>
+          <option value="motusUserID">only jobs for motus user ID = </option>
+          <option value="log">only jobs with log matching</option>
+        </select>
+        <input type="text" id="find_job_key" value="">
+        <span id="find_job_button"></span>
+      </div>
     <div class="job_list">
     </div>
     <div class="job_details">
+    </div>
+    <div class="job_error">
+    </div>
+    <div class="job_no_results">
     </div>
 
     <script id="tpl_job_list" type="text/html">
       {{! template to render the table of jobs }}
       {{=⟦ ⟧=}}
-      <span class="jobs_heading">Status of your motus data-processing jobs</span>
-      <div class="jobs_navigation">
-        <span class="navigate" target="top"></span>
-        <span class="navigate" target="up"></span>
-        <span class="search"></span>
-        <span class="navigate" target="down"></span>
-        <span class="navigate" target="bottom"></span>
-      </div>
       <table class="jobs_table">
         <tr class="jobs_table_heading">
           <th><span class="sort_heading" sort_field="id">Job ID</span></th>
@@ -128,8 +141,45 @@
       <div>
         <span class="log_heading">Log:</span>
         <div class="job_log">
-          ⟦log⟧
+      ⟦! the next item is not indented, to support `preformatted` styling⟧
+⟦log⟧
         </div>
+      </div>
+    </script>
+    <script id="tpl_job_error" type="text/html">
+      {{! template to render an error message}}
+      {{=⟦ ⟧=}}
+      <div>
+        <span class="copy_error_message">Copy Error to Clipboard</span>
+      </div>
+      When trying to fetch job information, this error was received:
+      ⟦! the next `div` holds what gets copied to the clipboard⟧
+      <div class="job_error_contents">
+        <div class="job_error_message">
+          ⟦error⟧
+        </div>
+        The api entry called was:
+        <div class="job_error_api">
+          ⟦api⟧
+        </div>
+        with these parameters:
+        <div class="job_error_json">
+      ⟦! the next item is not indented, to support `preformatted` styling⟧
+⟦json⟧
+        </div>
+        and this browser state:
+        <div class="job_error_state">
+      ⟦! the next item is not indented, to support `preformatted` styling⟧
+⟦state⟧
+        </div>
+      </div>
+    </script>
+    <script id="tpl_job_no_results" type="text/html">
+      {{! template to render a message indicating no results}}
+      {{=⟦ ⟧=}}
+      <div class="job_no_results_message">
+        There are no (more?) jobs matching the search criteria.
+        Hit ESC to close this window.
       </div>
     </script>
   </body>
