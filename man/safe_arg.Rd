@@ -11,12 +11,13 @@ safe_arg(x, name, type, scalar = TRUE)
 
 \item{name}{unquoted object name}
 
-\item{type}{unquoted type name, one of "character", "integer", "logical", "numeric"
+\item{type}{unquoted type name, one of "character", "integer", "logical", "numeric", "list"
 or abbreviation thereof.}
 
 \item{scalar}{if TRUE (the default) return a vector of length 1,
 dropping any additional items. Otherwise, return a vector with the
-same length as the item from \code{x}.}
+same length as the item from \code{x}.  If \code{type=="list"}, the
+vector is of mode "list".}
 }
 \value{
 If there is no item with the given name in \code{x},
