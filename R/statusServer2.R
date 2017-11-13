@@ -96,7 +96,8 @@ status_api_info = function(env) {
 
     return_from_app(
         list(
-            maxRows = MAX_ROWS_PER_REQUEST
+            maxRows = MAX_ROWS_PER_REQUEST,
+            uploadPath = "sgdata/uploads"
         )
     )
 }

@@ -48,12 +48,18 @@ The server is at [https://sgdata.motus.org](https://sgdata.motus.org) and the UR
 
    status_api_info (authToken)
 
+      e.g.
+      curl https://sgdata.motus.org/status/status_api_info
+
    - return a list with these items:
 
       - maxRows: integer, maximum number of rows returned by a query
 
-      e.g.
-      curl https://sgdata.motus.org/status/status_api_info
+      - uploadPath: character, path to upload folder relative to top-level of NAS storage;
+        the `path` of an uploaded file passed in a call to `process_new_upload` API must be
+        relative to `uploadPath`; e.g. if `uploadPath` is `sgdata/uploads`, and if the
+        `prcoess_new_upload` API is called with `path`=`user232/2017-03-15/newfiles.zip`,
+        the uploaded file must be at `NAS:/sgdata/uploads/user232/2017-03-15/newfiles.zip`
 
 
 ### authenticate user ###
@@ -216,7 +222,7 @@ projects.
 
       - userID: integer scalar; motus user ID (who uploaded the file)
       - projectID; integer scalar; motus projectID (what project should own the products)
-      - path; string scalar; path to the new file on the NAS, relative to the 'sgdata/uploads' volume there.
+      - path; string scalar; path to the new file on the NAS, relative to the 'NASpathsgdata/uploads' volume there.
         e.g. if `path` is given as 'user123/2017-10-20T11-12-33_upload.zip`, then
         on linux, we'll expect to find the file at `nfs://174.140.177.35:/volume1/sgdata/uploads/user123/2017-10-20T11-12-33_upload.zip`
         which will have actual path /mnt/sgdata/uploads/user123/2017-10-20T11-12-33_upload.zip, since the nfs is mounted there.
