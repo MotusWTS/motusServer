@@ -26,13 +26,28 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 openMotusDB = function(dbname="motus", host="localhost", user="motus", sock="/var/run/mysqld/mysqld.sock") {
-    tryCatch(
-        ## sanity check on connection
-        MotusDB("select 1"),
+    dbConOkay = FALSE
+    n = 0
+    repeat {
+        tryCatch(
+        {
+            ## sanity check on connection:  update a counter that forces
+            ## the innoDB storage engine to touch files on the NAS
+            MotusDB("update bumpCounter set n=n+1 where k=0")
+            dbConOkay = TRUE
+        },
         error = function(e) {
-            ## either MotusDB doesn't exist, or connection has expired
+            ## wait before trying to reconnect
+            Sys.sleep(5)
+            ## either connection has expired, or server had to restart due to an NAS issue (e.g.)
             MotusDB <<- safeSQL(dbConnect(MySQL(), dbname=dbname, host=host, user=user, password=MOTUS_SECRETS$dbPasswd, sock))
         }
-    )
+        )
+        if (dbConOkay)
+            break
+        n = n + 1
+        if (n > 10)
+            stop("unable to reconnect to mariaDB motus database server")
+    }
     return (MotusDB)
 }

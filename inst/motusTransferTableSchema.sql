@@ -296,3 +296,18 @@ CREATE TABLE IF NOT EXISTS projAmbig (
     projectID6 INT,                       -- projectID of project in set
     tsMotus FLOAT(53) NOT NULL DEFAULT -1  -- timestamp this record received by motus
 );--
+
+-- Table bumpCounter does nothing but hold a counter, but updating it
+-- forces the innodb storage engine of the mysql server to touch its
+-- data files, which are mounted on NAS.  As long as the update query
+-- fails, we sleep then reconnect to the server.  This is necessary
+-- because some kind of external clock-setting processe is making the
+-- NAS nfs link die, typically once per day around 6:30 GMT.
+
+CREATE TABLE IF NOT EXISTS bumpCounter (
+   k SMALLINT PRIMARY KEY NOT NULL, -- key; zero for the one and only record
+   n BIGINT  -- counter: all we do is update this field
+);--
+
+-- insert the one and only record into the bumpCounter table
+REPLACE INTO bumpCounter (k, n) values (0, 0);--
