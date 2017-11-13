@@ -77,7 +77,8 @@
     </div>
     <div class="job_no_results">
     </div>
-
+    <div class="querying_server">
+    </div>
     <script id="tpl_job_list" type="text/html">
       {{! template to render the table of jobs }}
       {{=⟦ ⟧=}}
@@ -180,6 +181,20 @@
       <div class="job_no_results_message">
         There are no (more?) jobs matching the search criteria.
         Hit ESC to close this window.
+      </div>
+    </script>
+    <script id="tpl_querying_server" type="text/html">
+      {{! template to render a message indicating a query is active}}
+      {{=⟦ ⟧=}}
+      <div class="querying_server_message">
+        Running this query:
+        <div class="querying_server_api">
+⟦query⟧
+        </div>
+        with parameters:
+        <div class="querying_server_params">
+⟦params⟧
+        </div>
       </div>
     </script>
   </body>

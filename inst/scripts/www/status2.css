@@ -87,3 +87,21 @@
 .job_no_results_message {
     background-color: #FF202040;
 }
+
+.querying_server_params {
+    white-space: pre-wrap;
+    font-family: monospace;
+}
+
+.querying_server_api {
+    font-weight: bold;
+    line-height: 2;
+}
+
+.querying_server_active {
+        background-color: #FFFF2040;
+}
+
+.querying_server_done {
+        background-color: #FFFFFFFF;
+}

@@ -17,7 +17,9 @@ var state = {
     sortBy :"mtime",
     sortDesc: true,
     lastKey : [],
-    forwardFromKey: true
+    forwardFromKey: true,
+    // other
+    debug: false // show dialog when query runs
 };
 
 var latest_job_list = null;
@@ -57,8 +59,29 @@ function motus_status_api(api, par, cb) {
     if (api != "authenticate_user") {
         par.authToken = state.authToken;
     }
+    if (state.debug) {
+        $(".querying_server").mustache("tpl_querying_server",
+                                       {
+                                           query: api,
+                                           params: JSON.stringify(par, omit_authToken, 3)
+                                       },
+                                       {
+                                           method:"html"
+                                       }
+                                      );
+
+        $(".querying_server").dialog(
+            {
+                top: $("html").offset().top,
+                maxHeight: 800,
+                dragable:false,
+                closeOnEscape:true,
+                width:800,
+                title:"Querying motus status server"
+            });
+        $(".querying_server_message").addClass("querying_server_active")
+    }
     $.post(serverURL + api, {"json":JSON.stringify(par)}, function(x) {motus_status_replied(x, api, par, cb)});
-    console.log(api + ":" + JSON.stringify(par));
 };
 
 // @function omit_authToken: remove the authToken from a JSON-serialization of an object
@@ -82,6 +105,8 @@ function omit_authToken (key, val) {
 //
 // @return nothing
 function motus_status_replied(x, api, par, cb) {
+    if (state.debug)
+        $(".querying_server_message").removeClass("querying_server_active").addClass("querying_server_done");
     if (x.error) {
         $(".job_error").mustache("tpl_job_error",
                                  {
