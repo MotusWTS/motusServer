@@ -151,6 +151,8 @@ authenticate_user = function(env) {
 
             realProjIDs = as.integer(names(resp$projects))
             realProjIDString = paste(realProjIDs, collapse=",")
+            ## ensure that the motus DB connection is valid; see issue #281
+            openMotusDB()
             ambigProjIDs = MotusDB("
 select
    distinct ambigProjectID
