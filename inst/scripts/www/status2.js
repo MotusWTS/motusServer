@@ -369,7 +369,9 @@ function on_click_jobs_table_row(event) {
     // the jobs table row, as chosen by the dynamic selector in the .on("click", ...) call
     // which registered this handler.
 
-    show_job_details(event.currentTarget.getAttribute("job_id"));
+    // don't handle event if this is a selection
+    if (window.getSelection().toString().length == 0)
+        show_job_details(event.currentTarget.getAttribute("job_id"));
 };
 
 function on_click_sort_heading(event) {
