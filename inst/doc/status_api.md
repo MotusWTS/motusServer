@@ -49,7 +49,7 @@ The server is at [https://sgdata.motus.org](https://sgdata.motus.org) and the UR
    status_api_info (authToken)
 
       e.g.
-      curl https://sgdata.motus.org/status/status_api_info
+      curl https://sgdata.motus.org/status2/status_api_info
 
    - return a list with these items:
 
@@ -57,9 +57,9 @@ The server is at [https://sgdata.motus.org](https://sgdata.motus.org) and the UR
 
       - uploadPath: character, path to upload folder relative to top-level of NAS storage;
         the `path` of an uploaded file passed in a call to `process_new_upload` API must be
-        relative to `uploadPath`; e.g. if `uploadPath` is `sgdata/uploads`, and if the
-        `prcoess_new_upload` API is called with `path`=`user232/2017-03-15/newfiles.zip`,
-        the uploaded file must be at `NAS:/sgdata/uploads/user232/2017-03-15/newfiles.zip`
+        relative to `uploadPath`; e.g. if `uploadPath` is `sgdata/sgm/uploads`, and if the
+        `process_new_upload` API is called with `path`=`user232/2017-03-15/newfiles.zip`,
+        the uploaded file must be at `NAS:/sgdata/sgm/uploads/user232/2017-03-15/newfiles.zip`
 
 
 ### authenticate user ###
@@ -70,7 +70,7 @@ The server is at [https://sgdata.motus.org](https://sgdata.motus.org) and the UR
       - password: password (in cleartext)
 
       e.g.
-      curl --data-urlencode json='{"user":"someone","password":"bigsecret"}' https://sgdata.motus.org/status/authenticate_user
+      curl --data-urlencode json='{"user":"someone","password":"bigsecret"}' https://sgdata.motus.org/status2/authenticate_user
 
    - returns a list with these items:
       - authToken: string; 264 random bits, base64-encoded
@@ -185,7 +185,7 @@ projects.
           - limit: integer; if present, maximum number of records to return.
 
       e.g.
-      curl --data-urlencode json='{"select":{"userno":232},"order":{"sortBy":"id","lastKey":[5000]},"authToken":"XXX"}' https://sgdata.motus.org/status/list_jobs
+      curl --data-urlencode json='{"select":{"userno":232},"order":{"sortBy":"id","lastKey":[5000]},"authToken":"XXX"}' https://sgdata.motus.org/status2/list_jobs
 
    - return a list of jobs; unless includeSubjobs is true, return only top-level jobs.
      A top level job has one of these types:
@@ -218,13 +218,19 @@ projects.
 
 ### process new upload ###
 
-   process_new_upload (userID, projectID, path, authToken)
+   process_new_upload (userID, projectID, path, ts, authToken)
 
       - userID: integer scalar; motus user ID (who uploaded the file)
       - projectID; integer scalar; motus projectID (what project should own the products)
-      - path; string scalar; path to the new file on the NAS, relative to the 'NASpathsgdata/uploads' volume there.
+      - path; string scalar; path to the new file on the NAS, relative to the value of `uploadPath` returned by the `status_api_info` API.
         e.g. if `path` is given as 'user123/2017-10-20T11-12-33_upload.zip`, then
-        on linux, we'll expect to find the file at `nfs://174.140.177.35:/volume1/sgdata/uploads/user123/2017-10-20T11-12-33_upload.zip`
-        which will have actual path /mnt/sgdata/uploads/user123/2017-10-20T11-12-33_upload.zip, since the nfs is mounted there.
+        on linux, we'll expect to find the file at `nfs://174.140.177.35:/volume1/sgdata/sgm/uploads/user123/2017-10-20T11-12-33_upload.zip`
+        which will have actual path /sgm/uploads/user123/2017-10-20T11-12-33_upload.zip, given the current NAS mountpoints.
+        path` must not include any '..' component; i.e. ascent up the file tree is not permitted.
+        Both forward (`/`) and reverse (`\`) slashes are interpreted as folder delimiters.
+      - ts; double; timestamp (seconds since 1 Jan 1970, GMT); time at which file upload completed.  If not supplied, the current
+        time is used.
 
-   - return the integer motus jobID for the new job.
+   - return: an object with these items:
+      - `jobID`: the integer motus ID for the new job
+      - `uploadID`: the integer motus ID for the upload
