@@ -11,8 +11,6 @@ Usage: killAllMotusServers.sh [-h] [-g]
 
 Kills all motus servers by invoking these scripts:
 
-   - killMotusUploadServer.sh
-
    - killMotusStatusServer.sh
 
    - killMotusStatusServer2.sh
@@ -40,7 +38,6 @@ if [[ "$1" == "-g" ]]; then
     GRACEFUL="-g"
 fi
 
-/sgm/bin/killMotusUploadServer.sh
 /sgm/bin/killMotusStatusServer.sh $GRACEFUL
 /sgm/bin/killMotusStatusServer2.sh $GRACEFUL
 /sgm/bin/killMotusDataServer.sh $GRACEFUL
@@ -48,4 +45,4 @@ fi
 /sgm/bin/killMotusProcessServers.sh -a $GRACEFUL
 
 
-echo Killed upload, status, data and all process servers.
+echo Killed status, status2, data and all process servers.

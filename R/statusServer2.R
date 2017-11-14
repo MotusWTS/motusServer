@@ -97,7 +97,7 @@ status_api_info = function(env) {
     return_from_app(
         list(
             maxRows = MAX_ROWS_PER_REQUEST,
-            uploadPath = "sgdata/uploads"
+            uploadPath = file.path("sgdata", MOTUS_PATH$UPLOADS) ## "sgdata" is a folder on the NAS itself
         )
     )
 }
@@ -284,6 +284,69 @@ if (is.null(stump)) maxRows else -1
     on.exit(q(save="no"))
     error_from_app("status server (API version) shutting down")
 }
+
+process_new_upload = function(env) {
+    json = fromJSON(parent.frame()$postBody["json"], simplifyVector=FALSE)
+
+    if (tracing)
+        browser()
+
+    auth = validate_request(json)
+    if (inherits(auth, "error")) return(auth)
+
+    projectID = auth$projectID
+    userID = safe_arg(json, userID, int)
+    if (is.null(userID))
+        return(error_from_app("missing integer userID"))
+    path = safe_arg(json, path, char)
+    if (is.null(path))
+        return(error_from_app("missing path"))
+    comps = strsplit(path, '[/\\\\]', perl=TRUE)[[1]]
+    if (any(comps == ".."))
+        return(error_from_app("path is not allowed to contain any '/../' components"))
+    realpath = file.path(MOTUS_PATH$UPLOADS, path)
+    if (!file.exists(realpath))
+        return(error_from_app(paste0("non-existent file: `NAS:/sgdata/", realpath, "`")))
+    if (is.null(projectID))
+        return(error_from_app("missing integer projectID"))
+    ts = safe_arg(json, ts, double)
+    if (is.null(ts))
+        ts = as.numeric(Sys.time())
+
+    ## create and enqueue a new upload job
+    j = newJob("uploadFile", .parentPath=MOTUS_PATH$INCOMING, motusUserID=userID, motusProjectID = projectID, .enqueue=FALSE, filename=realpath)
+
+    jobID = unclass(j)
+
+    ## get file basename
+    bname = basename(realpath)
+
+    ## record receipt within the job's log
+    jobLog(j, paste("File uploaded:", bname), summary=TRUE)
+
+    jpath = file.path(jobPath(j), "upload")
+    dir.create(jpath)
+    ## symlink to uploaded file from the job's dir
+    ## We symlink because:
+    ## - we want to maintain the original file unmodified
+    ## - the file can be on a different filesystem than the
+    ##   jobs hierarchy
+
+    file.symlink(realpath, file.path(jpath, bname))
+
+    ## move the job to the main queue
+
+    j$queue = "0"
+    moveJob(j, MOTUS_PATH$QUEUE0)
+
+    cat("Job", jobID, "has been entered into queue 0\n")
+
+    MotusDB("insert into uploads (jobID, motusUserID, motusProjectID, filename) values (%d, %d, %d, '%s')",
+            jobID, userID, projectID, path)
+    uploadID = MotusDB("select LAST_INSERT_ID()")[[1]]
+    return_from_app(list(jobID = jobID, uploadID = uploadID))
+}
+
 
 
 queueStatusApp = function(env) {

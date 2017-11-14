@@ -311,3 +311,12 @@ CREATE TABLE IF NOT EXISTS bumpCounter (
 
 -- insert the one and only record into the bumpCounter table
 REPLACE INTO bumpCounter (k, n) values (0, 0);--
+
+-- The uploads table holds records of all uploaded files received.
+CREATE TABLE IF NOT EXISTS uploads (
+   uploadID INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT, -- identifies a unique upload
+   jobID INTEGER NOT NULL, -- id of top-level job for this uploaded file
+   motusUserID INTEGER NOT NULL, -- motus id of user who uploaded the file
+   motusProjectID INTEGER NOT NULL,  -- motus id of project selected by user to receive products of this upload
+   filename VARCHAR(255) NOT NULL -- filename as passed in API call; can include paths, but no ascending ("..") components
+);--
