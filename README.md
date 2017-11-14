@@ -6,6 +6,4 @@ R package to operate a server to process data for http://motus.org
 the "motus" package available here:  https://github.com/jbrzusto/motus
 
 This package processes raw data from receivers and stores results in
-transfer tables which are polled by the server at Motus. Results use
-native motus database keys, which are obtained by querying motus.org
-for metadata on tags and receivers.
+a master database which can be accessed via the [motus client package](https://github.com/jbrzusto/motusClient)
