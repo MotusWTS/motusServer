@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS batches (
     motusUserID INT,                                     -- user who uploaded the data leading to this batch
     motusProjectID INT,                                  -- user-selected motus project ID for this batch
     motusJobID INT,                                      -- processing job which created this batch
-    recvDepProjectID INT                                 -- projectID of the receiver deployment this batch belongs to (NULL if not known).
+    recvDepProjectID INT NOT NULL DEFAULT -1,            -- projectID of the receiver deployment this batch belongs to (-1 if not known).
                                                          -- this field allows much simpler queries for fetching data
 
 );--

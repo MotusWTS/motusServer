@@ -430,8 +430,11 @@ insert
 
     ## Set the recvDepProjectID for each batch; it will be the project
     ## ID of the latest deployment of that receiver which overlaps the
-    ## batch.  We allow for tsEnd of a recvDep to be null or 0, meaning
-    ## "still active".
+    ## batch.  We allow for tsEnd of a recvDep to be null or 0,
+    ## meaning "still active".  Batches not overlapped by a receiver
+    ## deployment will have the recvDepProjectID = -1 (the default
+    ## value in the DB schema, which is used by the dataServer to pull
+    ## in *all* batches etc. for a receiver).
 
     MotusDB("update batches as t1 set t1.recvDepProjectID = (select t2.projectID from recvDeps as t2 where t2.deviceID=t1.motusDeviceID and t2.tsStart <= t1.tsEnd and (t2.tsEnd is null or t2.tsEnd = 0 or t1.tsStart <= t2.tsEnd) order by t2.tsStart desc limit 1) where t1.batchID between %d and %d",
             txBatches$batchID[1],
