@@ -9,7 +9,9 @@ be executed (job retry, server restart, processing of new uploaded file, ...)
 ### Request ###
  - requests are sent by the HTTP POST method
  - the request has header `Content-Type: application/x-www-form-urlencoded`
- - the POST data has a single item called `json`
+ - can have an optional header `Accept-Encoding: gzip` in which case the reply
+   will be gzip-compressed, rather then bzip2-compressed (see below)
+ - the POST data has a single item called `json`, which is a JSON-encoded object.
  - the fields of `json` are the parameters listed for each API entrypoint below.
  - most requests require an `authToken` value, which can be obtained by a call
    to `authenticate_user`; alternatively, it can be the value (*not* URL-encoded) of a cookie
@@ -17,11 +19,18 @@ be executed (job retry, server restart, processing of new uploaded file, ...)
    according to the Apache mod-auth-tkt module.  Code for generating the cookie can
    be seen in [R](https://github.com/jbrzusto/motusServer/blob/new_server/R/validate_request.R)
    or in [PHP](https://github.com/jbrzusto/motusServer/blob/new_server/inst/scripts/www/login.php)
+ - if a request indicates that a parameter should be an array, then
+   a scalar of the same type can be provided instead, and is treated as an array of length 1.
+   i.e. the API doesn't distinguish between `"par":X` and `"par":[X]` if `X` is a double, integer,
+   boolean or string
 
 ### Reply ###
- - is a json object: header `Content-Type = application/json`
- - is bzip2-compressed: header `Content-Encoding = bzip2`
- - most return values are objects whose fields are arrays
+ - is a JSON-encoded object: header `Content-Type = application/json`
+ - is bzip2-compressed: header `Content-Encoding = bzip2`.  To support browsers and other
+   contexts without native bzip2 decompression, if the request had a
+   header called `Accept-Encoding` that includes the string "gzip", then the
+   reply is gzip-compressed, with header `Content-Encoding: gzip`.
+ - most returned objects have fields which are arrays of
    equal length, which is the natural JSON encoding of an R data.frame
  - errors are indicated by including a field called `error` in the reply; other
    fields might be present, giving additional information.  If no field `error`
