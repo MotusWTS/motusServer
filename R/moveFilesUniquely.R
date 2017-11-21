@@ -36,7 +36,7 @@ moveFilesUniquely = function(src, dst) {
     existing = dir(dst)
 
     ## regex to find possible "-NNN" suffixes on files
-    nameRegex = "(?sx)^(?<base>.*)(-(?<number>[0-9]+)?)$"
+    nameRegex = "(?sx)^(?<base>.*?)(-(?<number>[0-9]+))?$"
 
     ## function to increment the -NNN extension (if any) on a file
     bumpSuffix = function(p) {
@@ -59,7 +59,7 @@ moveFilesUniquely = function(src, dst) {
 
         ## rename according to rules
 
-        fd[conflict] = lapply(parts, bumpSuffix)
+        fd[conflict] = sapply(parts, bumpSuffix)
     }
     file.rename(src, file.path(dst, fd))
 }
