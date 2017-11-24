@@ -16,7 +16,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-getMotusDeviceID = function(src, useFirst=TRUE) {
+getMotusDeviceID = function(src, useFirst=FALSE) {
     if (! inherits(src, "src"))
         src = getRecvSrc(src)
 
