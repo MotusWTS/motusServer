@@ -314,8 +314,11 @@ order by
 
             ## update slim copy of receiver deps in mysql database
             MotusDB("delete from recvDeps")
-            dbWriteTable(MotusDB$con, "recvDeps", dbGetQuery(s$con, "select projectID, deviceID, tsStart, tsEnd from recvDeps order by projectID, deviceID"),
+            slimRecvDeps = dbGetQuery(s$con, "select projectID, deviceID, tsStart, tsEnd from recvDeps order by projectID, deviceID, tsStart")
+            dbWriteTable(MotusDB$con, "recvDeps", slimRecvDeps,
                          append=TRUE, row.names=FALSE)
+            write.csv(slimRecvDeps,
+                      file.path(MOTUS_PATH$METADATA_HISTORY, "receiver_deployments.csv"), row.names=FALSE)
         }
 
         if (nrow(ant) > 100) { ## arbitrary sanity check
