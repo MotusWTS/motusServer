@@ -1,12 +1,11 @@
 #' determine the model from a lotek serial number
 #'
 #' The serial number determines the receiver model in most cases, but
-#' for a few receivers, additional fields from the .DTA file are needed.
+#' for a few receivers, additional fields from a .DTA file are needed.
+#' In those situations, the receiver DB would be examined for appropriate
+#' fields in the meta table.
 #'
 #' @param serno character scalar; receiver serial number, e.g. "Lotek-123"
-#'
-#' @param extra a named character vector of additional .DTA file fields
-#' Currently, this parameter is ignored.
 #'
 #' @return a character scalar with the receiver model
 #'
@@ -14,7 +13,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-getLotekModel = function(serno, extra) {
+getLotekModel = function(serno) {
 
     ## get bare serial number by dropping "Lotek-" (first 6 chars)
     bareno = substring(serno, 7)
