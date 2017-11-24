@@ -27,7 +27,7 @@ getMotusDeviceID = function(src, useFirst=TRUE) {
         return(as.integer(deviceID))
 
     ## see whether motus knows this receiver
-    mm = subset(motusListSensors(), receiverID==m$recvSerno)
+    mm = MetaDB("select deviceID from recvDeps where serno=:serno", serno=m$recvSerno)
     if (nrow(mm) > 0) {
         if (nrow(mm) == 1 || (nrow(mm) > 0 && useFirst)) {
             m$deviceID = mm$deviceID[1]
