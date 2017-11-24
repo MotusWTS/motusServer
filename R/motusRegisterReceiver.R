@@ -38,8 +38,10 @@ motusRegisterReceiver = function(serno, secretKey = NULL) {
     masterKey = "~/.secrets/motus_secret_key.txt"
 
     motusQuery(MOTUS_API_REGISTER_RECEIVER, requestType="get",
-               params=list(
-                   secretKey = toupper(secretKey)
+               params = list(
+                   secretKey = toupper(secretKey),
+                   receiverType = getRecvType(serno)
                ),
-               masterKey = masterKey, serno=serno)
+               serno = serno,
+               masterKey = masterKey)
 }
