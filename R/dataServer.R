@@ -344,6 +344,7 @@ from
    on t2.tagDepProjectID=%d
    and t2.batchID > %d
    and t1.batchID = t2.batchID
+   and t1.tsMotus >= 0
 order by
    t2.batchID
 limit %d
@@ -402,6 +403,7 @@ where
    t1.batchID > %d
    and t1.motusDeviceID = %d
    and t1.recvDepProjectID in (%s)
+   and t1.tsMotus >= 0
 order by
    t1.batchID
 limit %d
@@ -448,6 +450,7 @@ from
    batches
 where
    batchID > %d
+   and tsMotus >= 0
 order by
    batchID
 limit %d
@@ -1216,10 +1219,12 @@ from
            min(tsBegin) as tsStart,
            max(tsEnd) as tsEnd
         from
-           runs
+           runs as t2
+           join batches as t3 on t2.batchIDbegin = t3.batchID
         where
            batchIDbegin > %d
            and tagDepProjectID = %d
+           and t3.tsMotus >= 0
         group by
            batchIDbegin
        ) as t1
@@ -1302,6 +1307,7 @@ from
           t1.batchID > %d
           and t1.motusDeviceID = %d
           and t1.recvDepProjectID in (%s)
+          and t1.tsMotus >= 0
        group by t1.batchID
     ) as t3
 ",
