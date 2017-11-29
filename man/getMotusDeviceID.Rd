@@ -4,7 +4,7 @@
 \alias{getMotusDeviceID}
 \title{Get the motus device ID for a receiver, given its database.}
 \usage{
-getMotusDeviceID(src, useFirst = TRUE)
+getMotusDeviceID(src, useFirst = FALSE)
 }
 \arguments{
 \item{src}{dplyr src_sqlite to receiver database, or a character
