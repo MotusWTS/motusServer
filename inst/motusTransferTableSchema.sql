@@ -315,8 +315,44 @@ REPLACE INTO bumpCounter (k, n) values (0, 0);--
 -- The uploads table holds records of all uploaded files received.
 CREATE TABLE IF NOT EXISTS uploads (
    uploadID INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT, -- identifies a unique upload
-   jobID INTEGER NOT NULL, -- id of top-level job for this uploaded file
-   motusUserID INTEGER NOT NULL, -- motus id of user who uploaded the file
-   motusProjectID INTEGER NOT NULL,  -- motus id of project selected by user to receive products of this upload
-   filename VARCHAR(255) NOT NULL -- filename as passed in API call; can include paths, but no ascending ("..") components
+   jobID INTEGER NOT NULL,                               -- id of top-level job for this uploaded file
+   motusUserID INTEGER NOT NULL,                         -- motus id of user who uploaded the file
+   motusProjectID INTEGER NOT NULL,                      -- motus id of project selected by user to receive products of this upload
+   filename VARCHAR(255) NOT NULL                        -- filename as passed in API call; can include paths, but no ascending ("..") components
 );--
+
+-- The table recording reprocessing events.  A reprocessing event
+-- occurs when raw files from one or more receiver boot sessions are
+-- reprocessed.  This might span multiple receivers and boot sessions, or
+-- just one boot session on one receiver, so we record affected boot sessions
+-- in a many-to-one child table.  Also, the original data might have been
+-- processed as several batches per boot session, so we also record which
+-- batches are created and retired by the reprocessing event in another
+-- many-to-one child table.
+-- A reprocessing event will be a top-level job in the jobs database, and
+-- the reprocessID is the same as the jobID that caused it.
+
+CREATE TABLE IF NOT EXISTS reprocess (
+   reprocessID INTEGER PRIMARY KEY NOT NULL,                -- identifies a unique reprocessing event; this will be the jobID
+   motusUserID INTEGER NOT NULL,                            -- motus ID of user (presumably admin) who launched the reprocessing
+   ts FLOAT(53) NOT NULL,                                   -- timestamp at which the reprocessing was registered
+   reasons TEXT NOT NULL                                    -- textual description (formatted with markdown if long) for reprocessing reasons
+);--
+
+-- The table recording which receiver bootsessions were reprocessed by an event
+CREATE TABLE IF NOT EXISTS reprocessBootSessions (
+   reprocessID INTEGER NOT NULL REFERENCES reprocess(reprocessID), -- which event this is
+   deviceID INTEGER NOT NULL,                                      -- motus ID of receiver being reprocessed
+   monoBN INTEGER NOT NULL,                                        -- montonic boot count of receiver
+   PRIMARY KEY (reprocessID, deviceID, monoBN)                     -- a receiver boot session can only appear once per reprocess event
+);--
+
+-- The table recording which batches are created/retired by each reprocessing event
+
+CREATE TABLE IF NOT EXISTS reprocessBatches (
+   reprocessID INTEGER NOT NULL REFERENCES reprocess(reprocessID), -- which event this is
+   batchID INTEGER NOT NULL,                                       -- ID of new batch, if positive; -ID of retired batch, if negative.
+   PRIMARY KEY(reprocessID, batchID)                               -- a batch occurs at most once per reprocessing event
+);--
+
+CREATE INDEX IF NOT EXISTS reprocessBatches_batchID on reprocessBatches(batchID);--

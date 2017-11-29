@@ -39,4 +39,5 @@ ensureMotusTransferTables = function(recreate=c()) {
 
 motusTransferTables = c("batches", "gps", "runs", "runUpdates",
                         "hits", "batchAmbig", "batchProgs",
-                        "batchParams", "batchDelete", "maxKeys", "bumpCounter")
+                        "batchParams", "batchDelete", "maxKeys", "bumpCounter", "uploads",
+                        "reprocess", "reprocessBootSessions", "reprocessBatches")
