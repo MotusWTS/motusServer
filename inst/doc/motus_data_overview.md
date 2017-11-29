@@ -247,25 +247,32 @@ reasons:
 Reprocessing can be very disruptive from the user's point of view
 ("What happened to my hits?"), so motus reprocessing will be:
 
- 1. transparent: motus will maintain a record of what was reprocessed,
-   why, when, what was done differently, and what changed
+ 1. optional: users should be able to obtain new data without
+    having to accept reprocessed versions of data they already have.
 
- 2. optional: users should be able to choose whether they wish to
-   update their copy of the database
+ 2. reversible: users should be able to "go back" to a previous
+    version of any reprocessed data they have accepted.
 
- 3. all-or-nothing: users should be guaranteed that they either have
-   the reprocessed data, or the original data, but not an undefined
-   mix of the two.
+ 3. transparent:  users will receive a record of what was reprocessed,
+    why, when, what was done differently, and what changed
 
- 4. reversable: users should be able to revert to any previous version
-   of their database.
+ 4. all-or-nothing: for each receiver boot session for which users
+    have data, these data must come entirely from either the original
+    processing, or a subsequent single reprocessing event.  The user
+    *must not* end up with an undefined mix of data from original and
+    reprocessed sources.
+
+ 5. in-band:  the user's copy of data will be updated to incorporate
+    *reprocessed* data as part of the normal process of updating to obtain
+    *new* data, unless they choose otherwise.  We expect that most users
+    will want to accept reprocessed data most of the time.
 
 Initially, motus data processing might not adhere to this contract,
 but it is an eventual goal.
 
 ## Reprocessing simplified:  only by boot session ##
 
-The most general reprocessing scenario could look like this:
+A general reprocessing scenario would look like this:
 
 ```
 Receiver R
@@ -280,7 +287,7 @@ Receiver R
                             !  |                                 |      !
           <---- Batch N ----!->|<------- Batch N+1 ------------->|<-----!Batch N+2 ---->
                             !                                           !
-                            !<- Reprocess this period?  No, too hard! ->!
+                            !<- Reprocess this period (no, too hard!) ->!
 
 ```
 if raw data records from an arbitrary stretch of time could be reprocessed.
@@ -289,9 +296,10 @@ or gain hits within the reprocessing period, but not outside of it.  This
 might even break an existing run into distinct new runs.
 
 This situation is challenging (NB: not impossible; might be a TODO) to
-represent in the database if we want to maintain a full history of
-processing.  For example, if reprocessing deletes some hits from run `2`,
-how do we represent both the old and the new versions of that run?
+formalize and represent in the database if we want to maintain a full
+history of processing.  For example, if reprocessing deletes some hits
+from run `2`, how do we represent both the old and the new versions of
+that run?
 
 The complications arise due to runs crossing the reprocessing period
 boundaries, so for simplicity we should *choose a reprocessing period
@@ -300,23 +308,51 @@ above.
 
 ## Distributing reprocessed data ##
 
-The previous section shows why we only reprocess data by boot session.  Given
-that, how do we fulfill the reprocessing contract?
+The previous section shows why we only reprocess data by boot session.
+Given that, how do we get reprocessed data to users while fulfilling
+the reprocessing contract?
 
 Note that a reprocessed boot session will fully replace one or more
 existing batches and one or more runs, because batches and runs both
 nest within boot sessions.
 
-So a reprocessing event can be represented as a `changeset` with these items:
+Replacement of data by reprocessed versions should happen in-band
+(`5` above), so one approach is this:
 
- - `replacedBatchIDs`: IDs of batches to be replaced.  Records for these batches,
-   as well as for runs/hits overlapping/contained by them will also be replaced.
-   GPS records will also be retired.
+ - the `batches_for_XXX` API entries should mark new batches which result
+   from reprocessing, so that the client can deal with them appropriately.
+   This can be done by adding a field called `reprocessID` with these semantics:
+   - `reprocessID == 0`: data in this batch are from new raw files; the normal
+     situation
+   - `reprocessID == X > 0`: data in this batch are from reprocessing
+     existing raw files.
+   - `X` is the ID of the reprocessing event, and a new API entry `get_reprocessing_info (X)`
+     can be called to obtain details about it.
+   - if the user chooses to accept the reprocessed version, then existing batches, runs, hits and GPS
+     fixes from the same receiver and boot session are retired before
+     adding the new batches.
+   - if the user chooses to reject the reprocessed version, then `X` is added to a client-side blacklist,
+     and the user will not receive any data from batches whose reprocessID is on the blacklist.
+   - later, if a user decides to accept a reprocessing event they had
+     earlier declined, then the IDs of new batches for
+     that event can be fetched from another new API
+     `get_reprocessing_batches (X)`, and the original batches will be
+     deleted
 
- - `newBatches`: records for new batches; these will have new batchIDs
- - `newRuns`: records for new runs; these will have new runIDs
- - `newHits`: records for new hits; these will have new hitIDs
- - `newGPS`: records for new GPS fixes
+ - to let users more efficiently fetch the "best" version of their
+   dataset (i.e. accepting all reprocessing events), we should also
+   mark batches which are subsequently replaced by a reprocessing
+   event.  For this, we add the field `replacedIn` with these
+   semantics:
+    - `replacedIn == 0`: data in this batch have not been replaced by any reprocessing event
+    - `replacedIn == X > 0`: data in this batch have been replaced by reprocessing event `X`.
+   Then the client can ignore any batches for which `replacedIn > 0`.  We could also add
+   a new boolean parameter `unreplacedOnly` to the `batches_for_XXX` API entries.  It defaults to `false`,
+   but if `true`, then only batches which have not been replaced by subsequent reprocessing events
+   are returned.
 
- In keeping with the limited size of queries to the motus data server, the `newXXX`
- items will be obtained incrementally by the motusClient package.
+ - users can choose a policy for how reprocessed data are handled by setting the value of
+    `Motus$acceptReprocessedData` in their workspace before calling `tagme()`:
+     - `Motus$acceptReprocessedData <- TRUE`; always accept batches of data from reprocessing events
+     - `Motus$acceptReprocessedData <- FALSE`; never accept batches of data from reprocessing events
+     - `Motus$acceptReprocessedData <- NA` (default); ask about each reprocessing event
