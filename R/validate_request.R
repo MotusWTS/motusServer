@@ -28,6 +28,7 @@
 #' \item projectID the projectID(s) specified in the request (and it is guaranteed the user has permission to them),
 #' present only if the user specified it.
 #' \item userType character scalar; one of "administrator", "contributor"
+#' \item isAdmin logical scalar; TRUE if user is an administrator.
 #' }
 #'
 #' If the request was not valid, a value of class "error" and suitable
@@ -158,7 +159,7 @@ token = authToken)
     }
     isAdmin = isTRUE(auth$userType == "administrator")
     if (is.null(msg)) {
-        rv = list(userID=auth$userID, projects = scan(text=auth$projects, sep=",", quiet=TRUE), projectID=projectID, userType=auth$userType)
+        rv = list(userID=auth$userID, projects = scan(text=auth$projects, sep=",", quiet=TRUE), projectID=projectID, userType=auth$userType, isAdmin=isAdmin)
         if (isAdmin)
             rv$projects = c(-1, rv$projects)  ## add the "unknown" sentinel for admin users
         if (! (isAdmin || all(projectID %in% rv$projects))) {

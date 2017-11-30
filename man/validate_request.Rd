@@ -36,6 +36,7 @@ If the request was valid, a list with these items:
 \item projectID the projectID(s) specified in the request (and it is guaranteed the user has permission to them),
 present only if the user specified it.
 \item userType character scalar; one of "administrator", "contributor"
+\item isAdmin logical scalar; TRUE if user is an administrator.
 }
 
 If the request was not valid, a value of class "error" and suitable
