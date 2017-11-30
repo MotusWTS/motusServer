@@ -9,13 +9,17 @@
 #'
 #' @param src dplyr src_sqlite to receiver database
 #'
+#' @param batchStatus integer to which the `status` field of each transferred
+#' batch is set once complete. Default: 1, which means the batch will
+#' be immediately servable by the \code{\link{dataServer()}}.
+#'
 #' @return no return value
 #'
 #' @export
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-pushToMotus = function(src) {
+pushToMotus = function(src, batchStatus=1) {
     con = src$con
     sql = function(...) dbGetQuery(con, sprintf(...))
 
@@ -93,8 +97,7 @@ pushToMotus = function(src) {
                                                  motusTagID4 = "motusTagID4",
                                                  motusTagID5 = "motusTagID5",
                                                  motusTagID6 = "motusTagID6",
-                                                 ambigProjectID = 0,
-                                                 tsMotus     = -1) %>% as.data.frame
+                                                 ambigProjectID = 0) %>% as.data.frame
             ## write new tag ambiguities
             ## but work around bug in RMySQL
             dbWriteTable(mtcon, "temptagAmbig", newAmbig, overwrite=TRUE, row.names=FALSE)
@@ -108,8 +111,7 @@ replace into
       motusTagID4,
       motusTagID5,
       motusTagID6,
-      ambigProjectID,
-      tsMotus
+      ambigProjectID
    )
    select
       ambigID,
@@ -119,8 +121,7 @@ replace into
       motusTagID4,
       motusTagID5,
       motusTagID6,
-      ambigProjectID,
-      tsMotus
+      ambigProjectID
    from
       temptagAmbig
 ")
@@ -135,14 +136,16 @@ replace into
     ## ----------  copy batches ----------
 
     ## update the batchID fields for the batches, then insert them into motus.batches
-    ## The default value of -1 for the tsMotus field means these records represent
-    ## incomplete batches, not to be transferred to motus until the tsMotus field
-    ## is set to zero at the end of this function.
+    ## The default value of -10 for the status field means these records represent
+    ## incomplete batches, not to be served by the dataServer until the status field
+    ## is set to +1 at the end of this function.  If the status is set to -1, these
+    ## data are for debugging only, and not returned by the dataServer unless explicitly
+    ## requested.
 
     txBatches = newBatches
     txBatches$batchID = txBatches$batchID + offsetBatchID
 
-    txBatches$tsMotus = -1
+    txBatches$status = -10
 
     dbWriteTable(mtcon, "batches", txBatches %>% as.data.frame, append=TRUE, row.names=FALSE)
 
@@ -441,9 +444,10 @@ insert
             tail(txBatches$batchID, 1))
 
     ## To indicate they are complete and ready for transfer, set
-    ## tsMotus on these batches.
+    ## status on these batches.
 
-    MotusDB("update batches set tsMotus = 0 where tsMotus = -1 and batchID between %d and %d",
+    MotusDB("update batches set status = %d where status = -10 and batchID between %d and %d",
+            batchStatus,
             txBatches$batchID[1],
             tail(txBatches$batchID, 1))
 

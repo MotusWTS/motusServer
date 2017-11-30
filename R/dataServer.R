@@ -307,6 +307,8 @@ where
 #'
 #' @param projectID integer project ID
 #' @param batchID integer batchID; only batches with larger batchID are returned
+#' @param includeTesting boolean; default: FALSE.  If TRUE, and the user is an administrator,
+#' then records for batches marked as `testing` are returned as if they were normal batches.
 #'
 #' @return a data frame with the same schema as the batches table, but JSON-encoded as a list of columns
 
@@ -322,6 +324,9 @@ batches_for_tag_project = function(env) {
     batchID = (json$batchID %>% as.integer)[1]
     if (!isTRUE(is.finite(batchID)))
         batchID = 0
+
+    includeTesting = (json$includeTesting %>% as.logical)[1]
+    minBatchStatus = if (isTRUE(includeTesting) && isTRUE(auth$isAdmin)) -1 else 1
 
     ## select batches for which there's an overlapping run of a tag deployed
     ## by the given project
@@ -344,12 +349,12 @@ from
    on t2.tagDepProjectID=%d
    and t2.batchID > %d
    and t1.batchID = t2.batchID
-   and t1.tsMotus >= 0
+   and t1.status >= %d
 order by
    t2.batchID
 limit %d
 ",
-auth$projectID, batchID, MAX_ROWS_PER_REQUEST)
+minBatchStatus, auth$projectID, batchID, MAX_ROWS_PER_REQUEST)
     return_from_app(MotusDB(query))
 }
 
@@ -358,6 +363,8 @@ auth$projectID, batchID, MAX_ROWS_PER_REQUEST)
 #'
 #' @param deviceID integer device ID
 #' @param batchID integer batchID; only batches with larger batchID are returned
+#' @param includeTesting boolean; default: FALSE.  If TRUE, and the user is an administrator,
+#' then records for batches marked as `testing` are returned as if they were normal batches.
 #'
 #' @return a data frame with the same schema as the batches table, but JSON-encoded as a list of columns
 
@@ -379,6 +386,9 @@ batches_for_receiver = function(env) {
     batchID = (json$batchID %>% as.integer)[1]
     if (!isTRUE(is.finite(batchID)))
         batchID = 0
+
+    includeTesting = (json$includeTesting %>% as.logical)[1]
+    minBatchStatus = if (isTRUE(includeTesting) && isTRUE(auth$isAdmin)) -1 else 1
 
     ## select batches for a receiver that begin during one of the project's deployments
     ## of that receiver  (we assume a receiver batch is entirely in a deployment; i.e.
@@ -403,18 +413,20 @@ where
    t1.batchID > %d
    and t1.motusDeviceID = %d
    and t1.recvDepProjectID in (%s)
-   and t1.tsMotus >= 0
+   and t1.status >= %d
 order by
    t1.batchID
 limit %d
 ",
-batchID, deviceID, paste(auth$projects, collapse=","), MAX_ROWS_PER_REQUEST)
+batchID, deviceID, paste(auth$projects, collapse=","), minBatchStatus, MAX_ROWS_PER_REQUEST)
     return_from_app(MotusDB(query))
 }
 
 #' get batches for any receiver
 #'
 #' @param batchID integer batch ID of largest batch already obtained
+#' @param includeTesting boolean; default: FALSE.  If TRUE, and the user is an administrator,
+#' then records for batches marked as `testing` are returned as if they were normal batches.
 #'
 #' @return a data frame with the same schema as the batches table, but JSON-encoded as a list of columns
 
@@ -431,6 +443,9 @@ batches_for_all = function(env) {
     batchID = (json$batchID %>% as.integer)[1]
     if (!isTRUE(is.finite(batchID)))
         batchID = 0
+
+    includeTesting = (json$includeTesting %>% as.logical)[1]
+    minBatchStatus = if (isTRUE(includeTesting) && isTRUE(auth$isAdmin)) -1 else 1
 
     ## select batches larger than the one specified
 
@@ -450,12 +465,12 @@ from
    batches
 where
    batchID > %d
-   and tsMotus >= 0
+   and status >= %d
 order by
    batchID
 limit %d
 ",
-batchID, MAX_ROWS_PER_REQUEST)
+batchID, minBatchStatus, MAX_ROWS_PER_REQUEST)
     return_from_app(MotusDB(query))
 }
 

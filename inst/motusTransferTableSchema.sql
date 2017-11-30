@@ -27,16 +27,14 @@ CREATE TABLE IF NOT EXISTS batches (
                                                          -- covered by batch
     numHits BIGINT NOT NULL,                             -- count of hits in this batch
     ts FLOAT(53) NOT NULL,                               -- timestamp this batch record added
-    tsMotus FLOAT(53) NOT NULL DEFAULT -1,               -- timestamp this record received by motus
+    status TINYINT NOT NULL DEFAULT -10,                 -- state:  -10 = in preparation; -1 = done but for testing only; 1 = done and valid
     motusUserID INT,                                     -- user who uploaded the data leading to this batch
     motusProjectID INT,                                  -- user-selected motus project ID for this batch
     motusJobID INT,                                      -- processing job which created this batch
-    recvDepProjectID INT NOT NULL DEFAULT -1,            -- projectID of the receiver deployment this batch belongs to (-1 if not known).
+    recvDepProjectID INT NOT NULL DEFAULT -1             -- projectID of the receiver deployment this batch belongs to (-1 if not known).
                                                          -- this field allows much simpler queries for fetching data
-
 );--
 
-CREATE INDEX IF NOT EXISTS batches_tsMotus on batches(tsMotus);--
 CREATE INDEX IF NOT EXISTS batches_recvDepProjectID ON batches(recvDepProjectID);--
 
 -- A table to speed queries about which new batches are relevant to a given project.
@@ -159,12 +157,10 @@ CREATE TABLE IF NOT EXISTS tagAmbig (
     motusTagID4 INT,                       -- motus ID of tag in group.
     motusTagID5 INT,                       -- motus ID of tag in group.
     motusTagID6 INT,                       -- motus ID of tag in group.
-    ambigProjectID INT REFERENCES projAmbig, -- identifier of set of projects that could own this ambiguous tag
-    tsMotus FLOAT(53) NOT NULL DEFAULT -1  -- timestamp this record received by motus
+    ambigProjectID INT REFERENCES projAmbig -- identifier of set of projects that could own this ambiguous tag
 );--
 
 CREATE UNIQUE INDEX IF NOT EXISTS tagAmbig_motusTagID ON tagAmbig(motusTagID1, motusTagID2, motusTagID3, motusTagID4, motusTagID5, motusTagID6);--
-CREATE INDEX IF NOT EXISTS tagAmbig_tsMotus ON tagAmbig(tsMotus);--
 
 -- Table batchProgs records values of progVersion and progBuildTS by batchID.
 -- Note that receiver version of this table store these values incrementally (noting
@@ -293,8 +289,7 @@ CREATE TABLE IF NOT EXISTS projAmbig (
     projectID3 INT,                       -- projectID of project in set
     projectID4 INT,                       -- projectID of project in set
     projectID5 INT,                       -- projectID of project in set
-    projectID6 INT,                       -- projectID of project in set
-    tsMotus FLOAT(53) NOT NULL DEFAULT -1  -- timestamp this record received by motus
+    projectID6 INT                        -- projectID of project in set
 );--
 
 -- Table bumpCounter does nothing but hold a counter, but updating it

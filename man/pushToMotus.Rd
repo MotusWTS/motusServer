@@ -4,10 +4,14 @@
 \alias{pushToMotus}
 \title{Push any new tag detections to the motus master database.}
 \usage{
-pushToMotus(src)
+pushToMotus(src, batchStatus = 1)
 }
 \arguments{
 \item{src}{dplyr src_sqlite to receiver database}
+
+\item{batchStatus}{integer to which the `status` field of each transferred
+batch is set once complete. Default: 1, which means the batch will
+be immediately servable by the \code{\link{dataServer()}}.}
 }
 \value{
 no return value

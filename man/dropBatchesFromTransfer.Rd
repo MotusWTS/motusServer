@@ -2,22 +2,18 @@
 % Please edit documentation in R/dropBatchesFromTransfer.R
 \name{dropBatchesFromTransfer}
 \alias{dropBatchesFromTransfer}
-\title{delete a set of batches and all related data from the motus transfer tables}
+\title{delete a set of batches and all related data from the master data base}
 \usage{
-dropBatchesFromTransfer(batchIDs, force = FALSE)
+dropBatchesFromTransfer(batchIDs)
 }
 \arguments{
 \item{batchIDs}{integer vector of batch IDs}
-
-\item{force}{allow deletion even if batches have already been transferred to motus.org
-Default: FALSE}
 }
 \value{
 integer vector of those batchIDs which were actually deleted.
 }
 \description{
-By default, we only permit this if the batches haven't been transferred to
-motus yet, but this can be overridden by the "force" parameter.
+delete a set of batches and all related data from the master data base
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}

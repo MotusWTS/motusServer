@@ -39,6 +39,8 @@
 
 deleteFromMotus = function(src, reason="not given", monoBN=NULL, tsStart=0, tsEnd=1e11) {
 
+    stop("must be reimplemented")
+
     meta = getMap(src)
     isSG = meta$recvType == "SENSORGNOME"
     if (isSG && is.null(monoBN))

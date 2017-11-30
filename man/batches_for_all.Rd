@@ -8,6 +8,9 @@ batches_for_all(env)
 }
 \arguments{
 \item{batchID}{integer batch ID of largest batch already obtained}
+
+\item{includeTesting}{boolean; default: FALSE.  If TRUE, and the user is an administrator,
+then records for batches marked as `testing` are returned as if they were normal batches.}
 }
 \value{
 a data frame with the same schema as the batches table, but JSON-encoded as a list of columns
