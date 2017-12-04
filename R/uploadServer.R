@@ -24,7 +24,7 @@
 #' @note this depends on some other process placing uploaded files
 #'     into the folder \code{MOTUS_PATH$UPLOADS}.  We're using a
 #'     patched version of \link{http://www.projectsend.org} whose last
-#'     task for an uploaded file is to create a hardlink to it in
+#'     task for an uploaded file is to create a symlink to it in
 #'     \code{MOTUS_PATH$UPLOADS}, and this generates a "CREATE" event.
 #'
 #' @export
@@ -68,7 +68,7 @@ uploadServer = function(tracing = FALSE, fileEvent="CREATE") {
         if (tracing)
             browser()
 
-        ## the files in /sgm/uploads are hardlinks to uploaded files in
+        ## the files in /sgm/uploads are symlinks to uploaded files in
         ## ProjectSend's upload/files folder.
         ## They have filenames of this form:
         ##    USER:YYYY-mm-ddTHH-MM-SS:filename
