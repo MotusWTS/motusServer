@@ -476,6 +476,11 @@ as.list.Twig = function(T) {
             rv = if(length(rv) > 1) sapply(rv, fromJSON, USE.NAMES=FALSE) else fromJSON(rv)
         } else if (isTRUE(all(is.na(type)))) {
             rv = NULL
+        } else if (isTRUE(all(type %in% c("true", "false", NA))
+                          && any(type %in% c("true", "false")))) {
+            ## yes, ugly conditional hack to squeeze out logical values;
+            ## sqlite doesn't have them, and would otherwise return 1 or 0.
+            rv = as.logical(rv)
         }
     }
     .rollback = FALSE
