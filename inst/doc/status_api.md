@@ -230,12 +230,13 @@ projects.
    process_new_upload (userID, projectID, path, ts, authToken)
 
       - userID: integer scalar; motus user ID (who uploaded the file)
-      - projectID; integer scalar; motus projectID (what project should own the products)
+      - projectID; integer scalar; motus projectID (what project should own the products; as chosen by upload user)
       - path; string scalar; path to the new file on the NAS, relative to the value of `uploadPath` returned by the `status_api_info` API.
-        e.g. if `path` is given as 'user123/2017-10-20T11-12-33_upload.zip`, then
-        on linux, we'll expect to find the file at `nfs://174.140.177.35:/volume1/sgdata/sgm/uploads/user123/2017-10-20T11-12-33_upload.zip`
-        which will have actual path /sgm/uploads/user123/2017-10-20T11-12-33_upload.zip, given the current NAS mountpoints.
-        path` must not include any '..' component; i.e. ascent up the file tree is not permitted.
+        e.g. if `path` is given as '123/2017-10-20T11-12-33_upload.zip`, then
+        on linux, we'll expect to find the file at `nfs://174.140.177.35:/volume1/sgdata/sgm/uploads/123/2017-10-20T11-12-33_upload.zip`
+        which will have actual path /sgm/uploads/123/2017-10-20T11-12-33_upload.zip, given the current NAS mountpoints.
+        path` must not include any '..' component; i.e. ascent up the file tree is not permitted, to prevent malicious use
+        from leaking system information.
         Both forward (`/`) and reverse (`\`) slashes are interpreted as folder delimiters.
       - ts; double; timestamp (seconds since 1 Jan 1970, GMT); time at which file upload completed.  If not supplied, the current
         time is used.
@@ -243,3 +244,18 @@ projects.
    - return: an object with these items:
       - `jobID`: the integer motus ID for the new job
       - `uploadID`: the integer motus ID for the upload
+
+   **Recommended format for file paths:**
+   We want file paths:
+    - encoded in UTF-8
+    - to provide intrinsic collision avoidance
+    - identify the user who uploaded them
+
+   So, a file path should look like this:
+
+```
+      XXX/123/2017-10-20T15-21-35_user_name_for_file.zip
+```
+   where `123` is the userID of the upload user, and the timetamp of the upload precedes
+   the user-supplied filename, separated by an underscore.  The `XXX/` component is
+   an optional prefix path, in case the upload tree isn't rooted at `uploadPath` (see above).
