@@ -7,7 +7,7 @@
 #' to enter commands.
 #'
 #' @param maxRows integer; maximum number of rows to return per request.
-#' Default: 1000
+#' Default: 20
 #'
 #' @return does not return; meant to be run as a server.
 #'
@@ -15,7 +15,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-statusServer2 = function(port = 0x57A7, tracing=FALSE, maxRows=100L) {
+statusServer2 = function(port = 0x57A7, tracing=FALSE, maxRows=20L) {
 
     serverCommon()
 
@@ -51,7 +51,7 @@ statusServer2 = function(port = 0x57A7, tracing=FALSE, maxRows=100L) {
 ## a string giving the list of apps for this server
 ## Note that we re-use authenticate_user from statusServer.
 
-allStatusApps = c("status_api_info", "list_jobs", "_shutdown", "authenticate_user")
+allStatusApps = c("status_api_info", "list_jobs", "_shutdown", "authenticate_user", "process_new_upload")
 
 sortColumns = c("ctime", "mtime", "id", "type", "motusProjectID", "motusUserID", "sjDone")
 sortCriteria = c(sortColumns, paste(sortColumns, "desc"))
@@ -291,7 +291,7 @@ process_new_upload = function(env) {
     if (tracing)
         browser()
 
-    auth = validate_request(json)
+    auth = validate_request(json, needAdmin=TRUE)
     if (inherits(auth, "error")) return(auth)
 
     projectID = auth$projectID
@@ -309,12 +309,25 @@ process_new_upload = function(env) {
         return(error_from_app(paste0("non-existent file: `NAS:/sgdata/", realpath, "`")))
     if (is.null(projectID))
         return(error_from_app("missing integer projectID"))
-    ts = safe_arg(json, ts, double)
+    ts = safe_arg(json, ts, numeric)
     if (is.null(ts))
         ts = as.numeric(Sys.time())
 
+    ## for debugging, if file "/sgm/UPLOAD_TESTING"" exists, give this new job
+    ## an `isTesting=TRUE` parameter, so that its product batches end up marked
+    ## that way in the master DB.  Its products will also go to the /sgm/testing
+    ## hierarchy instead of /sgm/www
+
+    isTesting = file.exists(MOTUS_PATH$UPLOAD_TESTING)
+
     ## create and enqueue a new upload job
-    j = newJob("uploadFile", .parentPath=MOTUS_PATH$INCOMING, motusUserID=userID, motusProjectID = projectID, .enqueue=FALSE, filename=realpath)
+    j = newJob("uploadFile",
+               .parentPath = MOTUS_PATH$INCOMING,
+               motusUserID = userID,
+               motusProjectID = projectID,
+               isTesting = isTesting,
+               filename = realpath,
+               .enqueue=FALSE)
 
     jobID = unclass(j)
 

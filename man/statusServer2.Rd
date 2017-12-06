@@ -4,7 +4,7 @@
 \alias{statusServer2}
 \title{reply to http requests for information on the processing queue; API version}
 \usage{
-statusServer2(port = 22439, tracing = FALSE, maxRows = 100L)
+statusServer2(port = 22439, tracing = FALSE, maxRows = 20L)
 }
 \arguments{
 \item{port}{integer; local port on which to listen for requests;
@@ -14,7 +14,7 @@ default: 0x57A7}
 to enter commands.}
 
 \item{maxRows}{integer; maximum number of rows to return per request.
-Default: 1000}
+Default: 20}
 }
 \value{
 does not return; meant to be run as a server.
