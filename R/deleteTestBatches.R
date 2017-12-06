@@ -23,34 +23,39 @@
 
 deleteTestBatches = function(batchID) {
 
+    batchID = as.integer(batchID)
+    if (sum(! is.na(batchID)) == 0)
+        return(logical(0))
+
     ## open the motus master DB (just in case)
 
     openMotusDB()
 
     ## find all batches satisfying the specifications
 
-    bid = MotusDB("select batchID from batches where status=-1 and batchID in (%s)", paste(batchID, collapse=","))
-    bids = paste(bid, collapse=",")
+    bid = MotusDB("select batchID from batches where status=-1 and batchID in (%s)", SQL(paste(batchID, collapse=",")))[[1]]
+    if (length(bid) > 0) {
+        bids = SQL(paste(bid, collapse=","))
 
-    ## tables to delete records from:
-    MotusDB("delete from batches where batchID in (%s)", bids)
-    MotusDB("delete from projBatch where batchID in (%s)", bids)
-    MotusDB("delete from gps where batchID in (%s)", bids)
-    MotusDB("delete from runs where batchIDbegin in (%s)", bids)
+        ## tables to delete records from:
+        MotusDB("delete from batches where batchID in (%s)", bids)
+        MotusDB("delete from projBatch where batchID in (%s)", bids)
+        MotusDB("delete from gps where batchID in (%s)", bids)
+        MotusDB("delete from runs where batchIDbegin in (%s)", bids)
 
-    ## runs which overlap but don't start in this batch will be deleted when
-    ## the batch in which they start is deleted.  We assume that test batches
-    ## arise only from rerunning a full boot session, in which case all runs
-    ## will nest within that, validating this approach.
+        ## runs which overlap but don't start in this batch will be deleted when
+        ## the batch in which they start is deleted.  We assume that test batches
+        ## arise only from rerunning a full boot session, in which case all runs
+        ## will nest within that, validating this approach.
 
-    MotusDB("delete from batchRuns where batchID in (%s)", bids)
-    MotusDB("delete from hits where batchID in (%s)", bids)
-    MotusDB("delete from batchProgs where batchID in (%s)", bids)
-    MotusDB("delete from batchParams where batchID in (%s)", bids)
-    MotusDB("delete from pulseCounts where batchID in (%s)", bids)
-    MotusDB("delete from reprocessBatches where batchID in (%s)", bids)
-    MotusDB("delete from reprocessBatches where batchID in (%s)", paste(collapse( - bid, collapse=","))) ## negated batchIDs might also be in reprocessBatches
-
+        MotusDB("delete from batchRuns where batchID in (%s)", bids)
+        MotusDB("delete from hits where batchID in (%s)", bids)
+        MotusDB("delete from batchProgs where batchID in (%s)", bids)
+        MotusDB("delete from batchParams where batchID in (%s)", bids)
+        MotusDB("delete from pulseCounts where batchID in (%s)", bids)
+        MotusDB("delete from reprocessBatches where batchID in (%s)", bids)
+        MotusDB("delete from reprocessBatches where batchID in (%s)", SQL(paste(collapse( - bid, collapse=",")))) ## negated batchIDs might also be in reprocessBatches
+    }
     ## return TRUE for any batchID that was a test batch
 
     ok = match(batchID, bid)
