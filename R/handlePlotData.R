@@ -70,8 +70,8 @@ handlePlotData = function(j) {
     ## deal with -Inf for tsEnd arising from max(c()); set to a very long time in the future.
     info$tsEnd[! is.finite(info$tsEnd)] = 1e20
 
-    outDir = file.path(MOTUS_PATH$PLOTS, serno)
-    dir.create(outDir, mode="0770")
+    isTesting = isTRUE(topJob(j)$isTesting)
+    outDir = productsDir(j$serno, isTesting)
 
     for (i in seq_len(nrow(info))) {
         year = info$year[i]
@@ -96,11 +96,11 @@ handlePlotData = function(j) {
         print(rv$plot)
         dev.off()
 
-        targDir = getProjDir(info$projID[i])
+        targDir = getProjDir(info$projID[i], isTesting)
         file.symlink(plotfilename, targDir)
         file.symlink(pdfname, targDir)
         file.symlink(datafilename, targDir)
-        url = getDownloadURL(info$projID[i])
+        url = getDownloadURL(info$projID[i], isTesting)
         jobLog(j, paste0("Exported hourly dataset (and plot) to:  ", basename(datafilename), "(.png/.pdf)"))
         jobProduced(j, file.path(url, basename(c(plotfilename, pdfname, datafilename))))
     }

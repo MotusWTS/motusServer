@@ -35,10 +35,12 @@ handleExportPulses = function(j) {
 
     on.exit(lockSymbol(serno, lock=FALSE))
 
+    isTesting = isTRUE(topJob(j)$isTesting)
+
     src = getRecvSrc(serno)
     sql = safeSQL(src)
     projectID = sql("select motusProjectID from batches where batchID=%d", batchID)
-    out = file.path(MOTUS_PATH$WWW, projectID, sprintf("%s_beeper.sqlite", serno))
+    out = file.path(if (isTesting) MOTUS_PATH$WWW_TESTING else MOTUS_PATH$WWW, projectID, sprintf("%s_beeper.sqlite", serno))
 
     ## we'll copy directly from tables in the receiver DB to the output DB
     sql("ATTACH DATABASE '%s' as d", out)

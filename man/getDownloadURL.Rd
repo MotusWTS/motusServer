@@ -4,9 +4,13 @@
 \alias{getDownloadURL}
 \title{return the URL to the download site for a project}
 \usage{
-getDownloadURL(projectID)
+getDownloadURL(projectID, isTesting)
 }
 \arguments{
+\item{isTesting}{logical scalar; if TRUE, the URL is to
+the testing hierarchy of web products, rather than
+the usual one.  Default:  FALSE}
+
 \item{port}{projectID integer scalar; motus project ID}
 }
 \value{

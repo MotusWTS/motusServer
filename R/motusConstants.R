@@ -97,7 +97,6 @@ MOTUS_PATH = list(
     CACHE            = "/sgm/cache/",                ## recent results of large queries from motus.org (store on HD)
     CRYPTO           = "/sgm/crypto/",               ## public/private keypairs for ssh etc. by receivers
     DONE             = "/sgm/done/",                 ## folders for completed jobs
-    DOWNLOADS        = "/sgm/downloads/",            ## manually-downloaded files; downloadXXX() checks here before (re) grabbing file
     ERRORS           = "/sgm/errors/",               ## save dumped call stacks of server errors
     FILE_REPO        = "/sgm/file_repo/",            ## as-is copies of files from all receivers; stored in SERNO/YYYY-MM-DD/ subfolders
     INCOMING         = "/sgm/incoming/",             ## files / dirs moved here are processed by server(); this is the external / asynchronous
@@ -107,7 +106,7 @@ MOTUS_PATH = list(
     OUTBOX           = "/sgm/outbox/",               ## copies of all sent emails
     OUTBOX_EMBARGOED = "/sgm/outbox_embargoed/",     ## unsent outgoing emails
     PARAM_OVERRIDES  = "/sgm/paramOverrides.sqlite", ## DB with table of receiver-boot-session-specific overrides for the tag finder
-    PLOTS            = "/sgm/plots/",                ## generated plots
+    PRODUCTS         = "/sgm/products/",             ## generated products (e.g. hourly summary plots and datasets)
     PRIORITY         = "/sgm/priority/",             ## jobs created here run on a processServer dedicated to short, fast jobs; e.g. updating attached SGs
     PUB              = "/sgm/pub/",                  ## web-visible public content
     QUEUES           = "/sgm/queue/",                ## queues for processing items
@@ -144,15 +143,15 @@ MOTUS_PATH = list(
     TAGS             = "/sgm/tags/",                 ## ??
     TAG_PROJ         = "/sgm/tag_proj/",             ## sqlite databases for all tag projects
     TAGREG_CLEANUP   = "/sgm/tagregCleanup.R",       ## script to provided tag registration cleanups downstream from motus
+    TEST_PRODUCTS    = "/sgm/test_products/",        ## products from testing jobs
+    TEST_WWW         = structure("/sgm/www/test/",   ## File hierarchy (testing version) to be served by apache to authenticated motus users
+                       perm = "g+rsx"),              ## listable/readable
     TMP              = "/sgm/tmp/",                  ## intermediate storage; persistent across reboots
     TRASH            = "/sgm/trash/",                ## files to be deleted once we know they've been processed
 
-    UPLOADS          = structure("/sgm/uploads/", ## target in which the ProjectSend server makes hardlinks to its newly-uploaded files
-                       perm="g+rwsx"),               ## www-data user belongs to group "sg" so can write there
+    UPLOADS          = "/sgm/uploads/",              ## folder where uploads go
+    UPLOAD_TESTING   = "/sgm/UPLOAD_TESTING",        ## file whose presence indicates upload jobs are to be marked with "isTesting"
 
-    UPLOAD_ARCHIVE   = "/sgm/uploaded/files",        ## folder where ProjectSend stores uploaded files, filed by username
-
-                                                     ## must be writable by the user running the ProjectSend webserver (www-data)
     USERAUTH         = "/sgm/user_auth.sqlite",      ## database of user authentication tokens
 
     WWW              = structure("/sgm/www/",        ## File hierarchy to be served by apache to authenticated motus users
@@ -217,6 +216,9 @@ MOTUS_TAGREG_MANIFEST_REGEXP = ".*tagreg.*\\.txt$"
 
 ## sprintf-format string for URL of downloadable files; %d is for projectID
 MOTUS_DOWNLOAD_URL_FMT = "https://sgdata.motus.org/download/%d"
+
+## sprintf-format string for URL of downloadable files; %d is for projectID
+MOTUS_TEST_DOWNLOAD_URL_FMT = "https://sgdata.motus.org/download/test/%d"
 
 ## location of secret key for mod_auth_tkt authorization used by some
 ## of the XXXServer() functions in this package

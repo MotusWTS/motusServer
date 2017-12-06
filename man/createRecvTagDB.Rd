@@ -5,7 +5,7 @@
 \title{create a receiver tag database, for use by the sensorgnome on-board
 tag detector}
 \usage{
-createRecvTagDB(projectID, dateBin, path = getProjDir(projectID))
+createRecvTagDB(projectID, dateBin)
 }
 \arguments{
 \item{projectID}{integer motus project ID}
@@ -15,18 +15,21 @@ value(s) of dateBin fields, for filtering the tag set from the
 given project.  Only tags with dateBin in the range given by
 \code{range(dateBin)} are included in the resulting database.}
 
-\item{path}{folder to which to write the tag database file.  It
-will be called
-'project_XXX_YYYY-Q_(YYYY-Q)?_tag_database.sqlite' where XXX is
-the projectID, and the one or two YYYY-Q parts give the dateBin
-or range of dateBins of the tags included.  Default:
-\code{\link{getProjDir}(projectID)}}
+\item{isTesting}{logical scalar; if TRUE, the product is stored in
+the testing tree; otherwise, it is stored in the usual project
+tree.  Default:  FALSE}
 }
 \value{
 the full path to the tag database, or NULL if no tags were written.
 }
 \description{
 This lets users see live detections of their tags in the field.
+}
+\details{
+The database file will be called
+    'project_XXX_YYYY-Q_(YYYY-Q)?_tag_database.sqlite' where XXX is
+    the projectID, and the one or two YYYY-Q parts give the dateBin
+    or range of dateBins of the tags included.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}

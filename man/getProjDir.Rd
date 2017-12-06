@@ -4,16 +4,23 @@
 \alias{getProjDir}
 \title{Get the directory where files for a project are stored.}
 \usage{
-getProjDir(p)
+getProjDir(p, isTesting = FALSE)
 }
 \arguments{
 \item{p}{integer scalar; motus project ID}
+
+\item{isTesting}{logical scalar; is this for a test job?
+Default: FALSE}
 }
 \value{
 character scalar; the path to the project directory.
 }
 \description{
 Get the directory where files for a project are stored.
+}
+\details{
+processing job marked with `isTesting` store their products in
+a special testing tree
 }
 \note{
 As a side-effect, the project directory will be created and populated

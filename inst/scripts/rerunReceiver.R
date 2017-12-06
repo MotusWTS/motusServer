@@ -9,7 +9,7 @@ ARGS = commandArgs(TRUE)
 if (length(ARGS) == 0) {
     cat("
 
-Usage: rerunReceiver.R [-F] [-p] [-c] [-e] SERNO [BLO BHI]
+Usage: rerunReceiver.R [-F] [-p] [-c] [-e] [-t] SERNO [BLO BHI]
 
 where:
 
@@ -30,6 +30,9 @@ where:
  -F: full rerun: delete all internally-stored files before running, then behave
      as if full contents of file_repo for that receiver consists of new files
 
+ -t: mark job output as `isTesting`; data from such batches will only be returned
+     for admin users who specify they want to see testing batches.
+
 A new job will be created and placed into the master queue (queue 0),
 from where a processServer can claim it.
 
@@ -43,6 +46,7 @@ exportOnly = FALSE
 cleanup = FALSE
 monoBN = NULL
 fullRerun = FALSE
+isTesting = FALSE
 
 while(isTRUE(substr(ARGS[1], 1, 1) == "-")) {
     switch(ARGS[1],
@@ -57,6 +61,9 @@ while(isTRUE(substr(ARGS[1], 1, 1) == "-")) {
            },
            "-F" = {
                fullRerun = TRUE
+           },
+           "-t" = {
+               isTesting = TRUE
            },
            {
                stop("Unknown argument: ", ARGS[1])
@@ -80,13 +87,15 @@ suppressMessages(suppressWarnings(library(motusServer)))
 loadJobs()
 
 if (fullRerun) {
-    j = newJob("fullRecvRerun", .parentPath=MOTUS_PATH$INCOMING, serno=serno, replyTo=MOTUS_ADMIN_EMAIL, valid=TRUE, .enqueue=FALSE)
+    j = newJob("fullRecvRerun", .parentPath=MOTUS_PATH$INCOMING, serno=serno, .enqueue=FALSE)
     jobLog(j, paste0("Fully rerunning receiver ", serno, " from file_repo files."), summary=TRUE)
 } else {
-    j = newJob("rerunReceiver", .parentPath=MOTUS_PATH$INCOMING, serno=serno, monoBN=monoBN, exportOnly=exportOnly, cleanup=cleanup, replyTo=MOTUS_ADMIN_EMAIL, valid=TRUE, .enqueue=FALSE)
+    j = newJob("rerunReceiver", .parentPath=MOTUS_PATH$INCOMING, serno=serno, monoBN=monoBN, exportOnly=exportOnly, cleanup=cleanup, .enqueue=FALSE)
     jobLog(j, paste0(if(isTRUE(exportOnly)) "Re-exporting data from" else "Rerunning", " receiver ", serno), summary=TRUE)
 }
 
+if (isTesting)
+   j$isTesting = TRUE
 
 ## move the job to the queue 0 or the priority queue
 

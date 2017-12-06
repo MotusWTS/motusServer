@@ -20,10 +20,11 @@ Any new batches for this receiver, and their associated runs, hits,
 and GPS fixes are added to motus transfer tables.
 }
 \note{
-if the top level job has a TRUE value for isTesting, then the batches
-transferred will be given status=-1, rather than the usual status=+1.
-This tells \code{\link{dataServer()}} not to return records for such
-batches unless explicitly requested.
+if the top level job has a TRUE value for parameter
+    \code{isTesting}, then the batches transferred will be given
+    \code{status = -1}, rather than the usual {status = 1}.  This tells
+    \code{\link{dataServer()}} not to return records for such
+    batches unless explicitly requested to by the \code{includeTesting} parameter.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
