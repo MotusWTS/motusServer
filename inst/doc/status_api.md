@@ -263,4 +263,4 @@ projects.
      to protect against inadvertent mis-filing; in the filename, it is followed by an underscore (`_`)
    - `2017-10-20T15-21-35` is the timetamp of the upload; in the filename, it is followed by an underscore (`_`)
    - `user_name_for_file.zip` is the full user-supplied filename, in UTF-8; it must not include any forward slash
-      ('/') characters
+      (`/`) characters; we also forbid double-quote (`"`) characters, to simplify handling.
