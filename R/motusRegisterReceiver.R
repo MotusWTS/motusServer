@@ -7,7 +7,9 @@
 #' secretKey.  Otherwise, this is an upper case hex string giving the
 #' secretKey for the receiver.
 #'
-#' @return the query result, which won't usually be useful
+#' @return the query result, which will be a list.  If registration is successful,
+#' the list will have an integer item named `deviceID`, which is the motus
+#' ID for the receiver.
 #'
 #' @export
 #'

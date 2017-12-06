@@ -40,12 +40,7 @@ getMotusDeviceID = function(src, useFirst=FALSE) {
     }
 
     ## try register this receiver
-    motusRegisterReceiver(m$recvSerno)
+    m$deviceID = motusRegisterReceiver(m$recvSerno)$deviceID
 
-    ## read back the ID of the newly-registered receiver
-    ## (the API call above doesn't return the ID)
-
-    mm = motusListSensors(serialNo=m$recvSerno)
-    m$deviceID = mm$id
-    return(mm$id)
+    return(m$deviceID)
 }
