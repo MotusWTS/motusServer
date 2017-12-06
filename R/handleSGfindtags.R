@@ -64,9 +64,9 @@ handleSGfindtags = function(j) {
         tj = topJob(j)
         muid = tj$motusUserID
         mpid = tj$motusProjectID
-        if (length(muid) == 0)
+        if (!isTRUE(muid > 0))
             muid = "null"
-        if (length(mpid) == 0)
+        if (!isTRUE(mpid > 0))
             mpid = "null"
         dbGetQuery(src$con, sprintf("update batches set motusUserID=%s, motusProjectID=%s, motusJobID=%d where batchID=%d", muid, mpid, as.integer(j), rv$batchID))
     }
