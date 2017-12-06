@@ -254,8 +254,13 @@ projects.
    So, a file path should look like this:
 
 ```
-      XXX/123/2017-10-20T15-21-35_user_name_for_file.zip
+      XXX/123/123_2017-10-20T15-21-35_user_name_for_file.zip
 ```
-   where `123` is the userID of the upload user, and the timetamp of the upload precedes
-   the user-supplied filename, separated by an underscore.  The `XXX/` component is
-   an optional prefix path, in case the upload tree isn't rooted at `uploadPath` (see above).
+   where:
+
+   - `XXX/` component is an optional prefix path, in case the upload tree isn't rooted at `uploadPath` (see above).
+   - `123` is the userID of the upload user; it is included twice: once as a folder, and once in the filename
+     to protect against inadvertent mis-filing; in the filename, it is followed by an underscore (`_`)
+   - `2017-10-20T15-21-35` is the timetamp of the upload; in the filename, it is followed by an underscore (`_`)
+   - `user_name_for_file.zip` is the full user-supplied filename, in UTF-8; it must not include any forward slash
+      ('/') characters
