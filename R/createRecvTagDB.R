@@ -10,12 +10,14 @@
 #'     given project.  Only tags with dateBin in the range given by
 #'     \code{range(dateBin)} are included in the resulting database.
 #'
-#' @param path folder to which to write the tag database file.  It
-#'     will be called
+#' @param isTesting logical scalar; if TRUE, the product is stored in
+#' the testing tree; otherwise, it is stored in the usual project
+#' tree.  Default:  FALSE
+#'
+#' @details The database file will be called
 #'     'project_XXX_YYYY-Q_(YYYY-Q)?_tag_database.sqlite' where XXX is
 #'     the projectID, and the one or two YYYY-Q parts give the dateBin
-#'     or range of dateBins of the tags included.  Default:
-#'     \code{\link{getProjDir}(projectID)}
+#'     or range of dateBins of the tags included.
 #'
 #' @return the full path to the tag database, or NULL if no tags were written.
 #'
@@ -23,7 +25,9 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-createRecvTagDB = function(projectID, dateBin, path = getProjDir(projectID)) {
+createRecvTagDB = function(projectID, dateBin) {
+
+    path = getProjDir(projectID, isTesting)
 
     dateBinRange = range(dateBin)
 
