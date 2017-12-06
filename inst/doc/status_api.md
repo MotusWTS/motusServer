@@ -264,3 +264,28 @@ projects.
    - `2017-10-20T15-21-35` is the timetamp of the upload; in the filename, it is followed by an underscore (`_`)
    - `user_name_for_file.zip` is the full user-supplied filename, in UTF-8; it must not include any forward slash
       (`/`) characters; we also forbid double-quote (`"`) characters, to simplify handling.
+
+### list_receiver_files ###
+
+   list_receiver_files (serno, day, authToken)
+
+      - serno: string scalar; receiver serial number
+      - day: string scalar; day, formatted as "YYYY-MM-DD" (treated as GMT); if missing or null,
+        this API returns a list of days, rather than a list of files
+
+      e.g.
+      curl --data-urlencode json='{"serno":"SG-1513BBBK0291","day":"2017-04-04","authToken":"XXX"}' https://sgdata.motus.org/status2/list_receiver_files
+
+   - return: if day is valid, an object with these array items:
+      - `fileID`: integer; ID of file (relative to receiver), if it has been processed; null otherwise
+      - `name`: character; name of file
+      - `bootnum`: integer; boot count, uncorrected, if it has been processed; null otherwise
+      - `monoBN`: integer; corrected boot count, if it has been processed; null otherwise
+      - `contentsSize`: integer; uncompressed file size in bytes, if it has been processed; null otherwise
+      - `fileSize`: integer; size of file on disk, if present; null otherwise
+      - `complete`: boolean; true if we have the complete .gz version of the file
+      - `jobID`: the integer motus ID for the job in which this file was most recently updated
+
+      but if day is missing or invalid, return is an object with these array items:
+      - `day`: character; day, formatted as 'YYYY-MM-DD'
+      - `count`: integer; number of files for this receiver from given day

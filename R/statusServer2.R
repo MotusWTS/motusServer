@@ -51,7 +51,7 @@ statusServer2 = function(port = 0x57A7, tracing=FALSE, maxRows=20L) {
 ## a string giving the list of apps for this server
 ## Note that we re-use authenticate_user from statusServer.
 
-allStatusApps = c("status_api_info", "list_jobs", "_shutdown", "authenticate_user", "process_new_upload")
+allStatusApps = c("status_api_info", "list_jobs", "_shutdown", "authenticate_user", "process_new_upload", "list_receiver_files")
 
 sortColumns = c("ctime", "mtime", "id", "type", "motusProjectID", "motusUserID", "sjDone")
 sortCriteria = c(sortColumns, paste(sortColumns, "desc"))
@@ -363,6 +363,44 @@ process_new_upload = function(env) {
 }
 
 
+SERNO_REGEX = paste0('^((', motusServer:::MOTUS_SG_SERNO_REGEX, ')|(', 'Lotek-D?[0-9]+))$')
+DAY_REGEX = "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+
+#' return a list of files for a receiver
+
+list_receiver_files = function(env) {
+    json = fromJSON(parent.frame()$postBody["json"], simplifyVector=FALSE)
+
+    if (tracing)
+        browser()
+
+    auth = validate_request(json, needProjectID=FALSE)
+    if (inherits(auth, "error")) return(auth)
+
+    ## parameters
+    serno     = safe_arg(json, serno, char)
+    day       = safe_arg(json, day, char)
+
+    ## validate
+
+    if (is.null(serno))
+        return(error_from_app("must specify receiver serial number (`serno`)"))
+
+    if (!grepl(SERNO_REGEX, serno, perl=TRUE))
+        return(error_from_app("invalid receiver serial number (`serno`)"))
+
+    if (is.null(day)) {
+        days = dir(file.path(MOTUS_PATH$FILE_REPO, serno), full.names=TRUE)
+        rv = table(basename(dirname(dir(days, full.names=TRUE))))
+        rv = data.frame(day = names(rv), count=as.integer(rv))
+    } else {
+        if (! grepl(DAY_REGEX, day, perl=TRUE))
+            return(error_from_app("invalid day"))
+        rv = dir(file.path(MOTUS_PATH$FILE_REPO, serno, day), full.names=TRUE)
+        rv = data.frame(name=basename(rv), size=file.size(rv), stringsAsFactors=FALSE)
+    }
+    return_from_app(rv)
+}
 
 queueStatusApp = function(env) {
     ## return summary of master queue and processing queues
