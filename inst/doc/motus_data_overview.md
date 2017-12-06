@@ -326,7 +326,7 @@ Replacement of data by reprocessed versions should happen in-band
      situation
    - `reprocessID == X > 0`: data in this batch are from reprocessing
      existing raw files.
-   - `X` is the ID of the reprocessing event, and a new API entry `get_reprocessing_info (X)`
+   - `X` is the ID of the reprocessing event, and a new API entry `reprocessing_info (X)`
      can be called to obtain details about it.
    - if the user chooses to accept the reprocessed version, then existing batches, runs, hits and GPS
      fixes from the same receiver and boot session are retired before
@@ -336,7 +336,7 @@ Replacement of data by reprocessed versions should happen in-band
    - later, if a user decides to accept a reprocessing event they had
      earlier declined, then the IDs of new batches for
      that event can be fetched from another new API
-     `get_reprocessing_batches (X)`, and the original batches will be
+     `reprocessing_batches (X)`, and the original batches will be
      deleted
 
  - to let users more efficiently fetch the "best" version of their
