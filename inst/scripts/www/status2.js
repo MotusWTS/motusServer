@@ -268,7 +268,7 @@ function show_job_details(jobID) {
 };
 
 function fmt_time(x) {
-    return (new Date(1000 * x)).toGMTString();
+    return (new Date(1000 * x)).toISOString();
 };
 
 function fmt_params(x) {
