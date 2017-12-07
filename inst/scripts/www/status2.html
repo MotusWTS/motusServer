@@ -64,6 +64,7 @@
           <option value="id">only job with ID = </option>
           <option value="idnear">only jobs with ID >= </option>
           <option value="motusUserID">only jobs for motus user ID = </option>
+          <option value="motusProjectID">only jobs for motus project ID = </option>
           <option value="log">only jobs with log matching</option>
         </select>
         <input type="text" id="find_job_key" value="">
@@ -85,7 +86,8 @@
       <table class="jobs_table">
         <tr class="jobs_table_heading">
           <th><span class="sort_heading" sort_field="id">Job ID</span></th>
-          <th><span class="sort_heading" sort_field="motusUserID">Motus User ID</span></th>
+          <th><span class="sort_heading" sort_field="motusUserID">User ID</span></th>
+          <th><span class="sort_heading" sort_field="motusProjectID">Project ID</span></th>
           <th><span class="sort_heading" sort_field="type">Type</span></th>
           <th><span class="sort_heading" sort_field="ctime">Created</span></th>
           <th><span class="sort_heading" sort_field="mtime">Last Activity</span></th>
@@ -96,6 +98,7 @@
         <tr class="jobs_table_row" job_id="⟦id⟧" id="jobs_table_row⟦id⟧">
           <td class="job_id">⟦id⟧</td>
           <td class="job_motus_user_id">⟦motusUserID⟧
+          <td class="job_motus_project_id">⟦motusProjectID⟧
           <td class="job_type">⟦type⟧</td>
           <td class="timestamp">⟦fmt_ctime⟧</td>
           <td class="timestamp">⟦fmt_mtime⟧</td>

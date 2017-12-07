@@ -173,6 +173,9 @@ function show_job_list() {
     };
     if (state.selector.motusUserID) {
         pars.select = {userID: state.selector.motusUserID}
+    } else if (state.selector.motusProjectID) {
+        pars.select = {projectID: state.selector.motusProjectID}
+        pars.options.includeUnknownProjects = false;
     } else if (state.selector.id) {
         pars.select = {jobID: state.selector.id}
         pars.order.sortBy = "id";
@@ -326,6 +329,7 @@ function show_job_details2(x) {
                                {
                                    details:x,
                                    log:json[0].log_,
+                                   summary:json[0].summary_,
                                    fmt_ctime:function(i) {
                                        return fmt_time(this.ctime[i])
                                    },
@@ -426,6 +430,9 @@ function on_click_search(event) {
         break;
     case "motusUserID":
         state.selector = {motusUserID: findVal};
+        break;
+    case "motusProjectID":
+        state.selector = {motusProjectID: findVal};
         break;
     case "log":
         state.selector = {log: findVal};
