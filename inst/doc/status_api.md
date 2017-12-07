@@ -64,7 +64,7 @@ The server is at [https://sgdata.motus.org](https://sgdata.motus.org) and the UR
 
       - maxRows: integer, maximum number of rows returned by a query
 
-      - uploadPath: character, path to upload folder relative to top-level of NAS storage;
+      - uploadPath: string, path to upload folder relative to top-level of NAS storage;
         the `path` of an uploaded file passed in a call to `process_new_upload` API must be
         relative to `uploadPath`; e.g. if `uploadPath` is `sgdata/sgm/uploads`, and if the
         `process_new_upload` API is called with `path`=`user232/2017-03-15/newfiles.zip`,
@@ -187,14 +187,14 @@ projects.
        - options: object with fields giving options:
           - includeUnknownProjects: include jobs with no associated motus project; typically for
             jobs initiated by staff or otherwise not having a useful concept of project
-          - includeSubjobs: logical: include jobs which are not top-level jobs?; default FALSE
+          - includeSubjobs: boolean: include jobs which are not top-level jobs?; default `false`
           - full: if `true`, then full details for the job (typically its parameters, log, summary, and list of
             product files) are returned in a JSON-formatted column called `data`
-          - countOnly: boolean; if true, return only a count of jobs for the given projectID and/or userID
+          - countOnly: boolean; if `true`, return only a count of jobs for the given projectID and/or userID
           - limit: integer; if present, maximum number of records to return.
 
       e.g.
-      curl --data-urlencode json='{"select":{"userno":232},"order":{"sortBy":"id","lastKey":[5000]},"authToken":"XXX"}' https://sgdata.motus.org/status2/list_jobs
+      curl --data-urlencode json='{"select":{"userID":232},"order":{"sortBy":"id","lastKey":[5000]},"authToken":"XXX"}' https://sgdata.motus.org/status2/list_jobs
 
    - return a list of jobs; unless includeSubjobs is true, return only top-level jobs.
      A top level job has one of these types:
@@ -241,29 +241,36 @@ projects.
       - ts; double; timestamp (seconds since 1 Jan 1970, GMT); time at which file upload completed.  If not supplied, the current
         time is used.
 
+      e.g.
+      curl --data-urlencode json='{"userID":232,"projectID":57,"path":"232/232_2017-10-20T11-12-33_myupload.zip","ts":1508497953,"authToken":"XXX"}' https://sgdata.motus.org/status2/process_new_upload
+
    - return: an object with these items:
       - `jobID`: the integer motus ID for the new job
       - `uploadID`: the integer motus ID for the upload
 
+
    **Recommended format for file paths:**
    We want file paths:
     - encoded in UTF-8
+    - no `:` (colon) or `"` (double quote) characters in path
+    - path separator is `/` (forward slash)
     - to provide intrinsic collision avoidance
     - identify the user who uploaded them
 
    So, a file path should look like this:
 
 ```
-      XXX/123/123_2017-10-20T15-21-35_user_name_for_file.zip
+      XXX/123/123_2017-10-20T15-21-35.123_user_name_for_file.zip
 ```
    where:
 
    - `XXX/` component is an optional prefix path, in case the upload tree isn't rooted at `uploadPath` (see above).
+     It must not contain any `/../` components.
    - `123` is the userID of the upload user; it is included twice: once as a folder, and once in the filename
      to protect against inadvertent mis-filing; in the filename, it is followed by an underscore (`_`)
-   - `2017-10-20T15-21-35` is the timetamp of the upload; in the filename, it is followed by an underscore (`_`)
-   - `user_name_for_file.zip` is the full user-supplied filename, in UTF-8; it must not include any forward slash
-      (`/`) characters; we also forbid double-quote (`"`) characters, to simplify handling.
+   - `2017-10-20T15-21-35.123` is the timetamp of the upload; in the filename, it is followed by an underscore (`_`)
+   - `user_name_for_file.zip` is the full user-supplied filename, in UTF-8; it must not include any forward slashes
+      (`/`), double-quotes (`"`), or colons (`:`).
 
 ### list_receiver_files ###
 
