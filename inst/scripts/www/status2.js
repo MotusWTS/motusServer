@@ -241,7 +241,6 @@ function show_job_list2(x) {
     $('.navigate[target="bottom"]').button({icon:"ui-icon-arrowthickstop-1-e"});
     $('.navigate[target="up"]').button({icon:"ui-icon-arrowthick-1-w"});
     $('.navigate[target="down"]').button({icon:"ui-icon-arrowthick-1-e"});
-    $('#find_job_button').button({icon:"ui-icon-search", }).on("click", on_click_search);
 
 };
 
@@ -484,6 +483,7 @@ function initStatus2Page() {
     $("#find_job_selector").val("all").selectmenu("refresh");
     on_change_find_job_selector();
     $("#find_job_key").on("keyup", on_keyup_find_job_key);
+    $('#find_job_button').button({icon:"ui-icon-search", }).on("click", on_click_search);
 };
 
 // @function copyToClipboard: copy the text from an element to the client's clipboard
