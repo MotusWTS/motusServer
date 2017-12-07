@@ -121,6 +121,7 @@ list_jobs = function(env) {
 
     ## selectors
     userID    = safe_arg(select, userID, int)
+    selProjectID = safe_arg(select, projectID, int)
     jobID     = safe_arg(select, jobID, int, scalar=FALSE)
     stump     = safe_arg(select, stump, int)
     type      = safe_arg(select, type, char, scalar=FALSE)
@@ -149,6 +150,11 @@ list_jobs = function(env) {
 
     if (is.null(projectID))
         projectID = auth$projects
+    if (! is.null(selProjectID)) {
+        if (! selProjectID %in% projectID)
+            return(error_from_app("not authorized for that project"))
+        projectID = selProjectID
+    }
     if (! (is.null(userID) || userID == auth$userID || auth$userType == "administrator")) {
         return(error_from_app("not authorized for that userID"))
     }
