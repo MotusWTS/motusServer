@@ -4,10 +4,13 @@
 \alias{error_from_app}
 \title{return an error from a Rook app}
 \usage{
-error_from_app(error)
+error_from_app(error, ...)
 }
 \arguments{
 \item{error}{character scalar error message to return to app caller}
+
+\item{...}{additional parameters describing the error.  These are
+JSON-encoded into the API response.}
 }
 \value{
 Similar to the return value from

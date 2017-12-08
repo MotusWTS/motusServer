@@ -10,6 +10,9 @@
 #'
 #' @param error character scalar error message to return to app caller
 #'
+#' @param ... additional parameters describing the error.  These are
+#' JSON-encoded into the API response.
+#'
 #' @return Similar to the return value from
 #'     \link{\code{return_from_app}}, except blessed with class
 #'     "error", to make it easy for rook apps to check for an error;
@@ -17,6 +20,6 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-error_from_app = function(error) {
-    structure(return_from_app(list(error=error)), class="error")
+error_from_app = function(error, ...) {
+    structure(return_from_app(list(error=error, ...)), class="error")
 }
