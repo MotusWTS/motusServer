@@ -27,7 +27,7 @@ handleLtFiles = function(j) {
 
     ## merge files into receiver database(s)
 
-    info = ltMergeFiles(path, j)
+    info = ltMergeFiles(path, topJob(j))
 
     if (isTRUE(topJob(j)$mergeOnly > 0))
         return(TRUE)
