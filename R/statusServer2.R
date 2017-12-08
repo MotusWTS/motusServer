@@ -362,7 +362,7 @@ process_new_upload = function(env) {
 
     cat("Job", jobID, "has been entered into queue 0\n")
 
-    MotusDB("insert into uploads (jobID, motusUserID, motusProjectID, filename) values (%d, %d, %d, '%s')",
+    MotusDB("insert into uploads (jobID, motusUserID, motusProjectID, filename) values (%d, %d, %d, %s)",
             jobID, userID, projectID, path)
     uploadID = MotusDB("select LAST_INSERT_ID()")[[1]]
     return_from_app(list(jobID = jobID, uploadID = uploadID))
