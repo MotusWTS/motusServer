@@ -312,7 +312,7 @@ process_new_upload = function(env) {
         return(error_from_app("path is not allowed to contain any '/../' components"))
     if (grepl('"', path, fixed=TRUE))
         return(error_from_app("path is not allowed to contain any '\"' characters"))
-    realpath = file.path(MOTUS_PATH$UPLOADS, path)
+    realpath = paste0(MOTUS_PATH$UPLOADS, path)
     if (!file.exists(realpath))
         return(error_from_app(paste0("non-existent file: `NAS:/sgdata/", realpath, "`")))
     if (is.null(projectID))
