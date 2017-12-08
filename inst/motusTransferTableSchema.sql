@@ -288,8 +288,13 @@ CREATE TABLE IF NOT EXISTS uploads (
    jobID INTEGER NOT NULL,                               -- id of top-level job for this uploaded file
    motusUserID INTEGER NOT NULL,                         -- motus id of user who uploaded the file
    motusProjectID INTEGER NOT NULL,                      -- motus id of project selected by user to receive products of this upload
-   filename VARCHAR(255) NOT NULL                        -- filename as passed in API call; can include paths, but no ascending ("..") components
+   filename VARCHAR(255) NOT NULL,                       -- filename as passed in API call; can include paths, but no ascending ("..") components
+   sha1 CHAR(40) NOT NULL,                               -- sha1 digest of file contents
+   ts FLOAT(53) NOT NULL                                 -- timestamp identified as "upload time" by call to process_new_upload API
 );--
+
+CREATE INDEX IF NOT EXISTS uploads_sha1 ON uploads(sha1);--
+CREATE INDEX IF NOT EXISTS uploads_ts ON uploads(ts);--
 
 -- The table recording reprocessing events.  A reprocessing event
 -- occurs when raw files from one or more receiver boot sessions are

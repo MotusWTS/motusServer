@@ -321,6 +321,7 @@ process_new_upload = function(env) {
     if (is.null(ts))
         ts = as.numeric(Sys.time())
 
+    digest = digestFile(realpath)
     ## for debugging, if file "/sgm/UPLOAD_TESTING"" exists, give this new job
     ## an `isTesting=TRUE` parameter, so that its product batches end up marked
     ## that way in the master DB.  Its products will also go to the /sgm/testing
@@ -340,8 +341,8 @@ process_new_upload = function(env) {
     jobID = unclass(j)
 
     ## insert into uploads table
-    MotusDB("insert into uploads (jobID, motusUserID, motusProjectID, filename) values (%d, %d, %d, %s)",
-            jobID, userID, projectID, path)
+    MotusDB("insert into uploads (jobID, motusUserID, motusProjectID, filename, sha1, ts) values (%d, %d, %d, %s, %s, %f)",
+            jobID, userID, projectID, path, digest, ts)
 
     uploadID = MotusDB("select LAST_INSERT_ID()")[[1]]
     j$uploadID = uploadID
