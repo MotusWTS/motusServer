@@ -321,7 +321,13 @@ process_new_upload = function(env) {
     if (is.null(ts))
         ts = as.numeric(Sys.time())
 
+    ## see whether we already have this file (by content digest)
     digest = digestFile(realpath)
+    have = MotusDB("select * from uploads where sha1=%s", digest)
+    if (nrow(have))
+        return(error_from_app("refusing to process file - it was already uploaded; see details; please contact motus.org, quoting this message, to have this file reprocessed",
+                              details = unclass(have)))
+
     ## for debugging, if file "/sgm/UPLOAD_TESTING"" exists, give this new job
     ## an `isTesting=TRUE` parameter, so that its product batches end up marked
     ## that way in the master DB.  Its products will also go to the /sgm/testing
