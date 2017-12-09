@@ -25,7 +25,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-createRecvTagDB = function(projectID, dateBin) {
+createRecvTagDB = function(projectID, dateBin, isTesting=FALSE) {
 
     path = getProjDir(projectID, isTesting)
 

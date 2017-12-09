@@ -5,7 +5,7 @@
 \title{create a receiver tag database, for use by the sensorgnome on-board
 tag detector}
 \usage{
-createRecvTagDB(projectID, dateBin)
+createRecvTagDB(projectID, dateBin, isTesting = FALSE)
 }
 \arguments{
 \item{projectID}{integer motus project ID}
