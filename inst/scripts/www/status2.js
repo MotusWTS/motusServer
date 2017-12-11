@@ -1,28 +1,27 @@
-// javascript for calling the status API and building DOM objects from results
-// custom javascript to access the API directly from the browser / client
+// Code to access the status API directly from the browser / client.
 // Assumes jquery has already been loaded.
-
-// assume there's an authTicket available in the auth_tkt cookie:
-
 
 // where to send API requests
 var serverURL = "https://sgdata.motus.org/status2/";
 
 // state of page
 var state = {
+    // assume there's an authTicket available in the auth_tkt cookie:
     authToken : decodeURIComponent(document.cookie.match(/(^|;)auth_tkt=([^;]*)(;|$)/)[2]),
-    // selectors
+    // selectors choose which jobs are shown
     selector : {},
-    // ordering
+    // ordering chooses what order to show available jobs
     sortBy :"mtime",
     sortDesc: true,
+    // should only jobs with (subjobs having) errors be shown?
+    errorOnly: false,
     lastKey : [],
-    forwardFromKey: true,
+    forwardFromKey: true, // when paging up/down; we specify first/last key, and direction from it
     // other
     debug: false // show dialog when query runs
 };
 
-var latest_job_list = null;
+var latest_job_list = null; // list of jobs from most recent successful query
 
 // @function toArray: guarantee argument is an array
 //
@@ -85,6 +84,7 @@ function motus_status_api(api, par, cb) {
 };
 
 // @function omit_authToken: remove the authToken from a JSON-serialization of an object
+// so we can display contents of an API call without auth cruft
 // @param key: name of item
 // @param val: value of item
 //
@@ -98,7 +98,8 @@ function omit_authToken (key, val) {
 //
 // @param x: object returned by API
 //
-// The remaining parameters are the parameters specified in the call to motus_status_api():
+// The remaining parameters are those specified in the call to motus_status_api():
+//
 // @param api: api called
 // @param par: object, passed as the POST parameter 'json'
 // @param cb: callback specified by user
@@ -163,10 +164,12 @@ function show_job_list() {
     var pars = {
         options:{
             includeUnknownProjects:true,
-            full:true
+            full:true,
+            errorOnly:state.errorOnly
         },
         order:{
-            sortBy: state.sortBy + (state.sortDesc ?" desc" : ""),
+            sortBy: state.sortBy,
+            sortDesc: state.sortDesc,
             lastKey: state.lastKey,
             forwardFromKey: state.forwardFromKey
         }
@@ -444,6 +447,11 @@ function on_click_search(event) {
     show_job_list();
 };
 
+function on_error_only(event) {
+    state.errorOnly = $("#error_only_option").is(":checked");
+    show_job_list();
+};
+
 function on_keyup_find_job_key(evt) {
     if (evt.keyCode==13)
         $("#find_job_button").click();
@@ -462,8 +470,8 @@ function on_change_find_job_selector(evt) {
     $("#find_job_key").toggle(vis);
     $("#find_job_button").toggle(vis);
 
-    // we've switched to the "all" jobs view, which has no other
-    // controls, so (re)load the list
+    // we've switched to a jobs view that has no other controls, so
+    // (re)load the list
     if (!vis) {
         state.selector = {};
         show_job_list();
@@ -491,6 +499,9 @@ function initStatus2Page() {
     on_change_find_job_selector();
     $("#find_job_key").on("keyup", on_keyup_find_job_key);
     $('#find_job_button').button({icon:"ui-icon-search", }).on("click", on_click_search);
+
+    // attach a click handler to the error_only_option checkbox
+    $("#error_only_option").checkboxradio().on("click", on_error_only);
 };
 
 // @function copyToClipboard: copy the text from an element to the client's clipboard

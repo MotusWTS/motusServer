@@ -53,27 +53,27 @@ statusServer2 = function(port = 0x57A7, tracing=FALSE, maxRows=20L) {
 
 allStatusApps = c("status_api_info", "list_jobs", "_shutdown", "authenticate_user", "process_new_upload", "list_receiver_files")
 
-sortColumns = c("ctime", "mtime", "id", "type", "motusProjectID", "motusUserID", "sjDone")
-sortCriteria = c(sortColumns, paste(sortColumns, "desc"))
+sortColumns = c("ctime", "mtime", "id", "type", "motusProjectID", "motusUserID")
 
 #' add condition(s) to the where clause; strip
 #' any leading "where " from the items in clauses,
 #' then join them together using conj and add a preceding "where "
-makeWhere = function(clauses, conj="and") {
-    clauses = sub("^where ", "", clauses, ignore.case=TRUE)
-    return(paste0("where ", paste0("(", clauses, ")", collapse = conj)))
+makeWhere = function(clauses, conj="and", prep="where") {
+    if (length(clauses) == 0)
+        return("")
+    clauses = sub(paste0("^", prep, " "), "", clauses, ignore.case=TRUE)
+    return(paste0(prep, " ", paste0("(", clauses, ")", collapse = conj)))
 }
 
 #' add condition(s) to the order by clause
 #' @param order existing order clause
 #' @param new new order by field; either "FIELD" or "FIELD desc"
+#' @param desc logical; descending order?
 #' @param toggle says whether to toggle descending/ascending order
 
-addToOrder = function(order, new, toggle) {
+addToOrder = function(order, new, desc, toggle) {
     for (n in new) {
-        bare = sub(" desc", "", new)
-        isDesc = grepl(" desc$", new)
-        new = paste0(bare, ifelse(xor(isDesc, toggle), " desc", ""))
+        new = paste0(new, ifelse(xor(desc, toggle), " desc", ""))
         if (order == "")
             order = paste0("order by ", new)
         else
@@ -129,10 +129,10 @@ list_jobs = function(env) {
     log       = safe_arg(select, log, char)
 
     ## ordering
-    sortBy = safe_arg(order, sortBy, char, scalar=TRUE)
+    sortBy = safe_arg(order, sortBy, char)
+    sortDesc = isTRUE(safe_arg(order, sortDesc, logical))
     lastKey = safe_arg(order, lastKey, list, scalar=FALSE)
-    isByType = isTRUE(grepl("^type", sortBy))
-    if (! isByType && length(lastKey) > 0) {
+    if (sortBy != "type" && length(lastKey) > 0) {
         lastKey[[1]] = as.numeric(lastKey[[1]])
     }
     forwardFromKey = safe_arg(order, forwardFromKey, logical)
@@ -142,6 +142,7 @@ list_jobs = function(env) {
     countOnly              = isTRUE(safe_arg(options, countOnly, logical))
     full                   = isTRUE(safe_arg(options, full, logical))
     includeSubjobs         = isTRUE(safe_arg(options, includeSubjobs, logical))
+    errorOnly              = isTRUE(safe_arg(options, errorOnly, logical))
     maxRows                = safe_arg(select, maxRows, int)
     if (is.null(maxRows))
         maxRows = MAX_ROWS_PER_REQUEST
@@ -187,17 +188,23 @@ list_jobs = function(env) {
         where = c(where, sprintf("t1.data glob '%s'", log))
 
     where = makeWhere(where)
-    ## generate order by and additional where clause items for paging
+    ## generate `order by` and additional `where` clause items for paging
 
     if (is.null(sortBy)) {
-        sortBy = "mtime desc"
-    } else if (! sortBy %in% sortCriteria) {
+        sortBy = "mtime"
+    } else if (! sortBy %in% sortColumns) {
         return(error_from_app("invalid sortBy"))
     }
-    isDesc = isTRUE(grepl(" desc", sortBy))
-    if (sortBy != "id" && sortBy != "id desc") {
-        sortBy = c(sortBy, if(isDesc) "id desc" else "id")
+
+    ## `having` is only used if errorOnly is true
+    having = if (isTRUE(errorOnly)) "having sjDone < 0" else ""
+
+    ## if not the ID field, then append the ID field
+    if (sortBy != "id") {
+        sortBy = c(sortBy, "id")
     }
+
+    ## prefix with "t1"
     sortBy = paste0("t1.", sortBy)
 
     if (! (length(lastKey) == 0 || length(lastKey) <= length(sortBy))) {
@@ -207,19 +214,24 @@ list_jobs = function(env) {
     if (is.null(forwardFromKey))
         forwardFromKey = TRUE
 
-    sortByCol = sub(" desc$", "", sortBy[1])
+    ## calculate extra `where` components from paging criteria
     if (! is.null(lastKey)) {
-        op = if (xor(isDesc, forwardFromKey)) ">" else "<"
-        if (isByType) {
-            w = sprintf("%s %s '%s'", sortByCol, op, lastKey[[1]])
+        w = NULL
+        op = if (xor(sortDesc, forwardFromKey)) ">" else "<"
+        ## soften constraint for fields known to have non-unique values, and for which we're not sub-paging
+        ## by id
+        if (length(lastKey) <= 1 && sortBy[1] != "t1.id")
+            op = paste0(op, "=")
+        if (sortBy[1] == "t1.type") {
+            w = sprintf("%s %s '%s'", sortBy[1], op, lastKey[[1]])
         } else {
-            w = sprintf("%s %s %f", sortByCol, op, lastKey[[1]])
+            w = sprintf("%s %s %f", sortBy[1], op, lastKey[[1]])
         }
         if (length(lastKey) > 1) {
-            if (isByType) {
-                w = paste0(w, sprintf(" or (%s = '%s' and t1.id %s %f)", sortByCol, lastKey[[1]], op, lastKey[[2]]))
+            if (sortBy[1] == "t1.type") {
+                w = paste0(w, sprintf(" or (%s = '%s' and t1.id %s %f)", sortBy[1], lastKey[[1]], op, lastKey[[2]]))
             } else {
-                w = paste0(w, sprintf(" or (%s =  %f  and t1.id %s %f)", sortByCol, lastKey[[1]], op, lastKey[[2]]))
+                w = paste0(w, sprintf(" or (%s =  %f  and t1.id %s %f)", sortBy[1], lastKey[[1]], op, lastKey[[2]]))
             }
         }
         where = makeWhere(c(where, w))
@@ -227,7 +239,7 @@ list_jobs = function(env) {
 
     order = ""
     for (i in seq(along=sortBy))
-        order = addToOrder(order, sortBy[i], ! forwardFromKey)
+        order = addToOrder(order, sortBy[i], sortDesc, ! forwardFromKey)
 
     ## pull out appropriate jobs and details
 
@@ -238,7 +250,8 @@ select
    count(*)
 from jobs as t1
 %s",
-where)
+where,
+having)
     } else {
         query = sprintf("
 select
@@ -261,12 +274,14 @@ from
 %s
 %s
 %s
+%s
 limit %d",
 if (isTRUE(full)) ", t1.data" else "",
-if (isTRUE(includeSubjobs)) "" else ", min(t2.done) as sjDone",
+if (isTRUE(includeSubjobs)) ", null as sjDone" else ", min(t2.done) as sjDone",
 if (isTRUE(includeSubjobs)) "" else " left join jobs as t2 on t2.stump=t1.id",
 where,
 if (isTRUE(includeSubjobs)) "" else " group by t1.id",
+having,
 order,
 if (is.null(stump)) maxRows else -1
 )
@@ -276,7 +291,7 @@ if (is.null(stump)) maxRows else -1
     if (! isTRUE(forwardFromKey)) {
         order = ""
         for (i in seq(along=sortBy))
-            order = addToOrder(order, sortBy[i], FALSE)
+            order = addToOrder(order, sortBy[i], sortDesc, FALSE)
         query = sprintf("select * from (%s) as t1 %s", query, order)
     }
     return_from_app(ServerDB(query))

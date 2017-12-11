@@ -61,14 +61,16 @@
         <label for="find_job_selector">Listing shows</label>
         <select id="find_job_selector">
           <option value="all" selected>all jobs</option>
-          <option value="id">only job with ID = </option>
-          <option value="idnear">only jobs with ID >= </option>
-          <option value="motusUserID">only jobs for motus user ID = </option>
-          <option value="motusProjectID">only jobs for motus project ID = </option>
-          <option value="log">only jobs with log matching</option>
+          <option value="id">job with ID = </option>
+          <option value="idnear">jobs with ID &gt;= </option>
+          <option value="motusUserID">jobs for motus user ID = </option>
+          <option value="motusProjectID"> jobs for motus project ID = </option>
+          <option value="log">jobs with log matching</option>
         </select>
         <input type="text" id="find_job_key" value="">
         <span id="find_job_button"></span>
+        <label for="error_only_option">only with errors</label>
+        <input type="checkbox" name="error_only_option" id="error_only_option">
       </div>
     <div class="job_list">
     </div>
@@ -91,7 +93,7 @@
           <th><span class="sort_heading" sort_field="type">Type</span></th>
           <th><span class="sort_heading" sort_field="ctime">Created</span></th>
           <th><span class="sort_heading" sort_field="mtime">Last Activity</span></th>
-          <th><span class="sort_heading" sort_field="sjDone">Status</span></th>
+          <th>Status</th>
           <th>Parameters</th>
         </tr>
         ⟦#jobs⟧

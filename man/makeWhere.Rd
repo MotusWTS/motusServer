@@ -6,7 +6,7 @@
 any leading "where " from the items in clauses,
 then join them together using conj and add a preceding "where "}
 \usage{
-makeWhere(clauses, conj = "and")
+makeWhere(clauses, conj = "and", prep = "where")
 }
 \description{
 add condition(s) to the where clause; strip

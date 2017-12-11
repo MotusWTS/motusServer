@@ -168,16 +168,17 @@ projects.
           - log: string; job whose log matches the string `log`, which can include globbing
             characters ('*' and '.')
        - order: object with fields for ordering and paging the selected jobs:
-      - sortBy: string scalar; null, or the sort key, i.e. one of these string constants, each of which
-        can be optionally followed by the string constant 'desc' for descending order
-         - "ctime", "ctime desc": job creation time
-         - "mtime", "mtime desc": last job activity time
-         - "id", "id desc": job ID number
-         - "type", "type desc": job type
-         - "motusProjectID", "motusProjectID desc": motus project ID
-         - "motusUserID", "motusUserID desc": motus user ID
-        If `sortBy` is not specified, it is set to `"mtime desc"`. To allow paging, an implicity "id" is
-        added to sortBy if it is not already there, with a "desc" if `sortBy` has it.
+          - sortBy: string scalar; null, or the sort key, i.e. one of these string constants:
+             - "ctime": job creation time
+             - "mtime": last job activity time
+             - "id": job ID number
+             - "type": job type
+             - "motusProjectID": motus project ID
+             - "motusUserID": motus user ID
+            If `sortBy` is not specified, it is set to `"mtime"`. To allow paging, an implici "id" is
+            added to sortBy if it is not already there
+          - sortDesc: optional; logicl scalar; if `true`, sorting is in descending order by key (and id within
+            key); otherwise, in ascending order by key (and id within key)
           - lastKey: optional; vector giving "last" obtained value of the field specified in `sortBy`; an optional
             second element gives the "last" obtained value of the "id", if `sortBy` is not "id".  This is
             used for paging.  If not specified, returns the first page according to `sortBy` criteria.
@@ -188,6 +189,7 @@ projects.
           - includeUnknownProjects: include jobs with no associated motus project; typically for
             jobs initiated by staff or otherwise not having a useful concept of project
           - includeSubjobs: boolean: include jobs which are not top-level jobs?; default `false`
+          - errorOnly: boolean: if true, only show top jobs for which a subjob had an error.
           - full: if `true`, then full details for the job (typically its parameters, log, summary, and list of
             product files) are returned in a JSON-formatted column called `data`
           - countOnly: boolean; if `true`, return only a count of jobs for the given projectID and/or userID
@@ -296,3 +298,7 @@ projects.
       but if day is missing or invalid, return is an object with these array items:
       - `day`: character; day, formatted as 'YYYY-MM-DD'
       - `count`: integer; number of files for this receiver from given day
+
+## Changelog ##
+
+2017-12-11 `list_jobs` now uses a bare `sortBy` with just a field name; the optional `desc` is moved to its own boolean field: `sortDesc`.

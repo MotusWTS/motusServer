@@ -4,12 +4,14 @@
 \alias{addToOrder}
 \title{add condition(s) to the order by clause}
 \usage{
-addToOrder(order, new, toggle)
+addToOrder(order, new, desc, toggle)
 }
 \arguments{
 \item{order}{existing order clause}
 
 \item{new}{new order by field; either "FIELD" or "FIELD desc"}
+
+\item{desc}{logical; descending order?}
 
 \item{toggle}{says whether to toggle descending/ascending order}
 }
