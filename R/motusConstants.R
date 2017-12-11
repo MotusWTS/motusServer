@@ -6,18 +6,13 @@
 MOTUS_API_ENTRY_POINTS          = "http://motus.org/data/api/entrypoints.jsp"
 MOTUS_API_REGISTER_TAG          = "https://motus.org/api/tag/register"
 MOTUS_API_DEPLOY_TAG            = "https://motus.org/api/tag/deploy"
+MOTUS_API_SEARCH_TAGS           = "https://motus.org/api/tags/search"
 MOTUS_API_USER_VALIDATE         = "https://motus.org/api/user/validate"
-MOTUS_API_REGISTER_PROJECT      = "https://motus.org/data/api/v1.0/registerproject.jsp"
 MOTUS_API_REGISTER_RECEIVER     = "https://motus.org/api/receiver/register"
 MOTUS_API_LIST_PROJECTS         = "https://motus.org/api/projects"
-MOTUS_API_RECEIVER_STATUS       = "https://motus.org/data/api/v1.0/listreceiverstatus.jsp"
-MOTUS_API_LIST_TAGS             = "https://motus.org/data/api/v1.0/listtags.jsp"
 MOTUS_API_LIST_SENSORS          = "https://motus.org/api/receivers/list"
 MOTUS_API_LIST_SENSOR_DEPS      = "https://motus.org/api/receiver/sensordeployments"
 MOTUS_API_LIST_SPECIES          = "https://motus.org/api/species"
-MOTUS_API_SEARCH_TAGS           = "https://motus.org/data/api/v1.0/searchtags.jsp"
-MOTUS_API_DEBUG                 = "https://motus.org/data/api/v1.0/debug.jsp"
-MOTUS_API_DELETE_TAG_DEPLOYMENT = "https://motus.org/data/api/v1.0/deletetagdeployment.jsp"
 
 ## central repo where we track changes to motus metadata
 ## this repo is cloned locally, and changes noticed when we cache motus metadata
