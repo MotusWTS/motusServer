@@ -136,7 +136,7 @@ function motus_status_replied(x, api, par, cb) {
         state.authToken = x.authToken;
         return;
     }
-    if (! (x.id && x.id.length)) {
+    if (api == "list_jobs" && ! (x.id && x.id.length)) {
         $(".job_no_results").mustache("tpl_job_no_results", {}, {method:"html"});
         $(".job_no_results").dialog(
             {
@@ -149,7 +149,8 @@ function motus_status_replied(x, api, par, cb) {
             });
         return;
     }
-    cb(x);
+    if (typeof cb === "function")
+        cb(x);
 };
 
 // @function show_job_list: display a list of jobs
