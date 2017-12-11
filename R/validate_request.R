@@ -55,6 +55,9 @@ validate_request = function(json, needProjectID=TRUE, needAdmin=FALSE) {
     openMotusDB() ## ensure connection is still valid after a possibly long time between requests
 
     authToken = safe_arg(json, authToken, char)
+    if (is.null(authToken))
+        return(error_from_app("this API call requires authentication"))
+
     projectID = safe_arg(json, projectID, int, scalar=FALSE)
 
     auth = NULL ## start with no authorization
