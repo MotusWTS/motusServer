@@ -285,20 +285,52 @@ projects.
       e.g.
       curl --data-urlencode json='{"serno":"SG-1513BBBK0291","day":"2017-04-04","authToken":"XXX"}' https://sgdata.motus.org/status2/list_receiver_files
 
-   - return: if day is valid, an object with these array items:
-      - `fileID`: integer; ID of file (relative to receiver), if it has been processed; null otherwise
-      - `name`: character; name of file
-      - `bootnum`: integer; boot count, uncorrected, if it has been processed; null otherwise
-      - `monoBN`: integer; corrected boot count, if it has been processed; null otherwise
-      - `contentsSize`: integer; uncompressed file size in bytes, if it has been processed; null otherwise
-      - `fileSize`: integer; size of file on disk, if present; null otherwise
-      - `complete`: boolean; true if we have the complete .gz version of the file
-      - `jobID`: the integer motus ID for the job in which this file was most recently updated
+   - return: an object with these items:
+      - `serno`: receiver serial number
+      - if day is valid, an object called `fileDetails` with these array items:
+         - `fileID`: integer; ID of file (relative to receiver), if it has been processed; null otherwise
+         - `name`: character; name of file
+         - `bootnum`: integer; boot count, uncorrected, if it has been processed; null otherwise
+         - `monoBN`: integer; corrected boot count, if it has been processed; null otherwise
+         - `contentsSize`: integer; uncompressed file size in bytes, if it has been processed; null otherwise
+         - `fileSize`: integer; size of file on disk, if present; null otherwise
+         - `complete`: boolean; true if we have the complete .gz version of the file
+         - `jobID`: the integer motus ID for the job in which this file was most recently updated
+      - otherwise, if day is missing or invalid, an object called `fileCounts` with these array items:
+         - `day`: character; day, formatted as 'YYYY-MM-DD'
+         - `count`: integer; number of files for this receiver from given day
 
-      but if day is missing or invalid, return is an object with these array items:
-      - `day`: character; day, formatted as 'YYYY-MM-DD'
-      - `count`: integer; number of files for this receiver from given day
+### get_receiver_info ###
+
+   get_receiver_info (serno)
+
+      - serno: string scalar; receiver serial number
+      e.g.
+      curl --data-urlencode json='{"serno":"SG-1513BBBK0291","authToken":"XXX"}' https://sgdata.motus.org/status2/get_receiver_info
+
+   - return: an object with these items:
+      - `serno`: receiver serial number
+      - `deviceID`: motus device ID
+      - `receiverType`: `SENSORGNOME` or `LOTEKXXX`, where *XXX* is a model name
+      - `deployments`: an object with these array items:
+         - `deployID`: integer; deployment ID (internal to motus, but links to antDeps)
+         - `projectID`: integer; ID of project that deployed the receiver
+         - `receiverType`: string; "SENSORGNOME" or "LOTEK"
+         - `status`: string; deployment status
+         - `name`: string; typically a site name
+         - `fixtureType`: string; what is the receiver mounted on?
+         - `latitude`: double; (initial) location, degrees North
+         - `longitude`: double; (initial) location, degrees East
+         - `elevation`: double; (initial) location, metres ASL
+         - `isMobile`: integer; non-zero means a mobile deployment
+         - `tsStart`: double; timestamp of deployment start
+         - `tsEnd`: double; timestamp of deployment end, or NA if ongoing
 
 ## Changelog ##
 
-2017-12-11 `list_jobs` now uses a bare `sortBy` with just a field name; the optional `desc` is moved to its own boolean field: `sortDesc`.
+2017-12-11:
+   - `list_jobs` now uses a bare `sortBy` with just a field name; the optional `desc` is moved to its own boolean field: `sortDesc`.
+
+2017-12-12:
+   - `list_receiver_files` moves table results to a field named either `fileCounts` or `fileDetails`, adds field `serno`
+   - new `get_receiver_info` returns device info including deployments table

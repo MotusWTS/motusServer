@@ -49,9 +49,9 @@ statusServer2 = function(port = 0x57A7, tracing=FALSE, maxRows=20L) {
 }
 
 ## a string giving the list of apps for this server
-## Note that we re-use authenticate_user from statusServer.
+## Note that we re-use authenticate_user from dataServer.R
 
-allStatusApps = c("status_api_info", "list_jobs", "_shutdown", "authenticate_user", "process_new_upload", "list_receiver_files")
+allStatusApps = c("status_api_info", "list_jobs", "_shutdown", "authenticate_user", "process_new_upload", "list_receiver_files", "get_receiver_info")
 
 sortColumns = c("ctime", "mtime", "id", "type", "motusProjectID", "motusUserID")
 
@@ -421,16 +421,54 @@ list_receiver_files = function(env) {
     if (!grepl(SERNO_REGEX, serno, perl=TRUE))
         return(error_from_app("invalid receiver serial number (`serno`)"))
 
+    rv = list(serno=serno)
+
     if (is.null(day)) {
         days = dir(file.path(MOTUS_PATH$FILE_REPO, serno), full.names=TRUE)
-        rv = table(basename(dirname(dir(days, full.names=TRUE))))
-        rv = data.frame(day = names(rv), count=as.integer(rv))
+        dets = table(basename(dirname(dir(days, full.names=TRUE))))
+        rv$fileCounts = data.frame(day = names(dets), count=as.integer(dets))
     } else {
         if (! grepl(DAY_REGEX, day, perl=TRUE))
             return(error_from_app("invalid day"))
-        rv = dir(file.path(MOTUS_PATH$FILE_REPO, serno, day), full.names=TRUE)
-        rv = data.frame(name=basename(rv), size=file.size(rv), stringsAsFactors=FALSE)
+        dets = dir(file.path(MOTUS_PATH$FILE_REPO, serno, day), full.names=TRUE)
+        rv$fileDetails = data.frame(name=basename(dets), size=file.size(dets), stringsAsFactors=FALSE)
     }
+    return_from_app(rv)
+}
+
+
+#' return a list of files for a receiver
+
+get_receiver_info = function(env) {
+    json = fromJSON(parent.frame()$postBody["json"], simplifyVector=FALSE)
+
+    if (tracing)
+        browser()
+
+    auth = validate_request(json, needProjectID=FALSE)
+    if (inherits(auth, "error")) return(auth)
+
+    ## parameters
+    serno = safe_arg(json, serno, char)
+
+    ## validate
+
+    if (is.null(serno))
+        return(error_from_app("must specify receiver serial number (`serno`)"))
+
+    if (!grepl(SERNO_REGEX, serno, perl=TRUE))
+        return(error_from_app("invalid receiver serial number (`serno`)"))
+
+    rv = list(serno=serno, receiverType=getRecvType(serno))
+
+    deps = MetaDB("select * from recvDeps where serno=:serno", serno=serno)
+
+    ## extract items which are the same in every row
+    rv$deviceID = deps$deviceID[1]
+    ## drop no-longer-needed fields
+    deps[c("deviceID", "receiverType", "id")] = NULL
+
+    rv$deployments = deps
     return_from_app(rv)
 }
 
