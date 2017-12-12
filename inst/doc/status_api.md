@@ -287,7 +287,7 @@ projects.
 
    - return: an object with these items:
       - `serno`: receiver serial number
-      - if day is valid, an object called `fileDetails` with these array items:
+      - if day is valid, it is returned as field `day`, along with a field called `fileDetails` with these array items:
          - `fileID`: integer; ID of file (relative to receiver), if it has been processed; null otherwise
          - `name`: character; name of file
          - `bootnum`: integer; boot count, uncorrected, if it has been processed; null otherwise
@@ -296,9 +296,11 @@ projects.
          - `fileSize`: integer; size of file on disk, if present; null otherwise
          - `complete`: boolean; true if we have the complete .gz version of the file
          - `jobID`: the integer motus ID for the job in which this file was most recently updated
-      - otherwise, if day is missing or invalid, an object called `fileCounts` with these array items:
+         Sort order for this item is ascending by `fileID`.
+      - otherwise, if day is missing or invalid, a field called `fileCounts` with these array items:
          - `day`: character; day, formatted as 'YYYY-MM-DD'
          - `count`: integer; number of files for this receiver from given day
+         Sort order for this item is descending by `day`.
 
 ### get_receiver_info ###
 
@@ -325,6 +327,8 @@ projects.
          - `isMobile`: integer; non-zero means a mobile deployment
          - `tsStart`: double; timestamp of deployment start
          - `tsEnd`: double; timestamp of deployment end, or NA if ongoing
+     Sort order for this item is descending by `tsStart`.
+
 
 ## Changelog ##
 

@@ -425,11 +425,12 @@ list_receiver_files = function(env) {
 
     if (is.null(day)) {
         days = dir(file.path(MOTUS_PATH$FILE_REPO, serno), full.names=TRUE)
-        dets = table(basename(dirname(dir(days, full.names=TRUE))))
+        dets = rev(table(basename(dirname(dir(days, full.names=TRUE)))))
         rv$fileCounts = data.frame(day = names(dets), count=as.integer(dets))
     } else {
         if (! grepl(DAY_REGEX, day, perl=TRUE))
             return(error_from_app("invalid day"))
+        rv$day = day
         dets = dir(file.path(MOTUS_PATH$FILE_REPO, serno, day), full.names=TRUE)
         rv$fileDetails = data.frame(name=basename(dets), size=file.size(dets), stringsAsFactors=FALSE)
     }
@@ -461,7 +462,7 @@ get_receiver_info = function(env) {
 
     rv = list(serno=serno, receiverType=getRecvType(serno))
 
-    deps = MetaDB("select * from recvDeps where serno=:serno", serno=serno)
+    deps = MetaDB("select * from recvDeps where serno=:serno order by tsStart desc", serno=serno)
 
     ## extract items which are the same in every row
     rv$deviceID = deps$deviceID[1]
