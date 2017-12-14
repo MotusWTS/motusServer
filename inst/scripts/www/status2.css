@@ -112,9 +112,35 @@
 }
 
 .querying_server_active {
-        background-color: #FFFF2040;
+    background-color: #FFFF2040;
 }
 
 .querying_server_done {
-        background-color: #FFFFFFFF;
+    background-color: #FFFFFFFF;
+}
+
+.recv_file_day_count {
+    white-space: pre-wrap;
+    font-family: monospace;
+    min-width: 150px;
+}
+
+.recv_info_heading {
+    font-weight: bold;
+}
+
+.recv_deps_heading {
+    font-weight: bold;
+}
+
+.recv_file_days {
+    font-weight: bold;
+}
+
+.filecount_mismatch {
+    background-color: #FF202040;
+}
+
+.byte_count {
+    text-align: right;
 }

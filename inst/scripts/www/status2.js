@@ -73,7 +73,7 @@ function motus_status_api(api, par, cb) {
             {
                 top: $("html").offset().top,
                 maxHeight: 800,
-                dragable:false,
+                dragable:true,
                 closeOnEscape:true,
                 width:800,
                 title:"Querying motus status server"
@@ -124,7 +124,7 @@ function motus_status_replied(x, api, par, cb) {
             {
                 top: $("html").offset().top,
                 maxHeight: 800,
-                dragable:false,
+                dragable:true,
                 closeOnEscape:true,
                 width:800,
                 title:"Error from Motus Status Server!"
@@ -274,8 +274,15 @@ function show_job_details(jobID) {
                      }, show_job_details2);
 };
 
-function fmt_time(x) {
-    return (new Date(1000 * x)).toISOString();
+function fmt_time(x, n) {
+    if (x == "NA") {
+        rv = "NA";
+    } else {
+        rv = (new Date(1000 * x)).toISOString();
+        if (n !== undefined)
+            rv = rv.substring(0, n);
+    }
+    return rv;
 };
 
 function fmt_params(x) {
@@ -361,7 +368,7 @@ function show_job_details2(x) {
         {
             top: $("html").offset().top,
             maxHeight: 600,
-            dragable:false,
+            dragable:true,
             closeOnEscape:true,
             width:800,
             title:"Details for top-level job " + x.id[0]
@@ -503,6 +510,10 @@ function initStatus2Page() {
 
     // attach a click handler to the error_only_option checkbox
     $("#error_only_option").checkboxradio().on("click", on_error_only);
+
+    // attach a click handler to any field with class job_id
+    $(".job_id").on("click", ".job_id", on_click_jobs_table_row);
+
 };
 
 // @function copyToClipboard: copy the text from an element to the client's clipboard
@@ -516,4 +527,133 @@ function copyToClipboard(element) {
     $temp.val($(element).text()).select();
     document.execCommand("copy");
     $temp.remove();
+}
+
+// @function show_recv_info: display a pop-up with info about a receiver
+//
+// @param serno: receiver serial number
+//
+// @details fetch receiver info, then chain to show_recv_info2
+
+function show_recv_info(serno) {
+    motus_status_api("get_receiver_info",
+                     {
+                         serno: serno
+                     }, show_recv_info2);
+};
+
+// @function show_recv_info2: partially populate receiver info div, then
+// grab file summary from API.
+//
+// @param x: receiver info, as returned by the motus status API entry
+// `get_receiver_info`
+//
+// @details fetch file summary, then chain to show_recv_info3
+
+var globalRecvInfo = {};
+
+function show_recv_info2(x) {
+    globalRecvInfo[x.serno] = x;
+    motus_status_api("list_receiver_files",
+                     {
+                         serno: x.serno
+                     }, show_recv_info3);
+}
+
+// @function show_recv_info3: display a pop-up div with receiver information
+//
+// @param x: daily file summary, as returned by the motus status API entry
+// `list_receiver_files` with `day=null`
+
+
+function show_recv_info3(x) {
+    if (x.fileCounts)
+        x.fileCounts.__transpose__ = true;
+    var serno = x.serno;
+    var gri = globalRecvInfo[serno];
+    gri.deployments.__transpose__ = true;
+
+    $(".recv_info").mustache("tpl_recv_info",
+                             {
+                                 serno: x.serno,
+                                 deviceID: gri.deviceID,
+                                 receiverType: gri.receiverType,
+                                 deployments: gri.deployments,
+                                 fmt_tsStart: function(i) {
+                                     return fmt_time(this.tsStart[i], 16)
+                                 },
+                                 fmt_tsEnd: function(i) {
+                                     return fmt_time(this.tsEnd[i], 16)
+                                 },
+                                 fileCountStatus: function(i) {
+                                     return this.countFS[i] === this.countDB[i] ? "" : "filecount_mismatch";
+                                 },
+                                 fmt_fileCount: function(i) {
+                                     return this.day[i] + ':' +
+                                         ((this.countFS[i] === this.countDB[i]) ?
+                                          ('     ' + this.countFS[i]).slice(-5)
+                                          : ('          ' + this.countFS[i] + '/' + this.countDB[i]).slice(-10))
+                                         + '   ';
+                                 },
+                                 fileCounts: x.fileCounts
+                             },
+                             {
+                                 method:"html"
+                             }
+                            );
+    $(".recv_info").dialog(
+        {
+            top: $("html").offset().top,
+            maxHeight: 600,
+            dragable:true,
+            closeOnEscape:true,
+            width:900,
+            title:"Information for receiver " + serno
+        });
+}
+
+// @function show_recv_files: display a pop-up with info about receiver files
+//
+// @param serno: string; receiver serial number
+// @param day: string; day, formatted as "YYYY-MM-DD"
+//
+// @details fetch file details, then chain to show_recv_files2
+
+function show_recv_files(serno, day) {
+    motus_status_api("list_receiver_files",
+                     {
+                         serno: serno,
+                         day: day
+                     }, show_recv_files2);
+};
+
+// @function show_recv_files2: display a pop-up with info about receiver files
+//
+// @param x: daily file summary, as returned by the motus status API entry
+// `list_receiver_files` with `day` a valid "YYYY-MM-DD"
+
+
+function show_recv_files2(x) {
+    x.fileDetails.__transpose__ = true;
+    var serno = x.serno;
+
+    $(".recv_files").mustache("tpl_recv_files",
+                             {
+                                 serno: x.serno,
+                                 day: x.day,
+                                 fileDetails: x.fileDetails
+                             },
+                             {
+                                 method:"html"
+                             }
+                            );
+    $(".recv_files").dialog(
+        {
+            top: $("html").offset().top,
+            maxHeight: 600,
+            dragable:true,
+            closeOnEscape:true,
+            width:800,
+            title:"Files for receiver " + serno + " on " + x.day
+        });
 }
