@@ -21,6 +21,6 @@
 getRecvSrc = function(serno, dbdir = MOTUS_PATH$RECV, busyTimeout=300) {
     src = src_sqlite(file.path(dbdir, paste0(serno, ".motus")), TRUE)
     dbGetQuery(src$con, sprintf("pragma busy_timeout=%d", round(busyTimeout * 1000)))
-    sgEnsureDBTables(src)
+    ensureRecvDBTables(src, serno=serno)
     return(src)
 }

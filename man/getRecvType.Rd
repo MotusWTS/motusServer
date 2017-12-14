@@ -4,10 +4,13 @@
 \alias{getRecvType}
 \title{determine the receiverType from a serial number}
 \usage{
-getRecvType(serno, extra)
+getRecvType(serno, lotekModel = TRUE)
 }
 \arguments{
 \item{serno}{character scalar; receiver serial number, e.g. "Lotek-123"}
+
+\item{lotekModel}{logical; if TRUE (the default), include the model if the receiver
+is a Lotek.  Otherwise, return just "LOTEK" for such receivers.}
 }
 \value{
 a character scalar with the receiverType, suitable for use

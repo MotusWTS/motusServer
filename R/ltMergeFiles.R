@@ -185,18 +185,6 @@ ltMergeFiles = function(files, j, dbdir=MOTUS_PATH$RECV) {
             }
         }
         ## unlock the receiver and drop the source
-        ## write meta data; we do this late in case details
-        ## from a DTA file are required for detecting the model correctly.
-
-        meta = getMap(src)
-
-        if (length(meta$dbType) == 0) {
-            meta$dbType = "receiver" ## indicate this is a receiver database (vs. a tagProject database)
-            meta$recvSerno = serno
-            meta$recvType = "LOTEK"
-            meta$recvModel = getLotekModel(serno)
-        }
-
         lockSymbol(x$recv, lock=FALSE)
         rm(sql)
         rm(src)

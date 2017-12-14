@@ -8,13 +8,16 @@
 #' are recreate.  As a special case, TRUE causes all tables to be dropped
 #' then recreated.
 #'
+#' @param serno character scalar receiver serial number; only used when `meta`
+#' table is populated
+#'
 #' @return returns NULL (silently); fails on any error
 #'
 #' @export
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-sgEnsureDBTables = function(src, recreate=c()) {
+ensureRecvDBTables = function(src, recreate=c(), serno) {
     if (! inherits(src, "src"))
         stop("src is not a dplyr::src object")
     con = src$con
@@ -47,6 +50,14 @@ key  character not null unique primary key, -- name of key for meta data
 val  character                              -- character string giving meta data; might be in JSON format
 )
 ");
+    }
+    if (sql("select count(*) from meta")[[1]] == 0 && ! missing(serno)) {
+        meta = getMap(src)
+        meta$dbType = "receiver" ## indicate this is a receiver database (vs. a tagProject database)
+        meta$recvSerno = serno
+        meta$recvType = getRecvType(serno, lotekModel=FALSE)
+        meta$recvModel = getRecvModel(serno)
+        meta$fileRepo = file.path(MOTUS_PATH$FILE_REPO, serno)
     }
 
     if (! "files" %in% tables) {

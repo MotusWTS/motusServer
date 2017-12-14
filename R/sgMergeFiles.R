@@ -226,13 +226,6 @@ sgMergeFiles = function(files, j, dbdir = MOTUS_PATH$RECV) {
         ## FIXME? is there a cleaner way to do '%>% collect %>% as.XXX' to get a scalar entry from a tbl?
 
         meta = getMap(src)
-        if (length(meta$dbType) == 0) {
-            meta$dbType = "receiver" ## indicate this is a receiver database (vs. a tagProject database)
-            meta$recvSerno = recv
-            meta$recvType = "SENSORGNOME"
-            meta$recvModel = getSGModel(newf$Fserno[1])
-            meta$fileRepo = file.path(MOTUS_PATH$FILE_REPO, recv)
-        }
         now = as.numeric(Sys.time())
         if (nrow(newf) > 0) {
             for (i in seq_len(nrow(newf))) {

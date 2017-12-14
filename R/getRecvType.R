@@ -2,6 +2,9 @@
 #'
 #' @param serno character scalar; receiver serial number, e.g. "Lotek-123"
 #'
+#' @param lotekModel logical; if TRUE (the default), include the model if the receiver
+#' is a Lotek.  Otherwise, return just "LOTEK" for such receivers.
+#'
 #' @return a character scalar with the receiverType, suitable for use
 #' with \code{motusRegisterReceiver()}
 #'
@@ -9,9 +12,12 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-getRecvType = function(serno, extra) {
+getRecvType = function(serno, lotekModel=TRUE) {
     if (substr(toupper(serno), 1, 5) == "LOTEK") {
-        return(paste0("LOTEK", getLotekModel(serno)))
+        if (model)
+            return(paste0("LOTEK", getRecvModel(serno)))
+        else
+            return("LOTEK")
     }
     return ("SENSORGNOME")
 }

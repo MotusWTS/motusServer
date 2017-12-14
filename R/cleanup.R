@@ -33,7 +33,7 @@ cleanup = function(src, dropTables = FALSE, vacuum=dropFiles, dropFiles=FALSE) {
     for (t in tablesToEmpty)
         sql("%s %s", if (dropTables) "drop table if exists" else "delete from", t)
     if (dropTables)
-        sgEnsureDBTables(src)
+        ensureRecvDBTables(src)
     if (vacuum) {
         sql("pragma page_size=4096") ## use a page size that's good for modern hard drives
         sql("vacuum")
