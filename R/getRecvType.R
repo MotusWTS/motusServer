@@ -14,7 +14,7 @@
 
 getRecvType = function(serno, lotekModel=TRUE) {
     if (substr(toupper(serno), 1, 5) == "LOTEK") {
-        if (model)
+        if (lotekModel)
             return(paste0("LOTEK", getRecvModel(serno)))
         else
             return("LOTEK")
