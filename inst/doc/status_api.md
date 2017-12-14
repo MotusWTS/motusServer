@@ -299,7 +299,8 @@ projects.
          Sort order for this item is ascending by `fileID`.
       - otherwise, if day is missing or invalid, a field called `fileCounts` with these array items:
          - `day`: character; day, formatted as 'YYYY-MM-DD'
-         - `count`: integer; number of files for this receiver from given day
+         - `countDB`: integer; number of files for this receiver from given day known to receiver database
+         - `countFS`: integer; number of files for this receiver from given day stored in file system
          Sort order for this item is descending by `day`.
 
 ### get_receiver_info ###
