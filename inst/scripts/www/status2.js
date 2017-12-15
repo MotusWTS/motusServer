@@ -650,8 +650,8 @@ function show_recv_info3(x) {
                                  fmt_fileCount: function(i) {
                                      return this.day[i] + ':' +
                                          ((this.countFS[i] === this.countDB[i]) ?
-                                          ('     ' + this.countFS[i]).slice(-5)
-                                          : ('          ' + this.countFS[i] + '/' + this.countDB[i]).slice(-10))
+                                          ('     ' + this.countFS[i]).slice(-5)
+                                          : ('          ' + this.countFS[i] + '/' + this.countDB[i]).slice(-10))
                                          + '   ';
                                  },
                                  fileCounts: x.fileCounts
