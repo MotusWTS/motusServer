@@ -302,7 +302,7 @@ function show_job_details(jobID) {
 };
 
 function fmt_time(x, n) {
-    if (x == "NA") {
+    if ((!x) || x == "NA") {
         rv = "NA";
     } else {
         rv = (new Date(1000 * x)).toISOString();
