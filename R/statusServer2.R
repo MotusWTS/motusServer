@@ -406,7 +406,12 @@ process_new_upload = function(env) {
 #' \item day: character; day, formatted as "YYYY-MM-DD"
 #' \item count: integer; number of files from the day in the receiver DB `files` table.
 #' }
-#' Otherwise, for Lotek receivers or if `day` is given, the return value has these columns,
+#' For a Lotek receiver, \code{count} is always 1, and each row simply indicates that the
+#' receiver recorded at least one detection that day.  As for sensorgnomes, this
+#' flavour of return value is meant to indicate whether the receiver was operating
+#' that day.
+#'
+#' Otherwise, if `day` is given, the return value has these columns,
 #' sorted by fileID:
 #' \itemize{
 #'   \item fileID: integer; ID of file
@@ -416,17 +421,25 @@ process_new_upload = function(env) {
 #'   \item contentSize: integer; uncompressed file size in bytes
 #'   \item jobID: the integer motus ID for the job in which this file was most recently updated
 #' }
+#' For Lotek receivers, this will be a list of all data files; for sensorgnomes,
+#' this will only include files from the given day.
 
 files_from_recv_DB = function (serno, day=NULL) {
-    isLotek = substr(serno, 1, 6) == "Lotek-"
+    isSG = getRecvType(serno) == "SENSORGNOME"
     sql = safeSQL(getRecvSrc(serno))
-    if (isLotek) {
-        rv = sql("select fileID, name, null as bootnum, null as monoBN, size, motusJobID as jobID from DTAfiles order by fileID")
-    } else if (is.null(day)) {
-        rv = sql('select day, count(*) as count from (select fileID, strftime("%Y-%m-%d", datetime(ts, "unixepoch")) as day from files) as j group by j.day order by j.day desc')
+    if (isSG) {
+        if (is.null(day)) {
+            rv = sql('select day, count(*) as count from (select fileID, strftime("%Y-%m-%d", datetime(ts, "unixepoch")) as day from files) as j group by j.day order by j.day desc')
+        } else {
+            tsRange = c(0, 24*3600) + as.numeric(ymd_hms(paste(day, "00:00:00")))
+            rv = sql("select fileID, name, bootnum, monoBN, size as contentSize, motusJobID as jobID from files where ts between :dayStart and :dayEnd order by fileID", dayStart=tsRange[1], dayEnd=tsRange[2])
+        }
     } else {
-        tsRange = c(0, 24*3600) + as.numeric(ymd_hms(paste(day, "00:00:00")))
-        rv = sql("select fileID, name, bootnum, monoBN, size as contentSize, motusJobID as jobID from files where ts between :dayStart and :dayEnd order by fileID", dayStart=tsRange[1], dayEnd=tsRange[2])
+        if (is.null(day)) {
+            rv = sql("select strftime('%Y-%m-%d', datetime(day, 'unixepoch')) as day, 1 as count from (select distinct 24*3600*round(ts/(24*3600)) as day from DTAtags where ts is not null order by ts)")
+        } else {
+            rv = sql("select fileID, name, null as bootnum, null as monoBN, size, motusJobID as jobID from DTAfiles order by fileID")
+        }
     }
     return(as.tbl(rv))
 }
@@ -445,36 +458,41 @@ files_from_recv_DB = function (serno, day=NULL) {
 #' \item day: character; day, formatted as "YYYY-MM-DD"; any days for which the repo has files
 #' \item count: integer; number of files from the day in the file repo
 #' }
+#'
 #' Otherwise, for Lotek receivers or if `day` is given, the return value has these columns,
 #' sorted by fileID:
 #' \itemize{
 #'   \item name: character; name of file
 #'   \item fileSize: integer; size of file on disk, in bytes
 #' }
+#' For Lotek receivers, day is ignored (as long as it is present), and all files for the
+#' receiver are listed.
 #'
 #' @note for SG receivers, when both a compressed and un uncompressed version of the file
 #' are present, this only counts as one file, and if returning files, the name is returned
 #' without a ".gz" suffix, but the size is of the .gz file on disk
 
 files_from_repo = function (serno, day=NULL) {
-    isLotek = substr(serno, 1, 6) == "Lotek-"
+    isSG = getRecvType(serno) == "SENSORGNOME"
     repo = file.path(MOTUS_PATH$FILE_REPO, serno)
-    if (isLotek) {
+    if (isSG) {
+        if (is.null(day)) {
+            ## count only one of "XXX.txt.gz", "XXX.txt"
+            counts = sapply(dir(repo), function(day) sum(!duplicated(sub("\\.gz$", "", dir(file.path(repo, day))))))
+            rv = data.frame(day = I(names(counts)), count = as.integer(counts))
+        } else {
+            repo = file.path(repo, day)
+            files = dir(repo, full.names=TRUE)
+            ## for a pair ("XXX.txt.gz", "XXX.txt"), return "XXX.txt" as the name, but the size
+            ## for file "XXX.txt.gz"
+            bareNames = sub("\\.gz$", "", basename(files))
+            dup = duplicated(bareNames)
+            dupRev = duplicated(bareNames, fromLast=TRUE)
+            rv = data.frame(name=I(bareNames[!dup]), fileSize=file.size(files)[!dupRev])
+        }
+    } else {
         files = dir(repo, full.names=TRUE)
         rv = data.frame(name=I(basename(files)), fileSize=file.size(files))
-    } else if (is.null(day)) {
-        ## count only one of "XXX.txt.gz", "XXX.txt"
-        counts = sapply(dir(repo), function(day) sum(!duplicated(sub("\\.gz$", "", dir(file.path(repo, day))))))
-        rv = data.frame(day = names(counts), count = as.integer(counts))
-    } else {
-        repo = file.path(repo, day)
-        files = dir(repo, full.names=TRUE)
-        ## for a pair ("XXX.txt.gz", "XXX.txt"), return "XXX.txt" as the name, but the size
-        ## for file "XXX.txt.gz"
-        bareNames = sub("\\.gz$", "", basename(files))
-        dup = duplicated(bareNames)
-        dupRev = duplicated(bareNames, fromLast=TRUE)
-        rv = data.frame(name=I(bareNames[!dup]), fileSize=file.size(files)[!dupRev])
     }
     return(as.tbl(rv))
 }
@@ -508,12 +526,18 @@ list_receiver_files = function(env) {
     if (!any(file.exists(c(file.path(MOTUS_PATH$FILE_REPO, serno), file.path(MOTUS_PATH$RECV, paste0(serno, ".motus"))))))
         return(error_from_app("unknown receiver"))
 
+    isSG = getRecvType(serno) == "SENSORGNOME"
+
     rv = list(serno=serno)
 
     if (is.null(day)) {
-        fs = files_from_repo(serno)
         db = files_from_recv_DB(serno)
-        fc = db %>% full_join(fs, by="day") %>% as.data.frame
+        if (isSG) {
+            fs = files_from_repo(serno)
+            fc = db %>% full_join(fs, by="day") %>% as.data.frame
+        } else {
+            fc = db %>% mutate(countFS=1) %>% as.data.frame
+        }
         names(fc) = c("day", "countDB", "countFS")
         fc$countDB[is.na(fc$countDB)] = 0
         fc$countFS[is.na(fc$countFS)] = 0

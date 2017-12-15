@@ -21,7 +21,12 @@ these columns sorted by decreasing day:
 \item day: character; day, formatted as "YYYY-MM-DD"
 \item count: integer; number of files from the day in the receiver DB `files` table.
 }
-Otherwise, for Lotek receivers or if `day` is given, the return value has these columns,
+For a Lotek receiver, \code{count} is always 1, and each row simply indicates that the
+receiver recorded at least one detection that day.  As for sensorgnomes, this
+flavour of return value is meant to indicate whether the receiver was operating
+that day.
+
+Otherwise, if `day` is given, the return value has these columns,
 sorted by fileID:
 \itemize{
   \item fileID: integer; ID of file
@@ -31,6 +36,8 @@ sorted by fileID:
   \item contentSize: integer; uncompressed file size in bytes
   \item jobID: the integer motus ID for the job in which this file was most recently updated
 }
+For Lotek receivers, this will be a list of all data files; for sensorgnomes,
+this will only include files from the given day.
 }
 \description{
 return a dplyr::tbl of files from a receiver database

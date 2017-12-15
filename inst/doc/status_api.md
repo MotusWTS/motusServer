@@ -300,8 +300,11 @@ projects.
       - otherwise, if day is missing or invalid, a field called `fileCounts` with these array items:
          - `day`: character; day, formatted as 'YYYY-MM-DD'
          - `countDB`: integer; number of files for this receiver from given day known to receiver database
+         For Lotek receivers, this is always 1, because for a given day, a file either exists with that
+         day in it, or not.
          - `countFS`: integer; number of files for this receiver from given day stored in file system
-         Sort order for this item is descending by `day`.
+         Sort order for this item is descending by `day`.  For a Lotek receiver, `countFS` is not meaningful
+         because files span multiple days, so it is set to the same value as `countDB`.
 
 ### get_receiver_info ###
 

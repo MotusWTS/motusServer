@@ -22,12 +22,15 @@ these columns sorted by decreasing day:
 \item day: character; day, formatted as "YYYY-MM-DD"; any days for which the repo has files
 \item count: integer; number of files from the day in the file repo
 }
+
 Otherwise, for Lotek receivers or if `day` is given, the return value has these columns,
 sorted by fileID:
 \itemize{
   \item name: character; name of file
   \item fileSize: integer; size of file on disk, in bytes
 }
+For Lotek receivers, day is ignored (as long as it is present), and all files for the
+receiver are listed.
 }
 \description{
 return a dplyr::tbl of files from the file repository
