@@ -113,7 +113,7 @@
           <td class="timestamp">⟦fmt_ctime⟧</td>
           <td class="timestamp">⟦fmt_mtime⟧</td>
           <td>⟦&fmt_done⟧</td>
-          <td class="job_params">⟦params⟧</td>
+          <td class="job_params">⟦&params⟧</td>
         </tr>
         ⟦/jobs⟧
       </table>
@@ -137,7 +137,7 @@
         <span class="summary_heading">Summary:</span>
         <div class="job_summary">
           ⟦! the next item is not indented, to support `preformatted` styling⟧
-          ⟦summary⟧
+⟦&summary⟧
         </div>
       </div>
       <span class="subjobs_heading">Sub Jobs:</span>
@@ -155,7 +155,7 @@
           <td class="job_type">⟦type⟧</td>
           <td class="timestamp">⟦fmt_ctime⟧</td>
           <td>⟦&fmt_done⟧</td>
-          <td class="job_params">⟦params⟧</td>
+          <td class="job_params">⟦&params⟧</td>
         </tr>
         ⟦/details⟧
       </table>
@@ -163,7 +163,7 @@
         <span class="log_heading">Log:</span>
         <div class="job_log">
           ⟦! the next item is not indented, to support `preformatted` styling⟧
-          ⟦log⟧
+⟦&log⟧
         </div>
       </div>
     </script>
@@ -186,12 +186,12 @@
         with these parameters:
         <div class="job_error_json">
           ⟦! the next item is not indented, to support `preformatted` styling⟧
-          ⟦json⟧
+⟦json⟧
         </div>
         and this browser state:
         <div class="job_error_state">
           ⟦! the next item is not indented, to support `preformatted` styling⟧
-          ⟦state⟧
+⟦state⟧
         </div>
       </div>
     </script>
@@ -255,9 +255,14 @@
       (no deployments registered with motus.org for this receiver)
       ⟦/deployments⟧
       </table>
-      <div class="recv_file_days">File Count by Day: (red background indicates a problem)</div>
+      <div class="recv_file_days">Activity by Day</div>
+      <ul>
+        <li>SG: file count</li>
+        <li>Lotek: any detections?</li>
+        <li>red background: db/repo file count mismatch.</li>
+      </ul>
       ⟦#fileCounts⟧
-          <span class="recv_file_day_count ⟦fileCountStatus⟧">⟦fmt_fileCount⟧</span>
+          <span class="recv_file_day_count ⟦fileCountStatus⟧" serno="⟦serno⟧" day="⟦day⟧">⟦fmt_fileCount⟧</span>
       ⟦/fileCounts⟧
       ⟦^fileCounts⟧
       (no files on server for this receiver)

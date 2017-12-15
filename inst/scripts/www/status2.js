@@ -153,6 +153,33 @@ function motus_status_replied(x, api, par, cb) {
         cb(x);
 };
 
+// @function linkify_sernos: for each receiver serial number found in a string,
+// enclose it in a span of class "receiver_serno" with attribute "serno" equal
+// to the receiver serial number.
+//
+// @param s: string
+// @return s with any serial numbers linkified
+// @note: the _JSON variants use escaped quotes
+
+var serno_re=/(?:(?:(?:SG-[0-9A-Z]{4}(?:RPi[123z]|BBBK|(?:BB[0-9][0-9A-Z]))[0-9A-Z]{4}(?:_[0-9])?))|(?:Lotek-D?[0-9]+))|(?:-[0-9A-Z]{4}(?:RPi[123z]|BBBK|(?:BB[0-9][0-9A-Z]))[0-9A-Z]{4}-)/ig;
+
+function linkify_one_serno(match) {
+    return '<span class="receiver_serno" serno="' + match + '">' + match + '</span>';
+};
+
+function linkify_sernos(s) {
+    return s.replace(serno_re, linkify_one_serno);
+};
+
+function linkify_one_serno_JSON(match) {
+    return '<span class=\\"receiver_serno\\" serno=\\\"' + match + '\\">' + match + '</span>';
+};
+
+function linkify_sernos_JSON(s) {
+    return s.replace(serno_re, linkify_one_serno_JSON);
+};
+
+
 // @function show_job_list: display a list of jobs
 //
 // @param sortBy; sort order; default: "mtime"
@@ -285,11 +312,12 @@ function fmt_time(x, n) {
     return rv;
 };
 
-function fmt_params(x) {
-    x = JSON.parse(x);
-    if (x == null) {
+function fmt_params(x, with_links=false) {
+    if (x === null)
         return "";
-    }
+    if (with_links)
+        x = linkify_sernos_JSON(x);
+    x = JSON.parse(x);
     return Object.keys(x).filter(k=>k[k.length-1] != '_').map(k=>k +" = " + x[k]).join("; ");
 };
 
@@ -339,13 +367,13 @@ function show_job_details2(x) {
     $(".job_details").mustache("tpl_job_details",
                                {
                                    details:x,
-                                   log:json[0].log_,
-                                   summary:json[0].summary_,
+                                   log:linkify_sernos(json[0].log_),
+                                   summary:linkify_sernos(json[0].summary_),
                                    fmt_ctime:function(i) {
                                        return fmt_time(this.ctime[i])
                                    },
                                    params:function(i) {
-                                       return fmt_params(this.data[i])
+                                       return fmt_params(this.data[i], true)
                                    },
                                    fmt_done:function(i) {
                                        return fmt_done(this.done[i], this.queue[i])
@@ -386,6 +414,31 @@ function on_click_jobs_table_row(event) {
     // don't handle event if this is a selection
     if (window.getSelection().toString().length == 0)
         show_job_details(event.currentTarget.getAttribute("job_id"));
+};
+
+function on_click_receiver_serno(event) {
+    // extract the serno from the "currentTarget" of the event
+    // then show info for that receiver
+
+    // don't handle event if this is a selection
+    if (window.getSelection().toString().length == 0) {
+        var serno = event.currentTarget.getAttribute("serno");
+        // serial numbers for SGs can look like /-[0-9A-Z]{4}...-/ if
+        // they come from a receiver filename; convert those
+        // to standard ones
+        if (serno[0] == "-")
+            serno = "SG" + serno.slice(0, -1);
+        show_recv_info(serno);
+    }
+};
+
+function on_click_recv_file_day_count(event) {
+    // extract the serno and day from the "currentTarget" of the event
+    // then show files for that receiver and day
+
+    // don't handle event if this is a selection
+    if (window.getSelection().toString().length == 0)
+        show_recv_files(event.currentTarget.getAttribute("serno"), event.currentTarget.getAttribute("day"));
 };
 
 function on_click_sort_heading(event) {
@@ -511,8 +564,14 @@ function initStatus2Page() {
     // attach a click handler to the error_only_option checkbox
     $("#error_only_option").checkboxradio().on("click", on_error_only);
 
-    // attach a click handler to any field with class job_id
-    $(".job_id").on("click", ".job_id", on_click_jobs_table_row);
+    // attach a click handler to any field with class job_id that's in a recv_files section
+    $(".recv_info").on("click", ".recv_file_day_count", on_click_recv_file_day_count);
+
+    // attach a click handler to any field with class job_id that's in a recv_files section
+    $(".recv_files").on("click", ".job_id", on_click_jobs_table_row);
+
+    // attach a click handler to any field with class receiver_serno that's in a job_details section
+    $(".job_details").on("click", ".receiver_serno", on_click_receiver_serno);
 
 };
 

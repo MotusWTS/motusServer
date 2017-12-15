@@ -125,6 +125,26 @@
     min-width: 150px;
 }
 
+.recv_file_day_count:hover {
+     text-decoration:none;
+     text-shadow: 1px 1px 1px #555;
+}
+
+.receiver_serno:hover {
+     text-decoration:none;
+     text-shadow: 1px 1px 1px #555;
+}
+
+.job_id:hover {
+     text-decoration:none;
+     text-shadow: 1px 1px 1px #555;
+}
+
+.jobs_table_row:hover {
+     text-decoration:none;
+     text-shadow: 1px 1px 1px #555;
+}
+
 .recv_info_heading {
     font-weight: bold;
 }
