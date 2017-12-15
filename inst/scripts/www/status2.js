@@ -712,7 +712,7 @@ function show_recv_files2(x) {
             maxHeight: 600,
             dragable:true,
             closeOnEscape:true,
-            width:800,
+            width:900,
             title:"Files for receiver " + serno + " on " + x.day
         });
 }
