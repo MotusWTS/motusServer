@@ -178,8 +178,11 @@ list_jobs = function(env) {
         where = c(where, sprintf("t1.motusUserID = %d", userID))
     if (!is.null(jobID))
         where = c(where, sprintf("t1.id in (%s)", paste0("'", jobID, "'", collapse=",")))
-    if (!is.null(stump))
-        where = c(where, sprintf("t1.stump = %d", stump))
+    if (!is.null(stump)) {
+        ## allow for having been given a subjob's ID rather than that of the top-level job.
+        stumpID = ServerDB("select stump from jobs where id=%d", stump)[[1]]
+        where = c(where, sprintf("t1.stump = %d", stumpID))
+    }
     if (!is.null(type))
         where = c(where, sprintf("t1.type in (%s)", paste0("'", type, "'", collapse=",")))
     if (!is.null(done))

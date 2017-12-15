@@ -161,7 +161,9 @@ projects.
        - select: object with fields for selecting which jobs to list.  A job must match all
          fields provided in order to be included in the list.  Fields are:
           - userID: integer; motus user ID
-          - stump: ID of top level job; select only from that job and its descendents
+          - stump: ID of top level job; select only from that job and its descendents; for increased
+            flexibility, if the provided stump is not the ID of a top-level job, then that job's
+            stump is used instead.
           - jobID: integer array;; to select only those jobs specified
           - type: string array; the job type(s)
           - done: integer; 0: job not yet complete; 1: job completed successfully; -1: job had error
