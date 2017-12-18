@@ -207,7 +207,7 @@ sgMergeFiles = function(files, j, dbdir = MOTUS_PATH$RECV) {
 
                 ## Mark uncompressed files which are not longer than the existing version
 
-                nsize = file.info(fullname)[["size"]],
+                nsize = file.size(fullname),
                 small = (Fcomp == "") & (! is.na(size) & nsize <= size),
 
                 ## Mark files not seen before
