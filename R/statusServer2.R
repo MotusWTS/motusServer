@@ -537,7 +537,7 @@ list_receiver_files = function(env) {
         db = files_from_recv_DB(serno)
         if (isSG) {
             fs = files_from_repo(serno)
-            fc = db %>% full_join(fs, by="day") %>% as.data.frame
+            fc = db %>% full_join(fs, by="day") %>% arrange(desc(day)) %>% as.data.frame
         } else {
             fc = db %>% mutate(countFS=1) %>% as.data.frame
         }
@@ -554,7 +554,7 @@ list_receiver_files = function(env) {
         rv$day = day
         fs = files_from_repo(serno, day)
         db = files_from_recv_DB(serno, day)
-        rv$fileDetails = db %>% full_join(fs, by="name") %>% as.data.frame
+        rv$fileDetails = db %>% full_join(fs, by="name") %>% arrange(fileID) %>% as.data.frame
     }
     return_from_app(rv)
 }
