@@ -335,12 +335,37 @@ projects.
          - `tsEnd`: double; timestamp of deployment end, or NA if ongoing
      Sort order for this item is descending by `tsStart`.
 
+### get_job_stackdump ###
+
+   get_job_stackdump (jobID) - administrative users only
+
+      - jobID: integer; ID of job with an error (i.e. `done` < 0)
+
+   - return: an object with these items:
+      - jobID: integer; ID of the job, as passed in the API call
+      - URL: string; URL to the the raw .rds stack dump for that job.
+      - path: string; path to the raw.rds stack dump on the data processing server
+      - size: double; stack dump file size in bytes
+
+   The .rds file contains an object of R class `dump.frames`.  It is a list whose names are the calls
+   and whose elements are the environments of the calls (i.e. contain the variables 'defined within' each level of
+   function call.
+
+   Because stack dump files might leak passwords or other credentials, this API call only
+   works for administrators.
 
 ## Changelog ##
 
-2017-12-11:
-   - `list_jobs` now uses a bare `sortBy` with just a field name; the optional `desc` is moved to its own boolean field: `sortDesc`.
+2017-12-18:
+   - new `get_job_stackdump` returns a URL and path for the stackdump of a job with an error.
+     (admin users only)
+
+2017-12-15:
+   - `list_receiver_files` unify handling of file counts in SG, Lotek receivers
 
 2017-12-12:
    - `list_receiver_files` moves table results to a field named either `fileCounts` or `fileDetails`, adds field `serno`
    - new `get_receiver_info` returns device info including deployments table
+
+2017-12-11:
+   - `list_jobs` now uses a bare `sortBy` with just a field name; the optional `desc` is moved to its own boolean field: `sortDesc`.

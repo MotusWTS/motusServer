@@ -206,10 +206,10 @@ MOTUS_SG_EPOCH = 1262304000
 ## which should be matched case-insensitively
 MOTUS_TAGREG_MANIFEST_REGEXP = ".*tagreg.*\\.txt$"
 
-## sprintf-format string for URL of downloadable files; %d is for projectID
-MOTUS_DOWNLOAD_URL_FMT = "https://sgdata.motus.org/download/%d"
+## sprintf-format string for URL of downloadable files; %s is for projectID or other special values
+MOTUS_DOWNLOAD_URL_FMT = "https://sgdata.motus.org/download/%s"
 
-## sprintf-format string for URL of downloadable files; %d is for projectID
+## sprintf-format string for URL of downloadable files; %s is for projectID or other special values
 MOTUS_TEST_DOWNLOAD_URL_FMT = "https://sgdata.motus.org/download/test/%d"
 
 ## location of secret key for mod_auth_tkt authorization used by some

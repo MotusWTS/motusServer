@@ -51,7 +51,7 @@ statusServer2 = function(port = 0x57A7, tracing=FALSE, maxRows=20L) {
 ## a string giving the list of apps for this server
 ## Note that we re-use authenticate_user from dataServer.R
 
-allStatusApps = c("status_api_info", "list_jobs", "_shutdown", "authenticate_user", "process_new_upload", "list_receiver_files", "get_receiver_info")
+allStatusApps = c("status_api_info", "list_jobs", "_shutdown", "authenticate_user", "process_new_upload", "list_receiver_files", "get_receiver_info", "get_job_stackdump")
 
 sortColumns = c("ctime", "mtime", "id", "type", "motusProjectID", "motusUserID")
 
@@ -593,6 +593,31 @@ get_receiver_info = function(env) {
 
     rv$deployments = deps
     return_from_app(rv)
+}
+
+
+#' return a URL to an .rds file stack dump for a job with errors
+
+get_job_stackdump = function(env) {
+    json = fromJSON(parent.frame()$postBody["json"], simplifyVector=FALSE)
+
+    if (tracing)
+        browser()
+
+    auth = validate_request(json, needProjectID=FALSE, needAdmin=TRUE)
+    if (inherits(auth, "error")) return(auth)
+
+    jobID = safe_arg(json, jobID, int, scalar=FALSE)
+
+    done = ServerDB("select done from jobs where id=%d", jobID)[[1]]
+    if (length(done) == 0)
+        return(error_from_app("non-existent job"))
+    if (! isTRUE(done < 0))
+        return(error_from_app("job did not have an error"))
+    dumpfile = file.path(MOTUS_PATH$WWW, "errors", sprintf("%08d.rds", jobID))
+    if (! file.exists(dumpfile))
+        return(error_from_app("no stack dump available for job"))
+    return_from_app(list(jobID = jobID, URL = getDownloadURL(errorJobID = jobID), size=file.size(dumpfile), path=dumpfile))
 }
 
 queueStatusApp = function(env) {

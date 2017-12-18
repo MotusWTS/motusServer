@@ -4,17 +4,23 @@
 \alias{getDownloadURL}
 \title{return the URL to the download site for a project}
 \usage{
-getDownloadURL(projectID, isTesting)
+getDownloadURL(projectID, errorJobID, isTesting = FALSE)
 }
 \arguments{
+\item{projectID}{[optional] integer scalar motus project ID}
+
+\item{errorJobID}{[optional] integer scalar job ID}
+
 \item{isTesting}{logical scalar; if TRUE, the URL is to
 the testing hierarchy of web products, rather than
 the usual one.  Default:  FALSE}
-
-\item{port}{projectID integer scalar; motus project ID}
 }
 \value{
-character scalar giving URL of download site
+character scalar giving URL to:
+\itemize{
+\item download site for project, if `projectID` is specified
+\item or .rds stack dump file for job with errors, if `errorJobID` is specified
+}
 }
 \description{
 return the URL to the download site for a project
