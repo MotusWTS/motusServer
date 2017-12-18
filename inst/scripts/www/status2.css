@@ -145,6 +145,16 @@
      text-shadow: 1px 1px 1px #555;
 }
 
+.url:hover {
+     text-decoration:none;
+     text-shadow: 1px 1px 1px #555;
+}
+
+.error_job_id:hover {
+     text-decoration:none;
+     text-shadow: 1px 1px 1px #555;
+}
+
 .recv_info_heading {
     font-weight: bold;
 }

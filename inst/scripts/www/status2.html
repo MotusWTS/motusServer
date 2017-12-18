@@ -87,6 +87,8 @@
     </div>
     <div class="recv_files">
     </div>
+    <div class="job_dump">
+    </div>
 
     <!---------  Template 'scripts' follow -------->
 
@@ -290,13 +292,29 @@
           <td>⟦name⟧</td>
           <td class="byte_count">⟦contentSize⟧</td>
           <td class="byte_count">⟦fileSize⟧</td>
-          <td class="job_id" job_id="⟦jobID⟧">⟦jobID⟧</td>
+          <td ⟦&jobIDattr⟧>⟦jobID⟧</td>
         </tr>
       ⟦/fileDetails⟧
       ⟦^fileDetails⟧
       (no files on server for this receiver and day)
       ⟦/fileDetails⟧
       </table>
+    </script>
+    <script id="tpl_job_dump" type="text/html">
+      {{! template to render a job dump query}}
+      {{=⟦ ⟧=}}
+      Job ⟦jobID⟧ had an error and a stack dump is available to help with debugging.
+      <div>
+        You can:
+        <ul>
+          <li><a href="⟦URL⟧" class="url">click here</a> to download the stack dump (.rds file; ⟦fmt_size⟧)</li>
+          <li><b>or</b> load the file directly into R/rstudio running on this server, using this code:
+<pre>
+   x = readRDS("⟦path⟧")
+</pre>
+          </li>
+          <li><b>or</b> hit <em>Esc</em> to close this window.</li>
+        </ul>
     </script>
   </body>
 </html>

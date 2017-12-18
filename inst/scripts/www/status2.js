@@ -301,6 +301,16 @@ function show_job_details(jobID) {
                      }, show_job_details2);
 };
 
+function fmt_filesize(n) {
+    if (n >= 1e9)
+        return Math.round(n / 1e8) / 10 + " GB";
+    if (n >= 1e6)
+        return Math.round(n / 1e5) / 10 + " MB";
+    if (n >= 1e3)
+        return Math.round(n / 1e2) / 10 + " kB";
+    return n + " Bytes";
+};
+
 function fmt_time(x, n) {
     if ((!x) || x == "NA") {
         rv = "NA";
@@ -321,11 +331,21 @@ function fmt_params(x, with_links=false) {
     return Object.keys(x).filter(k=>k[k.length-1] != '_').map(k=>k +" = " + x[k]).join("; ");
 };
 
+// @function user_type
+// return user type from authToken, or "" if none available
+
+function user_type() {
+    if (state.authToken !== undefined)
+        return state.authToken.split(/!/)[2];
+    return "";
+};
+
 // @function fmt_done: format a status code
 // @param status: integer status code: < 0 means error, 0 means not run, 1 means run successfully
 // @param queue: integer queue number: non-zero means has entered (and possibly finished) that queue
+// @param jobID: integer job ID; used to generate links to stack dumps, if user is administrator
 
-function fmt_done(status, queue) {
+function fmt_done(status, queue, jobID) {
     switch (status) {
     case 0:
         if (! queue || ! (queue > 0))
@@ -337,9 +357,26 @@ function fmt_done(status, queue) {
         return '<span class="status_okay">Okay</span>';
         break;
     default:
-        return '<span class="status_error">Error</span>';
+        if (jobID === undefined || user_type() != "administrator") {
+            return '<span class="status_error">Error</span>';
+        } else {
+            return '<span class="status_error error_job_id" job_id="' + jobID + '">Error</span>';
+        }
         break;
     }
+};
+
+// @function format_log: format the log fields for a set of jobs
+// @param id: vector of ids of subjobs
+// @param json: vector of `data` objects for subjobs; can be null; might contain a `log_` value
+// returned by the reply to the motus status API entry `list_jobs`
+
+function format_logs(id, json) {
+    return id.map(function(val, i) {
+        if (! (json[i] && json[i].log_))
+            return "";
+        return val + "\n" + "==========".substr(0, ("" + val).length) + "\n" + json[i].log_ + "\n";
+    }).reduce((x,y)=>x + y);
 };
 
 // @function show_job_details2: display a pop-up div with details of a job and its subjobs
@@ -367,7 +404,7 @@ function show_job_details2(x) {
     $(".job_details").mustache("tpl_job_details",
                                {
                                    details:x,
-                                   log:linkify_sernos(json[0].log_),
+                                   log:linkify_sernos(format_logs(x.id, json)),
                                    summary:linkify_sernos(json[0].summary_),
                                    fmt_ctime:function(i) {
                                        return fmt_time(this.ctime[i])
@@ -376,7 +413,7 @@ function show_job_details2(x) {
                                        return fmt_params(this.data[i], true)
                                    },
                                    fmt_done:function(i) {
-                                       return fmt_done(this.done[i], this.queue[i])
+                                       return fmt_done(this.done[i], this.queue[i], this.id[i])
                                    },
                                    products: json[0].products_ && json[0] ? {
                                        __transpose__: true,
@@ -439,6 +476,15 @@ function on_click_recv_file_day_count(event) {
     // don't handle event if this is a selection
     if (window.getSelection().toString().length == 0)
         show_recv_files(event.currentTarget.getAttribute("serno"), event.currentTarget.getAttribute("day"));
+};
+
+function on_click_error_job_id(event) {
+    // extract the job id from the "currentTarget" of the event
+    // then show an error dump download dialog
+
+    // don't handle event if this is a selection
+    if (window.getSelection().toString().length == 0)
+        show_error_dump(event.currentTarget.getAttribute("job_id"));
 };
 
 function on_click_sort_heading(event) {
@@ -573,6 +619,9 @@ function initStatus2Page() {
     // attach a click handler to any field with class receiver_serno that's in a job_details section
     $(".job_details").on("click", ".receiver_serno", on_click_receiver_serno);
 
+    // attach a click handler to any error_job_id field, indicating a stack dump exists
+    $(".job_details").on("click", ".error_job_id", on_click_error_job_id);
+
 };
 
 // @function copyToClipboard: copy the text from an element to the client's clipboard
@@ -586,7 +635,7 @@ function copyToClipboard(element) {
     $temp.val($(element).text()).select();
     document.execCommand("copy");
     $temp.remove();
-}
+};
 
 // @function show_recv_info: display a pop-up with info about a receiver
 //
@@ -617,7 +666,7 @@ function show_recv_info2(x) {
                      {
                          serno: x.serno
                      }, show_recv_info3);
-}
+};
 
 // @function show_recv_info3: display a pop-up div with receiver information
 //
@@ -669,7 +718,7 @@ function show_recv_info3(x) {
             width:900,
             title:"Information for receiver " + serno
         });
-}
+};
 
 // @function show_recv_files: display a pop-up with info about receiver files
 //
@@ -700,7 +749,8 @@ function show_recv_files2(x) {
                              {
                                  serno: x.serno,
                                  day: x.day,
-                                 fileDetails: x.fileDetails
+                                 fileDetails: x.fileDetails,
+                                 jobIDattr: function(i) {if (this.jobID[i] != "NA") return 'class="job_id" job_id="' + this.jobID[i] + '"'; else return "";}
                              },
                              {
                                  method:"html"
@@ -715,4 +765,46 @@ function show_recv_files2(x) {
             width:900,
             title:"Files for receiver " + serno + " on " + x.day
         });
-}
+};
+
+// @function show_error_dump: display a pop-up with info about a job error dump
+//
+// @param jobID: integer; ID of job with errors
+//
+// @details fetch error dump info, then chain to show_error_dump2
+
+function show_error_dump(jobID) {
+    motus_status_api("get_job_stackdump",
+                     {
+                         jobID: jobID
+                     }, show_error_dump2);
+};
+
+// @function show_error_dump2: display a pop-up with info about a job error
+//
+// @param x: job stackdump info, as returned by the motus status API entry
+// `get_job_stackdump` with `jobID` the ID of a job with an error
+
+
+function show_error_dump2(x) {
+    $(".job_dump").mustache("tpl_job_dump",
+                             {
+                                 jobID: x.jobID,
+                                 URL: x.URL,
+                                 path: x.path,
+                                 fmt_size: fmt_filesize(x.size)
+                             },
+                             {
+                                 method:"html"
+                             }
+                            );
+    $(".job_dump").dialog(
+        {
+            top: $("html").offset().top,
+            maxHeight: 600,
+            dragable:true,
+            closeOnEscape:true,
+            width:700,
+            title:"Get stack dump for job " + x.jobID + " ?"
+        });
+};
