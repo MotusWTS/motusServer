@@ -125,9 +125,22 @@ if (isset($_GET['login_form_user'])) {
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_HEADER, 0);
     curl_setopt($ch, CURLOPT_POSTFIELDS,  $json);
+    curl_setopt($ch, CURLOPT_FAILONERROR,  true);
     $res = curl_exec($ch);
+    $errno = curl_errno($ch);
+    $err = curl_error($ch);
     curl_close($ch);
-    $data = json_decode($res, true);
+//    fwrite(STDERR, "Got: $res\nError: $errno = '$err'\n");
+    if ($errno == 22 && $_SERVER['REMOTE_ADDR'] === "127.0.0.1") {
+        /* motus.org is down *and* the request came from the local host, then
+           generate a ticket for user `john` with admin privileges */
+        $data = array ( "userID" => 232,
+                        "userType" => "administrator",
+                        "projects" => array_fill_keys(range(0, 300), 1)
+        );
+    } else {
+        $data = json_decode($res, true);
+    }
     if (! $data) {
         // in case motus is returning Windows-1250
         $res = iconv("Windows-1250", "UTF-8", $res);
