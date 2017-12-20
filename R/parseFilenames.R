@@ -24,15 +24,16 @@
 #'  \item "comp":  character; file compression type, if any:  "", or ".gz"; lower case
 #'
 #' }
-#' @note Returns NULL if no filenames match regex; otherwise, return value has rows
+#' @note:
+#' \itemize{
+#' \item returns NULL if no filenames match regex; otherwise, return value has rows
 #' filled with NA for any filenames not matching the expected form
 #'
-#' @note To resolve the collision between the CTRiver/Sugarloaf and Motus/PointLepreau receivers which
-#' both have serial number 1614BBBK1911, we give Sugarloaf an additional "_1".  This change is also
-#' effected by renaming the files on disk.
-#'
-#' @note case of filename components is matched insensitively, but values are storde
-#'
+#' \item serial number collisions are resolved based on prefix and possibly other
+#' filename components - see the
+#' variable \code{sernoCollisionFixes}.  Resolution occurs by adding a suffix to the \code{serno}
+#' field returned by this function, but does not rename files.
+#' }
 #' @export
 
 parseFilenames = function(f, base=basename(f), checkDOS=TRUE) {
@@ -54,21 +55,13 @@ parseFilenames = function(f, base=basename(f), checkDOS=TRUE) {
 
     ## fix serial number collisions
 
-    ## Pt. Lepreau (Motus) and Sugarloaf (CT)
-    fix = which(rv$serno == "SG-1614BBBK1911" & rv$prefix != "Lepreau")
-    if (length(fix) > 0) {
-        rv$serno[fix] = "SG-1614BBBK1911_1"
-        file.rename(f[fix], sub("1614BBBK1911", "1614BBBK1911_1", f[fix], fixed=TRUE))
-    }
-
-    ## Bookton (Motus) and Seaview Harbour (NJ)
-    fix = which(rv$serno == "SG-0517BBBK1111" & rv$prefix != "Bookton")
-    if (length(fix) > 0) {
-        rv$serno[fix] = "SG-0517BBBK1111_1"
         file.rename(f[fix], sub("0517BBBK1111", "0517BBBK1111_1", f[fix], fixed=TRUE))
+    for (i in seq(along=sernoCollisionFixes)) {
+        fix = with(rv, which(eval(sernoCollisionFixes[[i]])))
+        if (length(fix))
+            rv$serno[fix] = paste0(rv$serno[fix], names(sernoCollisionFixes)[i])
     }
 
-    ## fix cases
     ## Thanks to read.csv semantics in splitToDF, if none of the files
     ## was a .gz, then column the 'comp' column is logical NA,
     ## but if any of the files was a .gz, those which weren't have
@@ -79,3 +72,17 @@ parseFilenames = function(f, base=basename(f), checkDOS=TRUE) {
 
     return(rv)
 }
+
+#' list of serial number collision fixes
+#'
+#' The names of this list are suffixes and the list items are logical
+#' expressions involving the filename components `serno`, `prefix`
+#' and so on.  Any filename records for which the expression is true
+#' get the suffix appended to their serial numbers.  Note that list
+#' names can be repeated.
+#' @export
+
+sernoCollisionFixes = list(
+    `_1` = quote(serno == "SG-1614BBBK1911" & prefix != "Lepreau"),
+    `_1` = quote(serno == "SG-0517BBBK1111" & prefix != "Bookton")
+)
