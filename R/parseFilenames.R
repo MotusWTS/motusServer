@@ -12,17 +12,16 @@
 #' @return a dataframe of components, with one row per filename and these columns:
 #'
 #' \enumerate{
-#'  \item "prefix":  human readable short site name
-#'  \item "serno":  receiver serial number; "SG-" followed by 12 alphanumeric characters e.g. 1315BBBK2156, or possibly with an appended "_N" where N is 1, 2, ...
+#'  \item prefix:  human readable short site name
+#'  \item serno:  receiver serial number; "SG-" followed by 12 alphanumeric characters e.g. 1315BBBK2156, or possibly with an appended "_N" where N is 1, 2, ...
 #'  for disentangling serial number collisions.  Alphabetic characters are converted to upper case.
-#'  \item "bootnum":  boot count (integer)
-#'  \item "tsString": timestamp in YYYY-MM-DDTHH-MM-SS.SSSS format
-#'  \item "ts":  timestamp embedded in name (double, with class \code{c("POSIXt", "POSIXct")} )
-#'  \item "tsCode":  timestamp code ('P' means before GPS fix, 'Z' means accurate to 1e-6 s, 'Y' to 1e-5s, 'X' to 1e-4s, ..., 'T' to 1s)
-#'  \item "port":  character; port label, if this file is associated with a single port (e.g. a .WAV file); "all" if all ports
-#'  \item "extension":  character extension of uncompressed file; e.g. ".txt"; lower case
-#'  \item "comp":  character; file compression type, if any:  "", or ".gz"; lower case
-#'
+#'  \item bootnum:  boot count (integer)
+#'  \item tsString: timestamp in YYYY-MM-DDTHH-MM-SS.SSSS format
+#'  \item ts:  timestamp embedded in name (double, with class \code{c("POSIXt", "POSIXct")} )
+#'  \item tsCode:  timestamp code ('P' means before GPS fix, 'Z' means accurate to 1e-6 s, 'Y' to 1e-5s, 'X' to 1e-4s, ..., 'T' to 1s)
+#'  \item port:  character; port label, if this file is associated with a single port (e.g. a .WAV file); "all" if all ports
+#'  \item extension:  character extension of uncompressed file; e.g. ".txt"; lower case
+#'  \item comp:  character; file compression type, if any:  "", or ".gz"; lower case
 #' }
 #' @note:
 #' \itemize{
