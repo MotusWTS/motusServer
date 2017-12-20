@@ -54,7 +54,6 @@ parseFilenames = function(f, base=basename(f), checkDOS=TRUE) {
 
     ## fix serial number collisions
 
-        file.rename(f[fix], sub("0517BBBK1111", "0517BBBK1111_1", f[fix], fixed=TRUE))
     for (i in seq(along=sernoCollisionFixes)) {
         fix = with(rv, which(eval(sernoCollisionFixes[[i]])))
         if (length(fix))
