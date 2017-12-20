@@ -366,19 +366,6 @@ function fmt_done(status, queue, jobID) {
     }
 };
 
-// @function format_log: format the log fields for a set of jobs
-// @param id: vector of ids of subjobs
-// @param json: vector of `data` objects for subjobs; can be null; might contain a `log_` value
-// returned by the reply to the motus status API entry `list_jobs`
-
-function format_logs(id, json) {
-    return id.map(function(val, i) {
-        if (! (json[i] && json[i].log_))
-            return "";
-        return val + "\n" + "==========".substr(0, ("" + val).length) + "\n" + json[i].log_ + "\n";
-    }).reduce((x,y)=>x + y);
-};
-
 // @function show_job_details2: display a pop-up div with details of a job and its subjobs
 //
 // @param x: detailed list of subjobs for a job (including the job itself), as
@@ -404,7 +391,12 @@ function show_job_details2(x) {
     $(".job_details").mustache("tpl_job_details",
                                {
                                    details:x,
-                                   log:linkify_sernos(format_logs(x.id, json)),
+                                   hasLog:function(i) {return json[i] && json[i].log_},
+                                   logs: {
+                                       __transpose__: true,
+                                       msg: json.map(val=>(val !== null && val.log_ !== null) ? val.log_ : null),
+                                       jobID: x.id
+                                   },
                                    summary:linkify_sernos(json[0].summary_),
                                    fmt_ctime:function(i) {
                                        return fmt_time(this.ctime[i])
@@ -486,6 +478,29 @@ function on_click_error_job_id(event) {
     if (window.getSelection().toString().length == 0)
         show_error_dump(event.currentTarget.getAttribute("job_id"));
 };
+
+function on_click_subjob_table_row(event) {
+    // extract the job id from the "currentTarget" of the event
+    // then jump to log for that job ID
+
+    // don't handle event if this is a selection
+    if (window.getSelection().toString().length == 0) {
+        var jobID = event.currentTarget.getAttribute("job_id");
+        $(".job_details").scrollTop($(".job_details").scrollTop() + $(".subjob_log_heading[job_id='" + jobID + "']").offset().top - $(".job_details").offset().top);
+    }
+};
+
+function on_click_subjob_log_heading(event) {
+    // extract the job id from the "currentTarget" of the event
+    // then jump to subjob_table_row for that job ID
+
+    // don't handle event if this is a selection
+    if (window.getSelection().toString().length == 0) {
+        var jobID = event.currentTarget.getAttribute("job_id");
+        $(".job_details").scrollTop($(".job_details").scrollTop() + $(".subjob_table_row[job_id='" + jobID + "']").offset().top - $(".job_details").offset().top);
+    }
+};
+
 
 function on_click_sort_heading(event) {
     // extract the sort_field from the "currentTarget" of the event
@@ -621,6 +636,15 @@ function initStatus2Page() {
 
     // attach a click handler to any error_job_id field, indicating a stack dump exists
     $(".job_details").on("click", ".error_job_id", on_click_error_job_id);
+
+    // attach a click handler to IDs of subjobs in detailed job listing
+    // which take user to the log for that subjob
+    $(".job_details").on("click", ".subjob_table_row", on_click_subjob_table_row);
+
+    // attach a click handler to headings of subjobs in log
+    // which take user to the subjob entry
+    $(".job_details").on("click", ".subjob_log_heading", on_click_subjob_log_heading);
+
 
 };
 

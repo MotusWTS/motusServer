@@ -56,7 +56,7 @@
     text-align: right;
 }
 
-.job_id {
+.subjob_id {
     text-align: right;
 }
 
@@ -140,6 +140,12 @@
      text-shadow: 1px 1px 1px #555;
 }
 
+.subjob_table_row.with_log:hover {
+     text-decoration:none;
+     text-shadow: 1px 1px 1px #555;
+}
+
+
 .jobs_table_row:hover {
      text-decoration:none;
      text-shadow: 1px 1px 1px #555;
@@ -151,6 +157,16 @@
 }
 
 .error_job_id:hover {
+     text-decoration:none;
+     text-shadow: 1px 1px 1px #555;
+}
+
+.subjob_log_heading {
+    font-weight: bold;
+    text-align: left;
+}
+
+.subjob_log_heading:hover {
      text-decoration:none;
      text-shadow: 1px 1px 1px #555;
 }
