@@ -96,7 +96,7 @@ motusQuickRegTag = function(projectID,
     offsetFreq = 0 ## assume nominal frequency
 
     if (! exists("allMotusTags")) {
-        allMotusTags <<- tbl(src_sqlite(getMotusMetaDB()), "tags") %>% collect %>% as.data.frame
+        allMotusTags <<- MetaDB("select * from tags")
         allMotusTags <<- subset(allMotusTags, ! is.na(period))
     }
 

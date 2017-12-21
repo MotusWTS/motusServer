@@ -751,10 +751,8 @@ connectedReceiversApp = function(env) {
 
     ## get latest project/site names for any receivers
     YEAR = format(Sys.time(), "%Y")
-    meta = safeSQL(getMotusMetaDB())
     ## get most recent project, site for each receiver deployment
-    projSite = meta(sprintf("select t1.serno as Serno, t3.label as Project, t1.name as Site, t3.id as projectID from recvDeps as t1 left join recvDeps as t2 on t1.serno=t2.serno and t1.tsStart < t2.tsStart join projs as t3 on t1.projectID=t3.id where t1.serno in ('%s') and t2.serno is null", paste0("SG-", recv, collapse="','")))
-    meta(.CLOSE=TRUE)
+    projSite = MetaDB(sprintf("select t1.serno as Serno, t3.label as Project, t1.name as Site, t3.id as projectID from recvDeps as t1 left join recvDeps as t2 on t1.serno=t2.serno and t1.tsStart < t2.tsStart join projs as t3 on t1.projectID=t3.id where t1.serno in ('%s') and t2.serno is null", paste0("SG-", recv, collapse="','")))
 
     rownames(projSite)=substring(projSite$Serno, 4)
 

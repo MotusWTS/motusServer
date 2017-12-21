@@ -1,13 +1,15 @@
-#' Get the motus database of metadata for tags, receivers, projects,
-#' and species.
+#' Get a safeSQL connection to the cached copy of the motus metadata.
 #'
-#' @details If the current copy is more than one day old, we try retrieve
-#' a more up to date version from motus.org via their API.
-#' For each table X, if the appropriate query fails, we leave X as-is.
-#' If the query succeeds succeed, then X is renamed to X_old (after deleting
-#' table X_old, if it exists), and the results of the query are written to X.
+#' @details If there is no cached copy, then force its creation
+#' via \link{\code{refreshMotusMetaDBCache()}}
+#' Normally, this is done regularly by a cron job.
 #'
-#' @return a path to an sqlite database usable by the \code{tagview} function
+#' This function should be called once by each \code{*Server()} process.
+#'
+#' @return a \link{\{code{safeSQL}} connection to the database.
+#' This value is also stored in the symbol `MetaDB` in the global
+#' environment.
+#'
 #' It will have these tables:
 #'
 #' \strong{tags:}
@@ -151,218 +153,8 @@
 
 getMotusMetaDB = function() {
     ## location we store a cached copy of the motus tag DB
-    cachedDB = file.path(MOTUS_PATH$CACHE, "motus_meta_db.sqlite")
-
-    ## try to lock the cachedDB (by trying to lock its name)
-    lockSymbol(cachedDB)
-
-    ## make sure we unlock the receiver DB when this function exits, even on error
-    ## NB: the runMotusProcessServer script also drops any locks held by a given
-    ## processServer after the latter exits.
-
-    on.exit(lockSymbol(cachedDB, lock=FALSE))
-
-    ## if the cached DB exists and is less than 1 day old, do nothing
-
-    if (file.exists(cachedDB) && diff(as.numeric(c(file.info(cachedDB)$mtime, Sys.time()))) <= 24 * 3600) {
-        return (cachedDB)
-    }
-
-    ## make sure we have a local copy of the motus-metadata-repo, for tracking changes
-    ## to metadata
-
-    if (! file.exists(file.path(MOTUS_PATH$METADATA_HISTORY, ".git"))) {
-        safeSys(paste("git clone", MOTUS_METADATA_HISTORY_REPO, MOTUS_PATH$METADATA_HISTORY), quote=FALSE)
-    }
-
-    ## make sure the database has correct tables
-    safeSys("sqlite3", cachedDB, noQuote="<", system.file("motusMetadataSchema.sql", package="motusServer"))
-
-    ## open / create the cached DB; because we might be re-populating it via network
-    ## API calls to motus.org, allow for a 5 minute busy timeout.
-    s = src_sqlite(cachedDB, TRUE)
-    dbGetQuery(s$con, "pragma busy_timeout=300000")
-
-    ## convenience function to backup existing table T to T_old.
-    ## We delete from rather than delete and re-create T, so that
-    ## we preserve existence of indexes etc.
-
-    bkup = function(T) {
-        try(silent=TRUE, {
-            dbGetQuery(s$con, paste0("drop table ", T, "_old"))
-        })
-        try(silent=TRUE, {
-            dbGetQuery(s$con, paste0("create table ", T, "_old as select * from ", T))
-            dbGetQuery(s$con, paste0("delete from ", T))
-        })
-    }
-
-    ## grab tags
-    try(silent=TRUE, {
-        t = motusSearchTags()
-
-        ## clean up tag registrations (only runs on server with access to full Lotek codeset)
-        ## creates tables "tags" and "events" from the first parameter
-        ## and records tags table to the metadata history repo
-
-        t = cleanTagRegistrations(t, s)
-
-        ## grab projects
-        p =  motusListProjects()
-
-        ## fill in *something* for missing project labels (first 3 words with underscores)
-        fix = is.na(p$label)
-        p$label[fix] = unlist(lapply(strsplit(gsub(" - ", " ", p$name[fix]), " ", fixed=TRUE), function(n) paste(head(n, 3), collapse="_")))
-
-        if (nrow(p) > 20) { ## arbitrary sanity check
-            bkup("projs")
-            dbWriteTable(s$con, "projs", p, append=TRUE, row.names=FALSE)
-        }
-
-        ## add a fullID label for each tagDep
-        t$fullID = sprintf("%s#%s:%.1f@%g", p$label[match(t$projectID, p$id)], t$mfgID, t$period, t$nomFreq)
-        t = t[, c(1:2, match("deployID", names(t)): ncol(t))]
-
-        if (nrow(t) > 1000) { ## arbitrary sanity check
-            bkup("tagDeps")
-            ## write just the deployment portion of the records to tagDeps
-            ## first writing to a temporary table to perform a deployment-closing query
-            dbWriteTable(s$con, "tmpTagDeps", t, overwrite=TRUE, row.names=FALSE, temporary=TRUE)
-
-            ## End any unterminated deployments of tags which have a later deployment.
-            ## The earlier deployment is ended 1 second before the (earliest) later one begins.
-
-            dbExecute(s$con, "update tmpTagDeps set tsEnd = (select min(t2.tsStart) - 1 from tmpTagDeps as t2 where t2.tsStart > tmpTagDeps.tsStart and tmpTagDeps.tagID=t2.tagID) where tsEnd is null and tsStart is not null");
-
-            ## Copy to the real table (we do this, rather than write
-            ## directly with dbWriteTable, to preserve existence of
-            ## indexes on tagDeps)
-
-            dbExecute(s$con, "insert into tagDeps select * from tmpTagDeps")
-            dbExecute(s$con, "drop table tmpTagDeps")
-
-            ## replace slim copy of tag deps in mysql database
-            MotusDB("delete from tagDeps")
-            dbWriteTable(MotusDB$con, "tagDeps", dbGetQuery(s$con, "select projectID, tagID as motusTagID, tsStart, tsEnd from tagDeps order by projectID, tagID"),
-                         append=TRUE, row.names=FALSE)
-
-            ## write tagDeps table into the metadata history repo
-            write.csv(dbGetQuery(s$con, "
-select
-   tagID,
-   projectID,
-   tsStart,
-   tsEnd,
-   tsStartCode,
-   tsEndCode
-from
-   tagDeps
-order by
-   tagID,
-   tsStart
-"
-                                 ),
-                      file.path(MOTUS_PATH$METADATA_HISTORY, "tag_deployments.csv"), row.names=FALSE)
-        }
-    })
-
-    ## grab species
-    try(silent=TRUE, {
-        t = motusListSpecies()
-        if (nrow(t) > 1000) { ## arbitrary species check
-            bkup("species")
-            dbWriteTable(s$con, "species", t[,c("id", "english", "french", "scientific", "group", "sort")], append=TRUE, row.names=FALSE)
-        }
-    })
-
-    ## grab receivers
-    try(silent=TRUE, {
-        recv = data_frame()
-        ant = data_frame()
-
-        ## Note: because the motus query isn't returning fields for which there's no data,
-        ## we have to explicitly construct NAs
-        for(pid in p$id) {
-            if (pid == 0)
-                next
-            r = motusListSensorDeps(projectID=pid)
-            if (isTRUE(nrow(r) > 0)) {
-                if ("antennas" %in% names(r)) {
-                    for (i in seq_len(nrow(r))) {
-                        if (isTRUE(nrow(r$antennas[[i]]) > 0)) {
-                            ant = bind_rows(ant, cbind(deployID=r$deployID[[i]], r$antennas[[i]]))
-                        }
-                    }
-                }
-                r$projectID = pid
-                r$antennas = NULL
-                recv = bind_rows(recv, r)
-            }
-        }
-        recv = recv %>% as.data.frame
-        ## workaround until upstream changes format of serial numbers for Lotek receivers
-        recv$serno = sub("(SRX600|SRX800|SRX-DL)", "Lotek", perl=TRUE, recv$serno)
-        recv$receiverType = ifelse(grepl("^SG-", recv$serno, perl=TRUE), "SENSORGNOME", "LOTEK")
-        if (nrow(recv) > 100) { ## arbitrary sanity check
-            bkup("recvDeps")
-            dbWriteTable(s$con, "recvDeps", recv, append=TRUE, row.names=FALSE)
-
-            ## End any unterminated receiver deployments on receivers which have a later deployment.
-            ## The earlier deployment is ended 1 second before the (earliest) later one begins.
-
-            dbGetQuery(s$con, "update recvDeps set tsEnd = (select min(t2.tsStart) - 1 from recvDeps as t2 where t2.tsStart > recvDeps.tsStart and recvDeps.serno=t2.serno) where tsEnd is null and tsStart is not null");
-
-            ## update slim copy of receiver deps in mysql database
-            MotusDB("delete from recvDeps")
-            slimRecvDeps = dbGetQuery(s$con, "select projectID, deviceID, tsStart, tsEnd from recvDeps order by projectID, deviceID, tsStart")
-            dbWriteTable(MotusDB$con, "recvDeps", slimRecvDeps,
-                         append=TRUE, row.names=FALSE)
-            write.csv(slimRecvDeps,
-                      file.path(MOTUS_PATH$METADATA_HISTORY, "receiver_deployments.csv"), row.names=FALSE)
-        }
-
-        if (nrow(ant) > 100) { ## arbitrary sanity check
-            bkup("antDeps")
-            dbWriteTable(s$con, "antDeps", ant %>% as.data.frame, append=TRUE, row.names=FALSE)
-        }
-    })
-
-
-    ## GPS fix table; initially, this contains only a single fix for
-    ## each receiver deployment but we'll eventually be filling in
-    ## additional fixes for mobile receivers.
-
-    try(silent=TRUE, {
-        gps = recv %>% transmute (
-                           deviceID=deviceID,
-                           ts = tsStart,
-                           lat = latitude,
-                           lon = longitude,
-                           elev = 0 )  %>%
-            distinct (deviceID, ts)
-        if (nrow(gps) > 100) { ## arbitrary sanity check
-            bkup("gps")
-            dbWriteTable(s$con, "recvGPS", gps, append=TRUE, row.names=FALSE)
-        }
-    })
-
-    ## DEPRECATED: copy paramOverrides table from paramOverrides database until there's a motus
-    ## API call to fetch these
-    try(silent=TRUE, {
-        sql = ensureParamOverridesTable()
-        t = sql("select * from paramOverrides")
-        if (nrow(t) > 1) { ## arbitrary sanity check
-            bkup("paramOverrides")
-            dbWriteTable(s$con, "paramOverrides", t, append=TRUE, row.names=FALSE)
-            write.csv(t[order(t$projectID, t$serno, t$tsStart),],
-                      file.path(MOTUS_PATH$METADATA_HISTORY, "parameter_overrides.csv"), row.names=FALSE)
-        }
-    })
-
-    sql(.CLOSE=TRUE)
-    dbDisconnect(s$con)
-    ## in case there were any changes, commit them to the repo and push to git hub
-    safeSys(paste0("cd ", MOTUS_PATH$METADATA_HISTORY, "; if ( git commit --author='motus_data_server <sgdata@motus.org>' -a -m 'revised upstream' ); then git push; fi"), quote=FALSE)
-
-    return (cachedDB)
+    if (! file.exists(MOTUS_METADB_CACHE))
+        refreshMotusMetaDBCache()
+    MetaDB <<- safeSQL(MOTUS_METADB_CACHE)
+    return(MetaDB)
 }

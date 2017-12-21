@@ -27,7 +27,7 @@ exportGlobalTags = function(projectID, create=TRUE, exportFolder = MOTUS_PATH$TA
     } else {
         t = getTagProjSrc(projectID)
     }
-    g = getGlobalTagsView(tagview(t, getMotusMetaDB(), keep=TRUE))
+    g = getGlobalTagsView(tagview(t, MOTUS_METADB_CACHE, keep=TRUE))
     d = g %>% collect (n = Inf) %>% as.data.frame
 
     # perform fixups

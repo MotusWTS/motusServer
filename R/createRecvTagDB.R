@@ -49,8 +49,8 @@ createRecvTagDB = function(projectID, dateBin, isTesting=FALSE) {
     dbFile = file.path(path, sprintf("project_%d_%s_tag_database.sqlite", projectID, paste0(dateBin, collapse="_")))
 
     ## lookup project label
-    meta = safeSQL(getMotusMetaDB())
-    label = meta("select label from projs where id=:id", id=projectID)[[1]]
+
+    label = MetaDB("select label from projs where id=:id", id=projectID)[[1]]
     if (! isTRUE(nchar(label) > 0))
         label = sprintf("project_%d", projectID)
 

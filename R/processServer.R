@@ -44,6 +44,9 @@ processServer = function(N, tracing=FALSE) {
 
     ensureServerDirs()
 
+    ## open the motus metadata cache DB and assign handle to global MetaDB
+    getMotusMetaDB()
+
     motusLog("Process server started for queue %d with PGID=%d", N, getPGID())
 
     loadJobs(N)

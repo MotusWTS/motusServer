@@ -34,15 +34,13 @@
 
 getParamOverrides = function(serno, monoBN=NULL, tsStart=NA, progName="find_tags_motus", recvDepTol=3*24*3600) {
 
-    meta = safeSQL(getMotusMetaDB())
-
     if (!is.null(monoBN)) {
         ## lookup the timestamp for the start of this boot session
         tsStart = sgTimeAtBoot(serno, monoBN)
     }
 
     ## lookup the projectID for the appropriate receiver deployment
-    pid = meta("select projectID from recvDeps where serno=:serno and tsStart - :tol <= :tsStart
+    pid = MetaDB("select projectID from recvDeps where serno=:serno and tsStart - :tol <= :tsStart
 and (tsEnd is null or tsEnd > :tsStart) order by tsStart desc limit 1",
 serno=serno,
 tsStart = tsStart,
@@ -51,7 +49,7 @@ tol = recvDepTol)[[1]]
     ## lookup project-wide overrides by date
 
     if (length(pid) > 0) {
-        projOR = meta("select '--' || paramName || ' ' || paramVal from paramOverrides where projectID=:pid and progName=:progName
+        projOR = MetaDB("select '--' || paramName || ' ' || paramVal from paramOverrides where projectID=:pid and progName=:progName
 and tsStart - :tol <= :tsStart and (tsEnd is null or tsEnd > :tsStart) order by tsStart desc limit 1",
 pid=pid,
 progName=progName,
@@ -63,7 +61,7 @@ tsStart=tsStart)[[1]]
 
     ## lookup receiver-specific overrides by date
 
-    recvOR = meta("select '--' || paramName || ' ' || paramVal from paramOverrides where serno=:serno and progName=:progName
+    recvOR = MetaDB("select '--' || paramName || ' ' || paramVal from paramOverrides where serno=:serno and progName=:progName
 and tsStart <= :tsStart and (tsEnd is null or tsEnd > :tsStart) order by tsStart desc limit 1",
                   serno=serno,
                   progName=progName,
@@ -79,6 +77,5 @@ and tsStart <= :tsStart and (tsEnd is null or tsEnd > :tsStart) order by tsStart
     else
         allOR = ""
 
-    meta(.CLOSE=TRUE)
     return(allOR)
 }

@@ -90,17 +90,16 @@ getYearProjSite = function(serno, ts=NULL, bn=NULL, motusProjectID=NULL) {
                       )
 
     ## use a temporary database to do this as a join query
-    meta = safeSQL(getMotusMetaDB())
 
-    dbWriteTable(meta$con, "tempinfo", info %>% as.data.frame, row.names=FALSE, overwrite=TRUE, temporary=TRUE)
+    dbWriteTable(MetaDB$con, "tempinfo", info %>% as.data.frame, row.names=FALSE, overwrite=TRUE, temporary=TRUE)
 
     ## look up deployments by serial number and timestamp
 
     ## get latest row (largest tsHi) that is still no later than ts for the receiver
 
-    rv = meta(sprintf("select t1.serno as serno, 0 as year, t3.id as projID, t3.label as proj, t2.name as site, t2.tsStart as tsStart, t2.tsEnd as tsEnd, null as bnStart, null as bnEnd from tempinfo as t1 join recvDeps as t2 on t1.serno = t2.serno and t2.tsStart <= t1.tsHi and (t2.tsEnd is null or t2.tsEnd >= t1.tsLo) left join projs as t3 on t2.projectID=t3.id", MOTUS_SG_EPOCH, MOTUS_SG_EPOCH))
+    rv = MetaDB(sprintf("select t1.serno as serno, 0 as year, t3.id as projID, t3.label as proj, t2.name as site, t2.tsStart as tsStart, t2.tsEnd as tsEnd, null as bnStart, null as bnEnd from tempinfo as t1 join recvDeps as t2 on t1.serno = t2.serno and t2.tsStart <= t1.tsHi and (t2.tsEnd is null or t2.tsEnd >= t1.tsLo) left join projs as t3 on t2.projectID=t3.id", MOTUS_SG_EPOCH, MOTUS_SG_EPOCH))
 
-    dbExecute(meta$con, "drop table tempinfo")
+    MetaDB("drop table tempinfo")
 
     ## for some reason, the above leads to a character column if there's an NA anywhere in it
     rv$tsStart = as.numeric(rv$tsStart)
@@ -121,7 +120,6 @@ getYearProjSite = function(serno, ts=NULL, bn=NULL, motusProjectID=NULL) {
     rv$bnStart = as.integer(rv$bnStart)
     rv$bnEnd = as.integer(rv$bnEnd)
 
-    meta(.CLOSE=TRUE)
     if (nrow(rv) > 0)
         return(rv)
 
@@ -130,12 +128,10 @@ getYearProjSite = function(serno, ts=NULL, bn=NULL, motusProjectID=NULL) {
 
     ## generate a provisional deployment for the given project
     ## get project name
-    meta = safeSQL(getMotusMetaDB())
     if (motusProjectID > 0)
-        proj = meta(sprintf("select label from projs where id=%d", motusProjectID))[[1]]
+        proj = MetaDB(sprintf("select label from projs where id=%d", motusProjectID))[[1]]
     else
         proj = "no_project"
-    meta(.CLOSE=TRUE)
 
     if (isSG) {
         recv = safeSQL(getRecvSrc(serno))

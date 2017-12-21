@@ -42,7 +42,7 @@ handleLtFindtags = function(j) {
     ## get parameter overrides
     por = getParamOverrides(serno, tsStart=Sys.time())
 
-    rv = ltFindTags(src, getMotusMetaDB(), par=paste(ltDefaultFindTagsParams, por))
+    rv = ltFindTags(src, MOTUS_METADB_CACHE, par=paste(ltDefaultFindTagsParams, por))
 
     if (! is.null(rv)) {
         ## record motus user and project IDs for this batch, which may

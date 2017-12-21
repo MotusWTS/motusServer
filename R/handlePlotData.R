@@ -45,7 +45,6 @@ handlePlotData = function(j) {
 
     ## get a tagview for the detections in this receiver (a tagview joins batches/runs/hits with appropriate metadata)
     src = getRecvSrc(serno)
-    mot = getMotusMetaDB()
 
     ## for each deployment, do a plot
 
@@ -83,7 +82,7 @@ handlePlotData = function(j) {
         plotfilename = sub("\\.rds$", "\\.png", datafilename, perl=TRUE)
 
         ## generate the plot object and condensed dataset
-        rv = makeReceiverPlot(src, mot, title, condense, ts = unlist(info[i, c("tsStart", "tsEnd")]), unlist(info[i, c("bnStart", "bnEnd")]))
+        rv = makeReceiverPlot(src, MOTUS_METADB_CACHE, title, condense, ts = unlist(info[i, c("tsStart", "tsEnd")]), unlist(info[i, c("bnStart", "bnEnd")]))
 
         saveRDS(rv$data, datafilename)
         png(plotfilename, width=rv$width, height=rv$height, type="cairo-png")

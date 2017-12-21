@@ -27,12 +27,8 @@ getProjDir = function(p, isTesting=FALSE) {
     ## and .htaccess files
 
     ## see whether the project is already in our cached meta data
-    ## grab the motus meta DB
 
-    mdb = safeSQL(getMotusMetaDB())
-    on.exit(mdb(.CLOSE=TRUE))
-
-    pn = mdb("select name from projs where id=:id", id=p)[[1]]
+    pn = MetaDB("select name from projs where id=:id", id=p)[[1]]
     if (length(pn) == 0) {
         projs = motusListProjects()
         pn = projs$name[projs$id == p]
