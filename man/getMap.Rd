@@ -7,7 +7,7 @@
 getMap(src, name = "meta")
 }
 \arguments{
-\item{src}{dplyr src_sqlite to a database}
+\item{src}{dplyr src_sqlite to a database or an SQLiteConnection}
 
 \item{name}{name of table in database; default: "meta"}
 }

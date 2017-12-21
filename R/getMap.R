@@ -7,7 +7,7 @@
 #' \code{src}.  An element can be removed from the list by assigning
 #' NULL to it.
 #'
-#' @param src dplyr src_sqlite to a database
+#' @param src dplyr src_sqlite to a database or an SQLiteConnection
 #'
 #' @param name name of table in database; default: "meta"
 #'
@@ -24,7 +24,10 @@
 #' x[["MACAddr"]]
 
 getMap = function(src, name="meta") {
-    con = src$con
+    if (inherits(src, "SQLiteConnection"))
+        con = src
+    else
+        con = src$con
     if (! dbExistsTable(con, name))
         dbGetQuery(con, sprintf("create table '%s' (key text primary key, val text);", name))
     return(structure(paste("Map", name), name=name, con=con, class="motusMap"))
