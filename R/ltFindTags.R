@@ -44,8 +44,6 @@ ltFindTags = function(src, tagDB, par = NULL) {
     else
         pars = paste(par, collapse=" ")
 
-    pars = paste0(pars, " --external_param=metadata_hash=", getMetadataHash(), " --lotek --src_sqlite ")
-
     ## lookup each boottime in the DTAtags table, so we can tell which
     ## boot sessions actually have records
 
