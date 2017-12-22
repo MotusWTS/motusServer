@@ -11,4 +11,4 @@ suppressMessages(suppressWarnings(library(motusServer)))
 ## open jobs and master databases
 ensureServerDB()
 openMotusDB()
-refreshMotusMetaDB()
+refreshMotusMetaDBCache()
