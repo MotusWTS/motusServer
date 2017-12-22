@@ -5,7 +5,9 @@
 
 MOTUS_API_ENTRY_POINTS          = "http://motus.org/data/api/entrypoints.jsp"
 MOTUS_API_REGISTER_TAG          = "https://motus.org/api/tag/register"
-MOTUS_API_DEPLOY_TAG            = "https://motus.org/api/tag/deploy"
+## 2017-12-22: use beta site until https://github.com/MotusDev/MotusAPI/issues/1 is closed
+## MOTUS_API_DEPLOY_TAG            = "https://motus.org/api/tag/deploy"
+MOTUS_API_DEPLOY_TAG            = "https://beta.motus.org/api/tag/deploy"
 ## 2017-12-21: revert to v1.0 for this until MotusDev/Motus_API#3 is closed
 ##MOTUS_API_SEARCH_TAGS           = "https://motus.org/api/tags/search"
 MOTUS_API_SEARCH_TAGS           = "https://motus.org/data/api/v1.0/searchtags.jsp"
