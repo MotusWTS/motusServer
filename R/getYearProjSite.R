@@ -123,7 +123,8 @@ getYearProjSite = function(serno, ts=NULL, bn=NULL, motusProjectID=NULL) {
     if (nrow(rv) > 0)
         return(rv)
 
-    if (length(motusProjectID) == 0)
+    ## clean up NA / Null values for project ID
+    if (! isTRUE(motusProjectID > 0))
         motusProjectID = 0L
 
     ## generate a provisional deployment for the given project
