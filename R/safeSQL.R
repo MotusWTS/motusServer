@@ -96,13 +96,14 @@ safeSQL = function(con, busyTimeout = 300) {
     if (inherits(con, "src"))
         con = con$con
     if (is.character(con))
-        con = dbConnect(SQLite(), con)
+        con = dbConnect(SQLite(), con, synchronous=NULL)
     isSQLite = inherits(con, "SQLiteConnection")
     if (isSQLite) {
 
         ########## RSQLite ##########
 
-        dbGetQuery(con, sprintf("pragma busy_timeout=%d", round(busyTimeout * 1000)))
+        dbExecute(con, sprintf("pragma busy_timeout=%d", round(busyTimeout * 1000)))
+        dbExecute(con, "pragma synchronous=off")
         structure(
             function(query, ..., .CLOSE=FALSE, .QUOTE=FALSE) {
                 if (.CLOSE) {
