@@ -430,7 +430,7 @@ format(Now, "%Y %b %d %H:%M:%S GMT"),
 
         try({
             if (tunnelport != "none") {
-                anchor = sprintf('<a href="http://live.sensorgnome.org/SESSION_SG-%s_%s" style="color: #000000">%s</a>',
+                anchor = sprintf('<a href="https://live.sensorgnome.org/SESSION_SG-%s_%s" style="color: #000000">%s</a>',
                                  recv[i],
                                  token,
                                  recv[i])
