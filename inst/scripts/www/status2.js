@@ -511,7 +511,7 @@ function on_click_sort_heading(event) {
     if (oldSortBy == state.sortBy) {
         state.sortDesc =! state.sortDesc;
     } else {
-        state.lastKey = [latest_job_list[state.sortBy][0]];
+        state.lastKey = null;
         state.forwardFromKey = true;
         state.sortDesc = false;
     }
