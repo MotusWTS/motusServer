@@ -190,3 +190,33 @@
 .byte_count {
     text-align: right;
 }
+
+/* styling to keep table headings from resizing based on content of table */
+
+.job_params {
+    white-space: nowrap;
+    font-family: monospace;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+#job_type_heading {
+    min-width: 100px;
+}
+
+#job_parameters_heading {
+    text-align: left;
+    padding-left: 5em;
+}
+
+#job_id_heading {
+    min-width: 80px;
+}
+
+#job_user_heading {
+    min-width: 80px;
+}
+
+#job_project_heading {
+    min-width: 90px;
+}

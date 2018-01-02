@@ -264,11 +264,13 @@ function show_job_list2(x) {
                             }
                            );
     // style the sort-order buttons
-    $(".sort_heading").button({icon:"ui-icon-blank"});
+    $(".sort_heading").button();
 
-    // add an appropriate icon to the column header by which we sorted
-    var sorter = $('.sort_heading[sort_field="' + state.sortBy + '"]');
-    sorter.button({icon: "ui-icon-triangle-1-" + (state.sortDesc ? "s" : "n"), minHeight:200});
+    // add an appropriate arrow to the column header by which we sorted
+    // Note: doing this with icons leads to buttons with varying height
+    var sorter = $('.sort_heading[sort_field="' + state.sortBy + '"]')[0];
+    // Use a non-breaking space between the arrow and heading
+    sorter.innerText = sorter.innerText + "\u00a0" + "↑↓".substr(state.sortDesc, 1);
     // add navigation buttons
     $(".navigate").button();
     $('.navigate[target="top"]').button({icon:"ui-icon-arrowthickstop-1-w"});
@@ -589,7 +591,7 @@ function on_change_find_job_selector(evt) {
         vis = true;
         break;
     };
-    $("#find_job_key").toggle(vis);
+    $("#find_job_key_span").toggle(vis);
     $("#find_job_button").toggle(vis);
 
     // we've switched to a jobs view that has no other controls, so
@@ -618,6 +620,7 @@ function initStatus2Page() {
     $("#find_job_selector").selectmenu();
     $("#find_job_selector").on("selectmenuchange", on_change_find_job_selector);
     $("#find_job_selector").val("all").selectmenu("refresh");
+    $('#find_job_key_span').addClass("ui-widget ui-widget-content ui-corner-all");
     on_change_find_job_selector();
     $("#find_job_key").on("keyup", on_keyup_find_job_key);
     $('#find_job_button').button({icon:"ui-icon-search", }).on("click", on_click_search);

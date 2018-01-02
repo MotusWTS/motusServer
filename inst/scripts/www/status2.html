@@ -67,7 +67,7 @@
         <option value="motusProjectID"> jobs for motus project ID = </option>
         <option value="log">jobs with log matching</option>
       </select>
-      <input type="text" id="find_job_key" value="">
+      <span id="find_job_key_span"><input type="text" id="find_job_key" value=""></span>
       <span id="find_job_button"></span>
       <label for="error_only_option">only with errors</label>
       <input type="checkbox" name="error_only_option" id="error_only_option">
@@ -97,14 +97,14 @@
       {{=⟦ ⟧=}}
       <table class="jobs_table">
         <tr class="jobs_table_heading">
-          <th><span class="sort_heading" sort_field="id">Job ID</span></th>
-          <th><span class="sort_heading" sort_field="motusUserID">User ID</span></th>
-          <th><span class="sort_heading" sort_field="motusProjectID">Project ID</span></th>
-          <th><span class="sort_heading" sort_field="type">Type</span></th>
+          <th><span class="sort_heading" sort_field="id" id="job_id_heading">Job&nbsp;ID</span></th>
+          <th><span class="sort_heading" sort_field="motusUserID" id="job_user_heading">User&nbsp;ID</span></th>
+          <th><span class="sort_heading" sort_field="motusProjectID" id="job_project_heading">Project&nbsp;ID</span></th>
+          <th><span class="sort_heading" sort_field="type" id="job_type_heading">Type</span></th>
           <th><span class="sort_heading" sort_field="ctime">Created</span></th>
-          <th><span class="sort_heading" sort_field="mtime">Last Activity</span></th>
+          <th><span class="sort_heading" sort_field="mtime">Last&nbsp;Activity</span></th>
           <th>Status</th>
-          <th>Parameters</th>
+          <th id="job_parameters_heading">Parameters</th>
         </tr>
         ⟦#jobs⟧
         <tr class="jobs_table_row" job_id="⟦id⟧" id="jobs_table_row⟦id⟧">
