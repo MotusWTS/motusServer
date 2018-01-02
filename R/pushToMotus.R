@@ -46,6 +46,18 @@ pushToMotus = function(src, batchStatus=1) {
 
     newBatches$motusDeviceID = deviceID
 
+    ## lock the master DB, to prevent client-side problems with
+    ## non-monotonic completion of batch transfers; see
+    ## https://github.com/jbrzusto/motusServer/issues/301
+
+    lockSymbol("masterDB")
+
+    ## make sure we unlock the master DB when this function exits,
+    ## even on error.  Note:  the runMotusProcessServer script also drops
+    ## any locks held by a given processServer after the latter exits.
+
+    on.exit(lockSymbol("masterDB", lock=FALSE))
+
     ## open the motus transfer table
 
     mtcon = openMotusDB()$con ## also ensures global MotusDB exists
