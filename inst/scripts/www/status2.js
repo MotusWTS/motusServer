@@ -396,7 +396,7 @@ function show_job_details2(x) {
                                    hasLog:function(i) {return json[i] && json[i].log_},
                                    logs: {
                                        __transpose__: true,
-                                       msg: json.map(val=>(val !== null && val.log_ !== null) ? val.log_ : null),
+                                       msg: json.map(val=>(val && val.log_) ? linkify_sernos(val.log_) : null),
                                        jobID: x.id
                                    },
                                    summary:linkify_sernos(json[0].summary_),
