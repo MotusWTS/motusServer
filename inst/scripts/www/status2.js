@@ -621,7 +621,6 @@ function initStatus2Page() {
     $("#find_job_selector").on("selectmenuchange", on_change_find_job_selector);
     $("#find_job_selector").val("all").selectmenu("refresh");
     $('#find_job_key_span').addClass("ui-widget ui-widget-content ui-corner-all");
-    on_change_find_job_selector();
     $("#find_job_key").on("keyup", on_keyup_find_job_key);
     $('#find_job_button').button({icon:"ui-icon-search", }).on("click", on_click_search);
 
@@ -648,6 +647,11 @@ function initStatus2Page() {
     // which take user to the subjob entry
     $(".job_details").on("click", ".subjob_log_heading", on_click_subjob_log_heading);
 
+    // read the state of the checkbox, which might be preserved across reloads
+    state.errorOnly = $("#error_only_option").is(":checked");
+
+    // simulate a click so that the initial list of jobs loads
+    on_change_find_job_selector();
 
 };
 
