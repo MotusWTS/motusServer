@@ -349,9 +349,10 @@ process_new_upload = function(env) {
     ## for debugging, if file "/sgm/UPLOAD_TESTING"" exists, give this new job
     ## an `isTesting=TRUE` parameter, so that its product batches end up marked
     ## that way in the master DB.  Its products will also go to the /sgm/testing
-    ## hierarchy instead of /sgm/www
+    ## hierarchy instead of /sgm/www.  To avoid having the flag show up in
+    ## the status display, we only set its value when TRUE.
 
-    isTesting = file.exists(MOTUS_PATH$UPLOAD_TESTING)
+    isTesting = if (file.exists(MOTUS_PATH$UPLOAD_TESTING)) TRUE else NULL
 
     ## create and enqueue a new upload job
     j = newJob("uploadFile",
