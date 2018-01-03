@@ -354,7 +354,7 @@ order by
    t2.batchID
 limit %d
 ",
-minBatchStatus, auth$projectID, batchID, MAX_ROWS_PER_REQUEST)
+auth$projectID, batchID, minBatchStatus, MAX_ROWS_PER_REQUEST)
     return_from_app(MotusDB(query))
 }
 
