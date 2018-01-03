@@ -29,7 +29,7 @@
 // in the file /etc/apache2/mods-available/auth_tkt.conf replacing
 // ... with the value of $SECRET_KEY below.
 //
-$SECRET_KEY = file_get_contents("/etc/apache2/sites-available/000-default-le-ssl.conf");
+$SECRET_KEY = file_get_contents("/etc/apache2/TKTAuthSecret.inc");
 $SECRET_KEY = preg_replace('/(?s).*TKTAuthSecret "/', '', $SECRET_KEY);
 $SECRET_KEY = preg_replace('/(?s)".*/', '', $SECRET_KEY);
 
@@ -130,7 +130,7 @@ if (isset($_GET['login_form_user'])) {
     $errno = curl_errno($ch);
     $err = curl_error($ch);
     curl_close($ch);
-//    fwrite(STDERR, "Got: $res\nError: $errno = '$err'\n");
+    //    fwrite(STDERR, "Got: $res\nError: $errno = '$err'\n");
     if ($errno == 22 && $_SERVER['REMOTE_ADDR'] === "127.0.0.1") {
         /* motus.org is down *and* the request came from the local host, then
            generate a ticket for user `john` with admin privileges */
