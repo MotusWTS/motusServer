@@ -231,7 +231,7 @@ projects.
 
 ### process new upload ###
 
-   process_new_upload (userID, projectID, path, ts, authToken)
+   process_new_upload (userID, projectID, path, ts, email, authToken)
 
       - userID: integer scalar; motus user ID (who uploaded the file)
       - projectID; integer scalar; motus projectID (what project should own the products; as chosen by upload user)
@@ -245,6 +245,7 @@ projects.
       - ts; either double or string scalar; time at which file upload completed.  If double, interpreted as seconds since 1 Jan 1970, GMT;
         If string, interpreted as a datetime compatible with `R:lubridate::ymd_hms()`.  If not supplied, the current
         time is used.
+      - email; optional string scalar;  if present, an email is sent to that address when processing of the uploaded file is complete.
 
       e.g.
       curl --data-urlencode json='{"userID":232,"projectID":57,"path":"232/232_2017-10-20T11-12-33_myupload.zip","ts":1508497953,"authToken":"XXX"}' https://sgdata.motus.org/status2/process_new_upload
@@ -358,6 +359,10 @@ projects.
    works for administrators.
 
 ## Changelog ##
+
+2018-01-10
+   - `process_new_upload` now optionally accepts an `email` address to notify user when
+      processing completes.
 
 2018-01-09
    - `process_new_upload` now optionally accepts ts as a string timestamp, not just a double.

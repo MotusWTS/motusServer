@@ -320,6 +320,7 @@ process_new_upload = function(env) {
 
     projectID = auth$projectID
     userID = safe_arg(json, userID, int)
+    email = safe_arg(json, email, character)
     if (is.null(userID))
         return(error_from_app("missing integer userID"))
     path = safe_arg(json, path, char)
@@ -385,6 +386,10 @@ process_new_upload = function(env) {
 
     uploadID = MotusDB("select LAST_INSERT_ID()")[[1]]
     j$uploadID = uploadID
+
+    ## record the notification email address, if supplied
+    if (!is.null(email) && nchar(email) > 0)
+        j$replyTo = email
 
     ## get file basename
     bname = basename(newPath)
