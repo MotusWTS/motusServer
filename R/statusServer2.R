@@ -321,6 +321,7 @@ process_new_upload = function(env) {
     projectID = auth$projectID
     userID = safe_arg(json, userID, int)
     email = safe_arg(json, email, character)
+
     if (is.null(userID))
         return(error_from_app("missing integer userID"))
     path = safe_arg(json, path, char)
@@ -331,7 +332,7 @@ process_new_upload = function(env) {
         return(error_from_app("path is not allowed to contain any '/../' components"))
     if (grepl('"', path, fixed=TRUE))
         return(error_from_app("path is not allowed to contain any '\"' characters"))
-    realpath = paste0(MOTUS_PATH$UPLOADS, path)
+    realpath = file.path(MOTUS_PATH$UPLOADS_PARTIAL, path)
     if (!file.exists(realpath))
         return(error_from_app(paste0("non-existent file: `NAS:/sgdata/", realpath, "`")))
     if (is.null(projectID))
