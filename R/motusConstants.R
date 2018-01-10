@@ -75,7 +75,7 @@ MOTUS_QUEUEFILE_REGEX = paste0(MOTUS_LEADING_TIMESTAMP_REGEX, MOTUS_QUEUE_SEP, "
 
 ## "From" address for outgoing emails
 
-MOTUS_OUTGOING_EMAIL_ADDRESS = "no-reply@sensorgnome.org"
+MOTUS_OUTGOING_EMAIL_ADDRESS = "no-reply@motus.org"
 
 ## name of archive to hold "bad" files; this archive is stored in the folder
 ## for each top-level job; we append "NOAUTO" to the name to prevent it
