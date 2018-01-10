@@ -65,8 +65,35 @@ function motus_status_api(api, par, cb) {
                 title:"Querying motus status server"
             });
         $(".querying_server_message").addClass("querying_server_active")
-    }
-    $.post(serverURL + api, {"json":JSON.stringify(par)}, function(x) {motus_status_replied(x, api, par, cb)});
+    } else {
+        // set a timer to display a progress bar if the query hasn't
+        // completed quickly (under 1.5 seconds)
+        state.progress_timeout = setTimeout(show_query_progress, 1500);
+    };
+    $.post(serverURL + api, {"json":JSON.stringify(par)}).done(motus_status_replied).fail(motus_query_failed)._extra =
+        {
+            api: api,
+            pars: par,
+            cb: cb
+        };
+};
+
+// @function show_query_progress:  show an indeterminate progress bar for a query that takes more than a second
+// or two
+
+function show_query_progress() {
+    $(".query_progress_bar").mustache("tpl_query_progress_bar", {}, {method:"html"});
+    $(".query_progress_bar_widget").progressbar({value:false});
+    $(".query_progress_bar").dialog(
+        {
+            top: $("html").offset().top,
+            maxHeight: 800,
+            dragable:true,
+            closeOnEscape:true,
+            width:300,
+            title:"Querying motus status server"
+        });
+    state.have_progress_dialog = true;
 };
 
 // @function omit_authToken: remove the authToken from a JSON-serialization of an object
@@ -91,10 +118,23 @@ function omit_authToken (key, val) {
 // @param cb: callback specified by user
 //
 // @return nothing
-function motus_status_replied(x, api, par, cb) {
-    if (state.debug)
+function motus_status_replied(x, textStatus, jqXHR) {
+    if (state.debug) {
         $(".querying_server_message").removeClass("querying_server_active").addClass("querying_server_done");
+    } else {
+        if (state.progress_timeout) {
+            clearTimeout(state.progress_timeout);
+            if (state.have_progress_dialog) {
+                $(".query_progress_bar").dialog("close");
+                state.have_progress_dialog = false;
+            }
+            state.progress_timeout = null;
+        }
+    };
+    cb = jqXHR._extra.cb;
+    api = jqXHR._extra.api;
     if (x.error) {
+        par = jqXHR._extra.par;
         $(".job_error").mustache("tpl_job_error",
                                  {
                                      error:x.error,
@@ -137,6 +177,50 @@ function motus_status_replied(x, api, par, cb) {
     }
     if (typeof cb === "function")
         cb(x);
+};
+
+// @function motus_query_failed: handle a query that didn't process successfully
+//
+// @param jqXHR the request object
+// @textStatus an error message
+// @errorThrown more details on error
+//
+// @return nothing
+function motus_query_failed(jqXHR, textStatus, errorThrown) {
+    if (state.debug) {
+        $(".querying_server_message").removeClass("querying_server_active").addClass("querying_server_done");
+    } else {
+        if (state.progress_timeout) {
+            clearTimeout(state.progress_timeout);
+            if (state.have_progress_dialog) {
+                $(".query_progress_bar").dialog("close");
+                state.have_progress_dialog = false;
+            }
+            state.progress_timeout = null;
+        }
+    };
+    $(".job_error").mustache("tpl_job_error",
+                             {
+                                 error:textStatus + "\n" + jqXHR.responseText,
+                                 api: jqXHR._extra.URL,
+                                 state: JSON.stringify(state, omit_authToken, 3),
+                                 json: JSON.stringify(jqXHR._extra.pars, omit_authToken, 3)
+                             },
+                             {
+                                 method:"html"
+                             }
+                            );
+    $(".job_error").dialog(
+        {
+            top: $("html").offset().top,
+            maxHeight: 800,
+            dragable:true,
+            closeOnEscape:true,
+            width:800,
+            title:"Error querying Motus Status Server!"
+        });
+    $(".copy_error_message").button({icon:"ui-icon-copy"}).on("click", function() {copyToClipboard(".job_error_contents")});
+    return;
 };
 
 // @function linkify_sernos: for each receiver serial number found in a string,

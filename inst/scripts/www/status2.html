@@ -81,6 +81,8 @@
     </div>
     <div class="job_no_results">
     </div>
+    <div class="query_progress_bar">
+    </div>
     <div class="querying_server">
     </div>
     <div class="recv_info">
@@ -182,7 +184,7 @@
       ⟦! the next `div` holds what gets copied to the clipboard⟧
       <div class="job_error_contents">
         <div class="job_error_message">
-          ⟦error⟧
+          ⟦&error⟧
         </div>
         The api entry called was:
         <div class="job_error_api">
@@ -219,6 +221,12 @@
         <div class="querying_server_params">
           ⟦params⟧
         </div>
+      </div>
+    </script>
+    <script id="tpl_query_progress_bar" type="text/html">
+      {{! template to show a progress bar if query takes more than a few seconds}}
+      {{=⟦ ⟧=}}
+      <div class="query_progress_bar_widget">
       </div>
     </script>
     <script id="tpl_recv_info" type="text/html">
