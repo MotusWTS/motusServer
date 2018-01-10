@@ -168,14 +168,20 @@ list_jobs = function(env) {
         where = makeWhere("t1.pid is null")  ## only top-level jobs; these have no parent id
     if (is.null(projectID)) {
         projwhere = NULL
+    } else if (is.na(projectID)) {
+        projwhere = sprintf("t1.motusProjectID is null")
     } else {
         projwhere = sprintf("t1.motusProjectID in (%s)", paste(projectID, collapse=","))
     }
     if (isTRUE(includeUnknownProjects))
         projwhere = makeWhere(c(projwhere, "t1.motusProjectID is null"), conj="or")
     where = c(where, projwhere)
-    if (!is.null(userID))
-        where = c(where, sprintf("t1.motusUserID = %d", userID))
+    if (!is.null(userID)) {
+        if (is.na(userID))
+            where = c(where, "t1.motusUserID is null")
+        else
+            where = c(where, sprintf("t1.motusUserID = %d", userID))
+    }
     if (!is.null(jobID))
         where = c(where, sprintf("t1.id in (%s)", paste0("'", jobID, "'", collapse=",")))
     if (!is.null(stump)) {
@@ -228,13 +234,19 @@ list_jobs = function(env) {
         if (sortBy[1] == "t1.type") {
             w = sprintf("%s %s '%s'", sortBy[1], op, lastKey[[1]])
         } else {
-            w = sprintf("%s %s %f", sortBy[1], op, lastKey[[1]])
+            if (! is.na(lastKey[[1]]))
+                w = sprintf("%s %s %f", sortBy[1], op, lastKey[[1]])
+            else
+                w = sprintf("%s is not null", sortBy[1])
         }
         if (length(lastKey) > 1) {
             if (sortBy[1] == "t1.type") {
                 w = paste0(w, sprintf(" or (%s = '%s' and t1.id %s %f)", sortBy[1], lastKey[[1]], op, lastKey[[2]]))
             } else {
-                w = paste0(w, sprintf(" or (%s =  %f  and t1.id %s %f)", sortBy[1], lastKey[[1]], op, lastKey[[2]]))
+                if (! is.na(lastKey[[1]]))
+                    w = paste0(w, sprintf(" or (%s =  %f  and t1.id %s %f)", sortBy[1], lastKey[[1]], op, lastKey[[2]]))
+                else
+                    w = paste0(w, sprintf(" or (%s is null  and t1.id %s %f)", sortBy[1], op, lastKey[[2]]))
             }
         }
         where = makeWhere(c(where, w))
