@@ -218,7 +218,7 @@ MOTUS_TEST_DOWNLOAD_URL_FMT = "https://sgdata.motus.org/download/test/%d"
 
 ## location of secret key for mod_auth_tkt authorization used by some
 ## of the XXXServer() functions in this package
-MOTUS_MODAUTHTKT_SECRET_KEYFILE = "/etc/apache2/sites-available/000-default-le-ssl.conf"
+MOTUS_MODAUTHTKT_SECRET_KEYFILE = "/etc/apache2/TKTAuthSecret.inc"
 
 ## path to motus metadata db cache
 MOTUS_METADB_CACHE = file.path(MOTUS_PATH$CACHE, "motus_meta_db.sqlite")
