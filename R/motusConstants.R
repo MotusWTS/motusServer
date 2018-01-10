@@ -145,7 +145,10 @@ MOTUS_PATH = list(
     TMP              = "/sgm/tmp/",                  ## intermediate storage; persistent across reboots
     TRASH            = "/sgm/trash/",                ## files to be deleted once we know they've been processed
 
-    UPLOADS          = "/sgm/uploads/",              ## folder where uploads go
+    UPLOADS          = "/sgm/uploads/",              ## folder where uploads ultimately go
+    UPLOADS_PARTIAL  = structure("/sgm/uploads/partial",       ## folder where uploads go as they arrive; must be writable by www-data
+                       owner="sg:www-data",
+                       perm="g+rws"),
     UPLOAD_TESTING   = "/sgm/UPLOAD_TESTING",        ## file whose presence indicates upload jobs are to be marked with "isTesting"
 
     USERAUTH         = "/sgm/user_auth.sqlite",      ## database of user authentication tokens
