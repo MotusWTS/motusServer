@@ -97,7 +97,7 @@ status_api_info = function(env) {
     return_from_app(
         list(
             maxRows = MAX_ROWS_PER_REQUEST,
-            uploadPath = file.path("sgdata", MOTUS_PATH$UPLOADS) ## "sgdata" is a folder on the NAS itself
+            uploadPath = file.path("sgdata", MOTUS_PATH$UPLOADS_PARTIAL) ## "sgdata" is a folder on the NAS itself
         )
     )
 }
@@ -337,7 +337,7 @@ process_new_upload = function(env) {
         return(error_from_app("missing integer projectID"))
     ts = safe_arg(json, ts, numeric)
     if (is.null(ts))
-        ts = as.numeric(Sys.time())
+            ts = as.numeric(Sys.time())
 
     ## see whether we already have this file (by content digest)
     digest = digestFile(realpath)
@@ -345,6 +345,12 @@ process_new_upload = function(env) {
     if (nrow(have))
         return(error_from_app("refusing to process file - it was already uploaded; see details; please contact motus.org, quoting this message, to have this file reprocessed",
                               details = unclass(have)))
+    ## move file and change ownership.  It will now have owner:group = "sg:sg" and
+    ## permissions "rw-rw-r--"
+    newPath = file.path(MOTUS_PATH$UPLOADS, userID, basename(realpath))
+    safeSys("mv", realpath, newPath)
+    safeSys("sudo", "chown", "sg:sg", newPath)
+    safeSys("sudo", "chmod", "u=rw,g=rw,o=r", newPath)
 
     ## for debugging, if file "/sgm/UPLOAD_TESTING"" exists, give this new job
     ## an `isTesting=TRUE` parameter, so that its product batches end up marked
@@ -360,7 +366,7 @@ process_new_upload = function(env) {
                motusUserID = userID,
                motusProjectID = projectID,
                isTesting = isTesting,
-               filename = realpath,
+               filename = newPath,
                .enqueue=FALSE)
 
     jobID = unclass(j)
@@ -373,7 +379,7 @@ process_new_upload = function(env) {
     j$uploadID = uploadID
 
     ## get file basename
-    bname = basename(realpath)
+    bname = basename(newPath)
 
     ## record receipt within the job's log
     jobLog(j, paste("File uploaded:", bname), summary=TRUE)
@@ -386,7 +392,7 @@ process_new_upload = function(env) {
     ## - the file can be on a different filesystem than the
     ##   jobs hierarchy
 
-    file.symlink(realpath, file.path(jpath, bname))
+    file.symlink(newPath, file.path(jpath, bname))
 
     ## move the job to the main queue
 
@@ -395,7 +401,7 @@ process_new_upload = function(env) {
 
     cat("Job", jobID, "has been entered into queue 0\n")
 
-    return_from_app(list(jobID = jobID, uploadID = uploadID))
+    return_from_app(list(jobID = jobID, uploadID = uploadID, newPath = newPath))
 }
 
 #' return a dplyr::tbl of files from a receiver database

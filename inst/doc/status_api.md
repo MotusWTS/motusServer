@@ -67,8 +67,8 @@ The server is at [https://sgdata.motus.org](https://sgdata.motus.org) and the UR
       - uploadPath: string, path to upload folder relative to top-level of NAS storage;
         the `path` of an uploaded file passed in a call to `process_new_upload` API must be
         relative to `uploadPath`; e.g. if `uploadPath` is `sgdata/sgm/uploads`, and if the
-        `process_new_upload` API is called with `path`=`user232/2017-03-15/newfiles.zip`,
-        the uploaded file must be at `NAS:/sgdata/sgm/uploads/user232/2017-03-15/newfiles.zip`
+        `process_new_upload` API is called with `path`=`partial/232_2017-08-15T11-12-13.123_newfile.zip`,
+        the uploaded file must be at `NAS:/sgdata/sgm/uploads/partial/232_2017-08-15T11-12-13.123_newfile.zip`
 
 
 ### authenticate user ###
@@ -236,9 +236,9 @@ projects.
       - userID: integer scalar; motus user ID (who uploaded the file)
       - projectID; integer scalar; motus projectID (what project should own the products; as chosen by upload user)
       - path; string scalar; path to the new file on the NAS, relative to the value of `uploadPath` returned by the `status_api_info` API.
-        e.g. if `path` is given as '123/2017-10-20T11-12-33_upload.zip`, then
-        on linux, we'll expect to find the file at `nfs://174.140.177.35:/volume1/sgdata/sgm/uploads/123/2017-10-20T11-12-33_upload.zip`
-        which will have actual path /sgm/uploads/123/2017-10-20T11-12-33_upload.zip, given the current NAS mountpoints.
+        e.g. if `path` is given as 'partial/123_2017-10-20T11-12-33_upload.zip`, then
+        on linux, we'll expect to find the file at `nfs://174.140.177.35:/volume1/sgdata/sgm/uploads/partial/123_2017-10-20T11-12-33_upload.zip`
+        which will have actual path /sgm/uploads/partial/123_2017-10-20T11-12-33_upload.zip, given the current NAS mountpoints.
         path` must not include any '..' component; i.e. ascent up the file tree is not permitted, to prevent malicious use
         from leaking system information.
         Both forward (`/`) and reverse (`\`) slashes are interpreted as folder delimiters.
@@ -251,7 +251,10 @@ projects.
    - return: an object with these items:
       - `jobID`: the integer motus ID for the new job
       - `uploadID`: the integer motus ID for the upload
+      - `newPath`: character; the new path to the file, relative to the NAS root.
 
+   - side effect:  the file will have been moved to `newPath`, and its ownership
+     will be changed to `sg:sg` with permissions `rw-rw-r--`
 
    **Recommended format for file paths:**
    We want file paths:
@@ -264,14 +267,13 @@ projects.
    So, a file path should look like this:
 
 ```
-      XXX/123/123_2017-10-20T15-21-35.123_user_name_for_file.zip
+      XXX/123_2017-10-20T15-21-35.123_user_name_for_file.zip
 ```
    where:
 
    - `XXX/` component is an optional prefix path, in case the upload tree isn't rooted at `uploadPath` (see above).
      It must not contain any `/../` components.
-   - `123` is the userID of the upload user; it is included twice: once as a folder, and once in the filename
-     to protect against inadvertent mis-filing; in the filename, it is followed by an underscore (`_`)
+   - `123` is the userID of the upload user; it is followed by an underscore (`_`)
    - `2017-10-20T15-21-35.123` is the timetamp of the upload; in the filename, it is followed by an underscore (`_`)
    - `user_name_for_file.zip` is the full user-supplied filename, in UTF-8; it must not include any forward slashes
       (`/`), double-quotes (`"`), or colons (`:`).
@@ -355,6 +357,9 @@ projects.
    works for administrators.
 
 ## Changelog ##
+
+2018-01-06
+   - `process_new_upload` now moves file, changes ownership, and returns path to new location
 
 2017-12-18:
    - new `get_job_stackdump` returns a URL and path for the stackdump of a job with an error.
