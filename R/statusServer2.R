@@ -336,8 +336,16 @@ process_new_upload = function(env) {
     if (is.null(projectID))
         return(error_from_app("missing integer projectID"))
     ts = safe_arg(json, ts, numeric)
-    if (is.null(ts))
+    if (is.null(ts)) {
+        ## try again, this time assuming it's a ymd_hms-compatible string in GMT
+        ts = safe_arg(json, ts, character)
+        if (!is.null(ts)) {
+            ts = as.numeric(ymd_hms(ts))
+        }
+        if (!isTRUE(ts > 0)) {
             ts = as.numeric(Sys.time())
+        }
+    }
 
     ## see whether we already have this file (by content digest)
     digest = digestFile(realpath)

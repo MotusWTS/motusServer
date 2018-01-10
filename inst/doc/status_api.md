@@ -242,7 +242,8 @@ projects.
         path` must not include any '..' component; i.e. ascent up the file tree is not permitted, to prevent malicious use
         from leaking system information.
         Both forward (`/`) and reverse (`\`) slashes are interpreted as folder delimiters.
-      - ts; double; timestamp (seconds since 1 Jan 1970, GMT); time at which file upload completed.  If not supplied, the current
+      - ts; either double or string scalar; time at which file upload completed.  If double, interpreted as seconds since 1 Jan 1970, GMT;
+        If string, interpreted as a datetime compatible with `R:lubridate::ymd_hms()`.  If not supplied, the current
         time is used.
 
       e.g.
@@ -357,6 +358,9 @@ projects.
    works for administrators.
 
 ## Changelog ##
+
+2018-01-09
+   - `process_new_upload` now optionally accepts ts as a string timestamp, not just a double.
 
 2018-01-06
    - `process_new_upload` now moves file, changes ownership, and returns path to new location
