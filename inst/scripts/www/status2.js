@@ -316,7 +316,8 @@ function fmt_params(x, with_links=false) {
     if (with_links)
         x = linkify_sernos_JSON(x);
     x = JSON.parse(x);
-    return Object.keys(x).filter(k=>k[k.length-1] != '_').map(k=>k +" = " + x[k]).join("; ");
+    rv = Object.keys(x).filter(k=>k[k.length-1] != '_').map(k=>k +" = " + x[k]).join("; ");
+    return rv.replace(/filename = \/.*\/[0-9]+_[^_]+_/, "filename = ");
 };
 
 // @function user_type
