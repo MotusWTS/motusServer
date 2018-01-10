@@ -5,21 +5,7 @@
 var serverURL = "https://sgdata.motus.org/status2/";
 
 // state of page
-var state = {
-    // assume there's an authTicket available in the auth_tkt cookie:
-    authToken : decodeURIComponent(document.cookie.match(/(^|;)auth_tkt=([^;]*)(;|$)/)[2]),
-    // selectors choose which jobs are shown
-    selector : {},
-    // ordering chooses what order to show available jobs
-    sortBy :"mtime",
-    sortDesc: true,
-    // should only jobs with (subjobs having) errors be shown?
-    errorOnly: false,
-    lastKey : [],
-    forwardFromKey: true, // when paging up/down; we specify first/last key, and direction from it
-    // other
-    debug: false // show dialog when query runs
-};
+var state;
 
 var latest_job_list = null; // list of jobs from most recent successful query
 
@@ -602,7 +588,32 @@ function on_change_find_job_selector(evt) {
     }
 };
 
+function getAuthTicketFromCookie() {
+    if (! document.cookie)
+        return null;
+    var parts = document.cookie.match(/(^|;\s*)auth_tkt=([^;]*)(;|$)/);
+    if (parts && parts.length > 2)
+        return decodeURIComponent(parts[2]);
+    return null;
+};
+
 function initStatus2Page() {
+    state = {
+        // assume there's an authTicket available in the auth_tkt cookie:
+        authToken : getAuthTicketFromCookie(),
+        // selectors choose which jobs are shown
+        selector : {},
+        // ordering chooses what order to show available jobs
+        sortBy :"mtime",
+        sortDesc: true,
+        // should only jobs with (subjobs having) errors be shown?
+        errorOnly: false,
+        lastKey : [],
+        forwardFromKey: true, // when paging up/down; we specify first/last key, and direction from it
+        // other
+        debug: false // show dialog when query runs
+    };
+
     $.Mustache.addFromDom();
     // attach a click handler to rows in the job table
     // Because they haven't been created yet, we need an existing static selector (".job_list")
