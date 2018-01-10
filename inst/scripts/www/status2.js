@@ -552,7 +552,7 @@ function on_click_error_job_id(event) {
         show_error_dump(event.currentTarget.getAttribute("job_id"));
 };
 
-function on_click_subjob_table_row(event) {
+function on_click_subjob_id(event) {
     // extract the job id from the "currentTarget" of the event
     // then jump to log for that job ID
 
@@ -570,7 +570,7 @@ function on_click_subjob_log_heading(event) {
     // don't handle event if this is a selection
     if (window.getSelection().toString().length == 0) {
         var jobID = event.currentTarget.getAttribute("job_id");
-        $(".job_details").scrollTop($(".job_details").scrollTop() + $(".subjob_table_row[job_id='" + jobID + "']").offset().top - $(".job_details").offset().top);
+        $(".job_details").scrollTop($(".job_details").scrollTop() + $(".subjob_id[job_id='" + jobID + "']").offset().top - $(".job_details").offset().top);
     }
 };
 
@@ -737,7 +737,7 @@ function initStatus2Page() {
 
     // attach a click handler to IDs of subjobs in detailed job listing
     // which take user to the log for that subjob
-    $(".job_details").on("click", ".subjob_table_row", on_click_subjob_table_row);
+    $(".job_details").on("click", ".subjob_id", on_click_subjob_id);
 
     // attach a click handler to headings of subjobs in log
     // which take user to the subjob entry

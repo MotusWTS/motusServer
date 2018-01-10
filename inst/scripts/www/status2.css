@@ -142,7 +142,7 @@
      text-shadow: 1px 1px 1px #555;
 }
 
-.subjob_table_row.with_log:hover {
+.subjob_id.with_log:hover {
      text-decoration:none;
      text-shadow: 1px 1px 1px #555;
 }
