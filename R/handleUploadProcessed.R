@@ -29,7 +29,7 @@ handleUploadProcessed = function(j) {
                   paste(sapply(jobProduced(tj), URLencode), collapse="\n   "),
                   "\n\nProcessing Summary:\n\n", tj$summary_, "\n\nYou can see the detailed log here:
 
-    https://sgdata.motus.org/status
+    https://sgdata.motus.org/status?jobID=", tj, "
 
  if you log in with your motus.org credentials.
 
