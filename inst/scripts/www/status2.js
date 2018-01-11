@@ -7,6 +7,9 @@ var serverURL = "https://sgdata.motus.org/status2/";
 // state of page
 var state;
 
+// placeholder for parsed query parameters
+var initial_query;
+
 var latest_job_list = null; // list of jobs from most recent successful query
 
 // @function toArray: guarantee argument is an array
@@ -699,6 +702,8 @@ function initStatus2Page() {
         debug: false // show dialog when query runs
     };
 
+    // in case a json QUERY parameter was supplied to the URL, use it as state instead.
+
     $.Mustache.addFromDom();
     // attach a click handler to rows in the job table
     // Because they haven't been created yet, we need an existing static selector (".job_list")
@@ -746,10 +751,38 @@ function initStatus2Page() {
     // read the state of the checkbox, which might be preserved across reloads
     state.errorOnly = $("#error_only_option").is(":checked");
 
-    // simulate a click so that the initial list of jobs loads
-    on_change_find_job_selector();
+    // set the global query parameter getter, based on the initial page URL
+    // this can be used like so:
+    // json = initial_query.get('json')
+    initial_query = new URLSearchParams(location.search.slice(1));
+
+    // before the first API call to populate the page, take into
+    // account any URL query parameters
+    handle_initial_query(initial_query);
+
+    // show whatever initial list of jobs is appropriate
+    show_job_list();
 
 };
+
+// @function handle_initial_query deal with user-specified GET parameters
+//
+// @param query
+//
+// So far, we support these:
+//  -  jobID=N:  show the single-line status for the specified job
+
+function handle_initial_query(query) {
+    jobID = query.get("jobID");
+    if (jobID) {
+        $("#find_job_selector").val("id").selectmenu("refresh");
+        $("#find_job_key").val(jobID);
+        state.selector = {id: jobID};
+        // simulate a click so that the appropriate form controls are visible
+        on_change_find_job_selector();
+    };
+};
+
 
 // @function copyToClipboard: copy the text from an element to the client's clipboard
 // @param element: jquery element selector
