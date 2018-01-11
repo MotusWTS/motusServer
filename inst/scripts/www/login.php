@@ -157,7 +157,7 @@ if (isset($_GET['login_form_user'])) {
         $cookie = getTKTHash($addr, $data['userID'], $tokens, $data['userType'], $SECRET_KEY);
         $need_login_form = false;
         header("Location: " . (isset($_GET['back']) && $_GET['back'] != '' ? $_GET['back'] : $DEFAULT_URL));
-        setcookie('auth_tkt', $cookie, time() + 60*60*24*30, '/');
+        setcookie('auth_tkt', $cookie, time() + 60*60*24*30, '/', "sgdata.motus.org");
         exit;
     } else {
         $error_message = "<br><center><b>Invalid login</b></center><br>";
