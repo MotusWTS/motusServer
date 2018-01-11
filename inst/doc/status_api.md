@@ -258,6 +258,16 @@ projects.
    - side effect:  the file will have been moved to `newPath`, and its ownership
      will be changed to `sg:sg` with permissions `rw-rw-r--`
 
+   If the file has already been uploaded, then `error` is set to a
+   message, and the field `details` contains the details of the
+   existing copy of the file, with subfields `jobID`, `uploadID`,
+   `motusUserID`, `motusProjectID`, `filename`, `sha1`, `ts`
+   corresponding to the file's treatment when it was first uploaded.
+
+   Note: The check for whether a file has been uploaded is by **contents**, not
+   name, so renaming a file and attempting to upload it again will result
+   in the same error.
+
    **Recommended format for file paths:**
    We want file paths:
     - encoded in UTF-8
@@ -359,6 +369,9 @@ projects.
    works for administrators.
 
 ## Changelog ##
+
+2018-01-11
+   - (doc only) detail error returned by `process_new_upload`
 
 2018-01-10
    - `process_new_upload` now optionally accepts an `email` address to notify user when
