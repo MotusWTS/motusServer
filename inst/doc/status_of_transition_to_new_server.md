@@ -1,4 +1,4 @@
-### Status of Transition to New Server 2018-Jan-12 ###
+## Status of Transition to New Server 2018-Jan-12 ##
 
 1. All files succesfully uploaded to the old server have now been
 replayed against the new server.
@@ -30,9 +30,9 @@ Doing so will happen in these steps:
 
 Full completion may take a couple of weeks.
 
-### Using the Motus Upload and Job Status Pages (new server) ###
+## Using the Motus Upload and Job Status Pages (new server) ##
 
-## Uploading Files from Receivers ##
+### Uploading Files from Receivers ###
 
 To upload files for processing on the new server, login with motus credentials here:
 
@@ -75,7 +75,7 @@ archives; we just don't want huge uploads being repeated.
 For each file, there is a status button that links to the
 status web page, which will show how the job is progressing.
 
-## Data Processing Status Site ##
+### Data Processing Status Site ###
 
    https://sgdata.motus.org/status
 
@@ -105,7 +105,7 @@ Features:
 - in the files list, you can click on a jobID to go to the job in
   which that file was processed.
 
-## Summary Product Download Site ##
+### Summary Product Download Site ###
 
    https://sgdata.motus.org/download
 
