@@ -1,4 +1,4 @@
-### Status of Transition to New Server ###
+### Status of Transition to New Server 2018-Jan-12 ###
 
 1. All files succesfully uploaded to the old server have now been
 replayed against the new server.
