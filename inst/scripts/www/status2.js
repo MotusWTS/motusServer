@@ -323,10 +323,10 @@ function show_job_list2(x) {
                                     return fmt_params(this.data[i])
                                 },
                                 fmt_ctime:function(i) {
-                                    return fmt_time(this.ctime[i])
+                                    return fmt_time(this.ctime[i], 16)
                                 },
                                 fmt_mtime:function(i) {
-                                    return fmt_time(this.mtime[i])
+                                    return fmt_time(this.mtime[i], 19)
                                 },
                                 fmt_done:function(i) {
                                     return fmt_done(this.sjDone[i], this.queue[i])
@@ -394,7 +394,7 @@ function fmt_time(x, n) {
         if (n !== undefined)
             rv = rv.substring(0, n);
     }
-    return rv;
+    return rv.replace(/T/, "\u00A0");
 };
 
 function fmt_params(x, with_links=false) {
