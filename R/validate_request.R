@@ -116,8 +116,13 @@ token = authToken)
         ##
         ##
         parts = strsplit(authToken, "!", fixed=TRUE)[[1]]
-        token_list = parts[2]
-        user_data = parts[3]
+        if (length(parts) == 3) {
+            token_list = parts[2]
+            user_data = parts[3]
+        } else {
+            token_list = ""
+            user_data = parts[2]
+        }
         ticket_digest = substring(parts[1], 1, 32)
 
         ## Another nice R edge case; how do you convert an 8-digit hex
