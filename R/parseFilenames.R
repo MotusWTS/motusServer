@@ -46,11 +46,11 @@ parseFilenames = function(f, base=basename(f), checkDOS=TRUE) {
 
     ## check and correct 8.3 DOS filenames, which are shortened SG filenames
 
+    rv$bootnum = as.integer(rv$bootnum)
+    rv$ts = ymd_hms(rv$tsString)
+
     if (checkDOS)
         rv = fixDOSfilenames(f, rv)
-
-    rv$ts = ymd_hms(rv$tsString)
-    rv$bootnum = as.integer(rv$bootnum)
 
     ## fix serial number collisions
 
