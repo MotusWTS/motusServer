@@ -92,38 +92,42 @@ fixDOSfilenames = function(f, info, onDisk=FALSE) {
                 dat = read.csv(gzfile(f[i], "r"), header=FALSE, as.is=TRUE, nrow=100, comment.char="#")
                 haveLines = TRUE
                 }, silent=TRUE)
-            if (! haveLines)
-                next
-            ## use timestamp from pulse record or clock-setting record; don't use GPS record, as GPS might be stuck
-            ts = dat[grep("^[pCS]", dat[, 1], perl=TRUE), 2]
-            ts = ts[! is.na(ts)][1]  ## drop NA timestamps; might not have any left
-            if (! is.na(ts)) {
-                ## there's at least one non-NA timestamp;
-                ## correct timestamp if from CLOCK_MONOTONIC
-                if (ts < 946684800) ## this is the beaglebone epoch
-                    ts = ts + 946684800
-                ## use this as the file timestamp
-                info$ts[i] = structure(ts, class=c("POSIXct", "POSIXt"))
-
-                ## assign tsCode as "P" if timestamp is pre-GPS; otherwise, "Z"
-                info$tsCode[i] = if(ts < 1262304000) "P" else "Z"
-            } else {
-                ## if unable to calculate a timestamp, set it to 0, and mark the bootnum as 0
-                ## This permits its addition to the receiver database, which requires non-null
-                ## timestamps for each file.  However, the file will not be processed because
-                ## of the zero bootnum.
+            if (!haveLines) {
                 info$ts[i] = structure(0, class=c("POSIXct", "POSIXt"));
-                info$bootnum[i] = 0;
-            }
-
-            ## determine the boot number by using the timestamp->bootnum map of other files
-
-            if (length(matches) > 1) {
-                info$bootnum[i] = approx(info$ts[matches], info$bootnum[matches], info$ts[i], method="constant", rule=2, f=0)$y
-            } else if (length(matches) == 1) {
-                info$bootnum[i] = info$bootnum[matches]
-            } else {
                 info$bootnum[i] = 0
+                info$tsCode[i] = "P"
+            } else {
+                ## use timestamp from pulse record or clock-setting record; don't use GPS record, as GPS might be stuck
+                ts = dat[grep("^[pCS]", dat[, 1], perl=TRUE), 2]
+                ts = ts[! is.na(ts)][1]  ## drop NA timestamps; might not have any left
+                if (! is.na(ts)) {
+                    ## there's at least one non-NA timestamp;
+                    ## correct timestamp if from CLOCK_MONOTONIC
+                    if (ts < 946684800) ## this is the beaglebone epoch
+                        ts = ts + 946684800
+                    ## use this as the file timestamp
+                    info$ts[i] = structure(ts, class=c("POSIXct", "POSIXt"))
+
+                    ## assign tsCode as "P" if timestamp is pre-GPS; otherwise, "Z"
+                    info$tsCode[i] = if(ts < 1262304000) "P" else "Z"
+                } else {
+                    ## if unable to calculate a timestamp, set it to 0, and mark the bootnum as 0
+                    ## This permits its addition to the receiver database, which requires non-null
+                    ## timestamps for each file.  However, the file will not be processed because
+                    ## of the zero bootnum.
+                    info$ts[i] = structure(0, class=c("POSIXct", "POSIXt"));
+                    info$bootnum[i] = 0;
+                }
+
+                ## determine the boot number by using the timestamp->bootnum map of other files
+
+                if (length(matches) > 1) {
+                    info$bootnum[i] = approx(info$ts[matches], info$bootnum[matches], info$ts[i], method="constant", rule=2, f=0)$y
+                } else if (length(matches) == 1) {
+                    info$bootnum[i] = info$bootnum[matches]
+                } else {
+                    info$bootnum[i] = 0
+                }
             }
 
             ## these two are universal in SG output files, except for .wav files
