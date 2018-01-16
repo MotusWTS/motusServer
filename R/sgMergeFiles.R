@@ -124,7 +124,6 @@ sgMergeFiles = function(files, j, dbdir = MOTUS_PATH$RECV) {
     allf = allf %>%
         mutate (
             Fserno     = toupper(Fserno),
-            FtsString  = toupper(FtsString),
             FtsCode    = toupper(FtsCode),
             Fport      = tolower(Fport),
             Fextension = tolower(Fextension),
