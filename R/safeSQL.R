@@ -6,14 +6,8 @@
 #' prevent e.g. SQL injection attacks.
 #'
 #' @param con RSQLite connection to database, as returned by
-#'     dbConnect(SQLite(), ...), or character scalar giving path
+#'     safeSQLiteConnect(), or character scalar giving path
 #'     to SQLite database, or MySQLConnection, or dplyr::src
-#'
-#' @param busyTimeout how many total seconds to wait while retrying a
-#'     locked database.  Default: 300 (5 minutes).  Uses \code{pragma busy_timeout}
-#'     to allow for inter-process DB locking.  Only implemented for
-#'     SQLite connections, as it appears unnecessary for MySQL
-#'     connections.
 #'
 #' @return a function, S with class "safeSQL" taking two or more
 #'     parameters:
@@ -90,20 +84,18 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-safeSQL = function(con, busyTimeout = 300) {
+safeSQL = function(con) {
     if (inherits(con, "safeSQL"))
         return(con)
     if (inherits(con, "src"))
         con = con$con
     if (is.character(con))
-        con = dbConnect(SQLite(), con, synchronous=NULL)
+        con = safeSQLiteConnect(con, create=TRUE)
     isSQLite = inherits(con, "SQLiteConnection")
     if (isSQLite) {
 
         ########## RSQLite ##########
 
-        dbExecute(con, sprintf("pragma busy_timeout=%d", round(busyTimeout * 1000)))
-        dbExecute(con, "pragma synchronous=off")
         structure(
             function(query, ..., .CLOSE=FALSE, .QUOTE=FALSE) {
                 if (.CLOSE) {

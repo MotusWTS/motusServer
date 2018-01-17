@@ -20,16 +20,15 @@
 #'
 #' @export
 #'
-#' @author minor changes by John Brzustowski
+#' @author minor changes from dplyr::src_sqlite by John Brzustowski
 
-src_sqlite = function (path, create = FALSE)
+safeSrcSQLite = function (path, create = FALSE)
 {
     dplyr::check_dbplyr()
-    if (!create && !file.exists(path)) {
+    con = safeSQLiteConnect(path, create)
+    if (is.null(con)) {
         dplyr:::bad_args("path", "must already exist, unless `create` = TRUE")
     }
-    con <- DBI::dbConnect(RSQLite::SQLite(), path, synchronous=NULL)
-    DBI::dbExecute(con, "pragma busy_timeout=300000")
     RSQLite::initExtension(con)
     dbplyr::src_dbi(con)
 }

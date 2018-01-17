@@ -30,7 +30,7 @@
 
 plotTagTimeline = function(sort = c("projCode", "dateBin", "sort", "nomFreq", "iMfgID"), filename="/sgm/pub/motus_tag_timeline.html") {
     f = file(filename, "w")
-    s = src_sqlite(MOTUS_METADB_CACHE)
+    s = safeSrcSQLite(MOTUS_METADB_CACHE)
     mot = tbl(s, "tags")
     proj = tbl(s, "projs") %>% mutate(projCode=label)
     sp = tbl(s, "species")

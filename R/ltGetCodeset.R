@@ -46,7 +46,7 @@ ltGetCodeset = function(codeSet = c("Lotek4", "Lotek3"), pathOnly=FALSE) {
         return(fn)
 
     if (Sys.getenv("USER") %in%  c("root", "sg") && file.exists(fn)) {
-        con = dbConnect(SQLite(), fn)
+        con = safeSQLiteConnect(fn)
         dbExecute(con, "pragma busy_timeout=300000")
         rv = dbGetQuery(con, "select id, g1, g2, g3 from tags order by id")
         dbDisconnect(con)

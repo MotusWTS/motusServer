@@ -110,13 +110,13 @@ makeReceiverPlot = function(recv, meta=NULL, title="", condense=3600, ts = NULL,
     owner = list(recv=FALSE, meta=FALSE)
 
     if (is.character(recv)) {
-        recv = src_sqlite(recv)
+        recv = safeSrcSQLite(recv)
         owner$recv = TRUE
     }
     if (is.null(meta)) {
         meta = recv
     } else if (is.character(meta)) {
-        meta = src_sqlite(meta)
+        meta = safeSrcSQLite(meta)
         owner$meta = TRUE
     }
 

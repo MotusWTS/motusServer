@@ -342,8 +342,7 @@ format(Now, "%Y %b %d %H:%M:%S GMT"),
     tbl = character(length(recv))
 
 
-    con = dbConnect(SQLite(), MOTUS_PATH$REMOTE_LIVE)
-    dbExecute(con, "pragma busy_timeout=300000")
+    con = safeSQLiteConnect(MOTUS_PATH$REMOTE_LIVE)
     sql = function(...) dbGetQuery(con, sprintf(...))
     if (! is.null(user)) {
         old_token = sql("select token from user_tokens where user='%s'", user)
@@ -361,9 +360,7 @@ format(Now, "%Y %b %d %H:%M:%S GMT"),
     for (i in seq(along=recv)) {
         db = file.path(MOTUS_PATH$REMOTE_STREAMS, paste0(recv[i], ".sqlite"))
         if (file.exists(db)) {
-            cat("About to try open ", db, "\n")
-            con = dbConnect(RSQLite::SQLite(), db)
-            dbExecute(con, "pragma busy_timeout=300000")
+            con = safeSQLiteConnect(db)
             bootCount = dbGetQuery(con, "select max (parval) from metadata where parname = 'bootCount'")[1,1]
             if (is.na(bootCount))
                 bootCount = 0
@@ -512,8 +509,7 @@ allReceiversApp = function(env) {
       if (is.na(recv$db)[i]) {
         tbl[i] = sprintf('<tr><td>%s</td><td colspan=8>No data received</td></tr>', recv$serno[i])
       } else {
-        con = dbConnect(SQLite(), file.path(MOTUS_PATH$REMOTE_STREAMS, paste0(recv$serno[i], ".sqlite")))
-        dbExecute(con, "pragma busy_timeout=300000")
+        con = safeSQLiteConnect(file.path(MOTUS_PATH$REMOTE_STREAMS, paste0(recv$serno[i], ".sqlite")))
         bootCount = dbGetQuery(con, "select max (parval) from metadata where parname = 'bootCount'")[1,1]
         if (is.na(bootCount))
           bootCount = 0

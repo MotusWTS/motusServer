@@ -4,16 +4,13 @@
 \alias{getRecvSrc}
 \title{Get the src_sqlite for a receiver database given its serial number.}
 \usage{
-getRecvSrc(serno, dbdir = MOTUS_PATH$RECV, busyTimeout = 300)
+getRecvSrc(serno, dbdir = MOTUS_PATH$RECV)
 }
 \arguments{
 \item{serno}{receiver serial number}
 
 \item{dbdir}{path to folder with existing receiver databases
 Default: \code{MOTUS_PATH$RECV}}
-
-\item{busyTimeout}{total amount of time to allow being spent retrying
-a busy database, in seconds.  Default:  300 = 5 minutes.}
 }
 \value{
 a src_sqlite for the receiver; if the receiver is new, this database

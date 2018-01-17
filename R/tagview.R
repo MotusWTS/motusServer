@@ -96,7 +96,7 @@ tagview = function(db, dbMeta=db, mobile=NULL, keep=FALSE) {
 
     for (n in c("db", "dbMeta"))
         if (! inherits(get(n), "src_sql"))
-            assign(n, src_sqlite(get(n)))
+            assign(n, safeSrcSQLite(get(n)))
 
     ## copy needed tables from dbMeta to temporary db on same connection as db
     ## FIXME: copy only those records needed for the tags

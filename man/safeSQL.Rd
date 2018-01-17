@@ -4,18 +4,12 @@
 \alias{safeSQL}
 \title{Return a function that safely performs sql queries on a connection.}
 \usage{
-safeSQL(con, busyTimeout = 300)
+safeSQL(con)
 }
 \arguments{
 \item{con}{RSQLite connection to database, as returned by
-dbConnect(SQLite(), ...), or character scalar giving path
+safeSQLiteConnect(), or character scalar giving path
 to SQLite database, or MySQLConnection, or dplyr::src}
-
-\item{busyTimeout}{how many total seconds to wait while retrying a
-locked database.  Default: 300 (5 minutes).  Uses \code{pragma busy_timeout}
-to allow for inter-process DB locking.  Only implemented for
-SQLite connections, as it appears unnecessary for MySQL
-connections.}
 }
 \value{
 a function, S with class "safeSQL" taking two or more
