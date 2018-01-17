@@ -486,7 +486,7 @@ function show_job_details2(x) {
                                    products: json[0].products_ && json[0] ? {
                                        __transpose__: true,
                                        link: toArray(json[0].products_),
-                                       name: toArray(json[0].products_).map(i=>String.replace(i, /^.*\//, ""))
+                                       name: toArray(json[0].products_).map(i=>i.replace(/^.*\//, ""))
                                    } : null
                                },
                                {
