@@ -313,16 +313,21 @@
     <script id="tpl_job_dump" type="text/html">
       {{! template to render a job dump query}}
       {{=⟦ ⟧=}}
-      Job ⟦jobID⟧ had an error and a stack dump is available to help with debugging.
+      Job ⟦jobID⟧ had an error.  Here are some things you can do:
       <div>
-        You can:
         <ul>
-          <li><a href="⟦URL⟧" class="url">click here</a> to download the stack dump (.rds file; ⟦fmt_size⟧)</li>
-          <li><b>or</b> load the file directly into R/rstudio running on this server, using this code:
+          <li><a href="⟦URL⟧" class="url">click here</a> to download the stack dump, to help with debugging (.rds file; ⟦fmt_size⟧)</li>
+          <li><b>or</b> load the stack dump directly into R/rstudio running on this server, using this code:
 <pre>
    x = readRDS("⟦path⟧")
 </pre>
           </li>
+          <li><b>or</b> retry this job (and all related failed subjobs).<br>
+            Enter an (optional) message to be added to the job log:
+            <span id="retry_job_message_span"><input type="text" id="retry_job_message" value=""></span>
+            <span id="retry_job_button" job_id="⟦jobID⟧">Retry Job</span>
+            <div id="retry_job_reply"></div>
+            </li>
           <li><b>or</b> hit <em>Esc</em> to close this window.</li>
         </ul>
     </script>

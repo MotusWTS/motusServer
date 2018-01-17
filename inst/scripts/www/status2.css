@@ -222,3 +222,7 @@
 #job_project_heading {
     min-width: 90px;
 }
+
+#retry_job_message {
+    min-width: 20em;
+}

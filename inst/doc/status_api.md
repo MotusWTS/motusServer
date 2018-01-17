@@ -368,7 +368,25 @@ projects.
    Because stack dump files might leak passwords or other credentials, this API call only
    works for administrators.
 
+### retry_job ###
+
+   retry_job (jobID, message) - administrative users only
+
+      - jobID: integer; ID of job with an error, or one of whose siblings has an error
+      - message: string; optional message to add to job log, indicating e.g. reason for retry
+
+   - return: if jobs have submitted for retry, then an object with these items:
+      - jobs: object with these array fields:
+         - jobID: integer array; ID of a job with an error that is being retried
+         - type: string array; job type of corresponding entry in `jobID`\
+      - reply: string; additional information
+
+   Otherwise, an error message is returned in item `error`.
+
 ## Changelog ##
+
+2018-01-17
+   - new `retry_job` submits a job with errors for retrying.
 
 2018-01-11
    - (doc only) detail error returned by `process_new_upload`

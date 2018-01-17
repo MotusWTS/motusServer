@@ -51,7 +51,16 @@ statusServer2 = function(port = 0x57A7, tracing=FALSE, maxRows=20L) {
 ## a string giving the list of apps for this server
 ## Note that we re-use authenticate_user from dataServer.R
 
-allStatusApps = c("status_api_info", "list_jobs", "_shutdown", "authenticate_user", "process_new_upload", "list_receiver_files", "get_receiver_info", "get_job_stackdump")
+allStatusApps = c("status_api_info",
+                  "list_jobs",
+                  "_shutdown",
+                  "authenticate_user",
+                  "process_new_upload",
+                  "list_receiver_files",
+                  "get_receiver_info",
+                  "get_job_stackdump",
+                  "retry_job"
+                  )
 
 sortColumns = c("ctime", "mtime", "id", "type", "motusProjectID", "motusUserID")
 
@@ -651,6 +660,79 @@ get_job_stackdump = function(env) {
     if (! file.exists(dumpfile))
         return(error_from_app("no stack dump available for job"))
     return_from_app(list(jobID = jobID, URL = getDownloadURL(errorJobID = jobID), size=file.size(dumpfile), path=dumpfile))
+}
+
+#' retry job(s) with errors
+
+retry_job = function(env) {
+    json = fromJSON(parent.frame()$postBody["json"], simplifyVector=FALSE)
+
+    if (tracing)
+        browser()
+
+    auth = validate_request(json, needProjectID=FALSE, needAdmin=TRUE)
+    if (inherits(auth, "error")) return(auth)
+
+    jobID = safe_arg(json, jobID, int, scalar=FALSE)
+
+    message = safe_arg(json, message, character)
+
+    j = Jobs[[jobID]]
+
+    error = NULL ## assume no error
+
+    if (is.null(j)) {
+        error = "invalid jobID"
+    } else {
+        ## lock the jobs database (against another user making a retry request)
+        lockSymbol("jobsDB")
+        on.exit(lockSymbol("jobsDB", lock=FALSE))
+
+        j = topJob(j)
+        done = progeny(j)$done
+        if (all(done > 0) && j$done > 0) {
+            error = paste("All subjobs related to job ", jobID, " succeeded.\nThere is nothing to retry!")
+        } else if (! any(c(done < 0, j$done < 0))) {
+            error = paste("No subjobs related to job ", jobID, " have errors.\nPerhaps they have already been submitted for a retry?")
+        }
+        ## mark jobs with errors as not done
+
+        if (j$done < 0)
+            j$done = 0
+
+        kids = progeny(j)[done < 0]  ## need to end up with a LHS object of
+        ## class "Twig" for the subsequent
+        ## assignment
+        kids$done = 0
+        jobIDs = as.integer(kids)
+        types = kids$type
+
+        msg = sprintf("Retrying subjob(s) %s of types %s.\nReason: %s", paste(kids, collapse=", "), paste(kids$type, collapse=", "),
+                      if(is.null(message)) "none given" else message)
+
+        jobLog(j, msg, summary=TRUE)
+        jobLog(j, "--- (retry) ---")
+
+        j$queue = 0L
+
+        if (moveJob(j, MOTUS_PATH$PRIORITY)) {
+            reply = "Job(s) moved to priority queue for retrying"
+        } else {
+            error = paste0("Failed to move job ", j, " to priority queue")
+        }
+    }
+    if (is.null(error)) {
+        return_from_app(list(
+            jobs = list(
+                jobID = jobIDs,
+                type = types
+            ),
+            reply = reply
+        )
+        )
+    } else {
+        error_from_app(error)
+    }
 }
 
 queueStatusApp = function(env) {

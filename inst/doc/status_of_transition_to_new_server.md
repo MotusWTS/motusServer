@@ -91,6 +91,11 @@ Features:
 
 - click on a subjob ID to jump to its log
 
+- click on the word `Error` in the subjob `Status` column to pop up a
+  window with error details.  This lets admin users:
+  - download an error stack-dump, for debugging in R
+  - retry the job, if the problem causing the error has been fixed
+
 - click on a receiver serial number to pop up a window summarizing
   that receiver.  For an SG, the summary shows how many files are
   stored, by day.  Normally, a file is stored in the filesystem

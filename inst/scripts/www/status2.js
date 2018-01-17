@@ -676,6 +676,13 @@ function on_change_find_job_selector(evt) {
     }
 };
 
+function on_click_retry_job(event) {
+    var message = $("#retry_job_message").val();
+    var jobID = event.currentTarget.getAttribute("job_id");
+    $("#retry_job_button").button("disable");
+    retry_job(jobID, message);
+};
+
 function getAuthTicketFromCookie() {
     if (! document.cookie)
         return null;
@@ -957,7 +964,7 @@ function show_error_dump2(x) {
                              {
                                  method:"html"
                              }
-                            );
+                           );
     $(".job_dump").dialog(
         {
             top: $("html").offset().top,
@@ -965,6 +972,38 @@ function show_error_dump2(x) {
             dragable:true,
             closeOnEscape:true,
             width:700,
-            title:"Get stack dump for job " + x.jobID + " ?"
+            title:"Error details for job " + x.jobID
         });
+    $("#retry_job_button").button().on("click", on_click_retry_job);
+    $("#retry_job_reply").toggle(false);
+};
+
+// @function retry_job: submit a job for retrying
+//
+// @param jobID: integer; ID of job with errors
+// @param message: string (optional); message to add to job's log
+//
+// @details submit retry_job call, then chain to retry_job_reply
+
+function retry_job(jobID, message) {
+    motus_status_api("retry_job",
+                     {
+                         jobID: jobID,
+                         message: message
+                     }, retry_job_reply);
+    $("#retry_job_reply").html("(waiting for reply from server)").toggle(true);
+};
+
+// @function retry_job_reply: show reply to "retry_job" in the job error details window
+//
+// @param x: retry_job reply, as returned by the motus status API entry
+
+
+function retry_job_reply(x) {
+    // show reply
+    var msg = x.error;
+    if (! msg) {
+        msg = "These jobs will be retried: " + x.jobs.jobID.join(", ") + "<br>" + x.reply;
+    }
+    $("#retry_job_reply").html(msg);
 };
