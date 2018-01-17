@@ -763,31 +763,49 @@ function initStatus2Page() {
     // json = initial_query.get('json')
     initial_query = new URLSearchParams(location.search.slice(1));
 
-    // before the first API call to populate the page, take into
-    // account any URL query parameters
+    // determine which API call to make from any query parameters provided.
     handle_initial_query(initial_query);
-
-    // show whatever initial list of jobs is appropriate
-    show_job_list();
-
 };
 
 // @function handle_initial_query deal with user-specified GET parameters
+// and call the appropriate page-populating function
 //
 // @param query
 //
 // So far, we support these:
+//  -  (no query parameters):  list the most recently-active jobs
 //  -  jobID=N:  show the single-line status for the specified job
+//  -  serno=XXX: show the receiver summary page for XXX, which should be
+//     a receiver serial number, e.g. "SG-1234BBBK5678" or "Lotek-158"
 
 function handle_initial_query(query) {
-    jobID = query.get("jobID");
-    if (jobID) {
+
+    // what type of query was specified?
+    var type = "";
+
+    // determine the query type and its parameters
+    if (jobID = query.get("jobID")) {
+        type = "jobID";
+    } else if (serno = query.get("serno")) {
+        type = "serno";
+    }
+
+    switch(type) {
+    case "jobID":
         $("#find_job_selector").val("id").selectmenu("refresh");
         $("#find_job_key").val(jobID);
         state.selector = {id: jobID};
         // simulate a click so that the appropriate form controls are visible
         on_change_find_job_selector();
-    };
+
+        show_job_list();
+        break;
+    case "serno":
+        show_recv_info(serno);
+        break;
+    default:
+        show_job_list();
+    }
 };
 
 
