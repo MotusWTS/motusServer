@@ -2,7 +2,7 @@
 #'
 #' By default, \code{dbConnect(RSQLite::SQLite(), ...)} connects and immediately
 #' tries to set synchronous mode.  If the database is locked, this
-#' fails \em{before we can use pragma busy_timeout} to set a timeout handler.
+#' fails \emph{before we can use pragma busy_timeout} to set a timeout handler.
 #' This can be circumvented if \code{synchronous=NULL} is added to the
 #' call to dbConnect.
 #'
@@ -19,6 +19,8 @@
 #' will be handled gracefully with retries.
 #'
 #' @export
+#'
+#' @seealso \code{\link{safeSQLiteConnect}} which this function calls.
 #'
 #' @author minor changes from dplyr::src_sqlite by John Brzustowski
 

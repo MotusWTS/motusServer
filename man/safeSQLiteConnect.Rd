@@ -27,7 +27,7 @@ by this function.
 This avoids the locking issue with the typical use of
 \code{dbConnect(RSQLite::SQLite(), ...)}, which connects and immediately
 tries to set synchronous mode, unless \code{synchronous=NULL} is specified.
-If the database is locked, the connection fails \em{before \code{pragma busy_timeout}}
+If the database is locked, the connection fails \emph{before \code{pragma busy_timeout}}
 can be used to set a timeout handler.
 }
 \note{
