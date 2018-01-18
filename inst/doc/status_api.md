@@ -383,7 +383,29 @@ projects.
 
    Otherwise, an error message is returned in item `error`.
 
+### get_upload_info ###
+
+   get_upload_info (uploadID) - administrative users only
+
+      - uploadID: integer; ID of uploaded file
+
+   - return: if uploadID is valid, then an object with these items:
+      - uploadID: integer; same value as provided by user, for convenience
+      - name: string; filename, as given by user, but with `USERID_TIMESTAMP_` prefix
+      - size: double; size of file on disk, in bytes
+      - dir: string; full path to directory file is in, as seen from rstudio on the server
+      - userID: integer; motus ID of user who uploaded file
+      - projectID: integer; motus ID of project user assigned file to
+      - jobID: integer; motus ID of job file was processed by
+      - ts: double; unix timestamp of file upload time
+      - contents: string; listing of file contents, if an archive.  Otherwise, "".
+
+   Otherwise, an error message is returned in item `error`.
+
 ## Changelog ##
+
+2018-01-18
+   - new `get_upload_info` returns details about an uploaded file
 
 2018-01-17
    - new `retry_job` submits a job with errors for retrying.

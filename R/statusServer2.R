@@ -59,7 +59,8 @@ allStatusApps = c("status_api_info",
                   "list_receiver_files",
                   "get_receiver_info",
                   "get_job_stackdump",
-                  "retry_job"
+                  "retry_job",
+                  "get_upload_info"
                   )
 
 sortColumns = c("ctime", "mtime", "id", "type", "motusProjectID", "motusUserID")
@@ -734,6 +735,67 @@ retry_job = function(env) {
         error_from_app(error)
     }
 }
+
+get_upload_info = function(env) {
+    json = fromJSON(parent.frame()$postBody["json"], simplifyVector=FALSE)
+
+    if (tracing)
+        browser()
+
+    auth = validate_request(json, needProjectID=FALSE, needAdmin=TRUE)
+    if (inherits(auth, "error")) return(auth)
+
+    ## parameters
+    uploadID  = safe_arg(json, uploadID, int)
+
+    ## validate
+
+    if (is.null(uploadID))
+        return(error_from_app("must specify uploadID for file"))
+
+    info = MotusDB("select * from uploads where uploadID=%d", uploadID)
+    if (!isTRUE(nrow(info) == 1))
+        return(error_from_app("uploadID is not valid"))
+
+    ## info has uploadID, jobID, motusUserID, motusProjectID, filename, sha1, ts
+    ## get file extension
+
+    exists = FALSE
+    try({
+        info$path = file.path(MOTUS_PATH$UPLOADS, info$filename)
+        info$size = file.size(info$path)
+        exists = TRUE
+        }, silent=TRUE)
+    if (! exists)
+        return(error_from_app("upload info in database but file does not exist!"))
+
+    ## get contents, depending on file extension
+    ext = tolower(regexPieces("(?i).(?<ext>7z|dta|zip|rar)$", info$filename)[[1]])
+    contents = ""
+
+    if (length(ext) > 0) {
+        contents = switch(ext,
+               `dta` = paste0("First 10 lines:\n   ", paste0(readLines(info$path, n=10), collapse="\n   "), "\n"),
+               `zip` = safeSys("unzip", "-v", info$path),
+               `7z` = safeSys("7z", "l", info$path),
+               `rar` = safeSys("unrar", "-t", info$path),
+               "unknown file type; I don't know how to summarize contents!"
+               )
+    }
+
+    return_from_app(list(
+        uploadID = uploadID,
+        name = basename(info$filename),
+        path = dirname(info$path),
+        userID = info$motusUserID,
+        projectID = info$motusProjectID,
+        jobID = info$jobID,
+        ts = info$ts,
+        size = info$size,
+        contents = contents))
+}
+
+
 
 queueStatusApp = function(env) {
     ## return summary of master queue and processing queues
