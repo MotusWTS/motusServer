@@ -822,13 +822,7 @@ function handle_initial_query(query) {
 
     switch(type) {
     case "jobID":
-        $("#find_job_selector").val("id").selectmenu("refresh");
-        $("#find_job_key").val(jobID);
-        state.selector = {id: jobID};
-        // simulate a click so that the appropriate form controls are visible
-        on_change_find_job_selector();
-
-        show_job_list();
+        show_job_details(jobID);
         break;
     case "serno":
         show_recv_info(serno);
