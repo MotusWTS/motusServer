@@ -226,3 +226,12 @@
 #retry_job_message {
     min-width: 20em;
 }
+
+.archive_listing {
+    white-space: pre-wrap;
+    font-family: monospace;
+}
+
+dt {
+    font-weight: bold;
+}

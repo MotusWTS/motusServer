@@ -91,6 +91,8 @@
     </div>
     <div class="job_dump">
     </div>
+    <div class="upload_info">
+    </div>
 
     <!---------  Template 'scripts' follow -------->
 
@@ -330,6 +332,27 @@
             </li>
           <li><b>or</b> hit <em>Esc</em> to close this window.</li>
         </ul>
+    </script>
+    <script id="tpl_upload_info" type="text/html">
+      {{! template to render an upload info query}}
+      {{=⟦ ⟧=}}
+      <div>
+        <dl>
+          <dt>Upload ID:</dt><dd>⟦uploadID⟧</dd>
+          <dt>Name:</dt><dd>⟦name⟧</dd>
+          <dt>Size:</dt><dd>⟦size⟧</dd>
+          <dt>Uploaded by user:</dt><dd>⟦userID⟧</dd>
+          <dt>Assigned to project:</dt><dd>⟦projectID⟧</dd>
+          <dt>Processed in job:</dt><dd><span ⟦&jobIDattr⟧>⟦jobID⟧</span></dd>
+          <dt>Upload date/time:</dt><dd>⟦ts⟧</dd>
+          <dt>Contents</dt><dd id="upload_contents">
+            <span class="archive_listing">
+          ⟦! the next item is not indented, to support `preformatted` styling⟧
+⟦&contents⟧
+            </span>
+          </dd>
+        </dl>
+      </div>
     </script>
   </body>
 </html>

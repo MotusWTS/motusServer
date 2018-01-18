@@ -738,8 +738,8 @@ function initStatus2Page() {
     // attach a click handler to any field with class job_id that's in a recv_files section
     $(".recv_info").on("click", ".recv_file_day_count", on_click_recv_file_day_count);
 
-    // attach a click handler to any field with class job_id that's in a recv_files section
-    $(".recv_files").on("click", ".job_id", on_click_jobs_table_row);
+    // attach a click handler to any field with class job_id that's in a recv_files or upload file section
+    $(".recv_files,.upload_info").on("click", ".job_id", on_click_jobs_table_row);
 
     // attach a click handler to any field with class receiver_serno that's in a job_details section
     $(".job_details").on("click", ".receiver_serno", on_click_receiver_serno);
@@ -774,9 +774,10 @@ function initStatus2Page() {
 //
 // So far, we support these:
 //  -  (no query parameters):  list the most recently-active jobs
-//  -  jobID=N:  show the single-line status for the specified job
+//  -  jobID=N:  show the details for the specified job
 //  -  serno=XXX: show the receiver summary page for XXX, which should be
 //     a receiver serial number, e.g. "SG-1234BBBK5678" or "Lotek-158"
+//  -  uploadID=N: show the details of specified upload file
 
 function handle_initial_query(query) {
 
@@ -788,6 +789,8 @@ function handle_initial_query(query) {
         type = "jobID";
     } else if (serno = query.get("serno")) {
         type = "serno";
+    } else if (uploadID = query.get("uploadID")) {
+        type = "uploadID";
     }
 
     switch(type) {
@@ -802,6 +805,9 @@ function handle_initial_query(query) {
         break;
     case "serno":
         show_recv_info(serno);
+        break;
+    case "uploadID":
+        show_upload_info(uploadID);
         break;
     default:
         show_job_list();
@@ -1024,4 +1030,52 @@ function retry_job_reply(x) {
         msg = "These jobs will be retried: " + x.jobs.jobID.join(", ") + "<br>" + x.reply;
     }
     $("#retry_job_reply").html(msg);
+};
+
+// @function show_upload_info: display a pop-up with info about an upload
+//
+// @param uploadID: integer; upload ID
+//
+// @details fetch upload info, then chain to show_upload_info2
+
+function show_upload_info(uploadID) {
+    motus_status_api("get_upload_info",
+                     {
+                         uploadID: uploadID,
+                     }, show_upload_info2);
+};
+
+// @function show_upload_info2: populate the pop-up with info about an upload
+//
+// @param x: upload info, as returned by the motus status API entry
+// `get_upload_info`
+
+
+function show_upload_info2(x) {
+
+    $(".upload_info").mustache("tpl_upload_info",
+                               {
+                                   uploadID: uploadID,
+                                   name: x.name.replace(/[0-9]+_[^_]+_/,""),
+                                   size: fmt_filesize(x.size),
+                                   userID: x.userID,
+                                   projectID: x.projectID,
+                                   jobID: x.jobID,
+                                   jobIDattr: 'class="job_id" job_id="' + x.jobID + '"',
+                                   ts: fmt_time(x.ts, 16),
+                                   contents: x.contents
+                               },
+                               {
+                                   method:"html"
+                               }
+                              );
+    $(".upload_info").dialog(
+        {
+            top: $("html").offset().top,
+            maxHeight: 600,
+            dragable:true,
+            closeOnEscape:true,
+            width:900,
+            title:"Details of uploaded file #" + x.uploadID
+        });
 };
