@@ -252,6 +252,23 @@ function linkify_sernos_JSON(s) {
     return s.replace(serno_re, linkify_one_serno_JSON);
 };
 
+// @function linkify_uploads: for each string of the form "filename = XXX; uploadID = N",
+// enclose it in a span of class "upload_ID" with attribute "uploadID" equal
+// to the upload ID.
+//
+// @param s: string
+// @return s with any upload file references linkified
+// @note: the _JSON variants use escaped quotes
+
+var upload_re = /filename = .*; uploadID = ([0-9]+)/ig;
+
+function linkify_one_upload(match, p1) {
+    return '<span class="upload_id" upload_id="' + p1 + '">' + match + '</span>';
+};
+
+function linkify_uploads(s) {
+    return s.replace(upload_re, linkify_one_upload);
+};
 
 // @function show_job_list: display a list of jobs
 //
@@ -404,6 +421,8 @@ function fmt_params(x, with_links=false) {
         x = linkify_sernos_JSON(x);
     x = JSON.parse(x);
     rv = Object.keys(x).filter(k=>k[k.length-1] != '_').map(k=>k +" = " + x[k]).join("; ");
+    if (with_links)
+        rv = linkify_uploads(rv);
     return rv.replace(/filename = \/.*\/[0-9]+_[^_]+_/, "filename = ");
 };
 
@@ -683,6 +702,11 @@ function on_click_retry_job(event) {
     retry_job(jobID, message);
 };
 
+function on_click_upload_ID(event) {
+    var uploadID = event.currentTarget.getAttribute("upload_id");
+    show_upload_info(uploadID);
+};
+
 function getAuthTicketFromCookie() {
     if (! document.cookie)
         return null;
@@ -754,6 +778,9 @@ function initStatus2Page() {
     // attach a click handler to headings of subjobs in log
     // which take user to the subjob entry
     $(".job_details").on("click", ".subjob_log_heading", on_click_subjob_log_heading);
+
+    // attach a click handler to any field with class upload_id a job_details section
+    $(".job_details").on("click", ".upload_id", on_click_upload_ID);
 
     // read the state of the checkbox, which might be preserved across reloads
     state.errorOnly = $("#error_only_option").is(":checked");
@@ -1055,7 +1082,7 @@ function show_upload_info2(x) {
 
     $(".upload_info").mustache("tpl_upload_info",
                                {
-                                   uploadID: uploadID,
+                                   uploadID: x.uploadID,
                                    name: x.name.replace(/[0-9]+_[^_]+_/,""),
                                    size: fmt_filesize(x.size),
                                    userID: x.userID,
