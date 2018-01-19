@@ -182,6 +182,9 @@ MOTUS_ARCHIVE_DIR_REGEX = paste0("\\.(", paste(MOTUS_ARCHIVE_SUFFIXES, collapse=
 
 MOTUS_SG_SERNO_REGEX = "(?i)(?<serno>SG-[0-9A-Z]{4}(?:RPi[123z]|BBBK|(BB[0-9][0-9A-Z]))[0-9A-Z]{4}(?:_[0-9])?)"
 
+## regex to exactly match any receiver serial number
+MOTUS_RECV_SERNO_REGEX = "(?i)^(?:(?:(?:SG-[0-9A-Z]{4}(?:RPi[123z]|BBBK|(?:BB[0-9][0-9A-Z]))[0-9A-Z]{4}(?:_[0-9])?))|(?:Lotek-D?[0-9]+))$"
+
 ## regex for matching DOS filenames (names of SG data files which have
 ## been shortened to 8.3 form)
 ## see https://en.wikipedia.org/wiki/8.3_filename#VFAT_and_Computer-generated_8.3_filenames
