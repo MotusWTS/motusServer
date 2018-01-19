@@ -220,28 +220,42 @@ deviceID_for_receiver = function(env) {
 
     serno = json$serno %>% as.character
 
-    if (length(serno) == 0)
+    if (length(serno) == 0 || ! all(grepl(MOTUS_RECV_SERNO_REGEX, serno)))
         return(error_from_app("invalid parameter(s)"))
 
-    ## select deviceIDs for those receivers deployed by projects the user has permissions to
+    ## get deviceIDs for all receivers
 
     MetaDB("create temporary table if not exists tempSernos (serno text)")
     MetaDB("delete from tempSernos")
     dbWriteTable(MetaDB$con, "tempSernos", data.frame(serno=serno), append=TRUE, row.names=FALSE)
 
     query = sprintf("
-select
+select distinct
     t1.serno,
     t2.deviceID
 from
    tempSernos as t1
-   join recvDeps as t2 on t1.serno=t2.serno
-where
-   t2.projectID in (%s)
-group by t2.serno
+   left join recvDeps as t2 on t1.serno=t2.serno
 ", paste(auth$projects, collapse=","))
 
-    return_from_app(MetaDB(query))
+    rv = MetaDB(query)
+
+    missing = which(is.na(rv$deviceID))
+
+    ## try lookup deviceIDs directly from receiver databases.
+
+    if (length(missing)) {
+        for (i in missing) {
+            src = getRecvSrc(rv$serno[i], create=FALSE)
+            if (! is.null(src)) {
+                deviceID = dbGetQuery(src$con, "select val from meta where key='deviceID'")[[1]]
+                rm(src) ## force closing of db connection
+                if (length(deviceID))
+                    rv$deviceID[i] = as.numeric(deviceID)
+            }
+        }
+    }
+    return_from_app(rv)
 }
 
 #' get receivers for a project
