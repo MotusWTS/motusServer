@@ -404,10 +404,15 @@ batches_for_receiver = function(env) {
     includeTesting = (json$includeTesting %>% as.logical)[1]
     minBatchStatus = if (isTRUE(includeTesting) && isTRUE(auth$isAdmin)) -1 else 1
 
-    ## select batches for a receiver that begin during one of the project's deployments
-    ## of that receiver  (we assume a receiver batch is entirely in a deployment; i.e.
-    ## that receivers get rebooted at least once between deployments to different
-    ## projects).
+    ## Create an ownership clause so that only batches to which the user has
+    ## permission are returned.  For admin users, ownership (or lack thereof)
+    ## is ignored.
+
+    if (!isTRUE(auth$isAdmin)) {
+        ownership = sprintf(" and t1.recvDepProjectID in (%s) ", paste(auth$projects, collapse=","))
+    } else {
+        ownership = ""
+    }
 
     query = sprintf("
 select
@@ -426,13 +431,13 @@ from
 where
    t1.batchID > %d
    and t1.motusDeviceID = %d
-   and t1.recvDepProjectID in (%s)
+   %s
    and t1.status >= %d
 order by
    t1.batchID
 limit %d
 ",
-batchID, deviceID, paste(auth$projects, collapse=","), minBatchStatus, MAX_ROWS_PER_REQUEST)
+batchID, deviceID, ownership, minBatchStatus, MAX_ROWS_PER_REQUEST)
     return_from_app(MotusDB(query))
 }
 
@@ -565,6 +570,16 @@ runs_for_receiver = function(env) {
         return(error_from_app("invalid parameter(s)"))
     }
 
+    ## Create an ownership clause so that only batches to which the user has
+    ## permission are returned.  For admin users, ownership (or lack thereof)
+    ## is ignored.
+
+    if (!isTRUE(auth$isAdmin)) {
+        ownership = sprintf(" and t2.recvDepProjectID in (%s) ", paste(auth$projects, collapse=","))
+    } else {
+        ownership = ""
+    }
+
     ## pull out appropriate runs
 
     query = sprintf("
@@ -584,12 +599,12 @@ from
 where
    t1.runID > %f
    and t2.batchID = %d
-   and t3.recvDepProjectID in (%s)
+   %s
 order by
    t1.runID
 limit %d
 ",
-runID, batchID, paste(auth$projects, collapse=","), MAX_ROWS_PER_REQUEST)
+runID, batchID, ownership, MAX_ROWS_PER_REQUEST)
     return_from_app(MotusDB(query))
 }
 
@@ -671,6 +686,16 @@ hits_for_receiver = function(env) {
         return(error_from_app("invalid parameter(s)"))
     }
 
+    ## Create an ownership clause so that only batches to which the user has
+    ## permission are returned.  For admin users, ownership (or lack thereof)
+    ## is ignored.
+
+    if (!isTRUE(auth$isAdmin)) {
+        ownership = sprintf(" and t2.recvDepProjectID in (%s) ", paste(auth$projects, collapse=","))
+    } else {
+        ownership = ""
+    }
+
     ## pull out appropriate hits
 
     query = sprintf("
@@ -692,12 +717,12 @@ from
 where
    t1.hitID > %d
    and t1.batchID = %d
-   and t2.recvDepProjectID in (%s)
+   %s
 order by
    t1.hitID
 limit %d
 ",
-hitID, batchID, paste(auth$projects, collapse=","), MAX_ROWS_PER_REQUEST)
+hitID, batchID, ownership, MAX_ROWS_PER_REQUEST)
     return_from_app(MotusDB(query))
 }
 
@@ -808,6 +833,16 @@ gps_for_receiver = function(env) {
         return(error_from_app("invalid parameter(s)"))
     }
 
+    ## Create an ownership clause so that only batches to which the user has
+    ## permission are returned.  For admin users, ownership (or lack thereof)
+    ## is ignored.
+
+    if (!isTRUE(auth$isAdmin)) {
+        ownership = sprintf(" and t2.recvDepProjectID in (%s) ", paste(auth$projects, collapse=","))
+    } else {
+        ownership = ""
+    }
+
     ## pull gps records provided the batch is for a deployment of the
     ## receiver by one of the projects the user is authorized for
 
@@ -824,13 +859,13 @@ from
    join batches as t2 on t2.batchID=t1.batchID
 where
    t2.batchID = %d
-   and t2.recvDepProjectID in (%s)
+   %s
    and t1.ts > %f
 order by
    t1.ts
 limit %d
 ",
-batchID, paste(auth$projects, collapse=","), ts, MAX_ROWS_PER_REQUEST)
+batchID, ownership, ts, MAX_ROWS_PER_REQUEST)
     return_from_app(MotusDB(query))
 }
 
@@ -1306,6 +1341,16 @@ size_of_update_for_receiver = function(env) {
     if (!isTRUE(is.finite(batchID)))
         batchID = 0
 
+    ## Create an ownership clause so that only batches to which the user has
+    ## permission are returned.  For admin users, ownership (or lack thereof)
+    ## is ignored.
+
+    if (!isTRUE(auth$isAdmin)) {
+        ownership = sprintf(" and t1.recvDepProjectID in (%s) ", paste(auth$projects, collapse=","))
+    } else {
+        ownership = ""
+    }
+
     ## count batches for a receiver that begin during one of the project's deployments
     ## of that receiver  (we assume a receiver batch is entirely in a deployment; i.e.
     ## that receivers get rebooted at least once between deployments to different
@@ -1335,12 +1380,12 @@ from
        where
           t1.batchID > %d
           and t1.motusDeviceID = %d
-          and t1.recvDepProjectID in (%s)
+          %s
           and t1.tsMotus >= 0
        group by t1.batchID
     ) as t3
 ",
-batchID, deviceID, paste(auth$projects, collapse=","))
+batchID, deviceID, ownership)
     rv = MotusDB(query)
 
     rv$numBytes = with(rv,
@@ -1434,6 +1479,16 @@ pulse_counts_for_receiver = function(env) {
         ## any real antenna
         ant = -32767
 
+    ## Create an ownership clause so that only batches to which the user has
+    ## permission are returned.  For admin users, ownership (or lack thereof)
+    ## is ignored.
+
+    if (!isTRUE(auth$isAdmin)) {
+        ownership = sprintf(" and t2.recvDepProjectID in (%s) ", paste(auth$projects, collapse=","))
+    } else {
+        ownership = ""
+    }
+
     ## pull pulse count records provided the batch is for a deployment of the
     ## receiver by one of the projects the user is authorized for
 
@@ -1448,7 +1503,7 @@ from
    join batches as t2 on t2.batchID=t1.batchID
 where
    t2.batchID = %d
-   and t2.recvDepProjectID in (%s)
+   %s
    and t1.ant > %d
    and t1.hourBin > %f
 order by
@@ -1456,7 +1511,7 @@ order by
    t1.hourBin
 limit %d
 ",
-batchID, paste(auth$projects, collapse=","), ant, hourBin, MAX_ROWS_PER_REQUEST)
+batchID, ownership, ant, hourBin, MAX_ROWS_PER_REQUEST)
     return_from_app(MotusDB(query))
 }
 
