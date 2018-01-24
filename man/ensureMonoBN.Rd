@@ -4,10 +4,23 @@
 \alias{ensureMonoBN}
 \title{Ensure we have monotonic boot numbers for a receiver database.}
 \usage{
-ensureMonoBN(src)
+ensureMonoBN(src, testOnly = FALSE)
 }
 \arguments{
 \item{src}{dplyr:src_sqlite open to an existing receiver database}
+
+\item{testOnly}{logical scalar; default FALSE.}
+}
+\value{
+if \code{testOnly==TRUE}:
+\itemize{
+\item return TRUE if a non-monotonicity
+in bootnum is detected; ie. if there exist two files F1 and F2
+such that \code{F1$ts > MOTUS_SG_EPOCH && F2$ts > MOTUS_SG_EPOCH && F1$ts > F2$ts && F1$bootnum < F2$bootnum}
+\item return FALSE otherwise
+}
+if \code{testOnly==FALSE}: return TRUE iff monoBN values were changed
+for any file.
 }
 \description{
 Sensorgnomes are supposed to know how many times they've been booted,
@@ -37,14 +50,14 @@ Unfortunately, this scheme has failed in a few situations:
   did not preserve the boot count on the target BBBK.  (I don't
   remember exactly which version(s) were affected).
 
+\item more generally, see https://github.com/jbrzusto/sensorgnome/issues/53
 }
 
-This function attempts to generate a monotonic sequence of boot numbers
-and
+This function can test for and correct non-monotonic boot counts.
 }
 \note{
-If err is not NA for a file, then other fields for that file
-    might not be set appropriately in the return value.
+If \code{testOnly==FALSE}, then change might be made to the monoBN field
+in file records.  Any such changes are recorded in the bootnumChanges table.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
