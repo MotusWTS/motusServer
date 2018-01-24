@@ -126,7 +126,7 @@ ensureMonoBN = function(src, testOnly = FALSE) {
                 ## (skip G records as these might be flaky due to a stuck GPS)
                 recs = read.csv(textConnection(grep("^[pSC]", recs, value=TRUE)), header=FALSE)
                 if (isTRUE(nrow(recs) > 0)) {
-                    tsfix = max(recs[,2])
+                    tsfix = max(recs[,2], na.rm=TRUE)
                     if (tsfix > MOTUS_SG_EPOCH) {
                         ## monoBN is smallest bootnum for which there are files with
                         ## larger real timestamps
