@@ -83,9 +83,46 @@
 motusSearchTags = function(projectID = NULL, tsStart = NULL, tsEnd = NULL, searchMode=c("startsBetween", "overlaps"), defaultLifespan=90, lifespanBuffer=1.5, regStart = NULL, regEnd = NULL, mfgID = NULL, ...) {
     searchMode = match.arg(searchMode)
 
-    colsNeeded = c("tagID","projectID","mfgID","dateBin","type","codeSet","manufacturer","model","lifeSpan","nomFreq","offsetFreq","period","periodSD","pulseLen","param1","param2","param3","param4","param5","param6","param7","param8","tsSG","approved","deployID","status","tsStart","tsEnd","deferSec","speciesID","markerNumber","markerType","latitude","longitude","elevation","comments")
+    colMap = c(
+        "tagID" = "id",
+        "projectID" = "projectID",
+        "mfgID" = "mfgID",
+        "dateBin" = "dateBin",
+        "type" = "type",
+        "codeSet" = "codeSet",
+        "manufacturer" = "manufacturer",
+        "model" = "model",
+        "lifeSpan" = "lifeSpan",
+        "nomFreq" = "nomFreq",
+        "offsetFreq" = "offsetFreq",
+        "period" = "period",
+        "periodSD" = "periodSD",
+        "pulseLen" = "pulseLen",
+        "param1" = "param1",
+        "param2" = "param2",
+        "param3" = "param3",
+        "param4" = "param4",
+        "param5" = "param5",
+        "param6" = "param6",
+        "param7" = "param7",
+        "param8" = "param8",
+        "tsSG" = "tsSG",
+        "approved" = "approved",
+        "deployID" = "deployID",
+        "status" = "status",
+        "tsStart" = "tsStart",
+        "tsEnd" = "tsEnd",
+        "deferSec" = "deferSec",
+        "speciesID" = "speciesID",
+        "markerNumber" = "markerNumber",
+        "markerType" = "markerType",
+        "latitude" = "latitude",
+        "longitude" = "longitude",
+        "elevation" = "elevation",
+        "comments" = "comments"
+    )
 
-    rv = motusQuery(MOTUS_API_SEARCH_TAGS, requestType="get",
+    mot = motusQuery(MOTUS_API_SEARCH_TAGS, requestType="get",
                list(
                    projectID = projectID,
                    tsStart   = tsStart,
@@ -98,16 +135,18 @@ motusSearchTags = function(projectID = NULL, tsStart = NULL, tsEnd = NULL, searc
                    mfgID     = mfgID
                ), ...)
 
-    if (! isTRUE(nrow(rv) > 0))
+    if (! isTRUE(nrow(mot) > 0))
         return(NULL)
 
     ## remove "TEST" records, which aren't real tags
-    rv = subset(rv, ! grepl("^TEST", mfgID, perl=TRUE))
+    mot = subset(mot, ! grepl("^TEST", mfgID, perl=TRUE))
 
-    ## fill in any missing columns, then return in stated order
-    for (col in colsNeeded) {
-        if (is.null(rv[[col]]))
-            rv[[col]] = NA
-    }
-    return(rv[, colsNeeded])
+    ## grab columns we want, fillling in NA for any which are missing
+    rv = data.frame('.ignore'=seq.int(length=nrow(mot)))
+
+    for(i in seq(along=colMap))
+        rv[[names(colMap)[i]]] = if (is.null(mot[[colMap[i]]])) NA else mot[[colMap[i]]]
+
+    rv['.ignore'] = NULL
+    return(rv)
 }
