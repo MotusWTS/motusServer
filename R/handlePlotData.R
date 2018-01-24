@@ -54,7 +54,7 @@ handlePlotData = function(j) {
     condense = 3600
     condenseLabel = "hourly"
 
-    if (length(motusProjectID) > 0) {
+    if (isTRUE(motusProjectID > 0)) {
         info = subset(info, projID == motusProjectID)
     }
 
