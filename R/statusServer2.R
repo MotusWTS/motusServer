@@ -337,13 +337,17 @@ process_new_upload = function(env) {
     if (tracing)
         browser()
 
-    auth = validate_request(json, needAdmin=TRUE)
+    auth = validate_request(json)
     if (inherits(auth, "error")) return(auth)
 
-    projectID = auth$projectID
+    projectID = safe_arg(json, projectID, int)
     userID = safe_arg(json, userID, int)
     email = safe_arg(json, email, character)
 
+    if (is.null(projectID))
+        return(error_from_app("missing integer projectID"))
+    if (! projectID %in% auth$projects)
+        return(error_from_app("user does not have permissions for project"))
     if (is.null(userID))
         return(error_from_app("missing integer userID"))
     path = safe_arg(json, path, char)
