@@ -383,7 +383,10 @@ process_new_upload = function(env) {
                               details = unclass(have)))
     ## move file and change ownership.  It will now have owner:group = "sg:sg" and
     ## permissions "rw-rw-r--"
-    newPath = file.path(MOTUS_PATH$UPLOADS, userID, basename(realpath))
+    newDir = file.path(MOTUS_PATH$UPLOADS, userID)
+    dir.create(newDir, showWarnings=FALSE)
+    newPath = file.path(newDir, basename(realpath))
+    ## use the shell, because file.rename() can't handle cross-filesystem moves...
     safeSys("mv", realpath, newPath)
     safeSys("sudo", "chown", "sg:sg", newPath)
     safeSys("sudo", "chmod", "u=rw,g=rw,o=r", newPath)
