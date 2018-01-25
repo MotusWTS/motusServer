@@ -1048,7 +1048,7 @@ function retry_job_reply(x) {
     // show reply
     var msg = x.error;
     if (! msg) {
-        msg = "These jobs will be retried: " + x.jobs.jobID.join(", ") + "<br>" + x.reply;
+        msg = "These jobs will be retried: " + toArray(x.jobs.jobID).join(", ") + "<br>" + x.reply;
     }
     $("#retry_job_reply").html(msg);
 };
