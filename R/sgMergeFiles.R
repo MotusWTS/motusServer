@@ -108,7 +108,7 @@ sgMergeFiles = function(files, j, dbdir = MOTUS_PATH$RECV) {
     allf = data_frame(
         ID       = seq_len(length(ff)),
         fullname = ff,
-        basename = ff %>% basename %>% iconv(to="UTF-8", sub="byte")
+        basename = bn %>% iconv(to="UTF-8", sub="byte")
     )
 
     ## On the SG, data are written simultaneously to .txt and .txt.gz files; when
