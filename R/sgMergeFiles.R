@@ -61,12 +61,45 @@ sgMergeFiles = function(files, j, dbdir = MOTUS_PATH$RECV) {
         stop("invalid or non-existent input files specified")
     if (file.info(files[1])$isdir) {
         ff = dir(files, recursive=TRUE, full.names=TRUE)
-    } else {
-        ff = sort(files)
     }
 
     if (length(ff) == 0)
         return(NULL)
+
+    ## handle files with duplicate names *within* the archive.
+    ## see https://github.com/jbrzusto/motusServer/issues/324
+    ## Mostly, this is just due to users inadvertently pasting
+    ## copies of folders inside other folders before creating
+    ## the archive.
+    ## But in case it is due to multiple downloads from the receiver
+    ## being combined into a single upload, we always pick the largest
+    ## copy from any set of files with the same name. This covers the
+    ## situation where a file might have grown between the two receiver
+    ## downloads, since we want the larger file in this case.
+
+    sizes = file.size(ff)
+
+    ## Get indexes of files in decreasing order by size
+    ii = order(sizes, decreasing=TRUE)
+
+    ## Sort files in increasing order by basename, once they are
+    ## already sorted in decreasing order by size.  Because the 2nd
+    ## sort is stable, files with identical basenames will appear
+    ## in decreasing order by size.
+
+    bn = basename(ff)[ii]
+    ff = ff[ii]
+    ii = order(bn)
+    bn = bn[ii]
+    ff = ff[ii]
+
+    ## drop duplicates
+    keep = which(! duplicated(bn))
+    if (length(keep) < length(bn)) {
+        ff = ff[keep]
+        bn = bn[keep]
+        jobLog(j, "This upload contains two or more files with identical names.  For each set of files with identical names, I will use only the largest.")
+    }
 
     ## clean up the basename, in case there are wonky characters; we
     ## don't do this to "fullname", to maintain our ability to refer
