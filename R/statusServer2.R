@@ -178,7 +178,7 @@ list_jobs = function(env) {
         where = makeWhere("t1.pid is null")  ## only top-level jobs; these have no parent id
     if (! length(projectID)) {
         projwhere = NULL
-    } else if (is.na(projectID)) {
+    } else if (all(is.na(projectID))) {
         projwhere = sprintf("t1.motusProjectID is null")
     } else {
         projwhere = sprintf("t1.motusProjectID in (%s)", paste(projectID, collapse=","))
