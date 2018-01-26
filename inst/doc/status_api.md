@@ -194,7 +194,8 @@ projects.
           - errorOnly: boolean: if true, only show top jobs for which a subjob had an error.
           - full: if `true`, then full details for the job (typically its parameters, log, summary, and list of
             product files) are returned in a JSON-formatted column called `data`
-          - countOnly: boolean; if `true`, return only a count of jobs for the given projectID and/or userID
+          - countOnly: boolean; if `true`, return only a count of jobs for the given projectID and/or userID,
+            as an object with field `count`, and value an integer array of length one. e.g. `{count:[123]}`
           - limit: integer; if present, maximum number of records to return.
 
       e.g.
@@ -407,6 +408,10 @@ projects.
    Otherwise, an error message is returned in item `error`.
 
 ## Changelog ##
+
+2018-01-26
+   - `list_jobs` now supports having both options `countOnly` and `errorOnly` be `true`,
+     which returns a count of jobs having at least one subjob with errors.
 
 2018-01-18
    - new `get_upload_info` returns details about an uploaded file

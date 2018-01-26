@@ -46,7 +46,7 @@ done
 
 export SPID=$$;
 
-PIDFILE=/sgm/dataServer.pid
+PIDFILE=/sgm/dataServer-$PORT.pid
 if [[ -s $PIDFILE ]]; then
     OLDPID=`cat $PIDFILE`
     if [[ -d /proc/$OLDPID ]]; then
