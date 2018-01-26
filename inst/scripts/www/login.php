@@ -130,7 +130,6 @@ if (isset($_GET['login_form_user'])) {
     $errno = curl_errno($ch);
     $err = curl_error($ch);
     curl_close($ch);
-    //    fwrite(STDERR, "Got: $res\nError: $errno = '$err'\n");
     if ($errno == 22 && $_SERVER['REMOTE_ADDR'] === "127.0.0.1") {
         /* motus.org is down *and* the request came from the local host, then
            generate a ticket for user `john` with admin privileges */
@@ -138,6 +137,8 @@ if (isset($_GET['login_form_user'])) {
                         "userType" => "administrator",
                         "projects" => array_fill_keys(range(0, 300), 1)
         );
+    } else if ($errno == 22) {
+        $data = array ( 'errorCode' => "<br><center><b>Invalid login</b></center><br>");
     } else {
         $data = json_decode($res, true);
     }
