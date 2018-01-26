@@ -290,6 +290,10 @@ projects.
    - `user_name_for_file.zip` is the full user-supplied filename, in UTF-8; it must not include any forward slashes
       (`/`), double-quotes (`"`), or colons (`:`).
 
+   **Debugging feature**: if `path` begins with `testing/`, then no processing will be done, and if otherwise
+   successful, this call will return with an error whose message will confirm the file was received but that no processing
+   will take place.
+
 ### list_receiver_files ###
 
    list_receiver_files (serno, day, authToken)

@@ -353,7 +353,9 @@ process_new_upload = function(env) {
     path = safe_arg(json, path, char)
     if (is.null(path))
         return(error_from_app("missing path"))
-    comps = strsplit(path, '[/\\\\]', perl=TRUE)[[1]]
+    ## convert back-slashes to forward slashes
+    path = gsub("\\", '/', path, fixed=TRUE)
+    comps = strsplit(path, '/', fixed=TRUE)[[1]]
     if (any(comps == ".."))
         return(error_from_app("path is not allowed to contain any '/../' components"))
     if (grepl('"', path, fixed=TRUE))
@@ -381,6 +383,11 @@ process_new_upload = function(env) {
     if (nrow(have))
         return(error_from_app("refusing to process file - it was already uploaded; see details; please contact motus.org, quoting this message, to have this file reprocessed",
                               details = unclass(have)))
+
+    ## debugging: if path begins with 'testing/', file is ignored, and a message is sent.
+    if (isTRUE(comps[1] == "testing")) {
+        error_from_app("testing file specified; everything looks okay, but I'm not processing it")
+    }
     ## move file and change ownership.  It will now have owner:group = "sg:sg" and
     ## permissions "rw-rw-r--"
     newDir = file.path(MOTUS_PATH$UPLOADS, userID)
