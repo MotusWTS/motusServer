@@ -269,14 +269,26 @@ list_jobs = function(env) {
     ## pull out appropriate jobs and details
 
     if (isTRUE(countOnly)) {
-
-        query = sprintf("
+        if (isTRUE(errorOnly)) {
+            query = "
 select
-   count(*)
-from jobs as t1
+   count( distinct t1.id ) as count
+from
+   jobs as t1
+   left join jobs as t2 on t2.stump=t1.id
+where
+   t2.done < 0
+"
+        } else {
+            query = sprintf("
+select
+   count(*) as count
+from
+   jobs as t1
 %s",
 where,
 having)
+        }
     } else {
         query = sprintf("
 select
