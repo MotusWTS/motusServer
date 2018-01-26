@@ -50,7 +50,7 @@ done
 
 export SPID=$$;
 
-PIDFILE=/sgm/statusServer2.pid
+PIDFILE=/sgm/statusServer2-$PORT.pid
 if [[ -s $PIDFILE ]]; then
     OLDPID=`cat $PIDFILE`
     if [[ -d /proc/$OLDPID ]]; then
