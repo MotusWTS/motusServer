@@ -136,7 +136,7 @@ safeSQL = function(con) {
     } else {
 
         ########## MySQL ########
-        dbGetQuery(con, "set character set 'utf8'")
+        dbExecute(con, "set names utf8")
         structure(
             function(..., .CLOSE=FALSE, .QUOTE=TRUE) {
                 if (.CLOSE) {
