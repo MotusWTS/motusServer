@@ -362,7 +362,8 @@ process_new_upload = function(env) {
         return(error_from_app("user does not have permissions for project"))
     if (is.null(userID))
         return(error_from_app("missing integer userID"))
-    path = safe_arg(json, path, char)
+    ## don't use safe_arg here; it doubles single quotes for use in queries.
+    path = as.character(json$path)
     if (is.null(path))
         return(error_from_app("missing path"))
     ## convert back-slashes to forward slashes
