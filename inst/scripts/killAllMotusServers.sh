@@ -26,6 +26,8 @@ after completing their current subjob, others after completing
 their current request.  This flag is passed to
 killMotusDataServer.sh, killMotusStatusServer, and killMotusProcessServer.sh
 
+Only data and status2 servers running on default ports are killed.
+
 Specifying -h gives this message.
 
 EOF

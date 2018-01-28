@@ -67,7 +67,7 @@ fi
 function onExit {
 ## cleanup the pid file, and possibly the temporary R file
 ## Log to the master log, because this server is stopped via signal.
-    echo `date +%Y-%m-%dT%H-%M-%S.%6N`: Data server killed. >> /sgm/logs/mainlog.txt
+    echo `date +%Y-%m-%dT%H-%M-%S.%6N`: Data server on port $PORT killed. >> /sgm/logs/mainlog.txt
     rm -f $PIDFILE
     if [[ $TRACE != 0 && "$MYTMPDIR" =~ /tmp/tmp* ]]; then
         rm -rf "$MYTMPDIR"
