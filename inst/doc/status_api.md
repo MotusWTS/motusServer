@@ -164,11 +164,14 @@ projects.
           - stump: ID of top level job; select only from that job and its descendents; for increased
             flexibility, if the provided stump is not the ID of a top-level job, then that job's
             stump is used instead.
-          - jobID: integer array;; to select only those jobs specified
+          - jobID: integer array; to select only those jobs specified
           - type: string array; the job type(s)
           - done: integer; 0: job not yet complete; 1: job completed successfully; -1: job had error
           - log: string; job whose log matches the string `log`, which can include globbing
             characters ('*' and '.')
+          - serno: string; serial number; jobs that processed data from this receiver; any top-level
+            job at least one of whose subjobs was for that receiver are included.  (An upload job
+            might have data from multiple receivers)
        - order: object with fields for ordering and paging the selected jobs:
           - sortBy: string scalar; null, or the sort key, i.e. one of these string constants:
              - "ctime": job creation time
@@ -408,6 +411,10 @@ projects.
    Otherwise, an error message is returned in item `error`.
 
 ## Changelog ##
+
+2018-01-29
+   - `list_jobs` now supports `"serno":"XXX"` in its `selector` field, to extract top-level jobs
+     any of whose subjobs has a `serno='XXX'` parameter, as this is quick.
 
 2018-01-26
    - `list_jobs` now supports having both options `countOnly` and `errorOnly` be `true`,

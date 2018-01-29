@@ -137,6 +137,7 @@ list_jobs = function(env) {
     type      = safe_arg(select, type, char, scalar=FALSE)
     done      = safe_arg(select, done, int)
     log       = safe_arg(select, log, char)
+    serno     = safe_arg(select, serno, char)
 
     ## ordering
     sortBy = safe_arg(order, sortBy, char)
@@ -205,6 +206,8 @@ list_jobs = function(env) {
         where = c(where, switch(as.character(done), `1` = "t1.done > 0", `0` = "t1.done = 0", `-1` = "t1.done < 0"))
     if (!is.null(log))
         where = c(where, sprintf("t1.data glob '%s'", log))
+    if (!is.null(serno))
+        where = c(where, sprintf("json_extract(t2.data, '$.serno')='%s'", serno))
 
     where = makeWhere(where)
     ## generate `order by` and additional `where` clause items for paging

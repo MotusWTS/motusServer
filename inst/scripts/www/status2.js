@@ -310,6 +310,12 @@ function show_job_list() {
     } else if (state.selector.log) {
         // add globbing wildcards to match anywhere in log
         pars.select = {log: "*" + state.selector.log + "*"};
+    } else if (state.selector.serno) {
+        var serno = state.selector.serno;
+        if (! serno.match(/^(Lotek-|SG-)/i)) {
+            serno = "SG-" + serno;
+        }
+        pars.select = {serno: serno};
     }
     if (state.maxRows) {
         pars.options.maxRows = state.maxRows;
@@ -659,6 +665,9 @@ function on_click_search(event) {
         break;
     case "all":
         state.selector = {};
+        break;
+    case "serno":
+        state.selector = {serno: findVal};
         break;
     }
     show_job_list();
