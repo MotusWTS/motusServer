@@ -804,13 +804,18 @@ get_upload_info = function(env) {
     contents = ""
 
     if (length(ext) > 0) {
-        contents = switch(ext,
-               `dta` = paste0("First 10 lines:\n   ", paste0(readLines(info$path, n=10), collapse="\n   "), "\n"),
-               `zip` = safeSys("unzip", "-v", info$path),
-               `7z` = safeSys("7z", "l", info$path),
-               `rar` = safeSys("unrar", "-t", info$path),
-               "unknown file type; I don't know how to summarize contents!"
-               )
+        tryCatch({
+            contents = switch(ext,
+                              `dta` = paste0("First 10 lines:\n   ", paste0(readLines(info$path, n=10), collapse="\n   "), "\n"),
+                              `zip` = safeSys("unzip", "-v", info$path),
+                              `7z` = safeSys("7z", "l", info$path),
+                              `rar` = safeSys("unrar", "-t", info$path),
+                              "unknown file type; I don't know how to summarize contents!"
+                              )
+        }, error=function(e) {
+            contents <<- paste0("Unable to list contents for archive ", basename(info$path), ":\n   ", e)
+        }
+        )
     }
 
     return_from_app(list(
