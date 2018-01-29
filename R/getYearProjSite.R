@@ -63,6 +63,7 @@ getYearProjSite = function(serno, ts=NULL, bn=NULL, motusProjectID=NULL) {
     ## if bn range specified, convert to a timestamp range
 
     if (isSG && !is.null(bn)) {
+        bn = pmax(1L, bn)
         tr = rdb("select min(tsStart) as tsLo, max(tsEnd) as tsHi from batches where monoBN between :lo and :hi and tsStart >= :valid",
                  lo = bn[1], hi = bn[2], valid=MOTUS_SG_EPOCH)
         if (nrow(tr) == 0)
@@ -109,8 +110,13 @@ getYearProjSite = function(serno, ts=NULL, bn=NULL, motusProjectID=NULL) {
         ## now fill in which range of boot sessions the deployment(s) cover (or overlap)
         ## a boot session overlaps a deployment if it begins before the deployment ends and ends
         ## after the deployment begins.
+
+        ## to deal with anomalously large tsEnd in batches (due to file or wonky GPS timestamps),
+        ## we pretend each batch ends by the time the next one begins.
+        rdb("drop table if exists correctedBatches")
+        rdb("create temporary table correctedBatches as select monoBN, tsStart, ifnull(min(tsEnd, (select min(t2.tsStart) from batches as t2 where t2.tsStart > t1.tsStart)), tsEnd) as tsEnd from batches as t1")
         for (i in seq(along=rv$serno)) {
-            rv[i, c("bnStart", "bnEnd")] = unlist(rdb("select min(monoBN) as bnLo, max(monoBN) as bnHi from batches where (:tsHi is null or tsStart <= :tsHi) and tsEnd >= :tsLo",
+            rv[i, c("bnStart", "bnEnd")] = unlist(rdb("select min(monoBN) as bnLo, max(monoBN) as bnHi from correctedBatches where monoBN > 0 and (:tsHi is null or tsStart <= :tsHi) and tsEnd >= :tsLo",
                       tsLo = rv$tsStart[i], tsHi = rv$tsEnd[i]))
         }
         rdb(.CLOSE=TRUE)

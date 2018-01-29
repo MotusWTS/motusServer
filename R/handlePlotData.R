@@ -84,24 +84,26 @@ handlePlotData = function(j) {
         ## generate the plot object and condensed dataset
         rv = makeReceiverPlot(src, MOTUS_METADB_CACHE, title, condense, ts = unlist(info[i, c("tsStart", "tsEnd")]), unlist(info[i, c("bnStart", "bnEnd")]))
 
-        saveRDS(rv$data, datafilename)
-        png(plotfilename, width=rv$width, height=rv$height, type="cairo-png")
-        print(rv$plot)
-        dev.off()
+        if (!is.null(rv)) {
+            saveRDS(rv$data, datafilename)
+            png(plotfilename, width=rv$width, height=rv$height, type="cairo-png")
+            print(rv$plot)
+            dev.off()
 
-        ## make a pdf too, assuming a 90 dpi display
-        pdfname = sub("\\.png$", ".pdf", plotfilename, perl=TRUE)
-        pdf(pdfname, width=rv$width / 90, height=rv$height / 90)
-        print(rv$plot)
-        dev.off()
+            ## make a pdf too, assuming a 90 dpi display
+            pdfname = sub("\\.png$", ".pdf", plotfilename, perl=TRUE)
+            pdf(pdfname, width=rv$width / 90, height=rv$height / 90)
+            print(rv$plot)
+            dev.off()
 
-        targDir = getProjDir(info$projID[i], isTesting)
-        file.symlink(plotfilename, targDir)
-        file.symlink(pdfname, targDir)
-        file.symlink(datafilename, targDir)
-        url = getDownloadURL(info$projID[i], isTesting)
-        jobLog(j, paste0("Exported hourly dataset (and plot) to:  ", basename(datafilename), "(.png/.pdf)"))
-        jobProduced(j, file.path(url, basename(c(plotfilename, pdfname, datafilename))))
+            targDir = getProjDir(info$projID[i], isTesting)
+            file.symlink(plotfilename, targDir)
+            file.symlink(pdfname, targDir)
+            file.symlink(datafilename, targDir)
+            url = getDownloadURL(info$projID[i], isTesting)
+            jobLog(j, paste0("Exported hourly dataset (and plot) to:  ", basename(datafilename), "(.png/.pdf)"))
+            jobProduced(j, file.path(url, basename(c(plotfilename, pdfname, datafilename))))
+        }
     }
     closeRecvSrc(src)
     return (TRUE)

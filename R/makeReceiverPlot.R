@@ -96,6 +96,9 @@
 #'
 #' }
 #'
+#' However, if no data are available for the specified \code{ts} and \code{monoBN} parameters,
+#' then the function returns NULL.
+#'
 #' Note: \code{n}, \code{freq}, and \code{sig} are for the given tag and antenna
 #' during the condensation period.
 #'
@@ -153,9 +156,14 @@ makeReceiverPlot = function(recv, meta=NULL, title="", condense=3600, ts = NULL,
         }
     } else {
         if (! is.null(monoBN)) {
-            monoBNlo = min(monoBN)
-            monoBNhi = max(monoBN)
-            tags = tags %>% filter_ (~monoBN >= monoBNlo & monoBN <= monoBNhi)
+            if (isTRUE(all(is.finite(monoBN)))) {
+                monoBNlo = min(monoBN)
+                monoBNhi = max(monoBN)
+                tags = tags %>% filter_ (~monoBN >= monoBNlo & monoBN <= monoBNhi)
+            } else {
+                ## wonky monoBN, so return NULL
+                return(NULL)
+            }
         }
     }
 
