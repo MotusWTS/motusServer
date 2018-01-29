@@ -793,6 +793,8 @@ function initStatus2Page() {
 //  -  serno=XXX: show the receiver summary page for XXX, which should be
 //     a receiver serial number, e.g. "SG-1234BBBK5678" or "Lotek-158"
 //  -  uploadID=N: show the details of specified upload file
+//  -  jobsForSerno=XXX: show jobs related to receiver XXX, which should be
+//     a receiver serial number, e.g. "SG-1234BBBK5678" or "Lotek-158"
 
 function handle_initial_query(query) {
 
@@ -806,6 +808,8 @@ function handle_initial_query(query) {
         type = "serno";
     } else if (uploadID = query.get("uploadID")) {
         type = "uploadID";
+    } else if (jobsForSerno = query.get("jobsForSerno")) {
+        type = "jobsForSerno";
     }
 
     switch(type) {
@@ -818,6 +822,9 @@ function handle_initial_query(query) {
     case "uploadID":
         show_upload_info(uploadID);
         break;
+    case "jobsForSerno":
+        state.selector = {serno:jobsForSerno};
+        // fall through
     default:
         show_job_list();
     }
