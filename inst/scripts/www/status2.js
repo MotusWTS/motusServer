@@ -137,28 +137,7 @@ function motus_status_replied(x, textStatus, jqXHR) {
     cb = jqXHR._extra.cb;
     api = jqXHR._extra.api;
     if (x.error) {
-        par = jqXHR._extra.par;
-        $(".job_error").mustache("tpl_job_error",
-                                 {
-                                     error:x.error,
-                                     api: serverURL + api,
-                                     state: JSON.stringify(state, omit_authToken, 3),
-                                     json: JSON.stringify(par, omit_authToken, 3)
-                                 },
-                                 {
-                                     method:"html"
-                                 }
-                                );
-        $(".job_error").dialog(
-            {
-                top: $("html").offset().top,
-                maxHeight: 800,
-                dragable:true,
-                closeOnEscape:true,
-                width:800,
-                title:"Error from Motus Status Server!"
-            });
-        $(".copy_error_message").button({icon:"ui-icon-copy"}).on("click", function() {copyToClipboard(".job_error_contents")});
+        motus_query_failed(jqXHR, textStatus);
         return;
     }
     if (api == "authenticate_user") {
@@ -205,7 +184,7 @@ function motus_query_failed(jqXHR, textStatus, errorThrown) {
     $(".job_error").mustache("tpl_job_error",
                              {
                                  error:textStatus + "\n" + jqXHR.responseText,
-                                 api: jqXHR._extra.URL,
+                                 api: jqXHR._extra.api,
                                  state: JSON.stringify(state, omit_authToken, 3),
                                  json: JSON.stringify(jqXHR._extra.pars, omit_authToken, 3)
                              },
