@@ -792,7 +792,7 @@ get_upload_info = function(env) {
 
     exists = FALSE
     try({
-        info$path = file.path(MOTUS_PATH$UPLOADS, info$filename)
+        info$path = file.path(MOTUS_PATH$UPLOADS, info$motusUserID, info$filename)
         info$size = file.size(info$path)
         exists = TRUE
         }, silent=TRUE)
