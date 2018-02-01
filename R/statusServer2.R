@@ -273,15 +273,15 @@ list_jobs = function(env) {
 
     if (isTRUE(countOnly)) {
         if (isTRUE(errorOnly)) {
-            query = "
+            where = makeWhere(c(where, "t2.done < 0"))
+            query = sprintf("
 select
    count( distinct t1.id ) as count
 from
    jobs as t1
    left join jobs as t2 on t2.stump=t1.id
-where
-   t2.done < 0
-"
+   %s
+", where)
         } else {
             query = sprintf("
 select
