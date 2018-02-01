@@ -61,7 +61,7 @@ deleteTestBatches = function(batchID) {
         MotusDB("delete from batchParams where batchID in (%s)", bids)
         MotusDB("delete from pulseCounts where batchID in (%s)", bids)
         MotusDB("delete from reprocessBatches where batchID in (%s)", bids)
-        MotusDB("delete from reprocessBatches where batchID in (%s)", SQL(paste(collapse( - bid, collapse=",")))) ## negated batchIDs might also be in reprocessBatches
+        MotusDB("delete from reprocessBatches where batchID in (%s)", SQL(paste(- bid, collapse=","))) ## negated batchIDs might also be in reprocessBatches
     }
     ## return TRUE for any batchID that was a test batch
 
