@@ -772,24 +772,36 @@ get_upload_info = function(env) {
     if (tracing)
         browser()
 
-    auth = validate_request(json, needProjectID=FALSE, needAdmin=TRUE)
+    auth = validate_request(json, needProjectID=FALSE)
     if (inherits(auth, "error")) return(auth)
 
     ## parameters
     uploadID  = safe_arg(json, uploadID, int)
+    sha1  = safe_arg(json, sha1, char)
+    listContents = safe_arg(json, listContents, logical)
+
+    ## default is to include list of contents
+    if (is.null(listContents))
+        listContents = TRUE
 
     ## validate
 
-    if (is.null(uploadID))
-        return(error_from_app("must specify uploadID for file"))
+    if (is.null(uploadID) + is.null(sha1) != 1)
+        return(error_from_app("must specify exactly one of `uploadID` or `sha1` for file"))
 
-    info = MotusDB("select * from uploads where uploadID=%d", uploadID)
+    if (!is.null(uploadID)) {
+        info = MotusDB("select * from uploads where uploadID=%d", uploadID)
+    } else {
+        info = MotusDB("select * from uploads where sha1=%s", sha1)
+    }
     if (!isTRUE(nrow(info) == 1))
-        return(error_from_app("uploadID is not valid"))
+        return(error_from_app("no such file"))
 
     ## info has uploadID, jobID, motusUserID, motusProjectID, filename, sha1, ts
     ## get file extension
 
+    if (! isTRUE(info$motusProjectID %in% auth$projects))
+        return(error_from_app("file has been uploaded but belongs to a project you don't have permissions for"))
     exists = FALSE
     try({
         info$path = file.path(MOTUS_PATH$UPLOADS, info$motusUserID, info$filename)
@@ -803,7 +815,7 @@ get_upload_info = function(env) {
     ext = tolower(regexPieces("(?i).(?<ext>7z|dta|zip|rar)$", info$filename)[[1]])
     contents = ""
 
-    if (length(ext) > 0) {
+    if (listContents && length(ext) > 0) {
         tryCatch({
             contents = switch(ext,
                               `dta` = paste0("First 10 lines:\n   ", paste0(readLines(info$path, n=10), collapse="\n   "), "\n"),
@@ -819,7 +831,7 @@ get_upload_info = function(env) {
     }
 
     return_from_app(list(
-        uploadID = uploadID,
+        uploadID = info$uploadID,  ## in case sha1 was specified by caller
         name = basename(info$filename),
         path = dirname(info$path),
         userID = info$motusUserID,
@@ -827,7 +839,8 @@ get_upload_info = function(env) {
         jobID = info$jobID,
         ts = info$ts,
         size = info$size,
-        contents = contents))
+        contents = contents,
+        sha1 = info$sha1))
 }
 
 

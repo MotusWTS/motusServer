@@ -393,9 +393,14 @@ projects.
 
 ### get_upload_info ###
 
-   get_upload_info (uploadID) - administrative users only
+   get_upload_info (uploadID, sha1, listContents)
 
-      - uploadID: integer; ID of uploaded file
+      - uploadID: integer (optional); ID of uploaded file
+      - sha1: string, hex digits (optional); sha1 hash of file contents
+      - listContents: boolean (optional); return summary of file contents?
+        default: true.
+
+   Exactly one of `uploadID` or `sha1` must be given.
 
    - return: if uploadID is valid, then an object with these items:
       - uploadID: integer; same value as provided by user, for convenience
@@ -406,11 +411,20 @@ projects.
       - projectID: integer; motus ID of project user assigned file to
       - jobID: integer; motus ID of job file was processed by
       - ts: double; unix timestamp of file upload time
-      - contents: string; listing of file contents, if an archive.  Otherwise, "".
+      - contents: string; listing of file contents, if file is an archive and `listContents`
+        is true.  Otherwise, "".
+      - sha1: string of hex digits; sha1 hash of uploaded file
 
    Otherwise, an error message is returned in item `error`.
 
 ## Changelog ##
+
+2018-01-30
+   `get_upload_info`:
+      - no longer for admin users only
+      - return error if specified file does not belong to a project user has permissions to
+      - allow query by sha1 hash instead of uploadID
+      - allow specifying `listContents=false` for lightweight test of file existence
 
 2018-01-29
    - `list_jobs` now supports `"serno":"XXX"` in its `selector` field, to extract top-level jobs
