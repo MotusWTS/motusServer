@@ -41,15 +41,22 @@ deleteTestBatches = function(batchID) {
         MotusDB("delete from batches where batchID in (%s)", bids)
         MotusDB("delete from projBatch where batchID in (%s)", bids)
         MotusDB("delete from gps where batchID in (%s)", bids)
-        MotusDB("delete from runs where batchIDbegin in (%s)", bids)
+        MotusDB("drop table if exists _runs_from_test_batches")
+        MotusDB("create temporary table _runs_from_test_batches as select runID from runs where batchIDbegin in (%s)", bids)
+        MotusDB("drop index if exists _runs_from_test_batches_runID on _runs_from_test_batches")
+        MotusDB("create index _runs_from_test_batches_runID on _runs_from_test_batches(runID)")
 
         ## runs which overlap but don't start in this batch will be deleted when
-        ## the batch in which they start is deleted.  We assume that test batches
-        ## arise only from rerunning a full boot session, in which case all runs
-        ## will nest within that, validating this approach.
+        ## the batch in which they start is deleted.  Runs should overlap either
+        ## only test batches, or only non-test batches.  However due to a bug
+        ## whereby the tag finder was resumed for a non-test batch from stated
+        ## saved in a test batch (see https://github.com/jbrzusto/motusServer/issues/342)
+        ## this has not always been the case, so we have to delete runs (and
+        ## their hits) from *all* batches where they occur if they began in a test batch.
 
-        MotusDB("delete from batchRuns where batchID in (%s)", bids)
-        MotusDB("delete from hits where batchID in (%s)", bids)
+        MotusDB("delete t2 from _runs_from_test_batches as t1 join batchRuns as t2 on t1.runID=t2.runID")
+        MotusDB("delete t2 from _runs_from_test_batches as t1 join hits as t2 on t1.runID=t2.runID")
+        MotusDB("delete from runs where batchIDbegin in (%s)", bids)
         MotusDB("delete from batchProgs where batchID in (%s)", bids)
         MotusDB("delete from batchParams where batchID in (%s)", bids)
         MotusDB("delete from pulseCounts where batchID in (%s)", bids)
