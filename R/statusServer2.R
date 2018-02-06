@@ -663,6 +663,13 @@ get_receiver_info = function(env) {
 
     ## extract items which are the same in every row
     rv$deviceID = deps$deviceID[1]
+
+    if (! isTRUE(rv$deviceID > 0)) {
+        ## even if there is no deployment record for it, a known
+        ## receiver will have a motus device ID
+        rv$deviceID = getMotusDeviceID(serno)
+    }
+
     ## drop no-longer-needed fields
     deps[c("deviceID", "receiverType", "id")] = NULL
 
