@@ -598,11 +598,11 @@ list_receiver_files = function(env) {
     if (is.null(serno))
         return(error_from_app("must specify receiver serial number (`serno`)"))
 
-    if (!grepl(SERNO_REGEX, serno, perl=TRUE))
+    path = getRecvDBPath(serno)
+    if (is.null(path))
         return(error_from_app("invalid receiver serial number (`serno`)"))
-
-    if (!any(file.exists(c(file.path(MOTUS_PATH$FILE_REPO, serno), file.path(MOTUS_PATH$RECV, paste0(serno, ".motus"))))))
-        return(error_from_app("unknown receiver"))
+    if (!file.exists(path))
+        return(error_from_app("receiver not known to motus"))
 
     isSG = getRecvType(serno) == "SENSORGNOME"
 
@@ -654,8 +654,11 @@ get_receiver_info = function(env) {
     if (is.null(serno))
         return(error_from_app("must specify receiver serial number (`serno`)"))
 
-    if (!grepl(SERNO_REGEX, serno, perl=TRUE))
+    path = getRecvDBPath(serno)
+    if (is.null(path))
         return(error_from_app("invalid receiver serial number (`serno`)"))
+    if (!file.exists(path))
+        return(error_from_app("receiver not known to motus"))
 
     rv = list(serno=serno, receiverType=getRecvType(serno))
 
