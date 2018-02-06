@@ -42,6 +42,9 @@ motusListSensorDeps = function(projectID = NULL, ...) {
     if (!isTRUE(nrow(rv) > 0))
         return(NULL)
 
+    ## fill in projectID
+    rv$projectID = projectID
+
     ## fill in any missing columns, then return in stated order
     for (col in colsNeeded) {
         if (is.null(rv[[col]]))
