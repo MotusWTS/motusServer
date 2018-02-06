@@ -154,9 +154,11 @@ list_jobs = function(env) {
     full                   = isTRUE(safe_arg(options, full, logical))
     includeSubjobs         = isTRUE(safe_arg(options, includeSubjobs, logical))
     errorOnly              = isTRUE(safe_arg(options, errorOnly, logical))
-    maxRows                = safe_arg(select, maxRows, int)
-    if (is.null(maxRows))
-        maxRows = MAX_ROWS_PER_REQUEST
+    limit                  = safe_arg(options, limit, int)
+    if (is.null(limit))
+        limit = MAX_ROWS_PER_REQUEST
+    else
+        limit = min(limit, MAX_ROWS_PER_REQUEST)
 
     ## validate access
 
@@ -323,7 +325,7 @@ where,
 if (isTRUE(includeSubjobs)) "" else " group by t1.id",
 having,
 order,
-if (is.null(stump)) maxRows else -1
+if (is.null(stump)) limit else -1
 )
     }
     ## if forwardFromKey was FALSE, we need to re-order results to match the
