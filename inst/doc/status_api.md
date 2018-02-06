@@ -199,7 +199,11 @@ projects.
             product files) are returned in a JSON-formatted column called `data`
           - countOnly: boolean; if `true`, return only a count of jobs for the given projectID and/or userID,
             as an object with field `count`, and value an integer array of length one. e.g. `{count:[123]}`
-          - limit: integer; if present, maximum number of records to return.
+          - limit: integer; if present, maximum number of records to return.  This is ignored if
+            - it is larger than the maximum result size specified when the server was launched (default: 20)
+            ** or **
+            - `select.stump` is specified, in which case **all** subjobs are returned.  This is because the API
+            does not currently provide any way to paginate subjobs.
 
       e.g.
       curl --data-urlencode json='{"select":{"userID":232},"order":{"sortBy":"id","lastKey":[5000]},"authToken":"XXX"}' https://sgdata.motus.org/status2/list_jobs
@@ -418,6 +422,9 @@ projects.
    Otherwise, an error message is returned in item `error`.
 
 ## Changelog ##
+
+2018-02-06
+   `list_jobs`: clarify semantics of `option.limit` parameter
 
 2018-01-30
    `get_upload_info`:
