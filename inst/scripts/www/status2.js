@@ -220,6 +220,8 @@ function linkify_one_serno(match) {
 };
 
 function linkify_sernos(s) {
+    if (!s)
+        return null;
     return s.replace(serno_re, linkify_one_serno);
 };
 
@@ -228,6 +230,8 @@ function linkify_one_serno_JSON(match) {
 };
 
 function linkify_sernos_JSON(s) {
+    if (!s)
+        return null;
     return s.replace(serno_re, linkify_one_serno_JSON);
 };
 
