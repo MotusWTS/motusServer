@@ -22,9 +22,9 @@ getMotusDeviceID = function(src, useFirst=FALSE) {
 
     ## try get this information from the receiver database.
     m = getMap(src)
-    deviceID = m$deviceID
+    deviceID = as.integer(m$deviceID)
     if (isTRUE(deviceID > 0))
-        return(as.integer(deviceID))
+        return(deviceID)
 
     ## see whether motus knows this receiver
     mm = MetaDB("select deviceID from recvDeps where serno=:serno", serno=m$recvSerno)
@@ -42,5 +42,5 @@ getMotusDeviceID = function(src, useFirst=FALSE) {
     ## try register this receiver
     m$deviceID = motusRegisterReceiver(m$recvSerno)$deviceID
 
-    return(m$deviceID)
+    return(as.integer(m$deviceID))
 }
