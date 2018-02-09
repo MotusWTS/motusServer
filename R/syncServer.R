@@ -51,7 +51,10 @@ syncServer = function(tracing = FALSE, fileEvent="CLOSE_WRITE") {
         touchFile = feed()             ## this might might wait a long time
         file.remove(touchFile)         ## the file is empty, was only needed to trigger this event
         serno = basename(touchFile)
-        serno = gsub("[^-[:alnum:]]", "", serno, perl=TRUE) ## sanitize possibly malicious serial number
+        if (is.null(getRecvDBPath(serno))) {
+            ## getRecvDBPath does a sanity check on the serial number, returning NULL on failure
+            next
+        }
         if (tracing)
             browser()
 
