@@ -404,7 +404,7 @@ process_new_upload = function(env) {
 
     ## debugging: if path begins with 'testing/', file is ignored, and a message is sent.
     if (isTRUE(comps[1] == "testing")) {
-        error_from_app("testing file specified; everything looks okay, but I'm not processing it")
+        return(error_from_app("testing file specified; everything looks okay, but I'm not processing it"))
     }
     ## move file and change ownership.  It will now have owner:group = "sg:sg" and
     ## permissions "rw-rw-r--"
