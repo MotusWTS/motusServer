@@ -8,4 +8,14 @@
 
 Rscript -e 'library(motusServer);ensureServerDirs()'
 
-## is there really anything to do here?
+## make sure cron jobs (re-occuring tasks) are set up correctly
+
+echo setting up crontab for daily sqlite backups
+
+sudo chown root:root /sgm_local/bin/sqlite_daily_backup_crontab
+sudo chmod og-w /sgm_local/bin/sqlite_daily_backup_crontab
+sudo ln -s /sgm_local/bin/sqlite_daily_backup_crontab /etc/cron.d
+
+sudo chown root:root /sgm_local/bin/refreshMotusMetaDB_crontab
+sudo chmod og-w /sgm_local/bin/refreshMotusMetaDB_crontab
+sudo ln -s /sgm_local/bin/refreshMotusMetaDB_crontab /etc/cron.d

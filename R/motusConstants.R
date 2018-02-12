@@ -84,10 +84,12 @@ MOTUS_BADFILE_ARCHIVE = "bad_files.zip.NOAUTO"
 #'@export
 
 MOTUS_PATH = list(
-    ROOT             = "/sgm",
-    BIN              = "/sgm/bin/",                  ## executable scripts and programs (store on HD)
-    CACHE            = "/sgm/cache/",                ## recent results of large queries from motus.org (store on HD)
+    ROOT             = "/sgm",                       ## folder hierarchy on NAS
+    ROOT_LOCAL       = "/sgm_local",                 ## folder hierarchy on local HD
+    BIN              = "/sgm_local/bin/",            ## executable scripts and programs (store on HD)
+    CACHE            = "/sgm_local/",                ## recent results of large queries from motus.org (store on HD)
     CRYPTO           = "/sgm/crypto/",               ## public/private keypairs for ssh etc. by receivers
+    DB_BACKUPS       = "/sgm/db_backups/",           ## folder on NAS for daily backups of sqlite databases on local HD
     DONE             = "/sgm/done/",                 ## folders for completed jobs
     ERRORS           = "/sgm/errors/",               ## save dumped call stacks of server errors
     FILE_REPO        = "/sgm/file_repo/",            ## as-is copies of files from all receivers; stored in SERNO/YYYY-MM-DD/ subfolders
@@ -97,7 +99,7 @@ MOTUS_PATH = list(
     METADATA_HISTORY = "/sgm/metadata_history/",     ## .git repo tracking metadata changes
     OUTBOX           = "/sgm/outbox/",               ## copies of all sent emails
     OUTBOX_EMBARGOED = "/sgm/outbox_embargoed/",     ## unsent outgoing emails
-    PARAM_OVERRIDES  = "/sgm/paramOverrides.sqlite", ## DB with table of receiver-boot-session-specific overrides for the tag finder
+    PARAM_OVERRIDES  = "/sgm_local/paramOverrides.sqlite", ## DB with table of receiver-boot-session-specific overrides for the tag finder
     PRODUCTS         = "/sgm/products/",             ## generated products (e.g. hourly summary plots and datasets)
     PRIORITY         = "/sgm/priority/",             ## jobs created here run on a processServer dedicated to short, fast jobs; e.g. updating attached SGs
     PUB              = "/sgm/pub/",                  ## web-visible public content
@@ -124,13 +126,13 @@ MOTUS_PATH = list(
 
     REMOTE_ATJOBS    = "/sgm/remote/atjobs/",        ## at-job IDs for syncReceiver jobs, by receiver serial number
     REMOTE_CONNECTIONS = "/sgm/remote/connections/", ## empty files whose names are serial numbers of connected receivers
-    REMOTE_LIVE      = "/sgm/live.sqlite",           ## DB of live client connections to receivers via our web server
-    REMOTE_RECV_DB   = "/sgm/receivers.sqlite",      ## the database to hold info on remote receivers
+    REMOTE_LIVE      = "/sgm_local/live.sqlite",     ## DB of live client connections to receivers via our web server
+    REMOTE_RECV_DB   = "/sgm_local/receivers.sqlite",## the database to hold info on remote receivers
     REMOTE_STREAMS   = "/sgm/remote/streams/",       ## .sqlite databases of all live content streamed from receivers
     REMOTE_SOCKETS   = "/sgm/remote/sockets/",       ## sockets used for the live webpage to connected receivers
-    SERVER_DB        = "/sgm/server.sqlite",         ## the database used to record server activity
+    SERVER_DB        = "/sgm_local/server.sqlite",         ## the database used to record server activity
 
-    SYNC             = "/sgm/remote/sync/",          ## when an empty file having a receiver serial number as its name is placed here,
+    SYNC             = "/sgm_local/sync/",           ## when an empty file having a receiver serial number as its name is `touch`ed here,
                                                      ## the receiver is sync'd remotely
     TAGS             = "/sgm/tags/",                 ## ??
     TAG_PROJ         = "/sgm/tag_proj/",             ## sqlite databases for all tag projects
@@ -147,7 +149,7 @@ MOTUS_PATH = list(
                        perm="g+rws"),
     UPLOAD_TESTING   = "/sgm/UPLOAD_TESTING",        ## file whose presence indicates upload jobs are to be marked with "isTesting"
 
-    USERAUTH         = "/sgm/user_auth.sqlite",      ## database of user authentication tokens
+    USERAUTH         = "/sgm_local/user_auth.sqlite",## database of user authentication tokens
 
     WWW              = structure("/sgm/www/",        ## File hierarchy to be served by apache to authenticated motus users
                        perm = "g+rsx")               ## listable/readable

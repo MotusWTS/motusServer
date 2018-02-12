@@ -5,7 +5,7 @@
 ## Run once per day from this crontab:
 
 ## # Run at 8:30 GMT (4:30 or 5:30 AM Atlantic time)
-## 30 8     * * *     sg  /sgm/bin/refreshMotusMetaDB.R
+## 30 8     * * *     sg  /sgm_local/bin/refreshMotusMetaDB.R
 
 suppressMessages(suppressWarnings(library(motusServer)))
 ## open jobs and master databases

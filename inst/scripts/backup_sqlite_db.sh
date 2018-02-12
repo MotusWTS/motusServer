@@ -27,6 +27,7 @@ for t in $TABLES; do
     echo backing up table $t
 
     NEWMAXROWID=`sqlite3 $SRC <<EOF
+PRAGMA BUSY_TIMEOUT = 30000;
 ATTACH DATABASE '$DEST' AS d;
 CREATE TABLE IF NOT EXISTS d.$t AS SELECT $t.* from $t ORDER BY ROWID LIMIT $CHUNK_ROWS;
 SELECT max(rowid) from d.$t;
@@ -36,6 +37,7 @@ EOF`
     while [[ "$MAXROWID" != "$NEWMAXROWID" ]]; do
         MAXROWID=$NEWMAXROWID
         NEWMAXROWID=`sqlite3 $SRC <<EOF
+PRAGMA BUSY_TIMEOUT = 30000;
 ATTACH DATABASE '$DEST' AS d;
 INSERT INTO d.$t SELECT $t.* from $t where rowid > $MAXROWID ORDER BY ROWID LIMIT $CHUNK_ROWS;
 SELECT max(rowid) from d.$t;
