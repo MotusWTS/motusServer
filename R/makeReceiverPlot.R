@@ -341,6 +341,8 @@ ts[1], ts[2]))
     if (nrow(tags) > 0) {
         dayseq = seq(from=round(min(tags$ts), "days"), to=round(max(tags$ts),"days"), by=24*3600)
     } else {
+        if (nrow(reboots) == 0 && nrow(pulses) == 0 && nrow(gps) == 0)
+            return(NULL)
         if (is.null(ts)) {
             ts = unlist(dbGetQuery(con, sprintf("select min(tsStart), max(tsEnd) from batches where monoBN between %s and %s", monoBN[1], monoBN[2])))
         }

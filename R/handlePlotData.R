@@ -82,8 +82,12 @@ handlePlotData = function(j) {
         plotfilename = sub("\\.rds$", "\\.png", datafilename, perl=TRUE)
 
         ## generate the plot object and condensed dataset
-        rv = makeReceiverPlot(src, MOTUS_METADB_CACHE, title, condense, ts = unlist(info[i, c("tsStart", "tsEnd")]), unlist(info[i, c("bnStart", "bnEnd")]))
-
+        rv = NULL
+        tryCatch({
+            rv = makeReceiverPlot(src, MOTUS_METADB_CACHE, title, condense, ts = unlist(info[i, c("tsStart", "tsEnd")]), unlist(info[i, c("bnStart", "bnEnd")]))
+        }, error = function(e) {
+            jobLog(j, paste0("Error `", as.character(e), "` while trying to make plot for ", serno, " and parameters ", capture.output(info[i,])))
+        })
         if (!is.null(rv)) {
             saveRDS(rv$data, datafilename)
             png(plotfilename, width=rv$width, height=rv$height, type="cairo-png")
