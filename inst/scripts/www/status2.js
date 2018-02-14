@@ -40,10 +40,12 @@ if (!Array.prototype.last) {
 // @param api: entry, e.g. "authenticate_user", "status_api_info", "list_jobs", "subjobs_for_job", ...
 // @param par: javascript object, passed as the POST parameter 'json'
 // @param cb: callback; a function accepting a javascript object which is the return from the API
+// @param ignore_errors: boolean; (optional) if present and true, within-API errors are passed
+// to the user callback, rather than alerting the user directly.
 //
 // @return nothing
 
-function motus_status_api(api, par, cb) {
+function motus_status_api(api, par, cb, ignore_errors) {
     if (api != "authenticate_user") {
         par.authToken = state.authToken;
     }
@@ -77,7 +79,8 @@ function motus_status_api(api, par, cb) {
         {
             api: api,
             pars: par,
-            cb: cb
+            cb: cb,
+            ignore_errors: ignore_errors
         };
 };
 
@@ -136,7 +139,7 @@ function motus_status_replied(x, textStatus, jqXHR) {
     };
     cb = jqXHR._extra.cb;
     api = jqXHR._extra.api;
-    if (x.error) {
+    if (x.error && ! jqXHR._extra.ignore_errors) {
         motus_query_failed(jqXHR, textStatus);
         return;
     }
