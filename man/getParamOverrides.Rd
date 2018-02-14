@@ -5,7 +5,7 @@
 \title{Get the parameter overrides for a receiver and time or boot session.}
 \usage{
 getParamOverrides(serno, monoBN = NULL, tsStart = NA,
-  progName = "find_tags_motus", recvDepTol = 3 * 24 * 3600)
+  progName = "find_tags_motus", recvDepTol = 10 * 24 * 3600)
 }
 \arguments{
 \item{serno}{character scalar; serial number of receiver, e.g. "Lotek-123" or
@@ -23,7 +23,7 @@ Default: "find_tags_motus"}
 \item{recvDepTol}{numeric scalar; how much slop is allowed when looking
 up the project ID for a receiver?  Sometimes, people have recorded incorrect
 start of deployment dates, and/or the estimate of boot session time is
-inaccurate.  Default: 3*24*3600 which is 3 days.}
+inaccurate.  Default: 10*24*3600 which is 10 days.}
 }
 \value{
 a character scalar of parameters, ready for the command line; if there

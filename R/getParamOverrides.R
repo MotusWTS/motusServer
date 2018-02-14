@@ -15,7 +15,7 @@
 #' @param recvDepTol numeric scalar; how much slop is allowed when looking
 #' up the project ID for a receiver?  Sometimes, people have recorded incorrect
 #' start of deployment dates, and/or the estimate of boot session time is
-#' inaccurate.  Default: 3*24*3600 which is 3 days.
+#' inaccurate.  Default: 10*24*3600 which is 10 days.
 #'
 #' @return a character scalar of parameters, ready for the command line; if there
 #' are no applicable overrides, returns ""
@@ -32,7 +32,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-getParamOverrides = function(serno, monoBN=NULL, tsStart=NA, progName="find_tags_motus", recvDepTol=3*24*3600) {
+getParamOverrides = function(serno, monoBN=NULL, tsStart=NA, progName="find_tags_motus", recvDepTol=10*24*3600) {
 
     if (!is.null(monoBN)) {
         ## lookup the timestamp for the start of this boot session
