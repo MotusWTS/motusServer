@@ -322,6 +322,7 @@
       Job ⟦jobID⟧ had an error.  Here are some things you can do:
       <div>
         <ul>
+          ⟦#URL⟧
           <li><a href="⟦URL⟧" class="url">click here</a> to download the stack dump, to help with debugging (.rds file; ⟦fmt_size⟧)</li>
           <li><b>or</b> load the stack dump directly into R/rstudio running on this server, using this code:
 <pre>
@@ -329,6 +330,11 @@
 </pre>
           </li>
           <li><b>or</b> retry this job (and all related failed subjobs).<br>
+          ⟦/URL⟧
+          ⟦^URL⟧
+          <li>There is no stack dump available for this job, but you can
+              retry this job (and all related failed subjobs).<br>
+          ⟦/URL⟧
             Enter an (optional) message to be added to the job log:
             <span id="retry_job_message_span"><input type="text" id="retry_job_message" value=""></span>
             <span id="retry_job_button" job_id="⟦jobID⟧">Retry Job</span>

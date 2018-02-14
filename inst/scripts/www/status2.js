@@ -991,7 +991,7 @@ function show_error_dump(jobID) {
     motus_status_api("get_job_stackdump",
                      {
                          jobID: jobID
-                     }, show_error_dump2);
+                     }, show_error_dump2, true);
 };
 
 // @function show_error_dump2: display a pop-up with info about a job error
@@ -1001,17 +1001,28 @@ function show_error_dump(jobID) {
 
 
 function show_error_dump2(x) {
-    $(".job_dump").mustache("tpl_job_dump",
-                             {
-                                 jobID: x.jobID,
-                                 URL: x.URL,
-                                 path: x.path,
-                                 fmt_size: fmt_filesize(x.size)
-                             },
-                             {
-                                 method:"html"
-                             }
-                           );
+    if (! x.error) {
+        $(".job_dump").mustache("tpl_job_dump",
+                                {
+                                    jobID: x.jobID,
+                                    URL: x.URL,
+                                    path: x.path,
+                                    fmt_size: fmt_filesize(x.size)
+                                },
+                                {
+                                    method:"html"
+                                }
+                               );
+    } else {
+        $(".job_dump").mustache("tpl_job_dump",
+                                {
+                                    jobID: x.jobID
+                                },
+                                {
+                                    method:"html"
+                                }
+                               );
+    }
     $(".job_dump").dialog(
         {
             top: $("html").offset().top,
