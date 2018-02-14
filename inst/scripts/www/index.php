@@ -14,7 +14,7 @@
  ***/
 
 // database with project info
-$MOTUS_META_DB = '/sgm/cache/motus_meta_db.sqlite';
+$MOTUS_META_DB = '/sgm_local/motus_meta_db.sqlite';
 
 // where downloadable files are in the filesystem
 $DOWNLOAD_PATH = '/sgm/www';
