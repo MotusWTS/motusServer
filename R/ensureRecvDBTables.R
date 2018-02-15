@@ -424,11 +424,33 @@ CREATE TABLE motusTX (
 );
 ")
     }
+    if (! "bootnumChanges" %in% tables) {
+        sql("
+CREATE TABLE bootnumChanges (
+-- This table records changes to the monoBN field of records in the `files` table.
+    changeID INT NOT NULL PRIMARY KEY,                   -- ID of this monoBN change
+    batchID INT NOT NULL references batches,             -- ID of batch in which change was made
+    fileID INT NOT NULL,                                 -- file for which monoBN changed
+    oldMonoBN INT NOT NULL,                              -- previous value of monoBN (before change)
+    newMonoBN INT NOT NULL                               -- new value of monoBN (after change)
+);
+")
+    }
 
+    if (! "batchFiles" %in% tables) {
+        sql("
+CREATE TABLE batchFiles (
+-- Records which files were read for a run of the tag finder
+    batchID INTEGER NOT NULL,
+    fileID INTEGER NOT NULL,
+    PRIMARY KEY (batchID, fileID)
+);
+")
+    }
 }
 
 ## list of tables needed in the receiver database
 
 sgTableNames = c("meta", "files", "fileContents", "timeFixes", "GPS", "params", "pulses", "pulseCounts", "batches",
                  "runs", "hits", "batchProgs", "batchParams", "batchState", "tagAmbig", "DTAfiles",
-                 "DTAtags", "motusTX")
+                 "DTAtags", "motusTX", "bootnumChanges", "batchFiles")
