@@ -49,7 +49,7 @@ tol = recvDepTol)[[1]]
     ## lookup project-wide overrides by date
 
     if (length(pid) > 0) {
-        projOR = MetaDB("select '--' || paramName || ' ' || paramVal from paramOverrides where projectID=:pid and progName=:progName
+        projOR = MetaDB("select printf('--%s %s', paramName, paramVal) from paramOverrides where projectID=:pid and progName=:progName
 and tsStart - :tol <= :tsStart and (tsEnd is null or tsEnd > :tsStart) order by tsStart desc limit 1",
 pid=pid,
 progName=progName,
@@ -61,7 +61,7 @@ tsStart=tsStart)[[1]]
 
     ## lookup receiver-specific overrides by date
 
-    recvOR = MetaDB("select '--' || paramName || ' ' || paramVal from paramOverrides where serno=:serno and progName=:progName
+    recvOR = MetaDB("select  printf('--%s %s', paramName, paramVal) from paramOverrides where serno=:serno and progName=:progName
 and tsStart <= :tsStart and (tsEnd is null or tsEnd > :tsStart) order by tsStart desc limit 1",
                   serno=serno,
                   progName=progName,
