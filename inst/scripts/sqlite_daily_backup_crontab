@@ -17,4 +17,4 @@
 
 # do a daily backup at 2:13 AM GMT
 #m h    dom mon dow    user   cmd
-13 2     *   *   *     root   [ -x /sgm_local/bin/sqlite_daily_backup.sh ] && /sgm_local/bin/sqlite_daily_back
+13 2     *   *   *     root   [ -x /sgm_local/bin/sqlite_daily_backup.sh ] && /sgm_local/bin/sqlite_daily_backup.sh
