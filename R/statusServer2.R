@@ -701,7 +701,7 @@ get_job_stackdump = function(env) {
         return(error_from_app("job did not have an error"))
     dumpfile = file.path(MOTUS_PATH$WWW, "errors", sprintf("%08d.rds", jobID))
     if (! file.exists(dumpfile))
-        return(error_from_app("no stack dump available for job"))
+        return(error_from_app("no stack dump available for job", jobID=jobID))
     return_from_app(list(jobID = jobID, URL = getDownloadURL(errorJobID = jobID), size=file.size(dumpfile), path=dumpfile))
 }
 
