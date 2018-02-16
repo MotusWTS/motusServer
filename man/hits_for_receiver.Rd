@@ -9,7 +9,7 @@ hits_for_receiver(env)
 \arguments{
 \item{batchID}{integer batchID}
 
-\item{hitID}{integer ID of largest hit already obtained}
+\item{hitID}{double ID of largest hit already obtained}
 }
 \value{
 a data frame with the same schema as the hits table, but JSON-encoded as a list of columns

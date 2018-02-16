@@ -497,7 +497,7 @@ batchID, minBatchStatus, MAX_ROWS_PER_REQUEST)
 #'
 #' @param projectID integer project ID
 #' @param batchID integer batchID
-#' @param runID integer ID of largest run already obtained
+#' @param runID double ID of largest run already obtained
 #'
 #' @return a data frame with the same schema as the runs table, but JSON-encoded as a list of columns
 
@@ -512,7 +512,7 @@ runs_for_tag_project = function(env) {
     if (inherits(auth, "error")) return(auth)
 
     batchID = (json$batchID %>% as.integer)[1]
-    runID = (json$runID %>% as.integer)[1]
+    runID = (json$runID %>% as.double)[1]
 
     if (!isTRUE(is.finite(batchID) && is.finite(runID))) {
         return(error_from_app("invalid parameter(s)"))
@@ -523,7 +523,7 @@ runs_for_tag_project = function(env) {
 
     query = sprintf("
 select
-   t1.runID,
+   cast(t1.runID as double) as runID,
    t1.batchIDbegin,
    t1.tsBegin,
    t1.tsEnd,
@@ -549,7 +549,7 @@ auth$projectID, batchID, runID, auth$projectID, MAX_ROWS_PER_REQUEST)
 #' get all runs from a batch for a receiver
 #'
 #' @param batchID integer batchID
-#' @param runID integer ID of largest run already obtained
+#' @param runID double ID of largest run already obtained
 #'
 #' @return a data frame with the same schema as the runs table, but JSON-encoded as a list of columns
 
@@ -564,7 +564,7 @@ runs_for_receiver = function(env) {
     if (inherits(auth, "error")) return(auth)
 
     batchID = (json$batchID %>% as.integer)[1]
-    runID = (json$runID %>% as.integer)[1]
+    runID = (json$runID %>% as.double)[1]
 
     if (!isTRUE(is.finite(batchID) && is.finite(runID))) {
         return(error_from_app("invalid parameter(s)"))
@@ -584,7 +584,7 @@ runs_for_receiver = function(env) {
 
     query = sprintf("
 select
-   t1.runID,
+   cast(t1.runID as double) as runID,
    t1.batchIDbegin,
    t1.tsBegin,
    t1.tsEnd,
@@ -612,7 +612,7 @@ runID, batchID, ownership, MAX_ROWS_PER_REQUEST)
 #'
 #' @param projectID integer project ID
 #' @param batchID integer batchID
-#' @param hitID integer ID of largest hit already obtained
+#' @param hitID double ID of largest hit already obtained
 #'
 #' @return a data frame with the same schema as the hits table, but JSON-encoded as a list of columns
 
@@ -627,7 +627,7 @@ hits_for_tag_project = function(env) {
     if (inherits(auth, "error")) return(auth)
 
     batchID = (json$batchID %>% as.integer)[1]
-    hitID = (json$hitID %>% as.integer)[1]
+    hitID = (json$hitID %>% as.double)[1]
 
     if (!isTRUE(is.finite(batchID) && is.finite(hitID))) {
         return(error_from_app("invalid parameter(s)"))
@@ -637,8 +637,8 @@ hits_for_tag_project = function(env) {
 
     query = sprintf("
 select
-   hitID,
-   runID,
+   cast(hitID as double) as hitID,
+   cast(runID as double) as runID,
    batchID,
    ts,
    sig,
@@ -665,7 +665,7 @@ auth$projectID, batchID, hitID, MAX_ROWS_PER_REQUEST)
 #' get all hits from a batch for a receiver
 #'
 #' @param batchID integer batchID
-#' @param hitID integer ID of largest hit already obtained
+#' @param hitID double ID of largest hit already obtained
 #'
 #' @return a data frame with the same schema as the hits table, but JSON-encoded as a list of columns
 
@@ -680,7 +680,7 @@ hits_for_receiver = function(env) {
     if (inherits(auth, "error")) return(auth)
 
     batchID = (json$batchID %>% as.integer)[1]
-    hitID = (json$hitID %>% as.integer)[1]
+    hitID = (json$hitID %>% as.double)[1]
 
     if (!isTRUE(is.finite(batchID) && is.finite(hitID))) {
         return(error_from_app("invalid parameter(s)"))
@@ -700,8 +700,8 @@ hits_for_receiver = function(env) {
 
     query = sprintf("
 select
-   t1.hitID,
-   t1.runID,
+   cast(t1.hitID as double) as hitID,
+   cast(t1.runID as double) as runID,
    t1.batchID,
    t1.ts,
    t1.sig,
@@ -715,7 +715,7 @@ from
    hits as t1
    join batches as t2 on t2.batchID=t1.batchID
 where
-   t1.hitID > %d
+   t1.hitID > %f
    and t1.batchID = %d
    %s
 order by
