@@ -404,9 +404,12 @@ projects.
       - listContents: boolean (optional); return summary of file contents?
         default: true.
 
-   Exactly one of `uploadID` or `sha1` must be given.
+   Exactly one of `uploadID` or `sha1` must be given, and is used to look-up the file.
+   Specifying `sha1` is meant to let a client check whether a file has already been uploaded (by
+   sha1 hash of its contents) before wasting a user's time and bandwidth.
 
-   - return: if uploadID is valid, then an object with these items:
+   - return: if uploadID or sha1 corresponds to a file the user has permissions on, then
+     the return value is an object with these items:
       - uploadID: integer; same value as provided by user, for convenience
       - name: string; filename, as given by user, but with `USERID_TIMESTAMP_` prefix
       - size: double; size of file on disk, in bytes
