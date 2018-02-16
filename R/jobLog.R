@@ -21,7 +21,7 @@ jobLog = function(j, msg, summary=FALSE) {
     C = copse(j)
     field = ifelse(isTRUE(summary), "summary_", "log_")
     jobid = if (summary) stump(j) else j
-    C$sql(paste0("update ", C$table, " set data=json_set(data, '$.", field, "', ifnull(json_extract(data, '$.", field, "'), '') || :msg) where id=", jobid),
+    C$sql(paste0("update ", C$table, " set data=json_set(ifnull(data, '{}'), '$.", field, "', ifnull(json_extract(data, '$.", field, "'), '') || :msg) where id=", jobid),
           msg = paste(msg, "\n", collapse="", sep=""))
     return(invisible(NULL))
 }
