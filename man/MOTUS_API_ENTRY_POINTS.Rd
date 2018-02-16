@@ -3,7 +3,7 @@
 \docType{data}
 \name{MOTUS_API_ENTRY_POINTS}
 \alias{MOTUS_API_ENTRY_POINTS}
-\title{Constants for the motus package.}
+\title{Constants for the motusServer package.}
 \format{An object of class \code{character} of length 1.}
 \usage{
 MOTUS_API_ENTRY_POINTS

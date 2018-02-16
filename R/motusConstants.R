@@ -1,4 +1,4 @@
-#' Constants for the motus package.
+#' Constants for the motusServer package.
 #'
 #' API entry points:
 #'
