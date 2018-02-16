@@ -38,7 +38,7 @@ EOF
 fi
 
 if [[ "$1" == "-s" ]]; then
-    sqlite3 /sgm/server.sqlite "delete from symLocks"
+    sqlite3 /sgm_local/server.sqlite "delete from symLocks"
     shift
 fi
 
@@ -49,16 +49,16 @@ fi
 
 ## use 'setsid' to launch each server in its own process group
 
-setsid /sgm/bin/runMotusStatusServer.sh &
-setsid /sgm/bin/runMotusStatusServer2.sh &
-setsid /sgm/bin/runMotusDataServer.sh &
+setsid /sgm_local/bin/runMotusStatusServer.sh &
+setsid /sgm_local/bin/runMotusStatusServer2.sh &
+setsid /sgm_local/bin/runMotusDataServer.sh &
 
 ## '99' is the priority server, for short fast jobs; it won't
 ## run uploaded data.
 
 for i in `seq 1 $N` 101 102; do
-    setsid /sgm/bin/runMotusProcessServer.sh $i &
+    setsid /sgm_local/bin/runMotusProcessServer.sh $i &
 done
-setsid /sgm/bin/runMotusSyncServer.sh &
+setsid /sgm_local/bin/runMotusSyncServer.sh &
 
 echo "Started status, status2, data, sync and $N + 2 process servers, two for high-priority jobs."
