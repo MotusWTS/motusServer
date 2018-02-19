@@ -22,7 +22,7 @@ jobProduced = function(j, u) {
     if (! missing(u)) {
         if (! is.character(u))
             stop("u must be a character vector")
-        p = c(p, u)
+        p = unique(c(p, u))
         tj$products_ = p
     }
     return(p)
