@@ -336,7 +336,7 @@ projects.
 
 ### get_receiver_info ###
 
-   get_receiver_info (serno)
+   get_receiver_info (serno, authToken)
 
       - serno: string scalar; receiver serial number
       e.g.
@@ -363,7 +363,7 @@ projects.
 
 ### get_job_stackdump ###
 
-   get_job_stackdump (jobID) - administrative users only
+   get_job_stackdump (jobID, authToken) - administrative users only
 
       - jobID: integer; ID of job with an error (i.e. `done` < 0)
 
@@ -382,7 +382,7 @@ projects.
 
 ### retry_job ###
 
-   retry_job (jobID, message) - administrative users only
+   retry_job (jobID, message, authToken) - administrative users only
 
       - jobID: integer; ID of job with an error, or one of whose siblings has an error
       - message: string; optional message to add to job log, indicating e.g. reason for retry
@@ -424,7 +424,54 @@ projects.
 
    Otherwise, an error message is returned in item `error`.
 
+### serno_collision_rules ###
+
+   serno_collision_rules (action, id, serno, cond, suffix) - administrative users only
+
+      - action: string (required); one of "get", "put", or "delete".  Presence and
+        use of other parameters depends on this value.
+      - id: integer scalar or array; id of rule in database
+      - serno: string scalar or array; serial number(s) of receiver(s) to which the
+        rule applies.  This must be the bare serial number, **without** the
+        disambiguation suffix.
+      - cond: string scalar; an R expression using certain terms extracted from
+        a file or filename.  When this condition evaluates to TRUE for a file, the
+        file is deemed to have come from the receiver given by concatenating
+        `serno` and `suffix`.  Only the first matching rule is used when trying
+        to decide which receiver in a collision is the source of the file.
+      - suffix: string scalar; '_N', where N is a small integer.  When two (
+        or more?!) receivers have the same serial number, the suffix `_1` is
+        added to the second one, `_2` to the third one, and so on.  The first
+        receiver with a given serial number receives no suffix.  (The ordering
+        implied by `first`, `second` etc. is given implicitly by the rules).
+
+   Semantics:
+
+   `action == "get"`:  fetch all rules whose `id` was specified or whose `serno` was        specified, or all rules if neither was specified.  The return value is an
+       object with these  named fields:
+          - id; integer; rule ID
+          - serno; string; bare receiver serial number
+          - cond; string; R expression
+          - suffix; string; '' or '_1', or '_2', ...
+
+   `action == "put"`:  insert new rules.  The user must specify `serno`, `cond`, and
+       `suffix`, and each must be a scalar, or all must be arrays of the same length.
+       The `id` field will be automatically assigned.  The return value is as
+       for `action == "get"`, but includes only those rules just
+       created.  **NO ATTEMPT IS MADE TO ENSURE THE SANITY OF THE RULES**
+
+   `action == "delete"`:  delete any rules for which the user specified an `id`,
+       or for which the user specified a `serno`.  The return value is as
+       for `action == "get"`, but includes only those rules just deleted.
+
+
 ## Changelog ##
+
+2018-02-22
+   - add new entry `serno_collision_rules` which can get, set, or delete rules for
+     resolving serial number collisions between receivers
+   - document `authToken` parameter explicitly for a few entries where it
+     was missing
 
 2018-02-06
    `list_jobs`: clarify semantics of `option.limit` parameter
