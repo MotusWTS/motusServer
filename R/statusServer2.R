@@ -60,7 +60,8 @@ allStatusApps = c("status_api_info",
                   "get_receiver_info",
                   "get_job_stackdump",
                   "retry_job",
-                  "get_upload_info"
+                  "get_upload_info",
+                  "serno_collision_rules"
                   )
 
 sortColumns = c("ctime", "mtime", "id", "type", "motusProjectID", "motusUserID")
@@ -855,7 +856,64 @@ get_upload_info = function(env) {
         sha1 = info$sha1))
 }
 
+#' get, create, or delete rules for resolving receiver serial number collisions
 
+serno_collision_rules = function(env) {
+    json = fromJSON(parent.frame()$postBody["json"], simplifyVector=FALSE)
+
+    if (tracing)
+        browser()
+
+    auth = validate_request(json, needProjectID=FALSE, needAdmin=TRUE)
+    if (inherits(auth, "error")) return(auth)
+
+    action  = safe_arg(json, action, char              )
+    id      = safe_arg(json, id,     int,  scalar=FALSE)
+    serno   = safe_arg(json, serno,  char, scalar=FALSE)
+    cond    = safe_arg(json, cond,   char, scalar=FALSE)
+    suffix  = safe_arg(json, suffix, char, scalar=FALSE)
+
+    if (is.null(action))
+        return(error_from_app("must specify action"))
+
+    ## basic sanity checks
+
+    if (action %in% c("get", "delete")) {
+        where = NULL
+        if (! is.null(id))
+            where = makeWhere(c(where, sprintf("id in (%s)", paste(id, collapse=","))))
+        if (! is.null(serno))
+            where = makeWhere(c(where, sprintf("serno in (%s)", paste0("'", serno, "'", collapse=","))), "or")
+        if (action == "delete" && is.null(where))
+            return(error_from_app("action 'delete' requires 'id' or 'serno'"))
+    } else if (action == "put") {
+        lens = range(c(length(serno), length(cond), length(suffix)))
+        if (diff(lens) > 0 || lens[1] == 0)
+            return(error_from_app("action 'put' requires that 'serno', 'cond', and 'suffix' be specified and of the same length"))
+        error = NULL
+        tryCatch({
+            parse(text=cond)
+        }, error = function(e) {
+            error <<- as.character(e)
+        })
+        if (! is.null(error)) {
+            return(error_from_app(paste0("got error parsing `cond`: ", error)))
+        }
+        ## Note: only this single-threaded modifies the serno_collision_rules table,
+        ## so we can get the ids of entries we're about to add by
+        ids = seq_len(lens[1]) + MetaDB("select max(id) from serno_collision_rules")[[1]]
+        for (i in 1:lens[1])
+            MetaDB("insert into serno_collision_rules (id, serno, cond, suffix) values (%d, %s, %s, %s)", ids[i], serno[i], cond[i], suffix[i], .QUOTE=TRUE)
+        where = makeWhere(sprintf("id in (%s)", paste(ids, collapse=",")))
+    } else {
+        return(error_from_app("unknown action"))
+    }
+    rv = MetaDB("select id, serno, cond, suffix from serno_collision_rules %s order by id", if (is.null(where)) "" else where)
+    if (action == "delete")
+        MetaDB("delete from serno_collision_rules %s", where)
+
+    return_from_app(rv)
+}
 
 queueStatusApp = function(env) {
     ## return summary of master queue and processing queues
