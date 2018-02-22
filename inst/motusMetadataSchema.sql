@@ -153,3 +153,23 @@ CREATE TABLE IF NOT EXISTS "recvGPS" (
    "elev" REAL,
    PRIMARY KEY ("deviceID", "ts")
 );
+
+CREATE TABLE serno_collision_fixes (
+    id INTEGER PRIMARY KEY NOT NULL,  -- unique ID for manipulation by API
+    serno CHAR(16) NOT NULL,          -- receiver serial number (which
+                                      -- is shared by 2 or more receivers)
+    cond VARCHAR NOT NULL,            -- R expression involving
+                                      -- components of the filename.  For SG receivers:
+                                      --   prefix: short site code set on receiver
+                                      --   bootnum: integer (uncorrected) boot count
+                                      --   ts: timestamp of file as YYYY-MM-DDTHH-MM-SS.SSSS
+                                      --   extension: usually `txt`
+                                      --   comp: usually `gz`
+                                      -- For Lotek receivers, the only component is `site_code`, a 4-digit string
+                                      -- set by the user and retained by the receiver.
+                                      -- When `cond` evaluates to TRUE for a file, the file is deemed to
+                                      -- come from the receiver given by the serial number concatenated with `suffix`
+    suffix VARCHAR NOT NULL           -- suffix this rule appends to serno if `cond` evaluates to TRUE
+);
+
+CREATE INDEX IF NOT EXISTS serno_collision_fixes_serno on serno_collision_fixes (serno);

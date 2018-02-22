@@ -18,8 +18,7 @@ Useful if reading the file only to get a serial number, which
 is within the first 20 lines. Default: -1, which reads all lines.}
 }
 \value{
-if \code{sernoOnly} is TRUE, a character scalar receiver serial number such as "Lotek-123".
-Otherwise, a named list with some or all of these items:
+A named list with some or all of these items:
 
 \itemize{
 \item  recv serial number; e.g. "Lotek-123"
@@ -40,6 +39,7 @@ Otherwise, a named list with some or all of these items:
 }
 \item pieces chunks of text of various types
 \item piece.lines.before number of lines before pieces of various types
+\item boottimes character of formatted boot timestamps
 }
 }
 \description{

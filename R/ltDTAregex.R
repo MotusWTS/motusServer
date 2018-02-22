@@ -19,6 +19,13 @@ ltDTAregex =
 (?:Environment[[:blank:]]++History:\\n
 changed:[[:blank:]]++(?<boottime>[0-9]{2}/[0-9]{2}/[0-9]{2}[[:blank:]]++[0-9]{2}:[0-9]{2}:[0-9]{2}))
 
+# or a 'Site Code' message which reports a user-specified
+# deployment code.  `readDTA()` uses this to distinguish between receivers
+# with the same reported serial number.
+
+|
+(?:Site[[:blank:]]++Code:[[:blank:]]*(?<site_code>[0-9]{4})\\n)
+
 # or an active scan table:
 
 |

@@ -52,12 +52,18 @@ parseFilenames = function(f, base=basename(f), checkDOS=TRUE) {
     if (checkDOS)
         rv = fixDOSfilenames(f, rv)
 
-    ## fix serial number collisions
+    ## fix serial number collisions according to rules.  Once a filename has been matched by a rule,
 
-    for (i in seq(along=sernoCollisionFixes)) {
-        fix = with(rv, which(eval(sernoCollisionFixes[[i]])))
-        if (length(fix))
-            rv$serno[fix] = paste0(rv$serno[fix], names(sernoCollisionFixes)[i])
+    rules = MetaDB("select * from serno_collision_fixes where serno in (%s) order by id", paste0("'", rv$serno, "'", collapse=","), .QUOTE=FALSE)
+
+    ## keep track of the filenames for which we've corrected serno.  We only correct once.
+    unfixed = rep(TRUE, nrow(rv))
+    for (i in seq_len(nrow(rules))) {
+        fix = with(rv, which(unfixed & serno == rules$serno[i] & eval(parse(text=rules$cond[i]))))
+        if (length(fix)) {
+            rv$serno[fix] = paste0(rv$serno[fix], rules$suffix[i])
+            unfixed[fix] = FALSE
+        }
     }
 
     ## Thanks to read.csv semantics in splitToDF, if none of the files
@@ -70,17 +76,3 @@ parseFilenames = function(f, base=basename(f), checkDOS=TRUE) {
 
     return(rv)
 }
-
-#' list of serial number collision fixes
-#'
-#' The names of this list are suffixes and the list items are logical
-#' expressions involving the filename components `serno`, `prefix`
-#' and so on.  Any filename records for which the expression is true
-#' get the suffix appended to their serial numbers.  Note that list
-#' names can be repeated.
-#' @export
-
-sernoCollisionFixes = list(
-    `_1` = quote(serno == "SG-1614BBBK1911" & prefix != "Lepreau"),
-    `_1` = quote(serno == "SG-0517BBBK1111" & prefix != "Bookton")
-)
