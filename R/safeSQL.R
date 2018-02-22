@@ -40,7 +40,7 @@
 #' \item \code{.CLOSE} boolean scalar; if TRUE, close the underlying
 #' database connection, disabling further use of this function.
 #'
-#' \item \code{.QUOTE} boolean scalar (only for RMySQL connections); if TRUE, the
+#' \item \code{.QUOTE} boolean scalar; if TRUE, the
 #' default, quote string parameters using \link{\code{dbQuoteString}}.  Any parameter
 #' wrapped in \link{\code{DBI::SQL}} will not be quoted.  The only reason to use
 #' \code{.QUOTE=FALSE} is for a query where you know all parameters must not be
