@@ -225,7 +225,7 @@ readDTA = function(filename="", lines=NULL, numLines=-1) {
         ## if a site_code was present, use it to possibly disambiguate duplicated
         ## receivers.  Note that as soon as a rule matches, we use it and don't
         ## look at further rules.
-        rules = MetaDB("select * from serno_collision_fixes where serno=%s order by id", serno, .QUOTE=TRUE)
+        rules = MetaDB("select * from serno_collision_rules where serno=%s order by id", serno, .QUOTE=TRUE)
         for (i in seq_len(nrow(rules))) {
             if (isTRUE(eval(parse(text = rules$cond[i])))) {
                 serno = paste0(serno, rules$suffix[i])

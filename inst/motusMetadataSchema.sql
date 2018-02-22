@@ -154,7 +154,7 @@ CREATE TABLE IF NOT EXISTS "recvGPS" (
    PRIMARY KEY ("deviceID", "ts")
 );
 
-CREATE TABLE serno_collision_fixes (
+CREATE TABLE serno_collision_rules (
     id INTEGER PRIMARY KEY NOT NULL,  -- unique ID for manipulation by API
     serno CHAR(16) NOT NULL,          -- receiver serial number (which
                                       -- is shared by 2 or more receivers)
@@ -172,4 +172,4 @@ CREATE TABLE serno_collision_fixes (
     suffix VARCHAR NOT NULL           -- suffix this rule appends to serno if `cond` evaluates to TRUE
 );
 
-CREATE INDEX IF NOT EXISTS serno_collision_fixes_serno on serno_collision_fixes (serno);
+CREATE INDEX IF NOT EXISTS serno_collision_rules_serno on serno_collision_rules (serno);

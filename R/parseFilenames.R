@@ -54,7 +54,7 @@ parseFilenames = function(f, base=basename(f), checkDOS=TRUE) {
 
     ## fix serial number collisions according to rules.  Once a filename has been matched by a rule,
 
-    rules = MetaDB("select * from serno_collision_fixes where serno in (%s) order by id", paste0("'", rv$serno, "'", collapse=","), .QUOTE=FALSE)
+    rules = MetaDB("select * from serno_collision_rules where serno in (%s) order by id", paste0("'", rv$serno, "'", collapse=","), .QUOTE=FALSE)
 
     ## keep track of the filenames for which we've corrected serno.  We only correct once.
     unfixed = rep(TRUE, nrow(rv))
