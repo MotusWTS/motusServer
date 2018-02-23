@@ -62,7 +62,7 @@ ltFindTags = function(src, tagDB, par = NULL) {
         ## add the Lotek flag, so tag finder knows input is already in
         ## form of ID'd burst detections
 
-        bcmd = paste(cmd, pars, "--bootnum", bootnum, tagDB, attr(src$con, "dbname"), " 2>&1 ")
+        bcmd = paste(cmd, pars, "--src_sqlite", "--lotek", "--bootnum", bootnum, tagDB, attr(src$con, "dbname"), " 2>&1 ")
         cat("  => ", bcmd, "\n")
 
         ## run the tag finder
