@@ -54,7 +54,7 @@ handleExportPulses = function(j) {
     closeRecvSrc(src)
     url = getDownloadURL(projectID)
     jobLog(j, sprintf("Exported beeper pulses and antenna parameters for %s, batch %d to %s", serno, batchID, basename(out)))
-    jobProduced(j, file.path(url, basename(out)))
+    jobProduced(j, file.path(url, basename(out)), projectID, serno)
     return (TRUE)
 }
 

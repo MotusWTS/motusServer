@@ -28,6 +28,17 @@ owner INTEGER
 )" ,
 MOTUS_SYMBOLIC_LOCK_TABLE))
 
+    ServerDB("
+CREATE TABLE IF NOT EXISTS products (
+    productID INTEGER UNIQUE PRIMARY KEY, -- unique identifier for this product
+    jobID INTEGER NOT NULL,               -- ID of top-level processing job which generated this product
+    URL TEXT,                             -- URL at which product can be found
+    serno VARCHAR(32),                    -- receiver serial number, if any, associated with product
+    projectID INTEGER                     -- motus ID of project, if any, that owns the product
+)")
+    ServerDB("CREATE INDEX IF NOT EXISTS products_serno on products(serno)")
+    ServerDB("CREATE INDEX IF NOT EXISTS products_projectID on products(projectID)")
+
     ServerDB(sprintf("ATTACH DATABASE '%s' as remote", MOTUS_PATH$REMOTE_RECV_DB))
 
     ServerDB('

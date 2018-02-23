@@ -320,6 +320,6 @@ handleRegisterTags = function(j) {
     tj$attachment = structure(list(dbFile), names=basename(dbFile))
     url = getDownloadURL(projectID, isTesting)
     jobLog(j, sprintf("\nThe on-board database for your recent tags is available here:\n    %s\n\nInstructions for installing it on a sensorgnome are here:\n   https://sensorgnome.org/VHF_Tag_Registration/Uploading_the_tags_database_file_to_your_SensorGnome\n", url), summary=TRUE)
-    jobProduced(j, file.path(url, basename(dbFile)))
+    jobProduced(j, file.path(url, basename(dbFile)), projectID)
     return(TRUE)
 }
