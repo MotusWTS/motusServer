@@ -8,12 +8,12 @@ ensureServerDB()
 
 ## grab products from jobs where there's more than one
 
-allProds = ServerDB('select jobs.id as jobID, value as URL, json_extract(data, "$.serno") as serno from json_each(json_extract(jobs.data, "$.products_")), jobs where pid is null and json_array_length(jobs.data, "$.products_") > 0')
+allProds = ServerDB('select jobs.id as jobID, value as URL, ifnull(json_extract(data, "$.serno"),(select json_extract(data, "$.serno") as s2 from jobs as t2 where t2.pid is not null and t2.stump=jobs.id and s2 <> "" limit 1)) as serno from json_each(json_extract(jobs.data, "$.products_")), jobs where pid is null and json_array_length(jobs.data, "$.products_") > 0')
 
 ## jobs with single products store them as string scalars, not an array of length one, so we need a different
 ## use of the json_* functions:
 
-allProds = rbind(allProds, ServerDB('select jobs.id as jobID, json_extract(jobs.data, "$.products_") as URL, json_extract(data, "$.serno") as serno from jobs where pid is null and json_array_length(jobs.data, "$.products_") == 0 and json_extract(data, "$.products_") != ""'))
+allProds = rbind(allProds, ServerDB('select jobs.id as jobID, json_extract(jobs.data, "$.products_") as URL, ifnull(json_extract(data, "$.serno"),(select json_extract(data, "$.serno") as s2 from jobs as t2 where t2.pid is not null and t2.stump=jobs.id and s2 <> "" limit 1)) as serno from jobs where pid is null and json_array_length(jobs.data, "$.products_") == 0 and json_extract(data, "$.products_") != ""'))
 
 allProds = cbind(productID = 1:nrow(allProds), allProds)
 
@@ -24,3 +24,5 @@ allProds = cbind(allProds, splitToDF("(?i)(?sx).*/(?<projectID>[0-9]+)/.*", allP
 dbWriteTable(ServerDB$con, "products", allProds, row.names=FALSE, append=TRUE)
 
 cat("Wrote ", nrow(allProds), " products to database.\n")
+
+## jobs where a subjob
