@@ -678,6 +678,12 @@ get_receiver_info = function(env) {
     deps[c("deviceID", "receiverType", "id")] = NULL
 
     rv$deployments = deps
+    proj = if (auth$userType == "administrator")
+               ""
+           else
+               sprintf("and projectID in (%x)", paste(auth$projects, collapse=","))
+
+    rv$products = ServerDB("select distinct URL from products where serno='%s' %s order by URL", serno, proj)[[1]]
     return_from_app(rv)
 }
 

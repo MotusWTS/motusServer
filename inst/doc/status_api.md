@@ -359,7 +359,10 @@ projects.
          - `isMobile`: integer; non-zero means a mobile deployment
          - `tsStart`: double; timestamp of deployment start
          - `tsEnd`: double; timestamp of deployment end, or NA if ongoing
-     Sort order for this item is descending by `tsStart`.
+         Sort order for this item is descending by `tsStart`.
+      - `products`: string array; list of URLs to summary products for this receiver.
+         Only those products assigned to projects the user has permissions for are included.
+
 
 ### get_job_stackdump ###
 
