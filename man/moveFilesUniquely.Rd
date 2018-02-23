@@ -5,12 +5,17 @@
 \title{Move files to a single folder, renaming new files in cases
 of conflict.}
 \usage{
-moveFilesUniquely(src, dst)
+moveFilesUniquely(src, dst, copyLinkTargets = FALSE)
 }
 \arguments{
 \item{src}{character vector of full paths of files to move}
 
 \item{dst}{path to target folder}
+
+\item{copyLinkTargets}{logical: if TRUE, when an item in `src` is a symbolic
+link, it is replaced with a copy of the target of the link, and it is that copy which is moved to `dst`,
+rather than just the symlink itself.
+Default: FALSE (it is the symlink itself which is moved, not the file it points to).}
 }
 \value{
 a character vector of the same length as \code{src}, with non-NA

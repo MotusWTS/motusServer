@@ -24,6 +24,11 @@
 #'
 #' @param dst path to target folder
 #'
+#' @param copyLinkTargets logical: if TRUE, when an item in `src` is a symbolic
+#' link, it is replaced with a copy of the target of the link, and it is that copy which is moved to `dst`,
+#' rather than just the symlink itself.
+#' Default: FALSE (it is the symlink itself which is moved, not the file it points to).
+#'
 #' @return a character vector of the same length as \code{src}, with non-NA
 #' entries giving new names for any files that were renamed
 #'
@@ -31,13 +36,26 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-moveFilesUniquely = function(src, dst) {
+moveFilesUniquely = function(src, dst, copyLinkTargets=FALSE) {
     if (length(src) == 0)
         return(character(0))
 
     fname = basename(src)
     existing = dir(dst)
 
+    ## possibly replace any files which are symlinks with copies of their targets
+    ## before moving to dst
+
+    if (copyLinkTargets) {
+        targ = Sys.readlink(src)
+        iTarg = which(isTRUE(nchar(targ) > 0)) ## only files which are valid symlinks pass this test
+        if (length(iTarg)) {
+            ## Note: remove the symlink itself first; otherwise, file.copy, which follows symlinks
+            ## on both src and dst args, would otherwise be a NOP.
+            file.remove(src[iTarg])
+            file.copy(targ[iTarg], src[iTarg], copy.date=TRUE)
+        }
+    }
     ## regex to find possible "-NNN" suffixes on files
     nameRegex = "(?sx)^(?:(?:(?<base>.*)-(?<number>[0-9]+))$)|(?<base2>.*)$"
 
