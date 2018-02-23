@@ -907,6 +907,11 @@ function show_recv_info3(x) {
                                  fmt_tsEnd: function(i) {
                                      return fmt_time(this.tsEnd[i], 16)
                                  },
+                                 products: gri.products && gri.products[0] ? {
+                                     __transpose__: true,
+                                     link: toArray(gri.products),
+                                     name: toArray(gri.products).map(i=>i.replace(/^.*\//, ""))
+                                 } : null,
                                  fileCountStatus: function(i) {
                                      return this.countFS[i] === this.countDB[i] ? "" : "filecount_mismatch";
                                  },

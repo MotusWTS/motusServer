@@ -245,3 +245,12 @@ dt {
      text-decoration:none;
      text-shadow: 1px 1px 1px #555;
 }
+
+.recv_product_heading {
+    font-weight: bold;
+}
+
+.recv_product_list_item:hover {
+     text-decoration:none;
+     text-shadow: 1px 1px 1px #555;
+}
