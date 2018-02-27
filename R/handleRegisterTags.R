@@ -106,7 +106,7 @@ handleRegisterTags = function(j) {
         }
         speciesID = as.integer(species)
         if (is.na(speciesID)) {
-            sp = motusListSpecies(qstr=species, qlng="CD")
+            sp = motusListSpecies(qstr=species, qlang="CD")
             if (length(sp) == 0) {
                 jobLog(j, paste("Warning: ignoring unknown species code:", species), summary=TRUE)
             } else {
