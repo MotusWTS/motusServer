@@ -680,11 +680,12 @@ function on_change_find_job_selector(evt) {
         break;
     };
     $("#find_job_key_span").toggle(vis);
-    $("#find_job_button").toggle(vis);
 
     // we've switched to a jobs view that has no other controls, so
-    // (re)load the list
-    if (!vis) {
+    // (re)load the list, unless this is a scripted rather than event-driven
+    // call.
+
+    if (!vis && evt) {
         state.selector = {};
         show_job_list();
     }
@@ -779,6 +780,10 @@ function initStatus2Page() {
 
     // read the state of the checkbox, which might be preserved across reloads
     state.errorOnly = $("#error_only_option").is(":checked");
+
+    // set the state of the job key entry; this is the text criterion used
+    // by some of the filtering modes (e.g. jobs by receiver serial number)
+    on_change_find_job_selector(null);
 
     // set the global query parameter getter, based on the initial page URL
     // this can be used like so:
