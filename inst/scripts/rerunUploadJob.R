@@ -41,6 +41,7 @@ suppressMessages(suppressWarnings(library(motusServer)))
 ## set up the jobs structure
 
 loadJobs()
+openMotusDB()
 
 if (rerunUploadJob(Jobs[[job]])) {
     cat("Rerun of files uploaded for job", job, "has been queued.\n")
