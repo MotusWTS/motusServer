@@ -31,4 +31,6 @@ postInstall = function() {
         S("sudo chmod og-w %s", t)
         S("sudo ln -f -s %s /etc/cron.d", t)
     }
+
+    ensureServerDB(installing=TRUE)
 }

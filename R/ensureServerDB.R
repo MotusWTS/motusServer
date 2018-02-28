@@ -6,6 +6,10 @@
 #' table is ensured by the call to \link{\code{Copse()}} in \link{\code{loadJobs()}}
 #' And it holds a table of remotely-registered receivers and their credentials.
 #'
+#' @param installing; logical scalar; if TRUE, the caller is part of
+#' package installation, rather than a running server, and the locking
+#' of the `ServerDB` symbol is skipped.  Default:  FALSE
+#'
 #' @return no return value, but saves a safeSQL connection to the server database
 #' in the global symbol \code{ServerDB}
 #'
@@ -13,14 +17,16 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-ensureServerDB = function() {
+ensureServerDB = function(installing=FALSE) {
     if (exists("ServerDB", .GlobalEnv))
         return()
 
     ServerDB <<- safeSQL(MOTUS_PATH$SERVER_DB)
 
-    lockSymbol("ServerDB")
-    on.exit(lockSymbol("ServerDB", lock=FALSE))
+    if (! installing) {
+        lockSymbol("ServerDB")
+        on.exit(lockSymbol("ServerDB", lock=FALSE))
+    }
 
     ServerDB(sprintf("CREATE TABLE IF NOT EXISTS %s (
 symbol TEXT UNIQUE PRIMARY KEY,
