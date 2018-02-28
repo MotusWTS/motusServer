@@ -144,7 +144,7 @@ MOTUS_PATH = list(
     TRASH            = "/sgm/trash/",                ## files to be deleted once we know they've been processed
 
     UPLOADS          = "/sgm/uploads/",              ## folder where uploads ultimately go
-    UPLOADS_PARTIAL  = structure("/sgm/uploads/partial",       ## folder where uploads go as they arrive; must be writable by www-data
+    UPLOADS_PARTIAL  = structure("/sgm/uploads/partial/",       ## folder where uploads go as they arrive; must be writable by www-data
                        owner="sg:www-data",
                        perm="g+rws"),
     UPLOAD_TESTING   = "/sgm/UPLOAD_TESTING",        ## file whose presence indicates upload jobs are to be marked with "isTesting"
