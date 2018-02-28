@@ -136,7 +136,7 @@ CREATE TABLE IF NOT EXISTS hits (
 CREATE INDEX IF NOT EXISTS hits_batchID ON hits(batchID);--
 CREATE INDEX IF NOT EXISTS hits_runID ON hits(runID);--
 CREATE INDEX IF NOT EXISTS hits_ts on hits(ts);--
-CREATE INDEX IF NOT EXISTS hits_tagDepProjectID_batchID_hitID ON hits(tagDepProjectID, batchID, hitID);
+CREATE INDEX IF NOT EXISTS hits_tagDepProjectID_batchID_hitID ON hits(tagDepProjectID, batchID, hitID);--
 
 -- Table tagAmbig records sets of physically identical tags which have
 -- overlapping deployment periods.  When the motusTagID field in a row
