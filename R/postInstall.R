@@ -33,4 +33,6 @@ postInstall = function() {
     }
 
     ensureServerDB(installing=TRUE)
+    openMotusDB()
+    ensureMotusTransferTables()
 }

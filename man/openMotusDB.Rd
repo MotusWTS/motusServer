@@ -20,11 +20,11 @@ openMotusDB(dbname = "motus", host = "localhost", user = "motus",
 object of class \link{\code{safeSQL}}
 }
 \description{
-The motus database holds batches of tag detections intended for the
-motus server.  This must be run by a user who has permissions to
-the mysql motus database on the local server, and whose password to
-that database is stored in the file ~/.secrets/motusSecrets as
-element "dbPasswd".
+The motus database holds batches of tag detections merged from all
+receiver databases.  This function must be run by a user who has
+permissions to the mysql motus database on the local server, and
+whose password to that database is stored in the file
+~/.secrets/motusSecrets as element "dbPasswd".
 }
 \note{
 The safeSQL objects is stored in the global variable MotusDB, and
