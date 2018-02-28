@@ -3,6 +3,10 @@
 ## populate the products table in the server jobs database /sgm_local/server.sqlite
 ## by extracting all products_ items from top level jobs
 
+## NB: this script was only needed to populate the products table, which was created
+## after many jobs had already run.  Current code adds new products to the table
+## as they are created.
+
 library(motusServer)
 ensureServerDB()
 
@@ -26,5 +30,3 @@ allProds$serno[allProds$serno == ""] = NA
 dbWriteTable(ServerDB$con, "products", allProds[,c("productID", "jobID", "URL", "serno", "projectID")], row.names=FALSE, append=TRUE)
 
 cat("Wrote ", nrow(allProds), " products to database.\n")
-
-## jobs where a subjob
