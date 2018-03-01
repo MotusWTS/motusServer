@@ -217,7 +217,7 @@ file.path(MOTUS_PATH$METADATA_HISTORY, "tag_deployments.csv"), row.names=FALSE)
     })
 
     ## in case there were any changes, commit them to the repo and push to git hub
-    safeSys(paste0("cd ", MOTUS_PATH$METADATA_HISTORY, "; if ( git commit --author='motus_data_server <sgdata@motus.org>' -a -m 'revised upstream' ); then git push; fi"), quote=FALSE)
+    safeSys(paste0("cd ", MOTUS_PATH$METADATA_HISTORY, "; if ( git commit --no-gpg-sign --author='motus_data_server <sgdata@motus.org>' -a -m 'revised upstream' ); then git push; fi"), quote=FALSE)
 
     ## grab git commit hash and store in meta db
 
