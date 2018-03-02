@@ -254,6 +254,7 @@ handleRegisterTags = function(j) {
             ii = match(id, codeSetDB$id)
 
             ## try register the tag with motus
+            regError = FALSE
             rv = tryCatch(
                 motusRegisterTag(
                     projectID = projectID,
@@ -279,12 +280,13 @@ handleRegisterTags = function(j) {
                     model = tagModel
                 ),
                 error = function(e) {
-                    return (NULL)
+                    regError <<- TRUE
+                    return (jsonlite::fromJSON(as.character(e$message)))
                 }
             )
 
             tag = paste0(id, ":", round(meanbi, 2))
-            if (length(rv) > 0 && rv$responseCode == "success-import" && ! is.null(rv$tagID)) {
+            if (! regError) {
                 jobLog(j, paste0("Success: tag ", tag, " was registered as motus tag ", rv$tagID, " under project ", projectID))
                 if (! is.null(speciesID) && ! is.na(deployDate)) {
                     ## try register a deployment on the given species and/or date
@@ -298,7 +300,7 @@ handleRegisterTags = function(j) {
                 }
                 numReg = numReg + 1
             } else {
-                jobLog(j, paste0("Query to motus server to register tag ", tag, " failed\nThis could be a server problem, or perhaps the tag is already registered."))
+                jobLog(j, paste0("Query to motus server to register tag ", tag, " failed\nwith this error: ", rv$errorCode, ": ", rv$errorMsg))
                 numFail = numFail + 1
             }
         }
