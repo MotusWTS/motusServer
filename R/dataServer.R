@@ -143,7 +143,7 @@ authenticate_user = function(env) {
             auto_unbox = TRUE)
 
         tryCatch({
-            resp = getForm(motusServer:::MOTUS_API_USER_VALIDATE, json=motusReq, curl=Curl) %>% fromJSON
+            resp = httr::content(httr::POST(motusServer:::MOTUS_API_USER_VALIDATE, body=list(json=motusReq),encode="form"))
             ## generate a new authentication token for this user
 
             ## First, grab a list of ambiguous projects that this user
@@ -169,7 +169,7 @@ where
 )[[1]]
             projectIDs = c(realProjIDs, ambigProjIDs)
             rv = list(
-                authToken = unclass(RCurl::base64(readBin("/dev/urandom", raw(), n=ceiling(OPT_TOKEN_BITS / 8)))),
+                authToken = unclass(jsonlite::base64_enc(readBin("/dev/urandom", raw(), n=ceiling(OPT_TOKEN_BITS / 8)))),
                 expiry = as.numeric(Sys.time()) + OPT_AUTH_LIFE,
                 userID = resp$userID,
                 projects = paste(projectIDs, collapse=","),

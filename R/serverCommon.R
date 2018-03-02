@@ -12,7 +12,6 @@ serverCommon = function() {
 
     library(Rook)
     library(hwriter)
-    library(RCurl)
     library(jsonlite)
 
     ## make sure the server database exists, is open, and put a safeSQL object in the global ServerDB
@@ -35,9 +34,6 @@ serverCommon = function() {
     ## number of random bits in authorization token;
     ## gets rounded up to nearest multiple of 8
     OPT_TOKEN_BITS <<- 33 * 8
-
-    ## get a handle in case we need to make requests to other servers
-    Curl <<- getCurlHandle()
 
     ## get user auth database, ensuring it has a valid auth table
 

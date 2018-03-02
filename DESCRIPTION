@@ -18,7 +18,6 @@ Depends:
     lubridate,
     openssl,
     proto,
-    RCurl,
     RMySQL,
     RSQLite,
     sendmailR,

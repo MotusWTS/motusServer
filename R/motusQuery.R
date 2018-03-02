@@ -17,35 +17,19 @@
 #'     MOTUS_SECRETS object.  Otherwise, \code{masterKey} is the name
 #'     of a file to read the secret key from.
 #'
-#' @param ... if present, additional CURL options; these are guaranteed to
-#' override any values set by this function's code.
-#'
 #' @return the result of sending the request to the motus API.  The
 #'     result is a JSON-format character scalar if \code{json} is
 #'     \code{TRUE}; otherwise it is an R list with named components,
 #'     extracted from the JSON return value.
+#'     If the query returns with a status code of >= 400, this function calls stop(X) where
+#'     X is the (typically JSON-encoded) body of the reply.
 #'
 #' @note all queries and return values are logged in the file "motus_query_log.txt"
 #' in the user's home directory.
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-motusQuery = function (API, params = NULL, requestType="post", show=FALSE, json=FALSE, serno=NULL, masterKey=NULL, ...) {
-    curl = getCurlHandle()
-    .opts = list(
-        httpheader = c(
-            "Content-Type" = switch(requestType,
-                                    post="application/x-www-form-urlencoded",
-                                    get="application/json"),
-            "Accept"="application/json"),
-        timeout = 20,
-        verbose = FALSE
-    )
-
-    moreOpts = list(...)
-    for (i in seq(along=moreOpts))
-        .opts[[names(moreOpts)[i]]] = moreOpts[[i]]
-    curlSetOpt(.opts=.opts, curl=curl)
+motusQuery = function (API, params = NULL, requestType="post", show=FALSE, json=FALSE, serno=NULL, masterKey=NULL) {
     # params is a named list of parameters which will be passed along in the JSON query
 
     DATE = Sys.time()
@@ -87,32 +71,37 @@ motusQuery = function (API, params = NULL, requestType="post", show=FALSE, json=
     on.exit(close(log))
     cat(format(Sys.time()), ",", requestType, ",", API, ",", JSON, "\n", file=log)
     retries = 0
-    while(retries < 5) {
+    maxRetries = 5
+    while(retries <= maxRetries) {
         tryCatch({
             if (requestType == "post")
-                RESP = postForm(API, json=JSON, style="post", curl=curl)
+                r = httr::POST(API, body=list(json=JSON), encode="form")
             else
-                RESP = getForm(API, json=JSON, curl=curl)
-            if (json)
-                return (RESP)
-            if (grepl("^[ \r\n]*$", RESP))
-                return(list())
-            rv = fromJSON(RESP)
-            if (retries > 0)
-                cat("Query was retried ", retries, " times due to gnuTLS issues\n", file=log)
-            cat(capture.output(RESP), "\n", file=log)
-            if (! is.null(rv$data))
-                return(rv$data)
-            return(rv)
+                r = httr::GET(API, query=list(json=JSON))
+            break
         }, error=function(e) {
-            if (any(grepl("TLS packet with unexpected length", as.character(e)))) {
-                Sys.sleep(5)
-            }
-            if (retries > 5) {
+            retries <- retries + 1
+            if (retries > maxRetries) {
                 cat("ERROR: ", as.character(e), "\n", file=log)
                 stop ("MotusQuery failed with error; ", as.character(e))
             }
+            if (any(grepl("TLS packet with unexpected length", as.character(e)))) {
+                Sys.sleep(5)
+            }
         })
-        retries <- retries + 1
     }
+    rv = httr::content(r, "text")
+
+    if (httr::status_code(r) >= 300)
+        stop(rv)
+
+    if (! json) {
+        ## we use jsonlite::fromJSON(rv) rather than httr::content(rv) because the
+        ## latter doesn't structure its output as a data.frame
+
+        rv = fromJSON(rv)
+        if (! is.null(rv$data))
+            rv = rv$data
+    }
+    return(rv)
 }
