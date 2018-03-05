@@ -35,4 +35,27 @@ postInstall = function() {
     ensureServerDB(installing=TRUE)
     openMotusDB()
     ensureMotusTransferTables()
+
+    ## create links in the web server root direcotry
+
+    ## download directory
+    S("sudo ln -s /sgm/www /var/www/html/download")
+    S("sudo ln -s /sgm/www/index.html/index.html /var/www/html/index.html")
+    S("sudo ln -s /sgm/www/index.php/index.php /var/www/html/index.php")
+
+    ## ugly php login page
+    S("sudo ln -s /sgm/www/login.php/login.php /var/www/html/login.php")
+
+    ## public pages not requiring login
+    S("sudo ln -s /sgm/pub /var/www/html/public")
+
+    ## additional message for status page
+    S("sudo ln -s /sgm_local/bin/www/status_message.html /var/www/html/status_message.html")
+
+    ## upload pages (yes, directly from the source folder.  Not smart!)
+    S("sudo ln -s /home/sg/src/ProjectSend /var/www/html/upload")
+
+    ## robots.txt - keep webcrawlers off this server; at most, the /sgm/pub folder would
+    ## be worth indexing, but there should be other links to all that content/
+    S("sudo ln -s /sgm_local/bin/www/robots.txt /var/www/html/robots.txt")
 }
