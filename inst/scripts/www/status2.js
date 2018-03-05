@@ -729,6 +729,11 @@ function initStatus2Page() {
         debug: false // show dialog when query runs
     };
 
+    // populate the status_message div from the server.
+    // This allows a status message to appear at the top of the page, to e.g.
+    // indicate that the processServers are offline.
+    $.get("/status_message.html").done(function(x){$("#status_message").html(x)});
+
     // in case a json QUERY parameter was supplied to the URL, use it as state instead.
 
     $.Mustache.addFromDom();
