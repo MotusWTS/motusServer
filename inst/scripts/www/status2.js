@@ -73,6 +73,8 @@ function motus_status_api(api, par, cb, ignore_errors) {
     } else {
         // set a timer to display a progress bar if the query hasn't
         // completed quickly (under 1.5 seconds)
+        if (state.progress_timeout)
+            clearTimeout(state.progress_timeout)
         state.progress_timeout = setTimeout(show_query_progress, 1500);
     };
     $.post(serverURL + api, {"json":JSON.stringify(par)}).done(motus_status_replied).fail(motus_query_failed)._extra =
