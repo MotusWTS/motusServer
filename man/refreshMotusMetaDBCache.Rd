@@ -8,7 +8,8 @@ receivers, projects, and species.}
 refreshMotusMetaDBCache()
 }
 \value{
-the number of tables updated.
+a named logical vector indicating whether the query to update
+each table succeeded.
 }
 \description{
 This refresh is wrapped in a transaction.  Before the transaction

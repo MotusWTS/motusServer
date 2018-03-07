@@ -7,7 +7,8 @@
 #'
 #' For each table X, if the appropriate query fails, we leave X as-is.
 #'
-#' @return the number of tables updated.
+#' @return a named logical vector indicating whether the query to update
+#' each table succeeded.
 #'
 #' @export
 #'
@@ -20,8 +21,16 @@ refreshMotusMetaDBCache = function() {
     ## shorthand for path to cache
     db = MOTUS_METADB_CACHE
 
-    ## number of tables updated
-    rv = 0
+    ## tables updated successfully? assume not
+
+    rv = c(tags            = FALSE,
+           tagDeps         = FALSE,
+           recvDeps        = FALSE,
+           antDeps         = FALSE,
+           species         = FALSE,
+           projs           = FALSE,
+           paramOverrides  = FALSE
+           )
 
     ## try to lock the db (by trying to lock its name)
     lockSymbol(db)
@@ -58,18 +67,21 @@ refreshMotusMetaDBCache = function() {
             stop("upstream searchtags API failing sanity check")
         }
 
-
         ## clean up tag registrations (only runs on server with access to full Lotek codeset)
         ## creates tables "tags" and "events" from the first parameter
         ## and records tags table to the metadata history repo
 
         t = cleanTagRegistrations(t, meta)
 
+        rv["tags"] = TRUE
+
         ## grab projects
         p = motusListProjects()
         if (nrow(p) < 20) { ## arbitrary sanity check
             stop("upstream listprojects API failing sanity check")
         }
+
+        rv["projs"] = TRUE
 
         ## fill in *something* for missing project labels (first 3 words with underscores)
         fix = is.na(p$label)
@@ -118,7 +130,7 @@ order by
 "
 ),
 file.path(MOTUS_PATH$METADATA_HISTORY, "tag_deployments.csv"), row.names=FALSE)
-        rv = rv + 1
+        rv["tagDeps"] = TRUE
     }, error = function(e) {
         motusLog("%s: tagdeps: %s", funName, as.character(e))
     })
@@ -131,7 +143,7 @@ file.path(MOTUS_PATH$METADATA_HISTORY, "tag_deployments.csv"), row.names=FALSE)
         }
         meta("delete from species")
         dbWriteTable(meta$con, "species", t[,c("id", "english", "french", "scientific", "group", "sort")], append=TRUE, row.names=FALSE)
-        rv = rv + 1
+        rv["species"] = TRUE
     }, error = function(e) {
         motusLog("%s: species: %s", funName, as.character(e))
     })
@@ -169,7 +181,7 @@ file.path(MOTUS_PATH$METADATA_HISTORY, "tag_deployments.csv"), row.names=FALSE)
         }
         meta("delete from recvDeps")
         dbWriteTable(meta$con, "recvDeps", recv, append=TRUE, row.names=FALSE)
-        rv = rv + 1
+        rv["recvDeps"] = TRUE
 
         ## End any unterminated receiver deployments on receivers which have a later deployment.
         ## The earlier deployment is ended 1 second before the (earliest) later one begins.
@@ -181,13 +193,12 @@ file.path(MOTUS_PATH$METADATA_HISTORY, "tag_deployments.csv"), row.names=FALSE)
         slimRecvDeps = dbGetQuery(meta$con, "select projectID, deviceID, tsStart, tsEnd from recvDeps order by projectID, deviceID, tsStart")
         dbWriteTable(MotusDB$con, "recvDeps", slimRecvDeps,
                      append=TRUE, row.names=FALSE)
-        rv = rv + 1
         write.csv(slimRecvDeps,
                   file.path(MOTUS_PATH$METADATA_HISTORY, "receiver_deployments.csv"), row.names=FALSE)
 
         meta("delete from antDeps")
         dbWriteTable(meta$con, "antDeps", ant %>% as.data.frame, append=TRUE, row.names=FALSE)
-        rv = rv + 1
+        rv["antDeps"] = TRUE
 
         ## create GPS fix table
         ## 2017-12-21 FIXME: probably obsolete; used in tagview(), but does anything on the
@@ -196,7 +207,6 @@ file.path(MOTUS_PATH$METADATA_HISTORY, "tag_deployments.csv"), row.names=FALSE)
         meta("delete from recvGPS")
         meta("insert or ignore into recvGPS select deviceID, tsStart, latitude as lat, longitude as lon, elevation as elev from recvDeps")
     }, error = function(e) {
-        rv = rv + 1
         motusLog("%s: recvDeps: %s", funName, as.character(e))
     })
 
@@ -209,7 +219,7 @@ file.path(MOTUS_PATH$METADATA_HISTORY, "tag_deployments.csv"), row.names=FALSE)
         sql(.CLOSE=TRUE)
         meta("delete from paramOverrides")
         dbWriteTable(meta$con, "paramOverrides", t, append=TRUE, row.names=FALSE)
-        rv = rv + 1
+        rv["paramOverrides"] = TRUE
         write.csv(t[order(t$projectID, t$serno, t$tsStart),],
                   file.path(MOTUS_PATH$METADATA_HISTORY, "parameter_overrides.csv"), row.names=FALSE)
     }, error = function(e) {
