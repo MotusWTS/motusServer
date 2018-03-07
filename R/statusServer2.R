@@ -201,6 +201,13 @@ list_jobs = function(env) {
     if (!is.null(stump)) {
         ## allow for having been given a subjob's ID rather than that of the top-level job.
         stumpID = ServerDB("select stump from jobs where id=%d", stump)[[1]]
+        ## not found, so propagate the query as-is, which should return no rows
+        ## Otherwise, we were collapsing this part of the `where` clause, leading
+        ## to no filtering, and a return of the entire dataset!
+        ## See:  https://github.com/jbrzusto/motusServer/issues/381
+
+        if (length(stumpID) == 0)
+            stumpID = stump
         where = c(where, sprintf("t1.stump = %d", stumpID))
     }
     if (!is.null(type))
