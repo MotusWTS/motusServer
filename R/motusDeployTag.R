@@ -110,8 +110,6 @@ motusDeployTag =
                 assign(n, as.numeric(v))
         }
 
-        now = as.numeric(Sys.time())
-
         status = match.arg(status)
         if (! is.null(properties))
             properties = c(list(), properties, comments=comments)
@@ -128,18 +126,11 @@ motusDeployTag =
         motusQuery(
             MOTUS_API_DEPLOY_TAG,
             requestType="post",
-            c(
-                list(
-                    tagID        = tagID,
-                    projectID    = projectID,
-                    status       = status
-                ),
-
-                if (tsStart > now)
-                    list(tsStartAnticipated = tsStart)
-                else
-                    list(tsStart = tsStart)
-               ,
+            list(
+                tagID        = tagID,
+                projectID    = projectID,
+                status       = status,
+                tsStart      = tsStart,
                 tsEnd        = tsEnd,
                 deferTime    = deferTime,
                 speciesID    = speciesID,
