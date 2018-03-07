@@ -92,6 +92,12 @@ motusQuery = function (API, params = NULL, requestType="post", show=FALSE, json=
     }
     rv = httr::content(r, "text")
 
+    ## dump (possibly very truncated) reply.
+    ## large replies are usually fine; it's small replies that typically contain
+    ## an unexpected error message!  This way, we don't generate vast log files.
+
+    cat(format(Sys.time()), ",", substr(rv, 1, 300), "\n", file=log)
+
     if (httr::status_code(r) >= 300)
         stop(rv)
 
