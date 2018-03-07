@@ -33,6 +33,7 @@ tags with different BI from the same project; e.g. 123.1
 \item tagFreq: floating point nominal tag frequency, in MHz
 \item bi: floating point burst interval, in seconds
 }
+sorted in order by id and bi within project.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}

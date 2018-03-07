@@ -34,7 +34,7 @@ and when a new file is found, queue a job to process it.
 this depends on some other process placing uploaded files
     into the folder \code{MOTUS_PATH$UPLOADS}.  We're using a
     patched version of \link{http://www.projectsend.org} whose last
-    task for an uploaded file is to create a hardlink to it in
+    task for an uploaded file is to create a symlink to it in
     \code{MOTUS_PATH$UPLOADS}, and this generates a "CREATE" event.
 }
 \author{
