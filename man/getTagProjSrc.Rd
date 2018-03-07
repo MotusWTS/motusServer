@@ -23,4 +23,3 @@ have names like "proj-123.motus"
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

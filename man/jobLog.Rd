@@ -2,10 +2,9 @@
 % Please edit documentation in R/jobLog.R
 \name{jobLog}
 \alias{jobLog}
-\title{Add a message to the log for a job.  Log messages are saved in two
-JSON fields called "log" and "summary" in the top-level ancestor of the job.
-"Summary" is intended to give a quick overview, while "log" should provide.
-details.}
+\title{Add a message to the log for a job.  Log messages are saved in either the
+"summary_" field in the top-level ancestor of the job (for summary messages), or in the job's own
+"log_" field, for detailed messages.}
 \usage{
 jobLog(j, msg, summary = FALSE)
 }
@@ -15,15 +14,15 @@ jobLog(j, msg, summary = FALSE)
 \item{msg}{character vector of messages}
 
 \item{summary}{logical scalar; if TRUE, the message is added to the summary field; otherwise,
-the default, it is added to the log field.
+the default, it is added to the log field.}
+}
+\value{
+\code{invisible(NULL)}
 
-
-The messages in \code{msg} are joined with "\\n" and appended to any already existing for this job.}
+The messages in \code{msg} are joined with "\\n" and appended to any already existing for this job.
 }
 \description{
-Add a message to the log for a job.  Log messages are saved in two
-JSON fields called "log" and "summary" in the top-level ancestor of the job.
-"Summary" is intended to give a quick overview, while "log" should provide.
-details.
+Add a message to the log for a job.  Log messages are saved in either the
+"summary_" field in the top-level ancestor of the job (for summary messages), or in the job's own
+"log_" field, for detailed messages.
 }
-

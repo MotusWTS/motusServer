@@ -45,7 +45,6 @@ handlePlotData = function(j) {
 
     ## get a tagview for the detections in this receiver (a tagview joins batches/runs/hits with appropriate metadata)
     src = getRecvSrc(serno)
-    mot = getMotusMetaDB()
 
     ## for each deployment, do a plot
 
@@ -55,7 +54,7 @@ handlePlotData = function(j) {
     condense = 3600
     condenseLabel = "hourly"
 
-    if (length(motusProjectID) > 0) {
+    if (isTRUE(motusProjectID > 0)) {
         info = subset(info, projID == motusProjectID)
     }
 
@@ -67,11 +66,13 @@ handlePlotData = function(j) {
 
     info = info %>% group_by(year, proj, site) %>% summarize(serno=first(serno), projID=first(projID), tsStart=min(tsStart, na.rm=TRUE), tsEnd=max(tsEnd, na.rm=TRUE), bnStart=min(bnStart, na.rm=TRUE), bnEnd = max(bnEnd, na.rm=TRUE))
 
-    outDir = file.path(MOTUS_PATH$PLOTS, serno)
-    dir.create(outDir, mode="0770")
-    safeSys("chgrp", "www-data", outDir)
+    ## deal with -Inf for tsEnd arising from max(c()); set to a very long time in the future.
+    info$tsEnd[! is.finite(info$tsEnd)] = 1e20
 
-    for (i in 1:nrow(info)) {
+    isTesting = isTRUE(topJob(j)$isTesting)
+    outDir = productsDir(j$serno, isTesting)
+
+    for (i in seq_len(nrow(info))) {
         year = info$year[i]
         proj = info$proj[i]
         site = info$site[i]
@@ -81,27 +82,32 @@ handlePlotData = function(j) {
         plotfilename = sub("\\.rds$", "\\.png", datafilename, perl=TRUE)
 
         ## generate the plot object and condensed dataset
-        rv = makeReceiverPlot(src, mot, title, condense, ts = unlist(info[i, c("tsStart", "tsEnd")]), unlist(info[i, c("bnStart", "bnEnd")]))
+        rv = NULL
+        tryCatch({
+            rv = makeReceiverPlot(src, MOTUS_METADB_CACHE, title, condense, ts = unlist(info[i, c("tsStart", "tsEnd")]), unlist(info[i, c("bnStart", "bnEnd")]))
+        }, error = function(e) {
+            jobLog(j, paste0("Error `", as.character(e), "` while trying to make plot for ", serno, " and parameters ", capture.output(info[i,])))
+        })
+        if (!is.null(rv)) {
+            saveRDS(rv$data, datafilename)
+            png(plotfilename, width=rv$width, height=rv$height, type="cairo-png")
+            print(rv$plot)
+            dev.off()
 
-        saveRDS(rv$data, datafilename)
-        png(plotfilename, width=rv$width, height=rv$height, type="cairo-png")
-        print(rv$plot)
-        dev.off()
+            ## make a pdf too, assuming a 90 dpi display
+            pdfname = sub("\\.png$", ".pdf", plotfilename, perl=TRUE)
+            pdf(pdfname, width=rv$width / 90, height=rv$height / 90)
+            print(rv$plot)
+            dev.off()
 
-        ## make a pdf too, assuming a 90 dpi display
-        pdfname = sub("\\.png$", ".pdf", plotfilename, perl=TRUE)
-        pdf(pdfname, width=rv$width / 90, height=rv$height / 90)
-        print(rv$plot)
-        dev.off()
-
-        targDir = getProjDir(info$projID[i])
-        file.symlink(plotfilename, targDir)
-        file.symlink(pdfname, targDir)
-        file.symlink(datafilename, targDir)
-        url = getDownloadURL(info$projID[i])
-        jobLog(j, paste0("Exported hourly dataset (and plot) to:  ", basename(datafilename), "(.png/.pdf)",
-                         "\nYou can download these here: ", url))
-        jobProduced(j, file.path(url, basename(c(plotfilename, pdfname, datafilename))))
+            targDir = getProjDir(info$projID[i], isTesting)
+            file.symlink(plotfilename, targDir)
+            file.symlink(pdfname, targDir)
+            file.symlink(datafilename, targDir)
+            url = getDownloadURL(info$projID[i], isTesting)
+            jobLog(j, paste0("Exported hourly dataset (and plot) to:  ", basename(datafilename), "(.png/.pdf)"))
+            jobProduced(j, file.path(url, basename(c(plotfilename, pdfname, datafilename))), info$projID[i], j$serno)
+        }
     }
     closeRecvSrc(src)
     return (TRUE)

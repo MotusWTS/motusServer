@@ -1,0 +1,35 @@
+digraph tags_join {
+        subgraph cluster_data {
+                runs [shape=record,label="runs|{<runID>runID|<motusTagID>motusTagID|<ant>ant|...}"];
+                batches [shape=record,label="batches|{<batchID>batchID|<motusDeviceID>motusDeviceID|...}"];
+                hits [shape=record,label="hits|{<batchID>batchID|<runID>runID|<ts>ts|...}"];
+                graph[label="Data (from receiver)", center=1, fontsize=24]
+        }
+        subgraph cluster_metadata {
+                tags [shape=record,label="tags|{<tagID>tagID|mfgID|model|...}"];
+                projs [shape=record,label="projs|{<id>id|project Name|...}"];
+                tagDeps [shape=record,label="tagDeps|{<deployID> deployID|<tagID>tagID|<projectID>projectID|<tsStart>tsStart|<tsEnd> tsEnd|<speciesID> speciesID|<fullID>fullID|...}"];
+                species [shape=record,label="species|{<id>id|commonName|...}"];
+                recvDeps [shape=record,label="recvDeps|{<deployID>deployID | <deviceID> deviceID|<name> name|<projectID> projectID|<tsStart> tsStart|<tsEnd> tsEnd|...}"];
+                recvGPS [shape=record,label="recvGPS|{<deviceID>deviceID | <ts> ts|<lat> lat|<lon> lon|<elev> elev}"];
+                antDeps [shape=record,label="antDeps|{<deployID>deployID |<port> port|<antType> antType|<antOrient> antOrient|...}"];
+                graph[label="MetaData (from motus)", center=1, fontsize=24]
+        }
+        title [label="View of Tag Hits\rwith Full Metadata\r\lSolid edge: left join\lDashed edge: join to\rgreatest lower bound", shape=none, fontsize=18];
+        hits:runID            -> runs:runID;
+        hits:batchID          -> batches:batchID;
+        runs:ant              -> antDeps:port;
+        runs:motusTagID       -> tagDeps:tagID;
+        runs:motusTagID       -> tags:tagID;
+        hits:ts               -> tagDeps:tsStart[style="dashed"];
+        hits:ts               -> recvDeps:tsStart[style="dashed"];
+        hits:ts               -> recvGPS:ts[style="dashed"];
+        batches:motusDeviceID -> recvDeps:deviceID;
+        recvDeps:deployID     -> antDeps:deployID;
+        recvDeps:projectID    -> projs:id;
+        batches:motusDeviceID -> recvGPS:deviceID;
+        tagDeps:speciesID     -> species:id;
+        tagDeps:projectID     -> projs:id;
+        graph[center=1, ranksep=2, nodesep=5];
+
+}

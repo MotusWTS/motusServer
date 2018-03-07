@@ -28,4 +28,3 @@ This is an app used by the Rook server launched by \code{\link{dataServer}}
 Params are passed as a url-encoded field named 'json' in the http POST request.
 The return value is a JSON-formatted string
 }
-

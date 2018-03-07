@@ -99,6 +99,9 @@ records is the last digit of the boot session count.
 
 }
 
+However, if no data are available for the specified \code{ts} and \code{monoBN} parameters,
+then the function returns NULL.
+
 Note: \code{n}, \code{freq}, and \code{sig} are for the given tag and antenna
 during the condensation period.
 
@@ -117,4 +120,3 @@ If both \code{ts} and \code{monoBN} are NULL, then all
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

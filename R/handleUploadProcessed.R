@@ -16,27 +16,28 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 handleUploadProcessed = function(j) {
-    tj = topJob(j)
+### FIXME: decide on a method for notifying users.  Email might still make sense,
+### but user should be able to select other options.  E.g. punt this to motus via
+### an API call?
 
-    replyTo = tj$replyTo[1]
-    if (length(replyTo) == 0) {
-        jobLog(j, "No replyTo address, so not sending summary email")
-        return (FALSE)
-    }
-    email(replyTo, paste0("motus job ", tj, ": processing complete"),
-          paste0("Thank-you for the upload - it has been processed.  Any product(s) are listed here:\n\n   ",
-                 paste(sapply(jobProduced(tj), URLencode), collapse="\n   "),
-                 "\n\nProcessing Summary:\n\n", tj$summary, "\n\nYou can see the detailed log here:
+     tj = topJob(j)
 
-   https://sensorgnome.org/My_Job_Status
+     replyTo = tj$replyTo[1]
+     if (length(replyTo) > 0) {
+         email(replyTo, paste0("motus job ", tj, ": processing complete"),
+           paste0("Thank-you for the upload - it has been processed.  Any product(s) are listed here:\n\n   ",
+                  paste(sapply(jobProduced(tj), URLencode), collapse="\n   "),
+                  "\n\nProcessing Summary:\n\n", tj$summary_, "\n\nYou can see the detailed log here:
 
-if you are logged-in with your sensorgnome.org credentials.
+    https://sgdata.motus.org/status?jobID=", tj, "
 
-Regards,
+ if you log in with your motus.org credentials.
 
-The people at motus.org / sensorgnome.org
-"
-), attachment = tj$emailAttachment)
+ Regards,
 
+ The people at motus.org / sensorgnome.org
+ "
+ ), attachment = tj$emailAttachment)
+     }
     return(TRUE)
 }

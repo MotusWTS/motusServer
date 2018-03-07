@@ -42,15 +42,27 @@ Returns NULL if no valid sensorgnome data files were found.
 }
 \description{
 Determines which files are redundant, new, or partially new.  Does
-*not* run the tag finder.  Any files which are symlinks are deleted
+*not* run the tag finder.
+}
+\details{
+Any new content from files is merged into the files and fileContents
+tables of the receiver DBs.
+
+Files are disposed of like so:
+\itemize{
+\item any files which are symlinks are deleted
 after merging their target's contents; i.e. the symlink is deleted,
 not the file it points to.
+\item files whose path has \code{MOTUS_PATH$FILE_REPO} as a prefix are left as-is
+\item files whose path does not have \code{MOTUS_PATH$FILE_REPO} as a prefix, and which
+either are new or have new content are moved to \code{MOTUS_PATH$FILE_REPO/serno/YYYY-MM-DD}
+\item remaining files are moved to \code{MOTUS_PATH$TRASH}
 }
-\author{
-John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
 \seealso{
 \code{sgRunNewFiles}, which calls this function and then calls \code{sgFindTags}
 as appropriate.
 }
-
+\author{
+John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}

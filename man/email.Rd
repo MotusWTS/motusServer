@@ -31,10 +31,9 @@ An email message is sent from data@sensorgnome to the specified user.
 A log entry is made, and the outgoing message is saved in the motus
 server outbox.
 }
-\author{
-John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
-}
 \seealso{
 \link{\code{sprintf}} for formatting codes.
 }
-
+\author{
+John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}

@@ -4,7 +4,7 @@
 \alias{dataServer}
 \title{serve http requests for tag detection data}
 \usage{
-dataServer(port = 55930, tracing = FALSE)
+dataServer(port = 55930, tracing = FALSE, maxRows = 10000)
 }
 \arguments{
 \item{port}{integer; local port on which to listen for requests
@@ -12,6 +12,9 @@ Default: 0xda7a}
 
 \item{tracing}{logical; if TRUE, run interactively, allowing local user
 to enter commands.}
+
+\item{maxRows}{integer; the maximum number of rows to return for any query.
+Default: 10000}
 }
 \value{
 does not return; meant to be run as a server.
@@ -22,4 +25,3 @@ serve http requests for tag detection data
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

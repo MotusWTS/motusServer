@@ -39,8 +39,10 @@
 
 deleteFromMotus = function(src, reason="not given", monoBN=NULL, tsStart=0, tsEnd=1e11) {
 
+    stop("must be reimplemented")
+
     meta = getMap(src)
-    isSG = meta$recvType == "SG"
+    isSG = meta$recvType == "SENSORGNOME"
     if (isSG && is.null(monoBN))
         stop("Must specify monoBN for SG receiver")
 
@@ -75,7 +77,7 @@ deleteFromMotus = function(src, reason="not given", monoBN=NULL, tsStart=0, tsEn
         MotusDB("insert into batchDelete (batchIDbegin, batchIDend, ts, reason, tsMotus)
                                 values (%d, %d, %f, '%s', 0)",
               bn[1], bn[j], now, gsub("'", "''", reason, fixed=TRUE))
-        bn = bn[-(1:j)]
+        bn = bn[-seq_len(j)]
     }
     return(TRUE)
 }

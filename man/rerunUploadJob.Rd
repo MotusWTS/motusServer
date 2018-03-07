@@ -41,10 +41,9 @@ this function does not revert any changes to receiver
     databases affected by the original processing of the uploaded
     file.
 }
-\author{
-John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
-}
 \seealso{
 \code{\link{processServer}}
 }
-
+\author{
+John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}

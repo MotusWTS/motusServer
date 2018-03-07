@@ -168,6 +168,8 @@ extraCols,"
  data JSON)"))
     sql(paste("CREATE INDEX IF NOT EXISTS", paste0(table,"_pid"), "ON", table, "(pid)"))
     sql(paste("CREATE INDEX IF NOT EXISTS", paste0(table,"_stump"), "ON", table, "(stump)"))
+    sql(paste("CREATE INDEX IF NOT EXISTS", paste0(table,"_ctime"), "ON", table, "(ctime)"))
+    sql(paste("CREATE INDEX IF NOT EXISTS", paste0(table,"_mtime"), "ON", table, "(mtime)"))
     for (i in seq(along=extraIndex))
         sql(extraIndex[i])
     rv = new.env(parent=emptyenv())
@@ -474,6 +476,11 @@ as.list.Twig = function(T) {
             rv = if(length(rv) > 1) sapply(rv, fromJSON, USE.NAMES=FALSE) else fromJSON(rv)
         } else if (isTRUE(all(is.na(type)))) {
             rv = NULL
+        } else if (isTRUE(all(type %in% c("true", "false", NA))
+                          && any(type %in% c("true", "false")))) {
+            ## yes, ugly conditional hack to squeeze out logical values;
+            ## sqlite doesn't have them, and would otherwise return 1 or 0.
+            rv = as.logical(rv)
         }
     }
     .rollback = FALSE

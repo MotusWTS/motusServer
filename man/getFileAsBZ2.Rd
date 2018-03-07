@@ -32,4 +32,3 @@ If the file \code{f} is empty, this returns a raw vector of length 0.
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

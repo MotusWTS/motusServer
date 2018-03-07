@@ -106,7 +106,7 @@ handleRegisterTags = function(j) {
         }
         speciesID = as.integer(species)
         if (is.na(speciesID)) {
-            sp = motusListSpecies(qstr=species, qlng="CD")
+            sp = motusListSpecies(qstr=species, qlang="CD")
             if (length(sp) == 0) {
                 jobLog(j, paste("Warning: ignoring unknown species code:", species), summary=TRUE)
             } else {
@@ -117,7 +117,7 @@ handleRegisterTags = function(j) {
 
     deployDate = NA
     if (! is.null(meta$deployDate)) {
-        deployDate = ymd(meta$deployDate)
+        deployDate = ymd(meta$deployDate, tz="GMT")
         if (is.na(deployDate)) {
             jobLog(j, paste0("Warning: could not parse deployment date: ", meta$deployDate, "\nShould be in form YYYY-MM-DD.\n"))
         }
@@ -133,6 +133,9 @@ handleRegisterTags = function(j) {
     codeSet = "Lotek4"
     if (! is.null(meta$codeSet)) {
         codeSet = switch( meta$codeSet,
+                         "2003" = "Lotek4",
+                         "Lotek-2003" = "Lotek4",
+                         "Lotek 2003" = "Lotek4",
                          "4" = "Lotek4",
                          "3" = "Lotek3",
                          "Lotek4" = "Lotek4",
@@ -166,126 +169,146 @@ handleRegisterTags = function(j) {
     ## set fcdfreq to default 4 kHz below nominal where not supplied
     fcdfreqs[is.na(fcdfreqs)] = nomFreq - 0.004
 
-    ## get appropriate codeset DB and codeset DB file
-    codeSetFile = ltGetCodeset(codeSet, pathOnly=TRUE)
-    codeSetDB =  ltGetCodeset(codeSet,  pathOnly=FALSE)
-
-    ## 2017-Jan-30 FIXME: remove provWarn cruft once upstream re-enables provisional deployment
-    provWarn = FALSE
-
-    ## process each wave file to look for tag detections
+    ## try both codesets
+    otherCodeSet = if(codeSet=="Lotek4") "Lotek3" else "Lotek4"
+    tryingOtherCodeSet = FALSE
+    iNoTag = c()
     numReg = 0
     numFail = 0
     numNoBISD = 0
-    for (i in seq(along=wavFiles)) {
-        ## return a data.frame of (ts, id, dfreq, sig, noise)
-        tags = wavFindTags(wavFiles[i], codeSetFile)
 
-        f = basename(wavFiles[i])
-        if (nrow(tags) == 0) {
-            jobLog(j, paste0("No tags detected in file ", f))
-            next
-        }
-        ## number of detections of the 'correct' tag
-        id = as.integer(ids[i])
-        n = sum(tags$id == id)
-        if (n == 0) {
-            err = paste0("Tag id ", id, " not found in file ", f)
-            t = sort(table(tags$id), decreasing=TRUE)
-            if (t[1] > 1) {
-                err = paste0(err, ", however, that file had ", t[1], " detections of id ", names(t)[1],
-                             "\nPerhaps the recording or the tag is mis-labelled?")
-            }
-            jobLog(j, err)
-            next
-        } else if (n < 2) {
-            jobLog(j, paste0("Only 1 detection of id ", id, " found in file ", f, ", so I can't estimate burst interval."))
-            next
-        }
-        tags = tags[tags$id == id,]
-        bi = diff(sort(tags$ts))
-        meanbi = mean(bi)
-        if (length(bi) == 1) {
-            jobLog(j, paste0("Warning: only 2 bursts detected for tag ", id, " so I can't estimate burst interval error.\nThis registration might not be accurate.\n"))
-            numNoBISD = numNoBISD + 1
-            bi.sd = 0
-        } else {
-            ## allow a maximum BI standard deviation of 5 ms
-            maxBISD = 0.005
-            tries = 0L
-            maxTries = 5L
-            while (tries < maxTries)  {
-                bi.sd = sd(bi)
-                if (isTRUE(bi.sd <= maxBISD))
-                    break
-                ## allow for possibly missed bursts by retrying with successively
-                ## refined estimates of BI; start with the minimum
-                if (tries == 0)
-                    meanbi = min(bi)
-                tries = tries + 1L
-                bi = bi / round(bi / meanbi)
-                meanbi = mean(bi)
-            }
-            if (! isTRUE(bi.sd  <= maxBISD)) {
-                jobLog(j, paste0("Unable to get a good estimate of burst interval for tag id ", id, " in file ", f,
-                                 "\nPlease re-record this tag and re-upload"))
-                numFail = numFail + 1
+    for (tryCodeSet in c(codeSet, otherCodeSet)) {
+        ## get appropriate codeset DB and codeset DB file
+        codeSetFile = ltGetCodeset(tryCodeSet, pathOnly=TRUE)
+        codeSetDB = ltGetCodeset(tryCodeSet,  pathOnly=FALSE)
+
+        ## 2017-Jan-30 FIXME: remove provWarn cruft once upstream re-enables provisional deployment
+        provWarn = FALSE
+
+        ## process each wave file to look for tag detections, using the current codeset
+        for (i in seq(along=wavFiles)) {
+            ## return a data.frame of (ts, id, dfreq, sig, noise)
+            tags = wavFindTags(wavFiles[i], codeSetFile)
+
+            f = basename(wavFiles[i])
+            if (nrow(tags) == 0) {
+                if (tryingOtherCodeSet) {
+                    jobLog(j, paste0("No tags detected in file ", f, " in either codest ", codeSet, " or ", otherCodeSet))
+                } else {
+                    jobLog(j, paste0("No tags detected in file ", f, ".  I'll retry below using the other codeset (", otherCodeSet, ")"))
+                    iNoTag = c(iNoTag, i)
+                }
                 next
             }
-        }
-        dfreq = mean(tags$freq)
-        dfreq.sd = sd(tags$freq)
-        ## row in codeset corresponding to this id
-        ii = match(id, codeSetDB$id)
-
-        ## try register the tag with motus
-        rv = tryCatch(
-            motusRegisterTag(
-                projectID = projectID,
-                mfgID = ids[i],
-                manufacturer = "Lotek",
-                type = "ID",
-                codeSet = codeSet,
-                ## we want offset frequency relative to nominal, not to the recording listening frequency
-                offsetFreq = dfreq + 1000 * (fcdfreqs[i] - nomFreq),
-                period = meanbi,
-                periodSD = bi.sd,
-                pulseLen = 2.5,
-                param1 = codeSetDB$g1[ii],
-                param2 = codeSetDB$g2[ii],
-                param3 = codeSetDB$g3[ii],
-                param4 = 0.0,
-                param5 = 0.0,
-                param6 = 0.0,
-                paramType = 1,
-                ts = as.numeric(regTS),
-                nomFreq = nomFreq,
-                dateBin = dateBin,
-                model = tagModel
-            ),
-            error = function(e) {
-                return (NULL)
+            ## number of detections of the 'correct' tag
+            id = as.integer(ids[i])
+            n = sum(tags$id == id)
+            if (n == 0) {
+                err = paste0("Tag id ", id, " not found in file ", f)
+                t = sort(table(tags$id), decreasing=TRUE)
+                if (t[1] > 1) {
+                    err = paste0(err, ", however, that file had ", t[1], " detections of id ", names(t)[1],
+                                 "\nPerhaps the recording or the tag is mis-labelled?")
+                }
+                jobLog(j, err)
+                next
+            } else if (n < 2) {
+                jobLog(j, paste0("Only 1 detection of id ", id, " found in file ", f, ", so I can't estimate burst interval."))
+                next
             }
-        )
-
-        tag = paste0(id, ":", round(meanbi, 2))
-        if (length(rv) > 0 && rv$responseCode == "success-import" && ! is.null(rv$tagID)) {
-            jobLog(j, paste0("Success: tag ", tag, " was registered as motus tag ", rv$tagID, " under project ", projectID))
-            if (! is.null(speciesID) && ! is.na(deployDate)) {
-                ## try register a deployment on the given species and/or date
-                rv2 = motusDeployTag(tagID=as.integer(rv$tagID), speciesID=speciesID, projectID=projectID, tsStart=as.numeric(deployDate))
-                msg = "with a deployment"
-                if (! is.null(deployDate))
-                    msg = paste0(msg, " to start ", meta$deployDate)
-                if (! is.null(speciesID))
-                    msg = paste0(msg, " on a ", species)
-                jobLog(j, msg)
+            tags = tags[tags$id == id,]
+            bi = diff(sort(tags$ts))
+            meanbi = mean(bi)
+            if (length(bi) == 1) {
+                jobLog(j, paste0("Warning: only 2 bursts detected for tag ", id, " so I can't estimate burst interval error.\nThis registration might not be accurate.\n"))
+                numNoBISD = numNoBISD + 1
+                bi.sd = 0
+            } else {
+                ## allow a maximum BI standard deviation of 5 ms
+                maxBISD = 0.005
+                tries = 0L
+                maxTries = 5L
+                while (tries < maxTries)  {
+                    bi.sd = sd(bi)
+                    if (isTRUE(bi.sd <= maxBISD))
+                        break
+                    ## allow for possibly missed bursts by retrying with successively
+                    ## refined estimates of BI; start with the median, as mean
+                    ## can easily prevent convergence in the presence of missing bursts.
+                    if (tries == 0)
+                        meanbi = median(bi)
+                    tries = tries + 1L
+                    bi = bi / round(bi / meanbi)
+                    meanbi = mean(bi)
+                }
+                if (! isTRUE(bi.sd  <= maxBISD)) {
+                    jobLog(j, paste0("Unable to get a good estimate of burst interval for tag id ", id, " in file ", f,
+                                     "\nPlease re-record this tag and re-upload"))
+                    numFail = numFail + 1
+                    next
+                }
             }
-            numReg = numReg + 1
-        } else {
-            jobLog(j, paste0("Query to motus server to register tag ", tag, " failed\nThis could be a server problem, or perhaps the tag is already registered."))
-            numFail = numFail + 1
+            dfreq = mean(tags$freq)
+            dfreq.sd = sd(tags$freq)
+            ## row in codeset corresponding to this id
+            ii = match(id, codeSetDB$id)
+
+            ## try register the tag with motus
+            regError = FALSE
+            rv = tryCatch(
+                motusRegisterTag(
+                    projectID = projectID,
+                    mfgID = ids[i],
+                    manufacturer = "Lotek",
+                    type = "ID",
+                    codeSet = tryCodeSet,
+                    ## we want offset frequency relative to nominal, not to the recording listening frequency
+                    offsetFreq = dfreq + 1000 * (fcdfreqs[i] - nomFreq),
+                    period = meanbi,
+                    periodSD = bi.sd,
+                    pulseLen = 2.5,
+                    param1 = codeSetDB$g1[ii],
+                    param2 = codeSetDB$g2[ii],
+                    param3 = codeSetDB$g3[ii],
+                    param4 = 0.0,
+                    param5 = 0.0,
+                    param6 = 0.0,
+                    paramType = 1,
+                    ts = as.numeric(regTS),
+                    nomFreq = nomFreq,
+                    dateBin = dateBin,
+                    model = tagModel
+                ),
+                error = function(e) {
+                    regError <<- TRUE
+                    return (jsonlite::fromJSON(as.character(e$message)))
+                }
+            )
+
+            tag = paste0(id, ":", round(meanbi, 2))
+            if (! regError) {
+                jobLog(j, paste0("Success: tag ", tag, " was registered as motus tag ", rv$tagID, " under project ", projectID))
+                if (! is.null(speciesID) && ! is.na(deployDate)) {
+                    ## try register a deployment on the given species and/or date
+                    rv2 = motusDeployTag(tagID=as.integer(rv$tagID), speciesID=speciesID, projectID=projectID, tsStart=as.numeric(deployDate))
+                    msg = "with a deployment"
+                    if (! is.null(deployDate))
+                        msg = paste0(msg, " to start ", meta$deployDate)
+                    if (! is.null(speciesID))
+                        msg = paste0(msg, " on a ", species)
+                    jobLog(j, msg)
+                }
+                numReg = numReg + 1
+            } else {
+                jobLog(j, paste0("Query to motus server to register tag ", tag, " failed\nwith this error: ", rv$errorCode, ": ", rv$errorMsg))
+                numFail = numFail + 1
+            }
         }
+        if (length(iNoTag) == 0)
+            break
+        tryingOtherCodeSet = TRUE
+        wavFiles = wavFiles[iNoTag]
+        ids = ids[iNoTag]
     }
     jobLog(j, paste0("Registered ", numReg, " tags with motus.",
                      if (numFail > 0) paste0("\nWarning: another ", numFail, " tags failed to register"),
@@ -293,11 +316,12 @@ handleRegisterTags = function(j) {
                      ), summary=TRUE)
 
     ## generate on-board tag database and mark it as an attachment to this job's completion email
-    dbFile = createRecvTagDB(projectID, dateBin)
     tj = topJob(j)
+    isTesting = isTRUE(tj$isTesting)
+    dbFile = createRecvTagDB(projectID, dateBin, isTesting)
     tj$attachment = structure(list(dbFile), names=basename(dbFile))
-    url = getDownloadURL(projectID)
+    url = getDownloadURL(projectID, isTesting)
     jobLog(j, sprintf("\nThe on-board database for your recent tags is available here:\n    %s\n\nInstructions for installing it on a sensorgnome are here:\n   https://sensorgnome.org/VHF_Tag_Registration/Uploading_the_tags_database_file_to_your_SensorGnome\n", url), summary=TRUE)
-    jobProduced(j, file.path(url, basename(dbFile)))
+    jobProduced(j, file.path(url, basename(dbFile)), projectID)
     return(TRUE)
 }

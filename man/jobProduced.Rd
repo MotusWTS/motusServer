@@ -4,12 +4,16 @@
 \alias{jobProduced}
 \title{report and maybe record what a job produced}
 \usage{
-jobProduced(j, u)
+jobProduced(j, u, projectID = NA, serno = NA)
 }
 \arguments{
 \item{j}{job integer number.  If not a topjob, its topjob is used instead.}
 
 \item{u}{character vector of job product URLS.  Can be missing.}
+
+\item{projectID}{integer motus project ID that owns product(s) being recorded}
+
+\item{serno}{[optional] character vector of receiver serial number associated with each product being recorded}
 }
 \value{
 The character vector of job product URLs, after adding any specified
@@ -23,4 +27,3 @@ ones specified.
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

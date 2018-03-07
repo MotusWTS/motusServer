@@ -5,7 +5,7 @@
 \title{Send a query to the motus API}
 \usage{
 motusQuery(API, params = NULL, requestType = "post", show = FALSE,
-  json = FALSE, serno = NULL, masterKey = NULL, ...)
+  json = FALSE, serno = NULL, masterKey = NULL)
 }
 \arguments{
 \item{API}{one of the MOTUS_API_... constants}
@@ -24,15 +24,14 @@ sent; if NULL, the default, uses MOTUS_SECRETS$serno.}
 \item{masterKey}{if NULL (the default), use key from the
 MOTUS_SECRETS object.  Otherwise, \code{masterKey} is the name
 of a file to read the secret key from.}
-
-\item{...}{if present, additional CURL options; these are guaranteed to
-override any values set by this function's code.}
 }
 \value{
 the result of sending the request to the motus API.  The
     result is a JSON-format character scalar if \code{json} is
     \code{TRUE}; otherwise it is an R list with named components,
     extracted from the JSON return value.
+    If the query returns with a status code of >= 400, this function calls stop(X) where
+    X is the (typically JSON-encoded) body of the reply.
 }
 \description{
 Send a query to the motus API
@@ -44,4 +43,3 @@ in the user's home directory.
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

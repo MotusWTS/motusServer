@@ -1,0 +1,256 @@
+/*! css for motus status2 page
+
+*/
+
+.job_log {
+    white-space: pre-wrap;
+    font-family: monospace;
+}
+
+.job_summary {
+    white-space: pre-wrap;
+    font-family: monospace;
+}
+
+.timestamp {
+    font-family: monospace;
+}
+
+.subjobs_heading {
+    font-weight: bold;
+    font-family: monospace;
+}
+
+.subjobs_table_heading {
+    font-weight: bold;
+}
+
+.log_heading {
+    font-weight: bold;
+}
+
+.summary_heading {
+    font-weight: bold;
+}
+
+.status_okay {
+    background-color: #20FF2040;
+}
+
+.status_error {
+    background-color: #FF202040;
+}
+
+.status_waiting {
+    background-color: #FFFF2040;
+}
+
+.status_running {
+    background-color: #2020FF40;
+}
+
+.job_product_heading {
+    font-weight: bold;
+}
+
+.job_id {
+    text-align: right;
+}
+
+.subjob_id {
+    text-align: right;
+}
+
+.job_motus_user_id {
+    text-align: center;
+}
+
+.job_motus_project_id {
+    text-align: center;
+}
+
+.jobs_heading {
+    font-weight: bold;
+    font-size-adjust: 0.75;
+    font-family: monospace;
+}
+
+.highlighted_jobs_table_row {
+    background-color: #E0E00080;
+}
+
+.job_error_message {
+    line-height: 2;
+    background-color: #FF202040;
+}
+
+.job_error_api {
+    line-height: 2;
+    font-weight: bold;
+}
+
+.job_error_json {
+    white-space: pre-wrap;
+    font-family: monospace;
+}
+
+.job_error_state {
+    white-space: pre-wrap;
+    font-family: monospace;
+}
+
+.job_no_results_message {
+    background-color: #FF202040;
+}
+
+.querying_server_params {
+    white-space: pre-wrap;
+    font-family: monospace;
+}
+
+.querying_server_api {
+    font-weight: bold;
+    line-height: 2;
+}
+
+.querying_server_active {
+    background-color: #FFFF2040;
+}
+
+.querying_server_done {
+    background-color: #FFFFFFFF;
+}
+
+.recv_file_day_count {
+    white-space: pre-wrap;
+    font-family: monospace;
+    min-width: 150px;
+}
+
+.recv_file_day_count:hover {
+     text-decoration:none;
+     text-shadow: 1px 1px 1px #555;
+}
+
+.receiver_serno:hover {
+     text-decoration:none;
+     text-shadow: 1px 1px 1px #555;
+}
+
+.job_id:hover {
+     text-decoration:none;
+     text-shadow: 1px 1px 1px #555;
+}
+
+.subjob_id.with_log:hover {
+     text-decoration:none;
+     text-shadow: 1px 1px 1px #555;
+}
+
+
+.jobs_table_row:hover {
+     text-decoration:none;
+     text-shadow: 1px 1px 1px #555;
+}
+
+.url:hover {
+     text-decoration:none;
+     text-shadow: 1px 1px 1px #555;
+}
+
+.error_job_id:hover {
+     text-decoration:none;
+     text-shadow: 1px 1px 1px #555;
+}
+
+.subjob_log_heading {
+    font-weight: bold;
+    text-align: left;
+}
+
+.subjob_log_heading:hover {
+     text-decoration:none;
+     text-shadow: 1px 1px 1px #555;
+}
+
+.recv_info_heading {
+    font-weight: bold;
+}
+
+.recv_deps_heading {
+    font-weight: bold;
+}
+
+.recv_file_days {
+    font-weight: bold;
+}
+
+.filecount_mismatch {
+    background-color: #FF202040;
+}
+
+.byte_count {
+    text-align: right;
+}
+
+/* styling to keep table headings from resizing based on content of table */
+
+.job_params {
+    white-space: nowrap;
+    font-family: monospace;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+#job_type_heading {
+    min-width: 100px;
+}
+
+#job_parameters_heading {
+    text-align: left;
+    padding-left: 5em;
+}
+
+#job_id_heading {
+    min-width: 80px;
+}
+
+#job_user_heading {
+    min-width: 80px;
+}
+
+#job_project_heading {
+    min-width: 90px;
+}
+
+#retry_job_message {
+    min-width: 20em;
+}
+
+.archive_listing {
+    white-space: pre-wrap;
+    font-family: monospace;
+}
+
+dt {
+    font-weight: bold;
+}
+
+.upload_id:hover {
+     text-decoration:none;
+     text-shadow: 1px 1px 1px #555;
+}
+
+.job_product_list_item:hover {
+     text-decoration:none;
+     text-shadow: 1px 1px 1px #555;
+}
+
+.recv_product_heading {
+    font-weight: bold;
+}
+
+.recv_product_list_item:hover {
+     text-decoration:none;
+     text-shadow: 1px 1px 1px #555;
+}

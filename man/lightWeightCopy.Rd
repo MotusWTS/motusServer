@@ -24,4 +24,3 @@ data are not copied, but falls back to normal copy where necessary.
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

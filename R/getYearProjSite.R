@@ -63,7 +63,8 @@ getYearProjSite = function(serno, ts=NULL, bn=NULL, motusProjectID=NULL) {
     ## if bn range specified, convert to a timestamp range
 
     if (isSG && !is.null(bn)) {
-        tr = rdb("select min(tsBegin) as tsLo, max(tsEnd) as tsHi from batches where monoBN between :lo and :hi and tsBegin >= :valid",
+        bn = pmax(1L, bn)
+        tr = rdb("select min(tsStart) as tsLo, max(tsEnd) as tsHi from batches where monoBN between :lo and :hi and tsStart >= :valid",
                  lo = bn[1], hi = bn[2], valid=MOTUS_SG_EPOCH)
         if (nrow(tr) == 0)
             return (NULL)
@@ -90,18 +91,16 @@ getYearProjSite = function(serno, ts=NULL, bn=NULL, motusProjectID=NULL) {
                       )
 
     ## use a temporary database to do this as a join query
-    meta = safeSQL(getMotusMetaDB())
 
-    dbExecute(meta$con, "create temporary table if not exists tempinfo (serno text, tsLo real, tsHi real, bnLo integer, bnHi integer, year integer, proj text, site text, tsStart real, tsEnd real, bnStart integer, bnEnd integer)")
-    dbExecute(meta$con, "delete from tempinfo")
-
-    dbWriteTable(meta$con, "tempinfo", info %>% as.data.frame, row.names=FALSE, append=TRUE)
+    dbWriteTable(MetaDB$con, "tempinfo", info %>% as.data.frame, row.names=FALSE, overwrite=TRUE, temporary=TRUE)
 
     ## look up deployments by serial number and timestamp
 
     ## get latest row (largest tsHi) that is still no later than ts for the receiver
 
-    rv = meta(sprintf("select t1.serno as serno, 0 as year, t3.id as projID, t3.label as proj, t2.name as site, t2.tsStart as tsStart, t2.tsEnd as tsEnd, null as bnStart, null as bnEnd from tempinfo as t1 join recvDeps as t2 on t1.serno = t2.serno and t2.tsStart <= t1.tsHi and (t2.tsEnd is null or t2.tsEnd >= t1.tsLo) left join projs as t3 on t2.projectID=t3.id", MOTUS_SG_EPOCH, MOTUS_SG_EPOCH))
+    rv = MetaDB(sprintf("select t1.serno as serno, 0 as year, t3.id as projID, t3.label as proj, t2.name as site, t2.tsStart as tsStart, t2.tsEnd as tsEnd, null as bnStart, null as bnEnd from tempinfo as t1 join recvDeps as t2 on t1.serno = t2.serno and t2.tsStart <= t1.tsHi and (t2.tsEnd is null or t2.tsEnd >= t1.tsLo) left join projs as t3 on t2.projectID=t3.id", MOTUS_SG_EPOCH, MOTUS_SG_EPOCH))
+
+    MetaDB("drop table tempinfo")
 
     ## for some reason, the above leads to a character column if there's an NA anywhere in it
     rv$tsStart = as.numeric(rv$tsStart)
@@ -111,8 +110,13 @@ getYearProjSite = function(serno, ts=NULL, bn=NULL, motusProjectID=NULL) {
         ## now fill in which range of boot sessions the deployment(s) cover (or overlap)
         ## a boot session overlaps a deployment if it begins before the deployment ends and ends
         ## after the deployment begins.
+
+        ## to deal with anomalously large tsEnd in batches (due to file or wonky GPS timestamps),
+        ## we pretend each batch ends by the time the next one begins.
+        rdb("drop table if exists correctedBatches")
+        rdb("create temporary table correctedBatches as select monoBN, tsStart, ifnull(min(tsEnd, (select min(t2.tsStart) from batches as t2 where t2.tsStart > t1.tsStart)), tsEnd) as tsEnd from batches as t1")
         for (i in seq(along=rv$serno)) {
-            rv[i, c("bnStart", "bnEnd")] = unlist(rdb("select min(monoBN) as bnLo, max(monoBN) as bnHi from batches where (:tsHi is null or tsBegin <= :tsHi) and tsEnd >= :tsLo",
+            rv[i, c("bnStart", "bnEnd")] = unlist(rdb("select min(monoBN) as bnLo, max(monoBN) as bnHi from correctedBatches where monoBN > 0 and (:tsHi is null or tsStart <= :tsHi) and tsEnd >= :tsLo",
                       tsLo = rv$tsStart[i], tsHi = rv$tsEnd[i]))
         }
         rdb(.CLOSE=TRUE)
@@ -122,25 +126,23 @@ getYearProjSite = function(serno, ts=NULL, bn=NULL, motusProjectID=NULL) {
     rv$bnStart = as.integer(rv$bnStart)
     rv$bnEnd = as.integer(rv$bnEnd)
 
-    meta(.CLOSE=TRUE)
     if (nrow(rv) > 0)
         return(rv)
 
-    if (length(motusProjectID) == 0)
+    ## clean up NA / Null values for project ID
+    if (! isTRUE(motusProjectID > 0))
         motusProjectID = 0L
 
     ## generate a provisional deployment for the given project
     ## get project name
-    meta = safeSQL(getMotusMetaDB())
     if (motusProjectID > 0)
-        proj = meta(sprintf("select label from projs where id=%d", motusProjectID))[[1]]
+        proj = MetaDB(sprintf("select label from projs where id=%d", motusProjectID))[[1]]
     else
         proj = "no_project"
-    meta(.CLOSE=TRUE)
 
     if (isSG) {
         recv = safeSQL(getRecvSrc(serno))
-        info = recv(sprintf("select min(tsBegin), max(tsEnd) from batches where monoBN between %d and %d and tsBegin > %18f and tsEnd > %18f",bn[1], bn[2], MOTUS_SG_EPOCH, MOTUS_SG_EPOCH))
+        info = recv(sprintf("select min(tsStart), max(tsEnd) from batches where monoBN between %d and %d and tsStart > %18f and tsEnd > %18f",bn[1], bn[2], MOTUS_SG_EPOCH, MOTUS_SG_EPOCH))
         recv(.CLOSE=TRUE)
         return (data.frame(
             serno = serno,

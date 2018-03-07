@@ -10,6 +10,9 @@ batches_for_tag_project(env)
 \item{projectID}{integer project ID}
 
 \item{batchID}{integer batchID; only batches with larger batchID are returned}
+
+\item{includeTesting}{boolean; default: FALSE.  If TRUE, and the user is an administrator,
+then records for batches marked as `testing` are returned as if they were normal batches.}
 }
 \value{
 a data frame with the same schema as the batches table, but JSON-encoded as a list of columns
@@ -17,4 +20,3 @@ a data frame with the same schema as the batches table, but JSON-encoded as a li
 \description{
 get batches for a tag project
 }
-

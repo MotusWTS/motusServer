@@ -30,7 +30,7 @@
 
 plotTagTimeline = function(sort = c("projCode", "dateBin", "sort", "nomFreq", "iMfgID"), filename="/sgm/pub/motus_tag_timeline.html") {
     f = file(filename, "w")
-    s = src_sqlite(getMotusMetaDB())
+    s = safeSrcSQLite(MOTUS_METADB_CACHE)
     mot = tbl(s, "tags")
     proj = tbl(s, "projs") %>% mutate(projCode=label)
     sp = tbl(s, "species")
@@ -119,7 +119,7 @@ where we have reason to believe that model is the one most commonly used for it.
     linesPerChunk = 40
     i = 1
     numChunk = ceiling(nrow(hist) / linesPerChunk)
-    for (i in 1:numChunk) {
+    for (i in seq_len(numChunk)) {
         writeLines(c(ystr, mstr), f)
         li = seq(from = 1 + (i - 1) * linesPerChunk, to = min(nrow(hist), i * linesPerChunk ))
         writeLines(hist$line[li], f)

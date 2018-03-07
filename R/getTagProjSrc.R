@@ -16,7 +16,7 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 getTagProjSrc = function(projectID, dbdir = MOTUS_PATH$TAG_PROJ) {
-    src = src_sqlite(file.path(dbdir, paste0("proj-", projectID, ".motus")), TRUE)
+    src = safeSrcSQLite(file.path(dbdir, paste0("proj-", projectID, ".motus")), TRUE)
     ensureTagProjDB(src, projectID=projectID)
     return(src)
 }

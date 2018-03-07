@@ -2,13 +2,15 @@
 % Please edit documentation in R/getMotusMetaDB.R
 \name{getMotusMetaDB}
 \alias{getMotusMetaDB}
-\title{Get the motus database of metadata for tags, receivers, projects,
-and species.}
+\title{Get a safeSQL connection to the cached copy of the motus metadata.}
 \usage{
 getMotusMetaDB()
 }
 \value{
-a path to an sqlite database usable by the \code{tagview} function
+a \link{\{code{safeSQL}} connection to the database.
+This value is also stored in the symbol `MetaDB` in the global
+environment.
+
 It will have these tables:
 
 \strong{tags:}
@@ -146,17 +148,15 @@ which the fixtureType is "Ship".
 }
 }
 \description{
-Get the motus database of metadata for tags, receivers, projects,
-and species.
+Get a safeSQL connection to the cached copy of the motus metadata.
 }
 \details{
-If the current copy is more than one day old, we try retrieve
-a more up to date version from motus.org via their API.
-For each table X, if the appropriate query fails, we leave X as-is.
-If the query succeeds succeed, then X is renamed to X_old (after deleting
-table X_old, if it exists), and the results of the query are written to X.
+If there is no cached copy, then force its creation
+via \link{\code{refreshMotusMetaDBCache()}}
+Normally, this is done regularly by a cron job.
+
+This function should be called once by each \code{*Server()} process.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

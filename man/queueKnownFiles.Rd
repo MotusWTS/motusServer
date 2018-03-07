@@ -31,10 +31,9 @@ directory.  Files from these known types are enqueued:
 
 Any remaining files are relegated to manual intervention.
 }
-\author{
-John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
-}
 \seealso{
 \link{\code{server}}
 }
-
+\author{
+John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}

@@ -6,38 +6,24 @@
 #' @param tracing logical; if TRUE, run interactively, allowing local user
 #' to enter commands.
 #'
+#' @param maxRows integer; the maximum number of rows to return for any query.
+#' Default: 10000
+#'
 #' @return does not return; meant to be run as a server.
 #'
 #' @export
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-dataServer = function(port=0xda7a, tracing=FALSE) {
+dataServer = function(port=0xda7a, tracing=FALSE, maxRows=10000) {
 
-    library(Rook)
-    library(hwriter)
-    library(RCurl)
-    library(jsonlite)
+    serverCommon()
 
-    ## open the "motus transfer" database, putting a safeSQL object in the global MotusDB
-    openMotusDB()
+    ## save maxRows in a global variable so methods can obtain it
+    MAX_ROWS_PER_REQUEST <<- maxRows
 
     ## assign global MotusCon to be the low-level connection behind MotusDB, as some
     ## functions must us that
-
-    MotusCon <<- MotusDB$con
-
-    ## assign global MetaDB to be a safeSQL connection to the cached motus metadatabase
-    MetaDB <<- safeSQL(getMotusMetaDB())
-
-    ## options for this server:
-
-    ## lifetime of authorization token: 3 days
-    OPT_AUTH_LIFE <<- 3 * 24 * 3600
-
-    ## number of random bits in authorization token;
-    ## gets rounded up to nearest multiple of 8
-    OPT_TOKEN_BITS <<- 33 * 8
 
     tracing <<- tracing
 
@@ -46,15 +32,6 @@ dataServer = function(port=0xda7a, tracing=FALSE) {
     ## which is on our search path)
 
     .GlobalEnv$Server = Rhttpd$new()
-
-    Curl <<- getCurlHandle()
-
-    ## get user auth database
-
-    AuthDB <<- safeSQL(file.path(MOTUS_PATH$USERAUTH, "data_user_auth.sqlite"))
-    AuthDB("create table if not exists auth (token TEXT UNIQUE PRIMARY KEY, expiry REAL, userID INTEGER, projects TEXT, receivers TEXT)")
-    AuthDB("create index if not exists auth_expiry on auth (expiry)")
-    AuthDB("create unique index if not exists auth_userID on auth (userID)")
 
     ## add each function below as an app
 
@@ -73,21 +50,49 @@ dataServer = function(port=0xda7a, tracing=FALSE) {
 
 ## a string giving the list of apps for this server
 
-allDataApps = c("authenticate_user",
- "batches_for_tag_project",
- "batches_for_receiver_project",
- "runs_for_tag_project",
- "runs_for_receiver_project",
- "hits_for_tag_project",
- "hits_for_receiver_project",
- "gps_for_tag_project",
- "gps_for_receiver_project",
- "metadata_for_tags",
- "metadata_for_receivers",
- "tags_for_ambiguities",
- "size_of_update_for_tag_project",
- "size_of_update_for_receiver_project"
- )
+allDataApps = c("api_info",
+                "authenticate_user",
+                "deviceID_for_receiver",
+                "receivers_for_project",
+                "batches_for_tag_project",
+                "batches_for_receiver",
+                "batches_for_all",
+                "runs_for_tag_project",
+                "runs_for_receiver",
+                "hits_for_tag_project",
+                "hits_for_receiver",
+                "gps_for_tag_project",
+                "gps_for_receiver",
+                "metadata_for_tags",
+                "metadata_for_receivers",
+                "tags_for_ambiguities",
+                "project_ambiguities_for_tag_project",
+                "size_of_update_for_tag_project",
+                "size_of_update_for_receiver",
+                "pulse_counts_for_receiver",
+                ## and these administrative (local-use-only) apps, not reverse proxied
+                ## from the internet at large
+                "_shutdown"
+                )
+
+#' return information about the api
+#'
+#' @return a list with these items:
+#'    \itemize{
+#'       \item maxRows; integer maximum number of rows returned by other API calls
+#'    }
+
+api_info = function(env) {
+
+    if (tracing)
+        browser()
+
+    return_from_app(
+        list(
+            maxRows = MAX_ROWS_PER_REQUEST
+        )
+    )
+}
 
 #' authenticate_user return a list of projects and receivers the user is authorized to receive data for
 #'
@@ -113,116 +118,202 @@ allDataApps = c("authenticate_user",
 
 authenticate_user = function(env) {
 
-    req = Rook::Request$new(env)
-    res = Rook::Response$new()
+    if (tracing)
+        browser()
+
+    rv = NULL
+
+    tryCatch({
+        json = parent.frame()$postBody["json"]
+        ## for debugging only; log username and password
+        ## cat(format(Sys.time(), "%Y-%m-%dT%H-%M-%S"), ": authenticate_user: ", json, '\n', sep="", file=stderr())
+        json = fromJSON(json)
+    }, error = function(e) {
+        rv <<- list(error="request is missing a json field or it has invalid JSON")
+    })
+    if (is.null(rv)) {
+        username <- json$user
+        password <- json$password
+
+        motusReq = toJSON(list(
+            date = format(Sys.time(), "%Y%m%d%H%M%S"),
+            login = username,
+            pword = password,
+            type = "csv"),
+            auto_unbox = TRUE)
+
+        tryCatch({
+            resp = httr::content(httr::POST(motusServer:::MOTUS_API_USER_VALIDATE, body=list(json=motusReq),encode="form"))
+            ## generate a new authentication token for this user
+
+            ## First, grab a list of ambiguous projects that this user
+            ## gets access to by virtue of having access to real projects involved in them.
+
+            realProjIDs = as.integer(names(resp$projects))
+            realProjIDString = paste(realProjIDs, collapse=",")
+            ## ensure that the motus DB connection is valid; see issue #281
+            openMotusDB()
+            ambigProjIDs = MotusDB("
+select
+   distinct ambigProjectID
+from
+   projAmbig
+where
+   projectID1 in (%s)
+   or projectID2 in (%s)
+   or projectID3 in (%s)
+   or projectID4 in (%s)
+   or projectID5 in (%s)
+   or projectID6 in (%s)
+", realProjIDString, realProjIDString, realProjIDString, realProjIDString, realProjIDString, realProjIDString, .QUOTE=FALSE
+)[[1]]
+            projectIDs = c(realProjIDs, ambigProjIDs)
+            rv = list(
+                authToken = unclass(jsonlite::base64_enc(readBin("/dev/urandom", raw(), n=ceiling(OPT_TOKEN_BITS / 8)))),
+                expiry = as.numeric(Sys.time()) + OPT_AUTH_LIFE,
+                userID = resp$userID,
+                projects = paste(projectIDs, collapse=","),
+                receivers = NULL,
+                userType = resp$userType
+            )
+
+            ## add the auth info to the database for lookup by token
+            ## we're using replace into to cover the 0-probability case where token has been used before.
+            AuthDB("replace into auth (token, expiry, userID, projects, userType) values (:token, :expiry, :userID, :projects, :userType)",
+                   token = rv$authToken,
+                   expiry = rv$expiry,
+                   userID = rv$userID,
+                   projects = rv$projects,
+                   userType = resp$userType
+                   )
+            ## delete any expired tokens for user, while we're here.
+            AuthDB("delete from auth where expiry < :now and userID = :userID",
+                   now = as.numeric(Sys.time()),
+                   userID = rv$userID)
+        },
+        error = function(e) {
+            rv <<- list(error=paste("query to main motus server failed"))
+        })
+    }
+    return_from_app(rv)
+}
+
+#' get deviceIDs for receiver serial numbers
+#'
+#' @param serno character vector of serial numbers
+#'
+#' @return a list with these vector items:
+#'    \itemize{
+#'       \item serno; character receiver serial numbers
+#'       \item deviceID; integer device ID
+#'    }
+
+deviceID_for_receiver = function(env) {
+
+    json = fromJSON(parent.frame()$postBody["json"])
 
     if (tracing)
         browser()
-    json <- req$POST()[['json']] %>% fromJSON()
-    username <- json$user
-    password <- json$password
 
-    sendHeader(res)
+    auth = validate_request(json, needProjectID=FALSE)
+    if (inherits(auth, "error")) return(auth)
 
-    motusReq = toJSON(list(
-        date = format(Sys.time(), "%Y%m%d%H%M%S"),
-        login = username,
-        pword = password,
-        type = "csv"),
-        auto_unbox = TRUE)
+    serno = json$serno %>% as.character
 
-    rv = NULL
-    tryCatch({
-        resp = getForm(motusServer:::MOTUS_API_USER_VALIDATE, json=motusReq, curl=Curl) %>% fromJSON
-        ## generate a new authentication token for this user
-        rv = list(
-            token = unclass(RCurl::base64(readBin("/dev/urandom", raw(), n=ceiling(OPT_TOKEN_BITS / 8)))),
-            expiry = as.numeric(Sys.time()) + OPT_AUTH_LIFE,
-            userID = resp$userID,
-            projects = resp$projects,
-            receivers = NULL
-        )
+    if (length(serno) == 0 || ! all(grepl(MOTUS_RECV_SERNO_REGEX, serno)))
+        return(error_from_app("invalid parameter(s)"))
 
-        ## add the auth info to the database for lookup by token
-        AuthDB("replace into auth (token, expiry, userID, projects) values (:token, :expiry, :userID, :projects)",
-               token = rv$token,
-               expiry = rv$expiry,
-               userID = rv$userID,
-               projects = rv$projects %>% toJSON (auto_unbox=TRUE) %>% unclass
-               )
-    },
-    error = function(e) {
-        rv <<- list(error="authentication with motus failed")
-    })
+    ## get deviceIDs for all receivers
 
-    res$body = memCompress(toJSON(rv, auto_unbox=TRUE), "gzip")
-    res$finish()
-}
+    MetaDB("create temporary table if not exists tempSernos (serno text)")
+    MetaDB("delete from tempSernos")
+    dbWriteTable(MetaDB$con, "tempSernos", data.frame(serno=serno), append=TRUE, row.names=FALSE)
 
-#' validate a request by looking up its token, failing gracefully
-#' @param json named list with at least these items:
-#' \itemize{
-#' \item authToken authorization token
-#' \item projectID (optional) projectID
-#' }
-#'
-#' @return if \code{authToken} represents a valid unexpired token, and projectID is
-#' a project for which the user is authorized, returns
-#' a list with these items:
-#' \itemize{
-#' \item userID integer user ID
-#' \item projects integer vector of project IDs user has permission to
-#' }
-#' Otherwise, send a JSON-formatted reply with the single item "error": "authorization failed"
-#' and return NULL.
+    query = sprintf("
+select distinct
+    t1.serno,
+    t2.deviceID
+from
+   tempSernos as t1
+   left join recvDeps as t2 on t1.serno=t2.serno
+", paste(auth$projects, collapse=","))
 
-validate_request = function(json, res) {
+    rv = MetaDB(query)
 
-    authToken = json$authToken
-    projectID = json$projectID
-    now = as.numeric(Sys.time())
-    rv = AuthDB("select userID, (select group_concat(key, ',') from json_each(projects)) as projects from auth where token=:token and expiry > :now",
-                token = authToken,
-                now = now)
-    okay = TRUE
-    if (! isTRUE(nrow(rv) > 0)) {
-        ## authToken invalid or expired
-        okay = FALSE
-    } else  {
-        rv = list(userID=rv$userID, projects = scan(text=rv$projects, sep=",", quiet=TRUE))
-        if (length(projectID) > 0 && ! isTRUE(projectID %in% rv$projects)) {
-            ## user not authorized for project
-            okay = FALSE
+    missing = which(is.na(rv$deviceID))
+
+    ## try lookup deviceIDs directly from receiver databases.
+
+    if (length(missing)) {
+        for (i in missing) {
+            src = getRecvSrc(rv$serno[i], create=FALSE)
+            if (! is.null(src)) {
+                deviceID = dbGetQuery(src$con, "select val from meta where key='deviceID'")[[1]]
+                rm(src) ## force closing of db connection
+                if (length(deviceID))
+                    rv$deviceID[i] = as.numeric(deviceID)
+            }
         }
     }
-    if (! okay) {
-        sendHeader(res)
-        sendError(res, "authorization failed")
-        rv = NULL
-    }
-    return(rv)
+    return_from_app(rv)
 }
 
-#' send the header for a reply
-#' @param res Rook::Response object
-#' @return no return value
+#' get receivers for a project
 #'
-#' @details the reply will always be a gzip-compressed JSON-encoded value.
-#' We also disable caching.
+#' @param projectID; integer scalar project ID
 #'
-sendHeader = function(res) {
-    res$header("Cache-control", "no-cache")
-    res$header("Content-Type", "application/json")
-    res$header("Content-Encoding", "gzip")
-}
+#' @return a list with these vector items:
+#'    \itemize{
+#'       \item projectID; integer ID of project that deployed the receiver
+#'       \item serno; character serial number, e.g. "SG-1214BBBK3999", "Lotek-8681"
+#'       \item receiverType; character "SENSORGNOME" or "LOTEK"
+#'       \item deviceID; integer device ID (internal to motus)
+#'       \item status; character deployment status
+#'       \item name; character; typically a site name
+#'       \item fixtureType; character; what is the receiver mounted on?
+#'       \item latitude; numeric (initial) location, degrees North
+#'       \item longitude; numeric (initial) location, degrees East
+#'       \item elevation; numeric (initial) location, metres ASL
+#'       \item isMobile; integer non-zero means a mobile deployment
+#'       \item tsStart; numeric; timestamp of deployment start
+#'       \item tsEnd; numeric; timestamp of deployment end, or NA if ongoing
+#'    }
 
-#' send an error as the reply
-#' @param res Rook::Response object
-#' @param error character vector with error message(s)
-#' @return no return value
+receivers_for_project = function(env) {
 
-sendError = function(res, error) {
-    res$body = memCompress(toJSON(list(error=error), auto_unbox=TRUE), "gzip")
+    json = fromJSON(parent.frame()$postBody["json"])
+
+    if (tracing)
+        browser()
+
+    auth = validate_request(json)
+    if (inherits(auth, "error")) return(auth)
+
+    ## select all deployments of the receivers from the specified project
+
+    query = sprintf("
+select
+    t1.projectID,
+    t1.serno,
+    t1.receiverType,
+    t1.deviceID,
+    t1.status,
+    t1.name,
+    t1.fixtureType,
+    t1.latitude,
+    t1.longitude,
+    t1.elevation,
+    t1.isMobile,
+    t1.tsStart,
+    t1.tsEnd
+from
+   recvDeps as t1
+where
+   t1.projectID =%d
+", auth$projectID)
+
+    recvDeps = MetaDB(query)
+    return_from_app(recvDeps)
 }
 
 
@@ -230,535 +321,552 @@ sendError = function(res, error) {
 #'
 #' @param projectID integer project ID
 #' @param batchID integer batchID; only batches with larger batchID are returned
+#' @param includeTesting boolean; default: FALSE.  If TRUE, and the user is an administrator,
+#' then records for batches marked as `testing` are returned as if they were normal batches.
 #'
 #' @return a data frame with the same schema as the batches table, but JSON-encoded as a list of columns
 
 batches_for_tag_project = function(env) {
 
-    MAX_ROWS_PER_REQUEST = 10000
-    req = Rook::Request$new(env)
-    res = Rook::Response$new()
-
+    json = fromJSON(parent.frame()$postBody["json"])
     if (tracing)
         browser()
-    json = req$POST()[['json']] %>% fromJSON()
-    auth = validate_request(json, res)
-    if (is.null(auth))
-        return(res$finish())
 
-    sendHeader(res)
+    auth = validate_request(json)
+    if (inherits(auth, "error")) return(auth)
 
-    projectID = json$projectID %>% as.integer
-    batchID = json$batchID %>% as.integer
+    batchID = (json$batchID %>% as.integer)[1]
     if (!isTRUE(is.finite(batchID)))
         batchID = 0
 
-    ## select batches that have a detection of a tag
-    ## overlapping that tag's deployment by the given project
+    includeTesting = (json$includeTesting %>% as.logical)[1]
+    minBatchStatus = if (isTRUE(includeTesting) && isTRUE(auth$isAdmin)) -1 else 1
+
+    ## select batches for which there's an overlapping run of a tag deployed
+    ## by the given project
 
     query = sprintf("
 select
-   t3.batchID,
-   t3.motusDeviceID as deviceID,
-   t3.monoBN,
-   t3.tsBegin,
-   t3.tsEnd,
-   t3.numHits,
-   t3.ts
+   t1.batchID,
+   t1.motusDeviceID,
+   t1.monoBN,
+   t1.tsStart,
+   t1.tsEnd,
+   t1.numHits,
+   t1.ts,
+   t1.motusUserID,
+   t1.motusProjectID,
+   t1.motusJobID
 from
-   tag_deployments as t1
-   join runs as t2 on t1.motusTagID=t2.motusTagID
-   join batches as t3 on
-      t2.batchIDbegin=t3.batchID
-      or t2.batchIDend=t3.batchID
-      or (t2.batchIDend is null and t2.batchIDbegin < t3.batchID)
-where
-   t1.projectID = %d
-   and t1.tsStart <= t3.tsEnd
-   and t3.tsBegin <= t1.tsEnd
-   and t3.batchID > %d
-group by
-   t3.batchID
-order by
-   t3.batchID
-limit %d
-",
-projectID, batchID, MAX_ROWS_PER_REQUEST)
-    rv = MotusDB(query)
-    res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
-    res$finish()
-}
-
-#' get batches for a receiver project
-#'
-#' @param projectID integer project ID
-#' @param batchID integer batchID; only batches with larger batchID are returned
-#'
-#' @return a data frame with the same schema as the batches table, but JSON-encoded as a list of columns
-
-batches_for_receiver_project = function(env) {
-
-    MAX_ROWS_PER_REQUEST = 10000
-    req = Rook::Request$new(env)
-    res = Rook::Response$new()
-
-    if (tracing)
-        browser()
-    json = req$POST()[['json']] %>% fromJSON()
-    auth = validate_request(json, res)
-    if (is.null(auth))
-        return(res$finish())
-
-    sendHeader(res)
-
-    projectID = json$projectID %>% as.integer
-    batchID = json$batchID %>% as.integer
-    if (!isTRUE(is.finite(batchID)))
-        batchID = 0
-
-    ## select batches for a receiver that begin during one of the project's deployments
-    ## of that receiver  (we assume a receiver batch is entirely in a deployment; i.e.
-    ## that receivers get rebooted at least once between deployments to different
-    ## projects).
-
-    query = sprintf("
-select
-   t2.batchID,
-   t2.motusDeviceID as deviceID,
-   t2.monoBN,
-   t2.tsBegin,
-   t2.tsEnd,
-   t2.numHits,
-   t2.ts
-from
-   receiver_deployments as t1
-   join batches as t2 on t1.deviceID=t2.motusDeviceID
-where
-   t1.projectID = %d
+   projBatch as t2
+   join batches as t1
+   on t2.tagDepProjectID=%d
    and t2.batchID > %d
-   and ((t1.tsEnd is null and t2.tsBegin >= t1.tsStart)
-     or (t1.tsStart <= t2.tsEnd and t2.tsBegin <= t1.tsEnd))
+   and t1.batchID = t2.batchID
+   and t1.status >= %d
 order by
    t2.batchID
 limit %d
 ",
-projectID, batchID, MAX_ROWS_PER_REQUEST)
-    rv = MotusDB(query)
-    res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
-    res$finish()
+auth$projectID, batchID, minBatchStatus, MAX_ROWS_PER_REQUEST)
+    return_from_app(MotusDB(query))
+}
+
+
+#' get batches for a receiver
+#'
+#' @param deviceID integer device ID
+#' @param batchID integer batchID; only batches with larger batchID are returned
+#' @param includeTesting boolean; default: FALSE.  If TRUE, and the user is an administrator,
+#' then records for batches marked as `testing` are returned as if they were normal batches.
+#'
+#' @return a data frame with the same schema as the batches table, but JSON-encoded as a list of columns
+
+batches_for_receiver = function(env) {
+
+    json = fromJSON(parent.frame()$postBody["json"])
+
+    if (tracing)
+        browser()
+
+    auth = validate_request(json, needProjectID=FALSE)
+    if (inherits(auth, "error")) return(auth)
+
+    deviceID = (json$deviceID %>% as.integer)[1]
+    if (!isTRUE(is.finite(deviceID))) {
+        return(error_from_app("invalid parameter(s)"))
+    }
+
+    batchID = (json$batchID %>% as.integer)[1]
+    if (!isTRUE(is.finite(batchID)))
+        batchID = 0
+
+    includeTesting = (json$includeTesting %>% as.logical)[1]
+    minBatchStatus = if (isTRUE(includeTesting) && isTRUE(auth$isAdmin)) -1 else 1
+
+    ## Create an ownership clause so that only batches to which the user has
+    ## permission are returned.  For admin users, ownership (or lack thereof)
+    ## is ignored.
+
+    if (!isTRUE(auth$isAdmin)) {
+        ownership = sprintf(" and t1.recvDepProjectID in (%s) ", paste(auth$projects, collapse=","))
+    } else {
+        ownership = ""
+    }
+
+    query = sprintf("
+select
+   t1.batchID,
+   t1.motusDeviceID,
+   t1.monoBN,
+   t1.tsStart,
+   t1.tsEnd,
+   t1.numHits,
+   t1.ts,
+   t1.motusUserID,
+   t1.motusProjectID,
+   t1.motusJobID
+from
+   batches as t1
+where
+   t1.batchID > %d
+   and t1.motusDeviceID = %d
+   %s
+   and t1.status >= %d
+order by
+   t1.batchID
+limit %d
+",
+batchID, deviceID, ownership, minBatchStatus, MAX_ROWS_PER_REQUEST)
+    return_from_app(MotusDB(query))
+}
+
+#' get batches for any receiver
+#'
+#' @param batchID integer batch ID of largest batch already obtained
+#' @param includeTesting boolean; default: FALSE.  If TRUE, and the user is an administrator,
+#' then records for batches marked as `testing` are returned as if they were normal batches.
+#'
+#' @return a data frame with the same schema as the batches table, but JSON-encoded as a list of columns
+
+batches_for_all = function(env) {
+
+    json = fromJSON(parent.frame()$postBody["json"])
+
+    if (tracing)
+        browser()
+
+    auth = validate_request(json, needProjectID = FALSE, needAdmin = TRUE)
+    if (inherits(auth, "error")) return(auth)
+
+    batchID = (json$batchID %>% as.integer)[1]
+    if (!isTRUE(is.finite(batchID)))
+        batchID = 0
+
+    includeTesting = (json$includeTesting %>% as.logical)[1]
+    minBatchStatus = if (isTRUE(includeTesting) && isTRUE(auth$isAdmin)) -1 else 1
+
+    ## select batches larger than the one specified
+
+    query = sprintf("
+select
+   batchID,
+   motusDeviceID,
+   monoBN,
+   tsStart,
+   tsEnd,
+   numHits,
+   ts,
+   motusUserID,
+   motusProjectID,
+   motusJobID
+from
+   batches
+where
+   batchID > %d
+   and status >= %d
+order by
+   batchID
+limit %d
+",
+batchID, minBatchStatus, MAX_ROWS_PER_REQUEST)
+    return_from_app(MotusDB(query))
 }
 
 #' get runs by tag project from a batch
 #'
 #' @param projectID integer project ID
 #' @param batchID integer batchID
-#' @param runID integer ID of largest run already obtained
+#' @param runID double ID of largest run already obtained
 #'
 #' @return a data frame with the same schema as the runs table, but JSON-encoded as a list of columns
 
 runs_for_tag_project = function(env) {
 
-    MAX_ROWS_PER_REQUEST = 10000
-    req = Rook::Request$new(env)
-    res = Rook::Response$new()
+    json = fromJSON(parent.frame()$postBody["json"])
 
     if (tracing)
         browser()
-    json = req$POST()[['json']] %>% fromJSON()
-    auth = validate_request(json, res)
-    if (is.null(auth))
-        return(res$finish())
 
-    sendHeader(res)
+    auth = validate_request(json)
+    if (inherits(auth, "error")) return(auth)
 
-    projectID = json$projectID %>% as.integer
-    batchID = json$batchID %>% as.integer
-    runID = json$runID %>% as.integer
+    batchID = (json$batchID %>% as.integer)[1]
+    runID = (json$runID %>% as.double)[1]
 
-    if (!isTRUE(is.finite(projectID) && is.finite(batchID) && is.finite(runID))) {
-        sendError("invalid parameter(s)")
-        return(res$finish())
+    if (!isTRUE(is.finite(batchID) && is.finite(runID))) {
+        return(error_from_app("invalid parameter(s)"))
     }
 
-    ## get all runs in a batch having a detection of a tag
-    ## within a deployment of that tag by the given project
-
-    ## For a batch B, a run R is "in" B means:
-    ##     R.batchIDbegin == B
-    ##  or R.batchIDend == B
-    ##  or (R.batchIDend is null and R.batchIDbegin < B)
+    ## get all runs of a tag within a deployment of that tag by the
+    ## given project that overlap the given batch
 
     query = sprintf("
 select
-   t2.runID,
-   t2.batchIDbegin,
-   t2.batchIDend,
-   t2.motusTagID,
-   t2.ant,
-   t2.len
+   cast(t1.runID as double) as runID,
+   t1.batchIDbegin,
+   t1.tsBegin,
+   t1.tsEnd,
+   t1.done,
+   t1.motusTagID,
+   t1.ant,
+   t1.len
 from
-   batches as t1
-   join runs as t2 on
-      t2.batchIDbegin = t1.batchID
-      or t2.batchIDend = t1.batchID
-      or (t2.batchIDend is null and t2.batchIDbegin < t1.batchID)
-   join tag_deployments as t3 on t2.motusTagID=t3.motusTagID
-   join hits as t4 on t4.runID=t2.runID
+   batchRuns as t2
+   join runs as t1 on t2.runID=t1.runID
 where
-   t1.batchID = %d
-   and t2.runID > %d
-   and t3.projectID = %d
-   and t4.ts <= t3.tsEnd
-   and t4.ts >= t3.tsStart
-group by
-   t2.runID
+   t2.tagDepProjectID = %d
+   and t2.batchID = %d
+   and t2.runID > %f
 order by
    t2.runID
-limit %d
+limit 10000
 ",
-batchID, runID, projectID, MAX_ROWS_PER_REQUEST)
-    rv = MotusDB(query)
-    res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
-    res$finish()
+auth$projectID, batchID, runID, auth$projectID, MAX_ROWS_PER_REQUEST)
+    return_from_app(MotusDB(query))
 }
 
-#' get all runs from a batch
+#' get all runs from a batch for a receiver
 #'
-#' @param projectID integer project ID
 #' @param batchID integer batchID
-#' @param runID integer ID of largest run already obtained
+#' @param runID double ID of largest run already obtained
 #'
 #' @return a data frame with the same schema as the runs table, but JSON-encoded as a list of columns
 
-runs_for_receiver_project = function(env) {
+runs_for_receiver = function(env) {
 
-    MAX_ROWS_PER_REQUEST = 10000
-    req = Rook::Request$new(env)
-    res = Rook::Response$new()
+    json = fromJSON(parent.frame()$postBody["json"])
 
     if (tracing)
         browser()
-    json = req$POST()[['json']] %>% fromJSON()
-    auth = validate_request(json, res)
-    if (is.null(auth))
-        return(res$finish())
 
-    sendHeader(res)
+    auth = validate_request(json, needProjectID=FALSE)
+    if (inherits(auth, "error")) return(auth)
 
-    projectID = json$projectID %>% as.integer
-    batchID = json$batchID %>% as.integer
-    runID = json$runID %>% as.integer
+    batchID = (json$batchID %>% as.integer)[1]
+    runID = (json$runID %>% as.double)[1]
 
-    if (!isTRUE(is.finite(projectID) && is.finite(batchID) && is.finite(runID))) {
-        sendError("invalid parameter(s)")
-        return(res$finish())
+    if (!isTRUE(is.finite(batchID) && is.finite(runID))) {
+        return(error_from_app("invalid parameter(s)"))
+    }
+
+    ## Create an ownership clause so that only batches to which the user has
+    ## permission are returned.  For admin users, ownership (or lack thereof)
+    ## is ignored.
+
+    if (!isTRUE(auth$isAdmin)) {
+        ownership = sprintf(" and t2.recvDepProjectID in (%s) ", paste(auth$projects, collapse=","))
+    } else {
+        ownership = ""
     }
 
     ## pull out appropriate runs
 
     query = sprintf("
 select
-   t2.runID,
-   t2.batchIDbegin,
-   t2.batchIDend,
-   t2.motusTagID,
-   t2.ant,
-   t2.len
+   cast(t1.runID as double) as runID,
+   t1.batchIDbegin,
+   t1.tsBegin,
+   t1.tsEnd,
+   t1.done,
+   t1.motusTagID,
+   t1.ant,
+   t1.len
 from
-   batches as t1
-   join runs as t2 on
-      t2.batchIDbegin = t1.batchID
-      or t2.batchIDend = t1.batchID
-      or (t2.batchIDend is null and t2.batchIDbegin < t1.batchID)
-   join receiver_deployments as t3 on t1.motusDeviceID=t3.deviceID
+   runs as t1
+   join batchRuns as t2 on t2.runID = t1.runID
+   join batches as t3 on t3.batchID=t2.batchID
 where
-   t1.batchID = %d
-   and t2.runID > %d
-   and t3.projectID = %d
-   and ((t3.tsEnd is null and t1.tsBegin >= t3.tsStart)
-     or (t1.tsBegin <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
+   t1.runID > %f
+   and t2.batchID = %d
+   %s
 order by
-   t2.runID
+   t1.runID
 limit %d
 ",
-batchID, runID, projectID, MAX_ROWS_PER_REQUEST)
-    rv = MotusDB(query)
-    res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
-    res$finish()
+runID, batchID, ownership, MAX_ROWS_PER_REQUEST)
+    return_from_app(MotusDB(query))
 }
 
 #' get hits by tag project from a batch
 #'
 #' @param projectID integer project ID
 #' @param batchID integer batchID
-#' @param hitID integer ID of largest hit already obtained
+#' @param hitID double ID of largest hit already obtained
 #'
 #' @return a data frame with the same schema as the hits table, but JSON-encoded as a list of columns
 
 hits_for_tag_project = function(env) {
 
-    MAX_ROWS_PER_REQUEST = 50000
-    req = Rook::Request$new(env)
-    res = Rook::Response$new()
+    json = fromJSON(parent.frame()$postBody["json"])
 
     if (tracing)
         browser()
-    json = req$POST()[['json']] %>% fromJSON()
-    auth = validate_request(json, res)
-    if (is.null(auth))
-        return(res$finish())
 
-    sendHeader(res)
+    auth = validate_request(json)
+    if (inherits(auth, "error")) return(auth)
 
-    projectID = json$projectID %>% as.integer
-    batchID = json$batchID %>% as.integer
-    hitID = json$hitID %>% as.integer
+    batchID = (json$batchID %>% as.integer)[1]
+    hitID = (json$hitID %>% as.double)[1]
 
-    if (!isTRUE(is.finite(projectID) && is.finite(batchID) && is.finite(hitID))) {
-        sendError("invalid parameter(s)")
-        return(res$finish())
+    if (!isTRUE(is.finite(batchID) && is.finite(hitID))) {
+        return(error_from_app("invalid parameter(s)"))
     }
 
     ## pull out appropriate hits
 
     query = sprintf("
 select
-   t4.hitID,
-   t4.runID,
-   t4.batchID,
-   t4.ts,
-   t4.sig,
-   t4.sigSD,
-   t4.noise,
-   t4.freq,
-   t4.freqSD,
-   t4.slop,
-   t4.burstSlop
+   cast(hitID as double) as hitID,
+   cast(runID as double) as runID,
+   batchID,
+   ts,
+   sig,
+   sigSD,
+   noise,
+   freq,
+   freqSD,
+   slop,
+   burstSlop
 from
-   batches as t1
-   join runs as t2 on
-      t2.batchIDbegin=t1.batchID
-      or t2.batchIDend=t1.batchID
-      or (t2.batchIDend is null and t2.batchIDbegin < t1.batchID)
-   join hits as t4 on t4.runID=t2.runID
-   join tag_deployments as t3 on t2.motusTagID=t3.motusTagID
+   hits
 where
-   t1.batchID = %d
-   and t4.hitID > %d
-   and t3.projectID = %d
-   and t4.ts <= t3.tsEnd
-   and t4.ts >= t3.tsStart
+   tagDepProjectID = %d
+   and batchID = %d
+   and hitID > %f
 order by
-   t4.hitID
+   hitID
 limit %d
 ",
-batchID, hitID, projectID, MAX_ROWS_PER_REQUEST)
-    rv = MotusDB(query)
-    res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
-    res$finish()
+auth$projectID, batchID, hitID, MAX_ROWS_PER_REQUEST)
+    return_from_app(MotusDB(query))
 }
 
-#' get hits by receiver project from a batch (i.e. all hits from the batch)
+#' get all hits from a batch for a receiver
 #'
-#' @param projectID integer project ID
 #' @param batchID integer batchID
-#' @param hitID integer ID of largest hit already obtained
+#' @param hitID double ID of largest hit already obtained
 #'
 #' @return a data frame with the same schema as the hits table, but JSON-encoded as a list of columns
 
-hits_for_receiver_project = function(env) {
+hits_for_receiver = function(env) {
 
-    MAX_ROWS_PER_REQUEST = 50000
-    req = Rook::Request$new(env)
-    res = Rook::Response$new()
+    json = fromJSON(parent.frame()$postBody["json"])
 
     if (tracing)
         browser()
-    json = req$POST()[['json']] %>% fromJSON()
-    auth = validate_request(json, res)
-    if (is.null(auth))
-        return(res$finish())
 
-    sendHeader(res)
+    auth = validate_request(json, needProjectID=FALSE)
+    if (inherits(auth, "error")) return(auth)
 
-    projectID = json$projectID %>% as.integer
-    batchID = json$batchID %>% as.integer
-    hitID = json$hitID %>% as.integer
+    batchID = (json$batchID %>% as.integer)[1]
+    hitID = (json$hitID %>% as.double)[1]
 
-    if (!isTRUE(is.finite(projectID) && is.finite(batchID) && is.finite(hitID))) {
-        sendError("invalid parameter(s)")
-        return(res$finish())
+    if (!isTRUE(is.finite(batchID) && is.finite(hitID))) {
+        return(error_from_app("invalid parameter(s)"))
+    }
+
+    ## Create an ownership clause so that only batches to which the user has
+    ## permission are returned.  For admin users, ownership (or lack thereof)
+    ## is ignored.
+
+    if (!isTRUE(auth$isAdmin)) {
+        ownership = sprintf(" and t2.recvDepProjectID in (%s) ", paste(auth$projects, collapse=","))
+    } else {
+        ownership = ""
     }
 
     ## pull out appropriate hits
 
     query = sprintf("
 select
-   t2.hitID,
-   t2.runID,
-   t2.batchID,
-   t2.ts,
-   t2.sig,
-   t2.sigSD,
-   t2.noise,
-   t2.freq,
-   t2.freqSD,
-   t2.slop,
-   t2.burstSlop
+   cast(t1.hitID as double) as hitID,
+   cast(t1.runID as double) as runID,
+   t1.batchID,
+   t1.ts,
+   t1.sig,
+   t1.sigSD,
+   t1.noise,
+   t1.freq,
+   t1.freqSD,
+   t1.slop,
+   t1.burstSlop
 from
-   receiver_deployments as t3
-   join batches as t1 on t3.deviceID = t1.motusDeviceID
-   join hits as t2 on t2.batchID=t1.batchID
+   hits as t1
+   join batches as t2 on t2.batchID=t1.batchID
 where
-   t1.batchID = %d
-   and t3.projectID = %d
-   and t2.hitID > %d
-   and ((t3.tsEnd is null and t1.tsBegin >= t3.tsStart)
-     or (t1.tsBegin <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
+   t1.hitID > %f
+   and t1.batchID = %d
+   %s
 order by
-   t2.hitID
+   t1.hitID
 limit %d
 ",
-batchID, projectID, hitID, MAX_ROWS_PER_REQUEST)
-    rv = MotusDB(query)
-    res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
-    res$finish()
+hitID, batchID, ownership, MAX_ROWS_PER_REQUEST)
+    return_from_app(MotusDB(query))
 }
 
-#' get all GPS fixes from a batch "near" to detections of tags from a project.
+#' get all GPS fixes from a batch "relevant to" detections of tags
+#' from a project.
 #'
 #' @param projectID integer project ID of tags of interest
 #' @param batchID integer batchID
 #' @param ts numeric timestamp of latest fix already obtained
 #'
+#' @details This is given a permissive interpretation: all GPS fixes
+#'     from 1 hour before the first detection of a project tag to 1
+#'     hour after the last detection of a project tag in the given
+#'     batch are returned.  This might return GPS fixes for long
+#'     periods where no tags from the project were detected, if a
+#'     batch has a few early and a few late detections of the
+#'     project's tags.
+#'
 #' @return a data frame with the same schema as the gps table, but JSON-encoded as a list of columns
 
 gps_for_tag_project = function(env) {
 
-    MAX_ROWS_PER_REQUEST = 10000
-    req = Rook::Request$new(env)
-    res = Rook::Response$new()
+    json = fromJSON(parent.frame()$postBody["json"])
 
     if (tracing)
         browser()
-    json = req$POST()[['json']] %>% fromJSON()
-    auth = validate_request(json, res)
-    if (is.null(auth))
-        return(res$finish())
 
-    sendHeader(res)
+    auth = validate_request(json)
+    if (inherits(auth, "error")) return(auth)
 
-    projectID = json$projectID %>% as.integer
-    batchID = json$batchID %>% as.integer
-    ts = json$ts %>% as.numeric
+    batchID = (json$batchID %>% as.integer)[1]
+    ts = (json$ts %>% as.numeric)[1]
 
-    if (!isTRUE(is.finite(projectID) && is.finite(batchID) && is.finite(ts))) {
-        sendError("invalid parameter(s)")
-        return(res$finish())
+    if (!isTRUE(is.finite(batchID) && is.finite(ts))) {
+        return(error_from_app("invalid parameter(s)"))
     }
 
-    ## pull out appropriate gps records
+    ## pull out appropriate gps records we look for the first and last
+    ## tag detection for the project in this batch to get the maximal
+    ## timestamp for that project in the batch, add a 1-hour buffer to
+    ## each end, then pull out gps fixes for that period, further
+    ## limited by minimum timestamp
 
     query = sprintf("
 select
-    t.ts,
-    t.gpsts,
-    t.batchID,
-    t.lat,
-    t.lon,
-    t.alt
+    t1.ts,
+    t1.gpsts,
+    t1.batchID,
+    t1.lat,
+    t1.lon,
+    t1.alt
 from
-   gps as t
-   join (
-      select
-         distinct 3600 * (floor(t2.ts / 3600) + dt.dt) as hour
+   gps as t1
+   join
+      (select
+         min(t3.ts) as tsBegin,
+         max(t3.ts) as tsEnd
       from
-         runs as t3
-         join tag_deployments as t4 on t4.motusTagID=t3.motusTagID
-         join hits as t2 on t2.runID = t3.runID
-         join (select -1 as dt union select 0 as dt union select 1 as dt) as dt
-      where
-         (t3.batchIDbegin = %d
-          or t3.batchIDend = %d
-          or (t3.batchIDend is null and t3.batchIDbegin < %d)
-         )
-         and t4.projectID = %d
-      order by
-         hour
-    ) as t2 on t.ts >= t2.hour and t.ts < t2.hour + 3600
+         (select t2.ts from
+            hits as t2
+         join
+            (select
+                min(t5.hitID) as hitIDlo,
+                max(t5.hitID) as hitIDhi
+             from
+                hits as t5
+             where
+                t5.tagDepProjectID = %d
+                and t5.batchID = %d
+             ) as t6
+          on t2.hitID in (hitIDlo, hitIDhi)
+          ) as t3
+    ) as t4
 where
-   t.batchID = %d
-   and t.ts > %f
+   t1.batchID = %d
+   and t1.ts > %16.4f
+   and t1.ts >= t4.tsBegin - 3600
+   and t1.ts <= t4.tsEnd + 3600
 order by
-   t.ts
+   t1.ts
 limit %d
 ",
-batchID, batchID, batchID, projectID, batchID, ts, MAX_ROWS_PER_REQUEST)
-    rv = MotusDB(query)
-    res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
-    res$finish()
+auth$projectID, batchID, batchID, ts, MAX_ROWS_PER_REQUEST)
+    return_from_app(MotusDB(query))
 }
 
 #' get all GPS fixes from a batch
 #'
-#' @param projectID integer project ID
 #' @param batchID integer batchID
 #' @param ts numeric timestamp of latest fix already obtained
 #'
 #' @return a data frame with the same schema as the gps table, but JSON-encoded as a list of columns
 
-gps_for_receiver_project = function(env) {
+gps_for_receiver = function(env) {
 
-    MAX_ROWS_PER_REQUEST = 10000
-    req = Rook::Request$new(env)
-    res = Rook::Response$new()
+    json = fromJSON(parent.frame()$postBody["json"])
 
     if (tracing)
         browser()
-    json = req$POST()[['json']] %>% fromJSON()
-    auth = validate_request(json, res)
-    if (is.null(auth))
-        return(res$finish())
 
-    sendHeader(res)
+    auth = validate_request(json, needProjectID=FALSE)
+    if (inherits(auth, "error")) return(auth)
 
-    projectID = json$projectID %>% as.integer
-    batchID = json$batchID %>% as.integer
-    ts = json$ts %>% as.numeric
+    batchID = (json$batchID %>% as.integer)[1]
+    ts = (json$ts %>% as.numeric)[1]
 
-    if (!isTRUE(is.finite(projectID) && is.finite(batchID) && is.finite(ts))) {
-        sendError("invalid parameter(s)")
-        return(res$finish())
+    if (!isTRUE(is.finite(batchID) && is.finite(ts))) {
+        return(error_from_app("invalid parameter(s)"))
     }
 
-    ## pull out appropriate gps records
+    ## Create an ownership clause so that only batches to which the user has
+    ## permission are returned.  For admin users, ownership (or lack thereof)
+    ## is ignored.
+
+    if (!isTRUE(auth$isAdmin)) {
+        ownership = sprintf(" and t2.recvDepProjectID in (%s) ", paste(auth$projects, collapse=","))
+    } else {
+        ownership = ""
+    }
+
+    ## pull gps records provided the batch is for a deployment of the
+    ## receiver by one of the projects the user is authorized for
 
     query = sprintf("
 select
-    t2.ts,
-    t2.gpsts,
-    t2.batchID,
-    t2.lat,
-    t2.lon,
-    t2.alt
+    t1.ts,
+    t1.gpsts,
+    t1.batchID,
+    t1.lat,
+    t1.lon,
+    t1.alt
 from
-   receiver_deployments as t3
-   join batches as t1 on t3.deviceID = t1.motusDeviceID
-   join gps as t2 on t2.batchID=t1.batchID
+   gps as t1
+   join batches as t2 on t2.batchID=t1.batchID
 where
-   t1.batchID = %d
-   and t3.projectID = %d
-   and t2.ts > %f
-   and ((t3.tsEnd is null and t1.tsBegin >= t3.tsStart)
-     or (t1.tsBegin <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
+   t2.batchID = %d
+   %s
+   and t1.ts > %f
 order by
-   t2.ts
+   t1.ts
 limit %d
 ",
-batchID, projectID, ts, MAX_ROWS_PER_REQUEST)
-    rv = MotusDB(query)
-    res$body = memCompress(toJSON(rv, auto_unbox=TRUE, dataframe="columns"), "gzip")
-    res$finish()
+batchID, ownership, ts, MAX_ROWS_PER_REQUEST)
+    return_from_app(MotusDB(query))
 }
 
 #' get metadata for tags
@@ -766,7 +874,6 @@ batchID, projectID, ts, MAX_ROWS_PER_REQUEST)
 #' @param motusTagIDs integer vector of tag IDs for which metadata are sought
 #'
 #' @return a list with these items
-#'
 #'
 #' \itemize{
 #'    \item tags; a list with these vector items:
@@ -808,6 +915,12 @@ batchID, projectID, ts, MAX_ROWS_PER_REQUEST)
 #'       \item scientific; character; scientific species name
 #'       \item group; character; higher-level taxon
 #'    }
+#'    \item projs; a list with these columns:
+#'    \itemize{
+#'       \item id; integer motus project id
+#'       \item name; character full name of motus project
+#'       \item label; character short label for motus project; e.g. for use in plots
+#'    }
 #' }
 #'
 #' @note only metadata which are public, or which are from projects
@@ -815,23 +928,18 @@ batchID, projectID, ts, MAX_ROWS_PER_REQUEST)
 
 metadata_for_tags = function(env) {
 
-    req = Rook::Request$new(env)
-    res = Rook::Response$new()
+    json = fromJSON(parent.frame()$postBody["json"])
 
     if (tracing)
         browser()
-    json = req$POST()[['json']] %>% fromJSON()
-    auth = validate_request(json, res)
-    if (is.null(auth))
-        return(res$finish())
 
-    sendHeader(res)
+    auth = validate_request(json, needProjectID=FALSE)
+    if (inherits(auth, "error")) return(auth)
 
     motusTagIDs = json$motusTagIDs %>% as.integer
 
     if (!isTRUE(all(is.finite(motusTagIDs)))) {
-        sendError("invalid parameter(s)")
-        return(res$finish())
+        return(error_from_app("invalid parameter(s)"))
     }
 
     ## determine which projects have tag deployments overlapping with public
@@ -842,16 +950,18 @@ metadata_for_tags = function(env) {
     dbWriteTable(MetaDB$con, "tempQueryTagIDs", data.frame(tagID=motusTagIDs), append=TRUE, row.names=FALSE)
     projs = MetaDB("
 select
-   distinct projectID
+   t3.id as id,
+   t3.name as name,
+   t3.label as label
 from
    tempQueryTagIds as t1
    join tagDeps as t2 on t1.tagID = t2.tagID
    join projs as t3 on t2.projectID = t3.id
 where
    t3.tagsPermissions = 2
-") [[1]]
+")
     ## append projects user has access to via motus permissions
-    projs = unique(c(projs, auth$projects))
+    projIDs = unique(c(projs$id, auth$projects))
 
     ## select all deployments of these tags from the permitted projects
 
@@ -875,7 +985,7 @@ from
 where
    t1.projectID in (%s)
    and t1.tagID in (%s)
-", paste(projs, collapse=","), paste(motusTagIDs, collapse=","))
+", paste(projIDs, collapse=","), paste(motusTagIDs, collapse=","))
 
     tagDeps = MetaDB(query)
 
@@ -894,7 +1004,7 @@ select
    t1.lifeSpan,
    t1.nomFreq,
    t1.offsetFreq,
-   t1.bi,
+   t1.period as bi,
    t1.pulseLen
 from
    tags as t1
@@ -918,8 +1028,7 @@ where
 ", paste(speciesIDs, collapse=","))
 
     species = MetaDB(query)
-    res$body = memCompress(toJSON(list(tags=tags, tagDeps=tagDeps, species=species), auto_unbox=TRUE, dataframe="columns"), "gzip")
-    res$finish()
+    return_from_app(list(tags=tags, tagDeps=tagDeps, species=species, projs=projs))
 }
 
 #' get metadata for receivers
@@ -962,6 +1071,12 @@ where
 #'       \item polarization2; numeric angle giving tilt from "normal" position, in degrees
 #'       \item polarization1; numeric angle giving rotation of antenna about own axis, in degrees.
 #'    }
+#'    \item projs; a list with these columns:
+#'    \itemize{
+#'       \item id; integer motus project id
+#'       \item name; character full name of motus project
+#'       \item label; character short label for motus project; e.g. for use in plots
+#'    }
 #' }
 #'
 #' @note only metadata which are public, or which are from projects
@@ -969,23 +1084,18 @@ where
 
 metadata_for_receivers = function(env) {
 
-    req = Rook::Request$new(env)
-    res = Rook::Response$new()
+    json = fromJSON(parent.frame()$postBody["json"])
 
     if (tracing)
         browser()
-    json = req$POST()[['json']] %>% fromJSON()
-    auth = validate_request(json, res)
-    if (is.null(auth))
-        return(res$finish())
 
-    sendHeader(res)
+    auth = validate_request(json, needProjectID=FALSE)
+    if (inherits(auth, "error")) return(auth)
 
     deviceIDs = json$deviceIDs %>% as.integer
 
     if (!isTRUE(all(is.finite(deviceIDs)))) {
-        sendError("invalid parameter(s)")
-        return(res$finish())
+        return(error_from_app("invalid parameter(s)"))
     }
 
     ## determine which projects have receiver deployments overlapping with public
@@ -996,16 +1106,18 @@ metadata_for_receivers = function(env) {
     dbWriteTable(MetaDB$con, "tempQueryDeviceIDs", data.frame(deviceID=deviceIDs), append=TRUE, row.names=FALSE)
     projs = MetaDB("
 select
-   distinct projectID
+   t3.id as id,
+   t3.name as name,
+   t3.label as label
 from
    tempQueryDeviceIds as t1
    join recvDeps as t2 on t1.deviceID = t2.deviceID
    join projs as t3 on t2.projectID = t3.id
 where
    t3.sensorsPermissions = 2
-") [[1]]
+")
     ## append projects user has access to via motus permissions
-    projs = unique(c(projs, auth$projects))
+    projIDs = unique(c(projs$id, auth$projects))
 
     ## select all deployments of the receivers from the permitted projects
 
@@ -1030,7 +1142,7 @@ from
 where
    t1.projectID in (%s)
    and t1.deviceID in (%s)
-", paste(projs, collapse=","), paste(deviceIDs, collapse=","))
+", paste(projIDs, collapse=","), paste(deviceIDs, collapse=","))
 
     recvDeps = MetaDB(query)
 
@@ -1053,11 +1165,10 @@ from
 where
    t1.projectID in (%s)
    and t1.deviceID in (%s)
-", paste(projs, collapse=","), paste(deviceIDs, collapse=","))
+", paste(projIDs, collapse=","), paste(deviceIDs, collapse=","))
 
     antDeps = MetaDB(query)
-    res$body = memCompress(toJSON(list(recvDeps=recvDeps, antDeps=antDeps), auto_unbox=TRUE, dataframe="columns"), "gzip")
-    res$finish()
+    return_from_app(list(recvDeps=recvDeps, antDeps=antDeps, projs=projs))
 }
 
 #' get motus tagIDs for ambiguity IDs
@@ -1073,29 +1184,30 @@ where
 #'    \item motusTagID4; positive integer motus tag ID or null
 #'    \item motusTagID5; positive integer motus tag ID or null
 #'    \item motusTagID6; positive integer motus tag ID or null
+#'    \item ambigProjectID; negative integer ambiguous project ID
 #' }
 
 tags_for_ambiguities = function(env) {
 
-    req = Rook::Request$new(env)
-    res = Rook::Response$new()
+    json = fromJSON(parent.frame()$postBody["json"])
 
     if (tracing)
         browser()
-    json = req$POST()[['json']] %>% fromJSON()
-    auth = validate_request(json, res)
-    if (is.null(auth))
-        return(res$finish())
 
-    sendHeader(res)
+    auth = validate_request(json, needProjectID=FALSE)
+    if (inherits(auth, "error")) return(auth)
 
     ambigIDs = json$ambigIDs %>% as.integer
 
     if (!isTRUE(all(is.finite(ambigIDs)) && all(ambigIDs < 0)) && length(ambigIDs) > 0) {
-        sendError("invalid parameter(s)")
-        return(res$finish())
+        return(error_from_app("invalid parameter(s)"))
     }
 
+    ## to work around invalid syntax of '()', use an invalid ID
+    ## to get a result with zero rows.
+
+    if (length(ambigIDs) == 0)
+        ambigIDs = 0
     query = sprintf("
 select
    t1.ambigID,
@@ -1104,7 +1216,8 @@ select
    t1.motusTagID3,
    t1.motusTagID4,
    t1.motusTagID5,
-   t1.motusTagID6
+   t1.motusTagID6,
+   t1.ambigProjectID
 from
    tagAmbig as t1
 where
@@ -1113,9 +1226,7 @@ order by
    t1.ambigID desc
 ", paste(ambigIDs, collapse=","))
 
-    ambig = MotusDB(query)
-    res$body = memCompress(toJSON(ambig, auto_unbox=TRUE, dataframe="columns"), "gzip")
-    res$finish()
+    return_from_app(MotusDB(query))
 }
 
 #' get count of update items for a tag project
@@ -1129,135 +1240,79 @@ order by
 #' \item numRuns
 #' \item numHits
 #' \item numGPS
+#' \item numBytes
 #' }
+#' @details the value of numHits and so numBytes is an overestimate, because
+#' it counts the full length of each run, rather than just of those hits
+#' added by new batches to existing runs.
 
 size_of_update_for_tag_project = function(env) {
 
-    req = Rook::Request$new(env)
-    res = Rook::Response$new()
+    json = fromJSON(parent.frame()$postBody["json"])
 
     if (tracing)
         browser()
-    json = req$POST()[['json']] %>% fromJSON()
-    auth = validate_request(json, res)
-    if (is.null(auth))
-        return(res$finish())
 
-    sendHeader(res)
+    auth = validate_request(json)
+    if (inherits(auth, "error")) return(auth)
 
-    projectID = json$projectID %>% as.integer
     batchID = json$batchID %>% as.integer
     if (!isTRUE(is.finite(batchID)))
         batchID = 0
 
-    ## get number of new batches that have a detection of a tag
-    ## overlapping that tag's deployment by the given project
+    ## all in one query: get number of batches, runs, hits and GPS fixes
+    ## not yet seen but for this tag project
 
     query = sprintf("
 select
-   count(t3.batchID)
+   count(*) as numBatches,
+   sum(numRuns) as numRuns,
+   sum(numHits) as numHits,
+   sum(numGPS) as numGPS
 from
-   tag_deployments as t1
-   join runs as t2 on t1.motusTagID=t2.motusTagID
-   join batches as t3 on
-      t2.batchIDbegin=t3.batchID
-      or t2.batchIDend=t3.batchID
-      or (t2.batchIDend is null and t2.batchIDbegin < t3.batchID)
-where
-   t1.projectID = %d
-   and t1.tsStart <= t3.tsEnd
-   and t3.tsBegin <= t1.tsEnd
-   and t3.batchID > %d
-group by
-   t3.batchID
+   (select
+       t1.batchID as bid,
+       numRuns,
+       numHits,
+       count(*) as numGPS
+    from
+       (select
+           batchIDbegin as batchID,
+           count(*) as numRuns,
+           sum(len) as numHits,
+           min(tsBegin) as tsStart,
+           max(tsEnd) as tsEnd
+        from
+           runs as t2
+           join batches as t3 on t2.batchIDbegin = t3.batchID
+        where
+           batchIDbegin > %d
+           and tagDepProjectID = %d
+           and t3.tsMotus >= 0
+        group by
+           batchIDbegin
+       ) as t1
+       left outer join gps as t2
+          on t1.batchID=t2.batchID and (t2.ts >=t1.tsStart -3600 and t2.ts <= t1.tsEnd + 3600)
+    group by
+       t1.batchID
+   ) as t3
 ",
-projectID, batchID)
-    numBatches = MotusDB(query)
+batchID, auth$projectID)
+    rv = MotusDB(query)
 
-    ## get number of runs in new batches
+    rv$numBytes = with(rv,
+        110 + 90 * numBatches +
+        75 + 64 * numRuns +
+        80 + 100 * numHits +
+        50 + 52 * numGPS)
 
-    query = sprintf("
-select
-   count(t2.runID)
-from
-   batches as t1
-   join runs as t2 on
-      (t2.batchIDbegin = t1.batchID)
-      or (t2.batchIDend = t1.batchID)
-      or (t2.batchIDend is null and t2.batchIDbegin < t1.batchID)
-   join tag_deployments as t3 on t2.motusTagID=t3.motusTagID
-   join hits as t4 on t4.runID=t2.runID
-where
-   t1.batchID > %d
-   and t3.projectID = %d
-   and t4.ts <= t3.tsEnd
-   and t4.ts >= t3.tsStart
-group by
-   t2.runID
-",
-batchID, projectID)
-    numRuns = MotusDB(query)
-
-    ## get number of hits in new batches
-
-    query = sprintf("
-select
-   count(t4.hitID)
-from
-   batches as t1
-   join runs as t2 on
-      t2.batchIDbegin=t1.batchID
-      or t2.batchIDend=t1.batchID
-      or (t2.batchIDend is null and t2.batchIDbegin < t1.batchID)
-   join hits as t4 on t4.runID=t2.runID
-   join tag_deployments as t3 on t2.motusTagID=t3.motusTagID
-where
-   t1.batchID > %d
-   and t3.projectID = %d
-   and t4.ts <= t3.tsEnd
-   and t4.ts >= t3.tsStart
-",
-batchID, projectID)
-    numHits = MotusDB(query)
-
-    ## get # of GPS fixes
-    query = sprintf("
-select
-    count(*)
-from
-   gps as t
-   join (
-      select
-         distinct 3600 * (floor(t2.ts / 3600) + dt.dt) as hour
-      from
-         runs as t3
-         join tag_deployments as t4 on t4.motusTagID=t3.motusTagID
-         join hits as t2 on t2.runID = t3.runID
-         join (select -1 as dt union select 0 as dt union select 1 as dt) as dt
-      where
-         t4.projectID = %d
-         and (
-              t3.batchIDbegin = %d
-          or  t3.batchIDend = %d
-          or (t3.batchIDend is null and t3.batchIDbegin < %d)
-             )
-      order by
-         hour
-    ) as t2 on t.ts >= t2.hour and t.ts < t2.hour + 3600
-where
-   t.batchID > %d
-",
-projectID, batchID, batchID, batchID, batchID)
-    numGPS = MotusDB(query)
-
-    rv = list(numBatches=numBatches, numRuns=numRuns, numHits=numHits, numGPS=numGPS)
-    res$body = memCompress(toJSON(rv, auto_unbox=TRUE), "gzip")
-    res$finish()
+    return_from_app(unclass(rv))
 }
 
-#' get count of update items for a receiver project
+#' get count of update items for a receiver
 #'
-#' @param projectID integer project ID
+#' @param deviceID integer motus device ID
 #' @param batchID integer batchID; only batches with larger batchID are considered
 #'
 #' @return a list with these items:
@@ -1268,24 +1323,33 @@ projectID, batchID, batchID, batchID, batchID)
 #' \item numGPS
 #' }
 
-size_of_update_for_receiver_project = function(env) {
+size_of_update_for_receiver = function(env) {
 
-    req = Rook::Request$new(env)
-    res = Rook::Response$new()
+    json = fromJSON(parent.frame()$postBody["json"])
 
     if (tracing)
         browser()
-    json = req$POST()[['json']] %>% fromJSON()
-    auth = validate_request(json, res)
-    if (is.null(auth))
-        return(res$finish())
 
-    sendHeader(res)
+    auth = validate_request(json, needProjectID=FALSE)
+    if (inherits(auth, "error")) return(auth)
 
-    projectID = json$projectID %>% as.integer
+    deviceID = json$deviceID %>% as.integer
+    if (!isTRUE(is.finite(deviceID)))
+        return(error_from_app("invalid deviceID"))
+
     batchID = json$batchID %>% as.integer
     if (!isTRUE(is.finite(batchID)))
         batchID = 0
+
+    ## Create an ownership clause so that only batches to which the user has
+    ## permission are returned.  For admin users, ownership (or lack thereof)
+    ## is ignored.
+
+    if (!isTRUE(auth$isAdmin)) {
+        ownership = sprintf(" and t1.recvDepProjectID in (%s) ", paste(auth$projects, collapse=","))
+    } else {
+        ownership = ""
+    }
 
     ## count batches for a receiver that begin during one of the project's deployments
     ## of that receiver  (we assume a receiver batch is entirely in a deployment; i.e.
@@ -1294,76 +1358,169 @@ size_of_update_for_receiver_project = function(env) {
 
     query = sprintf("
 select
-   count(t2.batchID)
+   count(*) as numBatches,
+   sum(numRuns) as numRuns,
+   sum(numHits) as numHits,
+   sum(numGPS) as numGPS
 from
-   receiver_deployments as t1
-   join batches as t2 on t1.deviceID=t2.motusDeviceID
-where
-   t1.projectID = %d
-   and t2.batchID > %d
-   and ((t1.tsEnd is null and t2.tsBegin >= t1.tsStart)
-     or (t1.tsStart <= t2.tsEnd and t2.tsBegin <= t1.tsEnd))
+   (select
+       t1.batchID,
+       count(*) as numRuns,
+       sum(t2.len) as numHits,
+       (select
+           count(*)
+        from
+           gps as t3
+        where
+           t3.batchID=t1.batchID
+       ) as numGPS
+       from
+          batches as t1
+          join runs as t2 on t2.batchIDbegin=t1.batchId
+       where
+          t1.batchID > %d
+          and t1.motusDeviceID = %d
+          %s
+          and t1.tsMotus >= 0
+       group by t1.batchID
+    ) as t3
 ",
-projectID, batchID)
-    numBatches = MotusDB(query)
+batchID, deviceID, ownership)
+    rv = MotusDB(query)
 
-    ## get number of runs in new batches
+    rv$numBytes = with(rv,
+        110 + 90 * numBatches +
+        75 + 64 * numRuns +
+        80 + 100 * numHits +
+        50 + 52 * numGPS)
+
+    return_from_app(unclass(rv))
+}
+
+#' get project ambiguity groups for a given project
+#'
+#' @param projectID integer scalar project ID
+#'
+#' @return a list with these vector items:
+#' \itemize{
+#'    \item ambigProjectID; negative integer project ambiguity ID
+#'    \item projectID1; positive integer motus project ID
+#'    \item projectID2; positive integer motus project ID
+#'    \item projectID3; positive integer motus project ID or null
+#'    \item projectID4; positive integer motus project ID or null
+#'    \item projectID5; positive integer motus project ID or null
+#'    \item projectID6; positive integer motus project ID or null
+#' }
+
+project_ambiguities_for_tag_project = function(env) {
+
+    json = fromJSON(parent.frame()$postBody["json"])
+
+    if (tracing)
+        browser()
+
+    auth = validate_request(json)
+    if (inherits(auth, "error")) return(auth)
 
     query = sprintf("
 select
-   count(t2.runID)
+   ambigProjectID,
+   projectID1,
+   projectID2,
+   projectID3,
+   projectID4,
+   projectID5,
+   projectID6
 from
-   batches as t1
-   join runs as t2 on
-      t2.batchIDbegin = t1.batchID
-      or t2.batchIDend = t1.batchID
-      or (t2.batchIDend is null and t2.batchIDbegin < t1.batchID)
-   join receiver_deployments as t3 on t1.motusDeviceID=t3.deviceID
+   projAmbig
 where
-   t1.batchID > %d
-   and t3.projectID = %d
-   and ((t3.tsEnd is null and t1.tsBegin >= t3.tsStart)
-     or (t1.tsBegin <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
-",
-batchID, projectID, MAX_ROWS_PER_REQUEST)
-    numRuns = MotusDB(query)
+   %d in (projectID1, projectID2, projectID3, projectID4, projectID5, projectID6)
+order by
+   ambigProjectID desc
+", auth$projectID)
 
-    ## get number of hits in new batches
+    return_from_app(MotusDB(query))
+}
+
+#' get pulse counts from a batch
+#'
+#' @param batchID integer batchID
+#' @param ant integer
+#' @param hourBin numeric hourBin of latest pulseCounts already obtained
+#'
+#' The pair (ant, hourBin) is for the latest record already obtained.
+#' For each \code{batchID}, records are returned sorted by
+#' \code{hourBin} within \code{ant}.  For the first call with each \code{batchID},
+#' the caller should specify \code{hourBin=0}, in which case \code{ant} is ignored.
+#'
+#' @return a data frame with the same schema as the pulseCounts table, but
+#'     JSON-encoded as a list of columns
+
+pulse_counts_for_receiver = function(env) {
+
+    json = fromJSON(parent.frame()$postBody["json"])
+
+    if (tracing)
+        browser()
+
+    auth = validate_request(json, needProjectID=FALSE)
+    if (inherits(auth, "error")) return(auth)
+
+    batchID = (json$batchID %>% as.integer)[1]
+    hourBin = (json$hourBin %>% as.numeric)[1]
+    ant = (json$ant %>% as.integer)[1]
+
+    if (!isTRUE(is.finite(batchID) && is.finite(hourBin) && is.finite(ant))) {
+        return(error_from_app("invalid parameter(s)"))
+    }
+
+    if (hourBin == 0)
+        ## for first call on this batch, set antenna to a value smaller than
+        ## any real antenna
+        ant = -32767
+
+    ## Create an ownership clause so that only batches to which the user has
+    ## permission are returned.  For admin users, ownership (or lack thereof)
+    ## is ignored.
+
+    if (!isTRUE(auth$isAdmin)) {
+        ownership = sprintf(" and t2.recvDepProjectID in (%s) ", paste(auth$projects, collapse=","))
+    } else {
+        ownership = ""
+    }
+
+    ## pull pulse count records provided the batch is for a deployment of the
+    ## receiver by one of the projects the user is authorized for
 
     query = sprintf("
 select
-   count(t2.hitID)
+    t1.batchID,
+    t1.ant,
+    t1.hourBin,
+    t1.count
 from
-   receiver_deployments as t3
-   join batches as t1 on t3.deviceID = t1.motusDeviceID
-   join hits as t2 on t2.batchID=t1.batchID
+   pulseCounts as t1
+   join batches as t2 on t2.batchID=t1.batchID
 where
-   t1.batchID > %d
-   and t3.projectID = %d
-   and ((t3.tsEnd is null and t1.tsBegin >= t3.tsStart)
-     or (t1.tsBegin <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
+   t2.batchID = %d
+   %s
+   and t1.ant > %d
+   and t1.hourBin > %f
+order by
+   t1.ant,
+   t1.hourBin
+limit %d
 ",
-batchID, projectID)
-    numHits = MotusDB(query)
+batchID, ownership, ant, hourBin, MAX_ROWS_PER_REQUEST)
+    return_from_app(MotusDB(query))
+}
 
-    ## get # of GPS fixes
-    query = sprintf("
-select
-    count(t2.ts)
-from
-   receiver_deployments as t3
-   join batches as t1 on t3.deviceID = t1.motusDeviceID
-   join gps as t2 on t2.batchID=t1.batchID
-where
-   t1.batchID > %d
-   and t3.projectID = %d
-   and ((t3.tsEnd is null and t1.tsBegin >= t3.tsStart)
-     or (t1.tsBegin <= t3.tsEnd and t3.tsStart <= t1.tsEnd))
-",
-batchID, projectID)
-    numGPS = MotusDB(query)
 
-    rv = list(numBatches=numBatches, numRuns=numRuns, numHits=numHits, numGPS=numGPS)
-    res$body = memCompress(toJSON(rv, auto_unbox=TRUE), "gzip")
-    res$finish()
+#' shut down this server.  The leading '_', which requires the appname to be
+#' quoted, marks this as an app that won't be exposed to the internet via
+#' the apache reverse proxy
+
+`_shutdown` = function(env) {
+    on.exit(q(save="no"))
+    error_from_app("data server shutting down")
 }

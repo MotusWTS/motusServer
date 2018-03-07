@@ -12,10 +12,10 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 statusServer = function(port, tracing=FALSE) {
+    loadJobs()
+
     ## ensure a large cache - we use the server DB intensively
     ServerDB("pragma cache_size=60000")
-
-    loadJobs()
 
     library(Rook)
     library(hwriter)
@@ -41,7 +41,7 @@ statusServer = function(port, tracing=FALSE) {
 
 ## a string giving the list of apps for this server
 
-allApps = c("latestJobsApp", "queueStatusApp", "connectedReceiversApp", "allReceiversApp", "getUploadTokenApp")
+allApps = c("latestJobsApp", "queueStatusApp", "connectedReceiversApp", "allReceiversApp", "getUploadTokenApp", "_shutdown")
 
 latestJobsApp = function(env) {
 
@@ -62,8 +62,9 @@ latestJobsApp = function(env) {
     ## contents, if the javascript written by this function is filtered out:
 
     res$write(paste0("<small>As of ", format(Sys.time(), "%d %b %Y %H:%M:%S (GMT)</small>"), '
+<br><a href="" id="page_first">Top</a>&nbsp;&nbsp;&nbsp<a href="" id="page_up">Page Up</a>&nbsp;&nbsp;&nbsp;<a href="" id="page_down">Page Down</a>&nbsp;&nbsp;&nbsp;<a href="" id="page_last">Bottom</a><br>
+
 <script type="text/javascript">
-var numJobs = $(".jobDetails").length;
 
 function toggleJobExpand(n) {
    var jdn = ".jobDetails" + n;
@@ -95,47 +96,64 @@ function makeJobToggle(n) {
     return(function() {toggleJobExpand(n)});
 };
 
-for (var j=1; j <= numJobs; ++j) {
-    $(".jobSummary" + j).click(makeJobToggle(j));
+var numJobs;
+
+window.onload = function() {
+   numJobs = $(".jobDetails").length;
+   for (var j=1; j <= numJobs; ++j) {
+       $(".jobSummary" + j).click(makeJobToggle(j));
+   }
+   var loc = window.location;
+   var url = loc.protocol + "//" + loc.host + loc.pathname
+   $("#page_up")[0].href = url + "?k=-" + (jobIDs[1] + 1);
+   $("#page_down")[0].href = url + "?k=" + (jobIDs[0] - 1);
+   $("#page_first")[0].href = url + "?k=0";
+   $("#page_last")[0].href = url + "?k=-1";
 }
 </script>
 '));
     showSync = ifelse(isTRUE(req$GET()[['sync']]==1), '=', '<>')
     user = as.character(req$GET()[['user']])[1]
-    if (! is.na(user) && user != "admin" && user != "stuart" && user != "zoe" && user != "phil" && user != "andre") {
-        jj = ServerDB(sprintf("select id from jobs where user=:user and pid is null and type %s 'syncReceiver' order by id desc", showSync), user=user)[[1]]
+    if (! isTRUE(user %in% adminUsers)) {
+        jj = ServerDB(sprintf("select id from jobs where motusUserID=:user and pid is null and type %s 'syncReceiver' order by id desc", showSync), user=user)[[1]]
         k = 0
     } else {
         n = as.integer(req$GET()[['n']])[1]
         if (! isTRUE(n > 0 && n <= 500))
             n = 20
         k = as.integer(req$GET()[['k']])[1]
-        if (! isTRUE(k >= 0))
-            k = 0
         if (k == 0)
             k = ServerDB("select max (id) from jobs where pid is null")[[1]]
         if (k > 0) {
-            jj = ServerDB(sprintf("select id from jobs where pid is null and id <= :k and type %s 'syncReceiver' order by mtime desc limit :n", showSync), k=k, n=n)[[1]]
+            jj = ServerDB(sprintf("select id from jobs where pid is null and id <= :k and type %s 'syncReceiver' order by id desc limit :n", showSync), k=k, n=n)[[1]]
         } else {
-            jj = ServerDB(sprintf("select id from jobs where pid is null and id >= :k and type %s 'syncReceiver' order by mtime desc limit :n", showSync), k=-k, n=n)[[1]]
+            jj = ServerDB(sprintf("select id from jobs where pid is null and id >= :k and type %s 'syncReceiver' order by id limit :n", showSync), k=-k, n=n)[[1]]
+            jj = sort(jj, decreasing=TRUE) ## note: do the sort rather than changing the order in the SQL query; else we always get the latest n jobs.
         }
     }
     if (length(jj) == 0) {
-        jj = ServerDB(sprintf("select id from jobs where pid is null and type %s 'syncReceiver' order by mtime %s limit :n", showSync, if (k > 0) "desc" else ""), n=n) [[1]]
+        jj = ServerDB(sprintf("select id from jobs where pid is null and type %s 'syncReceiver' order by id %s limit :n", showSync, if (k > 0) "desc" else ""), n=n) [[1]]
     }
 
-    info = ServerDB(" select t1.id, coalesce(json_extract(t1.data, '$.replyTo[0]'), json_extract(t1.data, '$.replyTo')), t1.type, t1.ctime, t1.mtime, min(t2.done) as done from jobs as t1 left outer join jobs as t2 on t1.id=t2.stump where t1.id in (:jj) group by t1.id order by t1.mtime desc", jj=jj)
+    info = ServerDB(" select t1.id, t1.queue, coalesce(json_extract(t1.data, '$.replyTo[0]'), json_extract(t1.data, '$.replyTo')), t1.type, t1.ctime, t1.mtime, min(t2.done) as done from jobs as t1 left outer join jobs as t2 on t1.id=t2.stump where t1.id in (:jj) group by t1.id order by t1.id desc", jj=jj)
     class(info$ctime) = class(info$mtime) = c("POSIXt", "POSIXct")
-    info$done = c("Error", "Active", "Done")[2 + info$done]
+    info$done = c("Error", "Waiting", "Done")[2 + info$done]
+    running = which(info$done == "Waiting" & info$queue != 0)
+    if (length(running) > 0)
+        info$done[running] = paste0("Running on #", info$queue[running])
+
+    ## drop queue
+    info = info[, -2]
 
     ## any expression from here on can't use the original names for the columns of info
     names(info) = c("ID", "Sender", "Type", "Created", "Last Activity", "Status")
     res$write(hwrite(info, border=0, row.style=list('font-weight:bold'), row.bgcolor=rep(c("#ffffff", "#f0f0f0"), length=nrow(info)),
-                     row.class=paste0("jobSummary jobSummary", 1:nrow(info))))
+                     row.class=paste0("jobSummary jobSummary", seq_len(nrow(info)))))
     res$write('<div id="jobSummaryEllipsis" style="display:none"><b>&nbsp;&nbsp;&nbsp;&nbsp;. . .</b></div>\n')
     for (i in seq(along=jj)) {
         dumpJobDetails(res, jj[i], i)
     }
+    res$write(sprintf('<script type="text/javascript">jobIDs=[%s];</script>', paste(range(jj), collapse=",")))
     res$finish()
 }
 
@@ -152,19 +170,20 @@ dumpJobDetails = function(res, j, i) {
     if (is.null(replyTo))
         replyTo = "none"
 
-    log = info$log
-    summary = info$summary
-    info = info[! names(info) %in% c("log", "summary", "replyTo")]
+    log = info$log_
+    summary = info$summary_
+    info = info[! (grepl("_$", names(info)) | names(info) == "replyTo")]
     params = paste(names(info), info, sep="=", collapse=", ")
     if (isTRUE(nchar(log) > 10000))
         log = paste0(substr(log, 1, 5000), "\n   ...\n", substring(log, nchar(log)-5000), "\n")
-    res$write(sprintf("<h3>Status for job %d</h3><pre><b>Created Date:</b> %s\n<b>Last Activity:</b> %s\n<b>Sender:</b> %s\n<b>Parameters:</b> %s\n<b>Queue: </b>%s\n<b>Summary: </b>%s</pre><h4>Log:</h4><pre>%s\n</pre>",
+    res$write(sprintf("<h3>Status for job %d</h3><pre><b>Created Date:</b> %s\n<b>Last Activity:</b> %s\n<b>Sender:</b> %s\n<b>Parameters:</b> %s\n<b>Queue: </b>%s\n<b>Products:</b><pre>%s</pre><b>Summary: </b>%s</pre><h4>Log:</h4><pre>%s\n</pre>",
                       j,
                       format(TS(ctime(j))),
                       format(TS(mtime(j))),
                       replyTo,
                       params,
                       if (is.na(j$queue)) "None" else paste(j$queue),
+                      if (is.null(j$products_)) "None" else paste(sprintf("   <a href=\"%s\">%s</a>", j$products_, basename(j$products_)), collapse="\n"),
                       if (is.null(summary)) "" else summary,
                       paste0("   ", gsub("\n", "\n   ", log, fixed=TRUE))
                       )
@@ -256,7 +275,7 @@ queueStatusApp = function(env) {
           ))
         if (length(jj) > 0) {
             res$write("<b>Incomplete jobs:</b>")
-            info = ServerDB("select t1.id, coalesce(json_extract(t1.data, '$.replyTo[0]'), json_extract(t1.data, '$.replyTo')), t1.type, t1.ctime, t1.mtime, group_concat(t2.type) as sj from jobs as t1 join jobs as t2 on t1.id=t2.stump where t1.id in (:jj) and t2.done == 0 group by t1.id order by t1.mtime desc", jj=jj)
+            info = ServerDB("select t1.id, coalesce(json_extract(t1.data, '$.replyTo[0]'), json_extract(t1.data, '$.replyTo')), t1.type, t1.ctime, t1.mtime, group_concat(t2.type) as sj from jobs as t1 join jobs as t2 on t1.id=t2.stump where t1.id in (:jj) and t2.done == 0 group by t1.id order by t1.id desc", jj=jj)
             class(info$ctime) = class(info$mtime) = c("POSIXt", "POSIXct")
             info$sj = sapply(info$sj, function(x) { j = strsplit(x, ",")[[1]]; t = table(j); paste(sprintf("%s(%d)", names(t), t), collapse=", ")})
             names(info) = c("ID", "Sender", "Type", "Created", "Last Activity", "Incomplete SubJobs")
@@ -303,10 +322,8 @@ connectedReceiversApp = function(env) {
 
     ## get latest project/site names for any receivers
     YEAR = format(Sys.time(), "%Y")
-    meta = safeSQL(getMotusMetaDB())
     ## get most recent project, site for each receiver deployment
-    projSite = meta(sprintf("select t1.serno as Serno, t3.label as Project, t1.name as Site, t3.id as projectID from recvDeps as t1 left join recvDeps as t2 on t1.serno=t2.serno and t1.tsStart < t2.tsStart join projs as t3 on t1.projectID=t3.id where t1.serno in ('%s') and t2.serno is null", paste0("SG-", recv, collapse="','")))
-    meta(.CLOSE=TRUE)
+    projSite = MetaDB(sprintf("select t1.serno as Serno, t3.label as Project, t1.name as Site, t3.id as projectID from recvDeps as t1 left join recvDeps as t2 on t1.serno=t2.serno and t1.tsStart < t2.tsStart join projs as t3 on t1.projectID=t3.id where t1.serno in ('%s') and t2.serno is null", paste0("SG-", recv, collapse="','")))
 
     rownames(projSite)=substring(projSite$Serno, 4)
 
@@ -325,7 +342,7 @@ format(Now, "%Y %b %d %H:%M:%S GMT"),
     tbl = character(length(recv))
 
 
-    con = dbConnect(SQLite(), MOTUS_PATH$REMOTE_LIVE)
+    con = safeSQLiteConnect(MOTUS_PATH$REMOTE_LIVE)
     sql = function(...) dbGetQuery(con, sprintf(...))
     if (! is.null(user)) {
         old_token = sql("select token from user_tokens where user='%s'", user)
@@ -343,8 +360,7 @@ format(Now, "%Y %b %d %H:%M:%S GMT"),
     for (i in seq(along=recv)) {
         db = file.path(MOTUS_PATH$REMOTE_STREAMS, paste0(recv[i], ".sqlite"))
         if (file.exists(db)) {
-            cat("About to try open ", db, "\n")
-            con = dbConnect(RSQLite::SQLite(), db)
+            con = safeSQLiteConnect(db)
             bootCount = dbGetQuery(con, "select max (parval) from metadata where parname = 'bootCount'")[1,1]
             if (is.na(bootCount))
                 bootCount = 0
@@ -364,7 +380,7 @@ format(Now, "%Y %b %d %H:%M:%S GMT"),
             }
             class(lastCon) = c("POSIXt", "POSIXct")
             ## if (nrow(devices) > 0) {
-            ##   numAnts = sum(unlist(tapply(1:nrow(devices), devices$port,
+            ##   numAnts = sum(unlist(tapply(seq_len(nrow(devices)), devices$port,
             ##     function(i) {
             ##       j = tail(i, 1)
             ##       devices$action[j] == 'A' && grepl("funcube", devices$type[j], ignore.case=TRUE)
@@ -411,7 +427,7 @@ format(Now, "%Y %b %d %H:%M:%S GMT"),
 
         try({
             if (tunnelport != "none") {
-                anchor = sprintf('<a href="http://live.sensorgnome.org/SESSION_SG-%s_%s" style="color: #000000">%s</a>',
+                anchor = sprintf('<a href="https://live.sensorgnome.org/SESSION_SG-%s_%s" style="color: #000000">%s</a>',
                                  recv[i],
                                  token,
                                  recv[i])
@@ -493,7 +509,7 @@ allReceiversApp = function(env) {
       if (is.na(recv$db)[i]) {
         tbl[i] = sprintf('<tr><td>%s</td><td colspan=8>No data received</td></tr>', recv$serno[i])
       } else {
-        con = dbConnect(SQLite(), file.path(MOTUS_PATH$REMOTE_STREAMS, paste0(recv$serno[i], ".sqlite")))
+        con = safeSQLiteConnect(file.path(MOTUS_PATH$REMOTE_STREAMS, paste0(recv$serno[i], ".sqlite")))
         bootCount = dbGetQuery(con, "select max (parval) from metadata where parname = 'bootCount'")[1,1]
         if (is.na(bootCount))
           bootCount = 0
@@ -510,7 +526,7 @@ allReceiversApp = function(env) {
           lastCon = 0
         }
         if (nrow(devices) > 0) {
-          numAnts = sum(unlist(tapply(1:nrow(devices), devices$port,
+          numAnts = sum(unlist(tapply(seq_len(nrow(devices)), devices$port,
             function(i) {
               j = tail(i, 1)
               devices$action[j] == 'A' && grepl("funcube", devices$type[j], ignore.case=TRUE)
@@ -567,3 +583,17 @@ getUploadTokenApp =  function(env) {
     res$write(sprintf('<pre>Token: %s<br><br>Email: %s<br><br>Expires:%s</pre>', rv$token, email, format(rv$expiry, "%Y %b %d %H:%M:%S GMT")))
     res$finish()
 }
+
+#' shut down this server.  The leading '_', which requires the appname to be
+#' quoted, marks this as an app that won't be exposed to the internet via
+#' the apache reverse proxy
+
+`_shutdown` = function(env) {
+    res = Rook::Response$new()
+    sendHeader(res)
+    sendError(res, "status server shutting down")
+    res$finish()
+    q(save="no")
+}
+
+adminUsers = c("tlcrewe", "zcrysler", "dlepage.motus", "john", "ptaylor", "stuart.mackenzie")

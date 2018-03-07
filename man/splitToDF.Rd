@@ -86,4 +86,3 @@ where the first column is numeric and others are integer.
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

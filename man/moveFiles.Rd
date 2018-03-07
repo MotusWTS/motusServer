@@ -21,4 +21,3 @@ Move files/folders to a folder
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

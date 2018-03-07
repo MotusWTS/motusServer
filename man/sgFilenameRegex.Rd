@@ -12,4 +12,3 @@ sgFilenameRegex
 Regular expression for parsing data filenames from a sensorgnome receiver.
 }
 \keyword{datasets}
-

@@ -4,10 +4,11 @@
 \alias{getMotusDeviceID}
 \title{Get the motus device ID for a receiver, given its database.}
 \usage{
-getMotusDeviceID(src, useFirst = TRUE)
+getMotusDeviceID(src, useFirst = FALSE)
 }
 \arguments{
-\item{src}{dplyr src_sqlite to receiver database}
+\item{src}{dplyr src_sqlite to receiver database, or a character
+serial number}
 
 \item{useFirst}{if TRUE, the first receiver matching the given
 serial number is used. if FALSE and more than one
@@ -26,4 +27,3 @@ receiver database "meta" table, with key "deviceID"
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

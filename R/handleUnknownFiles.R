@@ -22,11 +22,5 @@ handleUnknownFiles = function(j) {
                  )
     jobLog(tj, msg)
 
-    ## if this email had valid authorization
-    if (tj$valid) {
-        email(tj$replyTo[1], paste0("motus job ", tj, ": some files you sent could not be processed"),
-              msg )
-        return(TRUE)
-    }
-    return(FALSE)
+    return(TRUE)
 }

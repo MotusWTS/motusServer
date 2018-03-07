@@ -4,7 +4,12 @@
 \alias{ensureServerDB}
 \title{ensure we have created the server database}
 \usage{
-ensureServerDB()
+ensureServerDB(installing = FALSE)
+}
+\arguments{
+\item{installing;}{logical scalar; if TRUE, the caller is part of
+package installation, rather than a running server, and the locking
+of the `ServerDB` symbol is skipped.  Default:  FALSE}
 }
 \value{
 no return value, but saves a safeSQL connection to the server database
@@ -20,4 +25,3 @@ And it holds a table of remotely-registered receivers and their credentials.
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

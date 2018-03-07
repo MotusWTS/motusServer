@@ -20,4 +20,3 @@ consumption of stack space for possible backtracking, which we never
 need here.
 }
 \keyword{datasets}
-

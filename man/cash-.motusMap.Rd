@@ -17,4 +17,3 @@ character scalar; value associated with \code{key}.
 \description{
 Return the value of an item from a motusMap.
 }
-

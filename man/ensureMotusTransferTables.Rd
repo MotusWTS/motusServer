@@ -23,4 +23,3 @@ the global variable MotusDB is set.
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

@@ -26,7 +26,7 @@ WAITHI=${3/[^0-9]/}
 
 RUNNOW=1
 REMOTE=/sgm/remote
-RECEIVERDB=/sgm/remote/receivers.sqlite
+RECEIVERDB=/sgm_local/receivers.sqlite
 SYNCFILE=$REMOTE/sync/$SERNO
 JOBFILE=$REMOTE/atjobs/$SERNO
 BARE_SERNO=${SERNO/SG-/}

@@ -20,10 +20,9 @@ Enqueue a command that doesn't require a file or folder.
 \details{
 An empty file is created with the name \code{paste0(TIMESTAMP, MOTUS_QUEUE_SEP, paste0(c(name, ...), collapse=MOTUS_QUEUE_SEP))}.  This file is moved to the processing queue.
 }
-\author{
-John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
-}
 \seealso{
 \link{\code{server}}
 }
-
+\author{
+John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}

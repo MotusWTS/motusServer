@@ -27,10 +27,9 @@ The subjob gets the existing job as parent, and will be of
 the same type.  The subjob's folder is created inside the
 parent's folder.
 }
-\author{
-John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
-}
 \seealso{
 \link{\code{Copse}}
 }
-
+\author{
+John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}

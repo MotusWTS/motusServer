@@ -10,6 +10,7 @@ Maintainer: John Brzustowski <jbrzusto@fastmail.fm>
 Depends:
     R (>= 3.1.0),
     digest,
+    dbplyr,
     dplyr,
     httr,
     jsonlite,
@@ -17,7 +18,6 @@ Depends:
     lubridate,
     openssl,
     proto,
-    RCurl,
     RMySQL,
     RSQLite,
     sendmailR,
@@ -25,6 +25,6 @@ Depends:
     XML
 License: GPL-2+
 Date: 2016-11-25
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1
 LazyData: true
 Suggests: testthat

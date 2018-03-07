@@ -22,4 +22,3 @@ Both valid and invalid emails are compressed and archived.
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

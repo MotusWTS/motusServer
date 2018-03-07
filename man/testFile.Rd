@@ -36,4 +36,3 @@ so these files might not be valid when downloaded.
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

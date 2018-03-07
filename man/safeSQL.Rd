@@ -4,40 +4,36 @@
 \alias{safeSQL}
 \title{Return a function that safely performs sql queries on a connection.}
 \usage{
-safeSQL(con, busyTimeout = 300)
+safeSQL(con)
 }
 \arguments{
 \item{con}{RSQLite connection to database, as returned by
-dbConnect(SQLite(), ...), or character scalar giving path
+safeSQLiteConnect(), or character scalar giving path
 to SQLite database, or MySQLConnection, or dplyr::src}
-
-\item{busyTimeout}{how many total seconds to wait while retrying a
-locked database.  Default: 300 (5 minutes).  Uses \code{pragma busy_timeout}
-to allow for inter-process DB locking.  Only implemented for
-SQLite connections, as it appears unnecessary for MySQL
-connections.}
 }
 \value{
 a function, S with class "safeSQL" taking two or more
     parameters:
 \itemize{
-\item \code{query} sqlite query; parameters are:
+    \item \code{query} sqlite query with parameter handling indicated by:
     \itemize{
-       \item words beginning with ":" for  RSQLite,
-       \item sprintf-style formatting codes (e.g. "\%d") for
-         MySQL
-     }
-\item \code{...} list of named (RSQLite) or unnamed (MySQL) items
-specifying values for parameters in query.
+       \item words beginning with ":", which does parameter binding for RSQLite,
+       \item \bold{or} sprintf-style formatting codes (e.g. "\%d") which does parameter substitution for RSQLite or MySQL
+    }
+    \item \code{...} list of named (for ":" binding) or unnamed
+    (for "%" substitution) items specifying values for parameters in
+    query.  For ":" binding, all items must be named and have the same
+    length.  For "%" substitution, all items must be unnamed scalars.
+}
 
 For RSQLite, these items are passed to \code{data.frame}, along with the
 parameter \code{stringsAsFactors=FALSE}.
 \itemize{
-\item \emph{SQLite example}:
+\item \emph{":"-binding example; SQLite only}:
 \code{
 S("insert into contacts values(:address, :phone)", address=c("123 West Blvd, Truro, NS", "5 East St., Digby, NS"), phone=c("902-555-1234", "902-555-6789"))
 }
-\item \emph{MySQL example}:
+\item \emph{"%"-substitution example; SQLite or MySQL}:
 \code{
 S("insert into contacts values(\"%s\", \"%s\")", "123 West Blvd, Truro, NS", "902-555-1234")
 S("insert into contacts values(\"%s\", \"%s\")", "5 East St., Digby, NS", "902-555-6789")
@@ -47,7 +43,7 @@ S("insert into contacts values(\"%s\", \"%s\")", "5 East St., Digby, NS", "902-5
 \item \code{.CLOSE} boolean scalar; if TRUE, close the underlying
 database connection, disabling further use of this function.
 
-\item \code{.QUOTE} boolean scalar (only for RMySQL connections); if TRUE, the
+\item \code{.QUOTE} boolean scalar; if TRUE, the
 default, quote string parameters using \link{\code{dbQuoteString}}.  Any parameter
 wrapped in \link{\code{DBI::SQL}} will not be quoted.  The only reason to use
 \code{.QUOTE=FALSE} is for a query where you know all parameters must not be
@@ -66,8 +62,10 @@ Without using \link{\code{DBI::SQL}}, the resulting query would be the incorrect
 }
 }
 \description{
-This uses dbGetPreparedQuery (for RSQLite) or dbQuoteStrings
-(for MySQL).  It should prevent e.g. SQL injection attacks.
+This uses the `params` parameter for \code{\link{DBI::dbGetQuery}}
+and \code{\link{DBI::dbExecute}} (for RSQLite and ":" parameters)
+or dbQuoteStrings (for MySQL or RSQLite "%" parameters).  It should
+prevent e.g. SQL injection attacks.
 }
 \note{
 for convenience, access is provided to some safeSQL internals, via the
@@ -95,4 +93,3 @@ of 0 to 10 seconds.
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

@@ -21,4 +21,3 @@ i.e. this function's return value is only valid if \code{compressedFileDone(gzfi
 \description{
 get size of uncompressed .gz file from 4-byte footer
 }
-

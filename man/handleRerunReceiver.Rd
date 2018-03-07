@@ -44,10 +44,9 @@ Called by \code{\link{processServer}}
 re-runs the tagfinder for a receiver, possibly limiting the
 re-run to one or more boot sessions (for SGs).
 }
-\author{
-John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
-}
 \seealso{
 \link{\code{processServer}}
 }
-
+\author{
+John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}

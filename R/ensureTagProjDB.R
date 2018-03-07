@@ -18,8 +18,8 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 ensureTagProjDB = function(src, recreate=c(), projectID) {
-    if (! inherits(src, "src_sqlite"))
-        stop("src is not a dplyr::src_sqlite object")
+    if (! inherits(src, "src_sql"))
+        stop("src is not a dplyr::src_sql object")
     con = src$con
     if (! inherits(con, "SQLiteConnection"))
         stop("src is not open or is corrupt; underlying db connection invalid")
@@ -80,7 +80,7 @@ CREATE TABLE batches (
                                               -- database.
     monoBN INT,                               -- boot number for this receiver; (NULL
                                               -- okay; e.g. Lotek)
-    tsBegin FLOAT(53),                        -- timestamp for start of period
+    tsStart FLOAT(53),                        -- timestamp for start of period
                                               -- covered by batch; unix-style:
                                               -- seconds since 1 Jan 1970 GMT
     tsEnd FLOAT(53),                          -- timestamp for end of period

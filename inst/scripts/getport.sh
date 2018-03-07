@@ -9,4 +9,4 @@ EOF
 
     exit 0
 fi
-sqlite3 /sgm/remote/receivers.sqlite "select serno, tunnelPort from receivers where serno glob '*$1*';"
+sqlite3 /sgm_local/receivers.sqlite "select serno, tunnelPort from receivers where serno glob '*$1*';"

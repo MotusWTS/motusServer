@@ -20,4 +20,3 @@ i.e. whether all subjobs completed, whether successfully or not.
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

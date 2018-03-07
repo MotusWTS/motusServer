@@ -52,4 +52,3 @@ correct, in case the server was interrupted while moving a job.
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

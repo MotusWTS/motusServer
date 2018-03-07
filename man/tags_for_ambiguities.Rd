@@ -19,9 +19,9 @@ a list with these vector items:
    \item motusTagID4; positive integer motus tag ID or null
    \item motusTagID5; positive integer motus tag ID or null
    \item motusTagID6; positive integer motus tag ID or null
+   \item ambigProjectID; negative integer ambiguous project ID
 }
 }
 \description{
 get motus tagIDs for ambiguity IDs
 }
-

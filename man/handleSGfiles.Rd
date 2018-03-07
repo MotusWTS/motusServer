@@ -7,7 +7,10 @@
 handleSGfiles(j)
 }
 \arguments{
-\item{j}{the job}
+\item{j}{the job with these item(s):
+\itemize{
+   \item filePath; path to files to be merged; if NULL, defaults to \code{jobPath(j)}
+}}
 }
 \value{
 TRUE
@@ -24,10 +27,9 @@ For each unique SG serial number found among the names of
 if \code{topJob(j)$mergeOnly)} is TRUE, then only merge files
 into receiver databases; don't run the tag finder.
 }
-\author{
-John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
-}
 \seealso{
 \link{\code{processServer}}
 }
-
+\author{
+John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}

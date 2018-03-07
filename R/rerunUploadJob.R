@@ -57,27 +57,42 @@ rerunUploadJob = function(j) {
             warning("unable to determine uploaded filename: not in j$filename or sj$file for sj a subjob of type 'unpackArchive'")
             return(FALSE)
         }
-        filename = basename(filename)
     }
 
-    ## make sure uploaded file can still be found, before deleting anything
-    parts = strsplit(filename, ":")
-    uid = parts[[1]][1]
-
-    uploadFile = file.path(MOTUS_PATH$UPLOAD_ARCHIVE, uid, filename)
-    if (!file.exists(uploadFile)) {
-        warning("unable to locate uploaded file; expected it to be here: ", uploadFile)
+    if (!isTRUE(file.exists(filename))) {
+        warning("unable to locate uploaded file; expected it to be here: ", filename)
         return(FALSE)
     }
 
-    errIDs = Jobs[stump==R(j) & done < 0]
-    file.remove(file.path(MOTUS_PATH$ERRORS, sprintf("%08d.rds", errIDs)))
-    unlink(j$path, recursive=TRUE)
-    ServerDB(sprintf("delete from jobs where stump=%d", j))
-    motusLog("Deleted records and folders of job %d and its subjobs", j)
+    ## Uncomment these lines if you want to have old error files and intermediate
+    ## folders deleted
 
-    file.link(uploadFile, file.path(MOTUS_PATH$UPLOADS, basename(uploadFile)))
-    motusLog("Created new hardlink to %s in %s", uploadFile, MOTUS_PATH$UPLOADS)
+    ## errIDs = Jobs[stump==R(j) & done < 0]
+    ## file.remove(file.path(MOTUS_PATH$ERRORS, sprintf("%08d.rds", errIDs)))
+    ## unlink(j$path, recursive=TRUE)
+
+    ## create and enqueue a new upload job
+    nj = newJob("uploadFile",
+               .parentPath = MOTUS_PATH$INCOMING,
+               motusUserID = j$motusUserID,
+               motusProjectID = j$motusProjectID,
+               isTesting = j$isTesting,
+               filename = filename,
+               uploadID = j$uploadID,
+               .enqueue=FALSE)
+
+    ## update jobID in uploads table
+    MotusDB("update uploads set jobID=%d where uploadID=%d", as.integer(nj), j$uploadID)
+
+    jpath = file.path(jobPath(nj), "upload")
+    dir.create(jpath)
+
+    file.symlink(filename, file.path(jpath, basename(filename)))
+
+    nj$queue = "0"
+    moveJob(nj, MOTUS_PATH$QUEUE0)
+
+    cat("Job ", nj, " (a rerun of upload job ", j, ") has been entered into queue 0\n")
 
     return(TRUE)
 }

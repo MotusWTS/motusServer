@@ -28,26 +28,13 @@ of model string), we model on that.
 
 ```{r}
 lt = as.tbl(read.csv("./lotekTagLifespanByBatteryAndBI.csv"))
-print(lt)
 ```
 
-Rearrange so that we have columns _battery_, _bi_, _dutyCycle_, _lifespan_.
+Add inverses of columns bi and dutyCycle, for modelling
 
 ```{r}
-ls = lt %>% transmute(battery = battery, bi = 2, dutyCycle = 1, lifespan = lifespan2)
-ls = lt %>%
-    transmute(battery = battery, bi = 5, dutyCycle = 1, lifespan = lifespan5) %>%
-    bind_rows(ls)
 
-ls = lt %>%
-    transmute(battery = battery, bi = 10, dutyCycle = 1, lifespan = lifespan10) %>%
-    bind_rows(ls)
-
-ls = lt %>%
-    transmute(battery = battery, bi = 10, dutyCycle = 0.5, lifespan = lifespan10onOff) %>%
-    bind_rows(ls)
-
-ls = ls %>% mutate(biInv = 1.0 / bi, dcInv = 1.0 / dutyCycle)
+ls = lt %>% mutate(biInv = 1.0 / bi, dcInv = 1.0 / dutyCycle)
 
 print(ls)
 ```
@@ -145,7 +132,10 @@ modelBattery = list(
 "ANTCW-M4-2S" = "4-2",
 "ANTCW-M4-2L" = "4-2",
 "ANTCW-M6-1"  = "6-1",
-"ANTCW-M6-2"  = "6-2"
+"ANTCW-M6-2"  = "6-2",
+"ACT-521" = "521",
+"ACT-626" = "626",
+"ACT-393" = "393"
 )
 
 modPar = NULL
@@ -170,11 +160,11 @@ internal resistance.  The table provided by Lotek only covers $2 <= BI
 down to 1s and from 20 to 40s using the fitted model.
 
 ```{r}
-xyplot(lifespan~bi, groups=battery, pred,
-       auto.key=list(corner=c(.05,.95)),
+xyplot(log10(lifespan)~bi, groups=battery, pred,
+       auto.key=list(corner=c(.6,.1), columns=3),
        main="Reported (X) and Predicted (o) Tag Lifespan by Battery Type",
        xlab="Burst Interval (seconds)",
-       ylab="Lifespan (days)",
+       ylab="Lifespan (log10(days); 1->10, 2->100, 3->1000)",
        type="b",
        panel = function(x, y, type, groups, ...) {
            panel.xyplot(x, y, type, groups, ...)

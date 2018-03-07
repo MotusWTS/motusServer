@@ -46,4 +46,3 @@ This function will only work on the sensorgnome.org server,
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

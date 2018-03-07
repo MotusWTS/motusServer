@@ -23,4 +23,3 @@ its current location to the the folder of the new parent.
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

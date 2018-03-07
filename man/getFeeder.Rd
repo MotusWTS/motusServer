@@ -8,7 +8,9 @@ getFeeder(incoming, tracing = FALSE, messages = c("close_write", "moved_to",
   "create"))
 }
 \arguments{
-\item{incoming}{the full path to the incoming folder.}
+\item{incoming}{the full path to the incoming folder(s).  If this has
+more than one element, only the first is watched for new files,
+but files initially in all of them are queued.}
 
 \item{tracing}{boolean; if TRUE, each event on the incoming folder
 is printed.  Default: FALSE.}
@@ -74,10 +76,9 @@ m will usually be zero, but that can't be guaranteed.  We retain the list
 of items 1..n + m, and check inotify events against it. The first item
 not in that list will be item n + 2m + 1, which is new.
 }
-\author{
-John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
-}
 \seealso{
 \code{\link{server}}
 }
-
+\author{
+John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}

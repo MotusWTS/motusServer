@@ -25,4 +25,3 @@ based on R's \code{util::dump.frames()} and \code{tools:::.try_quietly()}
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

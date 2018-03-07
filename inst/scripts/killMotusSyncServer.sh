@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# kill the motus upload server if it is running
+# kill the motus sync server if it is running
 ## NOT WORKING YET:  Specify "-g" ("graceful") to let it finish its current subjob first.
 
 # KILLFILE=/sgm/sync/kill

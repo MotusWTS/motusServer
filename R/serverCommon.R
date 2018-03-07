@@ -1,0 +1,44 @@
+#' common code required by all XXXServer() functions
+#'
+#' @return TRUE
+#'
+#' @note side effects are to load libraries, open databases, assign to global variables
+#'
+#' @export
+#'
+#' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
+
+serverCommon = function() {
+
+    library(Rook)
+    library(jsonlite)
+
+    ## make sure the server database exists, is open, and put a safeSQL object in the global ServerDB
+    ## this is the database responsible for managing processing jobs
+    ensureServerDB()
+
+    ## open the motus master database, putting a safeSQL object in the global MotusDB
+    openMotusDB()
+
+    MotusCon <<- MotusDB$con
+
+    ## open the motus metadata cache DB and assign handle to global MetaDB
+    MetaDB <<- safeSQL(getMotusMetaDB())
+
+    ## authentication options
+
+    ## lifetime of authorization token: 3 days
+    OPT_AUTH_LIFE <<- 3 * 24 * 3600
+
+    ## number of random bits in authorization token;
+    ## gets rounded up to nearest multiple of 8
+    OPT_TOKEN_BITS <<- 33 * 8
+
+    ## get user auth database, ensuring it has a valid auth table
+
+    AuthDB <<- safeSQL(MOTUS_PATH$USERAUTH)
+    AuthDB("create table if not exists auth (token TEXT UNIQUE PRIMARY KEY, expiry REAL, userID INTEGER, projects TEXT, receivers TEXT, userType TEXT)")
+    AuthDB("create index if not exists auth_expiry on auth (expiry)")
+
+    TRUE
+}

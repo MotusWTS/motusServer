@@ -11,19 +11,22 @@ Usage: killAllMotusServers.sh [-h] [-g]
 
 Kills all motus servers by invoking these scripts:
 
-   - killMotusEmailServer.sh [-g]
-
-   - killMotusUploadServer.sh
-
    - killMotusStatusServer.sh
+
+   - killMotusStatusServer2.sh
+
+   - killMotusDataServer.sh
 
    - killMotusSyncServer.sh
 
    - killMotusProcessServer.sh -a [-g]
 
-Specifying -g means graceful: processServers and the emailServer stop
-after completing their current subjob.  This flag is passed to
-killMotusEmailServer.sh and killMotusProcessServer.sh
+Specifying -g means graceful: processServers stop
+after completing their current subjob, others after completing
+their current request.  This flag is passed to
+killMotusDataServer.sh, killMotusStatusServer, and killMotusProcessServer.sh
+
+Only data and status2 servers running on default ports are killed.
 
 Specifying -h gives this message.
 
@@ -37,11 +40,11 @@ if [[ "$1" == "-g" ]]; then
     GRACEFUL="-g"
 fi
 
-## DISABLED: /sgm/bin/killMotusEmailServer.sh $GRACEFUL
-/sgm/bin/killMotusUploadServer.sh
-/sgm/bin/killMotusStatusServer.sh
+/sgm/bin/killMotusStatusServer.sh $GRACEFUL
+/sgm/bin/killMotusStatusServer2.sh $GRACEFUL
+/sgm/bin/killMotusDataServer.sh $GRACEFUL
 /sgm/bin/killMotusSyncServer.sh
 /sgm/bin/killMotusProcessServers.sh -a $GRACEFUL
 
 
-echo Killed email, upload, status and all process servers.
+echo Killed status, status2, data and all process servers.

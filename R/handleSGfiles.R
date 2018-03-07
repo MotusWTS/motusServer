@@ -6,7 +6,10 @@
 #'     the incoming files, queue a subjob for each boot session having
 #'     data files.
 #'
-#' @param j the job
+#' @param j the job with these item(s):
+#' \itemize{
+#'    \item filePath; path to files to be merged; if NULL, defaults to \code{jobPath(j)}
+#' }
 #'
 #' @return TRUE
 #'
@@ -20,8 +23,11 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 handleSGfiles = function(j) {
+    path = j$filePath
+    if (is.null(path))
+        path = jobPath(j)
 
-    r = sgMergeFiles(jobPath(j), j)
+    r = sgMergeFiles(path, topJob(j))
 
     if (isTRUE(topJob(j)$mergeOnly > 0))
         return(TRUE)

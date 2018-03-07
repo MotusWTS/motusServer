@@ -15,4 +15,3 @@ This allows query expressions to include portions to be
 evaluated in R before converting the remaining expression into
 an SQLite:json1 query
 }
-

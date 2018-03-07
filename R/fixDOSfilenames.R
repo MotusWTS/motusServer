@@ -83,16 +83,6 @@ fixDOSfilenames = function(f, info, onDisk=FALSE) {
             info$prefix[i] = info$prefix[matches[1]]
             info$serno[i] = sernos
 
-            ## if the boot number is unique among matches, use it;
-            ## otherwise, bootnum will be determined later, using
-            ## timestamps of other files for this receiver, so flag as 0.
-
-            if (length(unique(info$bootnum[matches])) == 1) {
-                info$bootnum[i] = info$bootnum[matches[1]]
-            } else {
-                info$bootnum[i] = 0
-            }
-
             ## grab the first timestamp in the file, and use that as the
             ## file timestamp; 2nd column is timestamps; we grab 100 lines
             ## in case there are NA timestamps
@@ -102,22 +92,44 @@ fixDOSfilenames = function(f, info, onDisk=FALSE) {
                 dat = read.csv(gzfile(f[i], "r"), header=FALSE, as.is=TRUE, nrow=100, comment.char="#")
                 haveLines = TRUE
                 }, silent=TRUE)
-            if (! haveLines)
-                next
-            ## use timestamp from pulse record; don't use GPS record, as GPS might be stuck
-            ts = dat[grep("^p", dat[, 1], perl=TRUE), 2]
-            ts = ts[! is.na(ts)][1]  ## drop NA timestamps; might not have any left
-            if (! is.na(ts)) {
-                ## there's at least one non-NA timestamp;
-                ## correct timestamp if from CLOCK_MONOTONIC
-                if (ts < 946684800) ## this is the beaglebone epoch
-                    ts = ts + 946684800
-                ## use this as the file timestamp
-                info$tsString[i] = format(structure(ts, class=c("POSIXt", "POSIXct")), MOTUS_SG_TIMESTAMP_FORMAT)
+            if (!haveLines) {
+                info$ts[i] = structure(0, class=c("POSIXct", "POSIXt"));
+                info$bootnum[i] = 0
+                info$tsCode[i] = "P"
+            } else {
+                ## use timestamp from pulse record or clock-setting record; don't use GPS record, as GPS might be stuck
+                ts = dat[grep("^[pCS]", dat[, 1], perl=TRUE), 2]
+                ts = ts[! is.na(ts)][1]  ## drop NA timestamps; might not have any left
+                if (! is.na(ts)) {
+                    ## there's at least one non-NA timestamp;
+                    ## correct timestamp if from CLOCK_MONOTONIC
+                    if (ts < 946684800) ## this is the beaglebone epoch
+                        ts = ts + 946684800
+                    ## use this as the file timestamp
+                    info$ts[i] = structure(ts, class=c("POSIXct", "POSIXt"))
 
-                ## assign tsCode as "P" if timestamp is pre-GPS; otherwise, "Z"
-                info$tsCode[i] = if(ts < 1262304000) "P" else "Z"
+                    ## assign tsCode as "P" if timestamp is pre-GPS; otherwise, "Z"
+                    info$tsCode[i] = if(ts < 1262304000) "P" else "Z"
+                } else {
+                    ## if unable to calculate a timestamp, set it to 0, and mark the bootnum as 0
+                    ## This permits its addition to the receiver database, which requires non-null
+                    ## timestamps for each file.  However, the file will not be processed because
+                    ## of the zero bootnum.
+                    info$ts[i] = structure(0, class=c("POSIXct", "POSIXt"));
+                    info$bootnum[i] = 0;
+                }
+
+                ## determine the boot number by using the timestamp->bootnum map of other files
+
+                if (length(matches) > 1) {
+                    info$bootnum[i] = approx(info$ts[matches], info$bootnum[matches], info$ts[i], method="constant", rule=2, f=0)$y
+                } else if (length(matches) == 1) {
+                    info$bootnum[i] = info$bootnum[matches]
+                } else {
+                    info$bootnum[i] = 0
+                }
             }
+
             ## these two are universal in SG output files, except for .wav files
             info$port[i] = "all"
             info$extension[i] = ".txt"
@@ -125,14 +137,19 @@ fixDOSfilenames = function(f, info, onDisk=FALSE) {
             if (onDisk) {
                 file.rename(f[i], file.path(dirname(f[i]), sprintf("%s-%s-%06d-%s%s-%s%s%s",
                                                                  info$prefix[i],
-                                                                 info$serno[i],
+                                                                 substring(info$serno[i], 4), ## drop "SG-" prefix
                                                                  info$bootnum[i],
-                                                                 info$tsString[1],
+                                                                 format(structure(info$ts[i], class=c("POSIXt", "POSIXct")), MOTUS_SG_TIMESTAMP_FORMAT),
                                                                  info$tsCode[i],
                                                                  info$port[i],
                                                                  info$extension[i],
                                                                  info$comp[i])))
             }
+        } else {
+            ## FIXME: extremely unlikely case:  there are files from two receivers, with legitimate names
+            ## in the same folder as the DOS-named file, and their two-letter prefixes both match that
+            ## of the DOS-named file.
+
         }
     }
     return(info)

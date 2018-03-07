@@ -19,4 +19,3 @@ return the top-level job for which the given job is a subjob
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

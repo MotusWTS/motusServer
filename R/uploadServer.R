@@ -41,8 +41,7 @@ uploadServer = function(tracing = FALSE, fileEvent="CREATE") {
     ## load jobs
     loadJobs()
 
-    ## get a feed of uploads; the last file event on an upload is "attrib",
-    ## so we watch for that.
+    ## get a feed of uploads
 
     feed = getFeeder(MOTUS_PATH$UPLOADS, messages = fileEvent, tracing=tracing)
 
@@ -72,23 +71,18 @@ uploadServer = function(tracing = FALSE, fileEvent="CREATE") {
         ## ProjectSend's upload/files folder.
         ## They have filenames of this form:
         ##    USER:YYYY-mm-ddTHH-MM-SS:filename
-        ## where USER is the authenticated username of the uploader, and the string between ':' is the upload timestamp.
+        ## where USER is the authenticated userID of the uploader, and the string between ':' is the upload timestamp.
 
         ## change ownership of the file using a sudo-able script
-        safeSys("sudo", "/sgm/bin/chown_sg_www-data.sh", upfile)
+        ##        safeSys("sudo", "/sgm/bin/chown_sg_www-data.sh", upfile)
 
         bname = basename(upfile)
         parts = strsplit(bname, ":", fixed=TRUE)[[1]]
 
-        ## lookup the email address for this user from the data_uploads.sg_users
-        ## table (the database used by ProjectSend as configured on our server), and
-        ## get the project the user chose to assign the file to.
-
-        id.email = MotusDB("select id, email from data_uploads.sg_users where user=%s", parts[1])
         motusProjectID = MotusDB("select motus_project_ID from data_uploads.sg_files where url = %s", file.path(parts[1], bname))
 
         ## create and enqueue a new upload job
-        j = newJob("uploadFile", .parentPath=MOTUS_PATH$INCOMING, replyTo=id.email[[2]], motusUserID=id.email[[1]], motusProjectID = motusProjectID, valid=TRUE, .enqueue=FALSE, filename=bname)
+        j = newJob("uploadFile", .parentPath=MOTUS_PATH$INCOMING, motusUserID=as.integer(parts[1]), motusProjectID = motusProjectID, .enqueue=FALSE, filename=bname)
 
         ## record receipt within the job's log
         jobLog(j, paste("File uploaded:", parts[3]), summary=TRUE)
@@ -99,17 +93,15 @@ uploadServer = function(tracing = FALSE, fileEvent="CREATE") {
 
         file.rename(upfile, file.path(jpath, bname))
 
-        ## move the job to the mail queue, since it's the email server that processes
-        ## unpacking archives and sanity checks on new files
+        ## move the job to the main queue
 
         j$queue = "0"
         moveJob(j, MOTUS_PATH$QUEUE0)
 
         cat("Job", unclass(j), "has been entered into queue 0\n")
 
-        ## disabled killFile functionality (see above)
-        ## if (file.exists(killFile))
-        ##     break
+        if (file.exists(killFile))
+            break
     }
     motusLog("Upload server stopped")
     quit(save="no")

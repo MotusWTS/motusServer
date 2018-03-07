@@ -91,4 +91,3 @@ to the motus /tags/deploy API.  For timestamps in the past, it uses \code{tsStar
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

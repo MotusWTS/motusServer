@@ -7,7 +7,9 @@
 #' secretKey.  Otherwise, this is an upper case hex string giving the
 #' secretKey for the receiver.
 #'
-#' @return the query result, which won't usually be useful
+#' @return the query result, which will be a list.  If registration is successful,
+#' the list will have an integer item named `deviceID`, which is the motus
+#' ID for the receiver.
 #'
 #' @export
 #'
@@ -25,7 +27,7 @@ motusRegisterReceiver = function(serno, secretKey = NULL) {
             ## it will still have a new keypair generated.
 
             privKeyFile = file.path(MOTUS_PATH$CRYPTO, paste0("id_dsa_", newserno))
-            file.remove(privKeyFile, paste0(privKeyFile, ".pub"))
+            suppressWarnings(file.remove(privKeyFile, paste0(privKeyFile, ".pub")))
             safeSys("ssh-keygen", "-q", "-t", "dsa", "-f", privKeyFile, "-N", "")
         }
         privKey = readChar(privKeyFile, 1e5, useBytes=TRUE)
@@ -38,8 +40,10 @@ motusRegisterReceiver = function(serno, secretKey = NULL) {
     masterKey = "~/.secrets/motus_secret_key.txt"
 
     motusQuery(MOTUS_API_REGISTER_RECEIVER, requestType="get",
-               params=list(
-                   secretKey = toupper(secretKey)
+               params = list(
+                   secretKey = toupper(secretKey),
+                   receiverType = getRecvType(serno)
                ),
-               masterKey = masterKey, serno=serno)
+               serno = serno,
+               masterKey = masterKey)
 }

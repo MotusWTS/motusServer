@@ -1,8 +1,8 @@
-#' run the tag finder on one sensorgnome boot session, in the new style.
+#' handle the job of running the tag finder on one sensorgnome boot session
 #'
-#' Called by \code{\link{server}}.
+#' Called by \code{\link{processServer}}.
 #'
-#' Runs the new tag finder for one boot session of a single SG.
+#' Runs the tag finder for one boot session of a single SG.
 #' The files for that boot session have already been merged into
 #' the DB for that receiver.
 #'
@@ -50,7 +50,9 @@ handleSGfindtags = function(j) {
     rv = NULL
     ## run the tag finder
     tryCatch({
-        rv = sgFindTags(src, getMotusMetaDB(), resume=j$canResume, par = paste(sgDefaultFindTagsParams, por), mbn=j$monoBN)
+        rv = sgFindTags(src, MOTUS_METADB_CACHE, resume=j$canResume, par = paste(sgDefaultFindTagsParams, por), mbn=j$monoBN)
+        if (any(por == "--pulses_only"))
+            newSubJob(j, "exportPulses", serno=serno, batchID=rv$batchID)
     }, error = function(e) {
         jobLog(j, paste(as.character(e), collapse="   \n"))
     })
@@ -62,9 +64,9 @@ handleSGfindtags = function(j) {
         tj = topJob(j)
         muid = tj$motusUserID
         mpid = tj$motusProjectID
-        if (length(muid) == 0)
+        if (!isTRUE(muid > 0))
             muid = "null"
-        if (length(mpid) == 0)
+        if (!isTRUE(mpid > 0))
             mpid = "null"
         dbGetQuery(src$con, sprintf("update batches set motusUserID=%s, motusProjectID=%s, motusJobID=%d where batchID=%d", muid, mpid, as.integer(j), rv$batchID))
     }

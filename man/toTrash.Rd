@@ -20,4 +20,3 @@ them periodically after X weeks.  The trash file is \code{MOTUS_PATH$TRASH}.
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

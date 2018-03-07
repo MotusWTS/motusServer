@@ -96,6 +96,9 @@
 #'
 #' }
 #'
+#' However, if no data are available for the specified \code{ts} and \code{monoBN} parameters,
+#' then the function returns NULL.
+#'
 #' Note: \code{n}, \code{freq}, and \code{sig} are for the given tag and antenna
 #' during the condensation period.
 #'
@@ -110,13 +113,13 @@ makeReceiverPlot = function(recv, meta=NULL, title="", condense=3600, ts = NULL,
     owner = list(recv=FALSE, meta=FALSE)
 
     if (is.character(recv)) {
-        recv = src_sqlite(recv)
+        recv = safeSrcSQLite(recv)
         owner$recv = TRUE
     }
     if (is.null(meta)) {
         meta = recv
     } else if (is.character(meta)) {
-        meta = src_sqlite(meta)
+        meta = safeSrcSQLite(meta)
         owner$meta = TRUE
     }
 
@@ -132,7 +135,7 @@ makeReceiverPlot = function(recv, meta=NULL, title="", condense=3600, ts = NULL,
         stop("This is not a receiver database.  Use a different function for plotting tagProject or site databases.")
 
     serno = rinfo$recvSerno
-    isLotek = rinfo$recvType == "Lotek"
+    isLotek = rinfo$recvType == "LOTEK"
 
     ## get a tagview for the detections in this receiver (a tagview joins batches/runs/hits with appropriate metadata)
     tags = tagview(recv, meta)
@@ -153,9 +156,14 @@ makeReceiverPlot = function(recv, meta=NULL, title="", condense=3600, ts = NULL,
         }
     } else {
         if (! is.null(monoBN)) {
-            monoBNlo = min(monoBN)
-            monoBNhi = max(monoBN)
-            tags = tags %>% filter_ (~monoBN >= monoBNlo & monoBN <= monoBNhi)
+            if (isTRUE(all(is.finite(monoBN)))) {
+                monoBNlo = min(monoBN)
+                monoBNhi = max(monoBN)
+                tags = tags %>% filter_ (~monoBN >= monoBNlo & monoBN <= monoBNhi)
+            } else {
+                ## wonky monoBN, so return NULL
+                return(NULL)
+            }
         }
     }
 
@@ -169,7 +177,7 @@ makeReceiverPlot = function(recv, meta=NULL, title="", condense=3600, ts = NULL,
 
     ## group by antenna, tag, and time bin
 
-    tags = tags %>% group_by(ant, tagID, bin)
+    tags = tags %>% group_by(ant, motusTagID, bin)
 
     ## summarize detections in group into a data.frame
 
@@ -186,13 +194,13 @@ makeReceiverPlot = function(recv, meta=NULL, title="", condense=3600, ts = NULL,
         tags$fullID[fixup] = sub(".0@", "@", tags$fullID[fixup], fixed=TRUE)
 
     ## append motus ID
-    tags$fullID = sprintf("%s M.%d", tags$fullID, tags$tagID)
+    tags$fullID = sprintf("%s M.%d", tags$fullID, tags$motusTagID)
 
     ## make into a factor, sorting levels by project label, and then increasing mfgID
     tags$fullID = factor(tags$fullID, levels = unique(tags$fullID[order(tags$proj, as.numeric(tags$mfgID))]))
 
     ## for ambiguous tags, add items to the y-axis label
-    mID = unique(tags$tagID)
+    mID = unique(tags$motusTagID)
 
     xlabExtra = ""
     heightExtra = 0
@@ -202,22 +210,25 @@ makeReceiverPlot = function(recv, meta=NULL, title="", condense=3600, ts = NULL,
 select ambigID, motusTagID1, motusTagID2, motusTagID3, motusTagID4, motusTagID5, motusTagID6
 from tagAmbig where ambigID in (", paste0(aID, collapse=","), ")"))
         xlabExtra = paste0("\nAmbiguous Tags: ",
-                           paste( sapply(1:nrow(ambig),
-                                         function(i) {
-                                             a = ambig[i, -1]
-                                             a = a[!is.na(a)]
-                                             paste0("M.", ambig[i, 1], " = ", paste0("M.", a, collapse=" or "))
-                                         }
-                                         ), collapse="; "
-                                 ))
+                           paste(
+                               paste0( sapply(seq_len(nrow(ambig)),
+                                              function(i) {
+                                                  a = ambig[i, -1]
+                                                  a = a[!is.na(a)]
+                                                  paste0("M.", ambig[i, 1], " = ", paste0("M.", a, collapse=" or "))
+                                              }
+                                              ),
+                                      c("; ", "; ", "; ", "\n" )),
+                               collapse="")
+                           )
         ## adjust plot height for extra lines
-        heightExtra = 20
+        heightExtra = floor(20 * nrow(ambig) / 4)
     }
 
     ## remove fields we no longer need, so we don't have to pad the
     ## pulse and boot pseudo-tag records
 
-    tags$mfgID = tags$proj = tags$tagID = NULL
+    tags$mfgID = tags$proj = tags$motusTagID = NULL
 
     ## if all frequencies are the same, remove from fullID and append to axis label
 
@@ -268,7 +279,7 @@ monoBNlo, monoBNhi))
 
         pulses = dbGetQuery(recv$con, sprintf("
 select ant,
-' Antenna ' || ant || ' Activity' as fullID,
+' Antenna ' || case when ant = -1 then 'A1+A2+A3+A4' else ant end || ' Activity' as fullID,
 hourBin as bin,
 hourBin * 3600 + 1800 as ts,
 1 as n,
@@ -285,7 +296,7 @@ t1.hourBin * 3600 + 1800 as ts,
 1 as n,
 0 as freq,
 0 as sig
-from pulseCounts as t1 join batches as t2 on t1.batchID=t2.batchID where t2.monoBN between %d and %d and t1.hourBin >= t2.tsBegin/3600 and t1.hourBin <= t2.tsEnd / 3600 group by t1.ant, t1.hourBin",
+from pulseCounts as t1 join batches as t2 on t1.batchID=t2.batchID where t2.monoBN between %d and %d and t1.hourBin >= t2.tsStart/3600 and t1.hourBin <= t2.tsEnd / 3600 group by t1.ant, t1.hourBin",
 monoBNlo, monoBNhi))
 
     }
@@ -298,16 +309,25 @@ monoBNlo, monoBNhi))
         reboots = dbGetQuery(recv$con, sprintf("
 select monoBN%%10 as ant,
 ' Reboot Odometer' as fullID,
-round(min(tsBegin) / 3600) as bin,
-min(tsBegin) as ts,
+round(min(tsStart) / 3600) as bin,
+min(tsStart) as ts,
 1 as n,
 0 as freq,
 0 as sig
-from batches where monoBN between %d and %d and tsBegin >= 1262304000 group by monoBN",
+from batches where monoBN between %d and %d and tsStart >= 1262304000 group by monoBN",
 monoBNlo, monoBNhi))
         reboots$fullID = as.factor(reboots$fullID)
     } else {
-        reboots = NULL
+        reboots = dbGetQuery(recv$con, sprintf("
+select relboot%%10 as ant,
+' Reboot Odometer' as fullID,
+round(ts / 3600) as bin,
+ts,
+1 as n,
+0 as freq,
+0 as sig
+from DTAboot where ts between %f and %f",
+ts[1], ts[2]))
     }
     tags = rbind(tags, pulses, gps, reboots)
 
@@ -321,9 +341,12 @@ monoBNlo, monoBNhi))
     if (nrow(tags) > 0) {
         dayseq = seq(from=round(min(tags$ts), "days"), to=round(max(tags$ts),"days"), by=24*3600)
     } else {
+        if (nrow(reboots) == 0 && nrow(pulses) == 0 && nrow(gps) == 0)
+            return(NULL)
         if (is.null(ts)) {
-            ts = unlist(dbGetQuery(con, sprintf("select min(tsBegin), max(tsEnd) from batches where monoBN between %s and %s", monoBN[1], monoBN[2])))
+            ts = unlist(dbGetQuery(con, sprintf("select min(tsStart), max(tsEnd) from batches where monoBN between %s and %s", monoBN[1], monoBN[2])))
         }
+        class(ts) = c("POSIXt", "POSIXct")
         dayseq = seq(from=round(min(ts), "days"), to=round(max(ts),"days"), by=24*3600)
     }
 
@@ -351,10 +374,10 @@ monoBNlo, monoBNhi))
                 panel.xyplot(x[gps], y[gps], groups=groups[gps], pch = "|", col="green", ...)
             ## plot antennas
             if (any(ant))
-                panel.xyplot(x[ant], y[ant], groups=groups[ant], pch = '|', col = antCol[1 + as.integer(levels(as.factor(groups[ant])))], ...)
+                panel.xyplot(x[ant], y[ant], groups=groups[ant], pch = '|', col = antCol[1 + abs(as.integer(levels(as.factor(groups[ant]))))], ...)
             ## plot tags
             if (any(tag))
-                panel.xyplot(x[tag], y[tag], groups=groups[tag], col = antCol[1 + as.integer(levels(as.factor(groups[tag])))], ...)
+                panel.xyplot(x[tag], y[tag], groups=groups[tag], col = antCol[1 + abs(as.integer(levels(as.factor(groups[tag]))))], ...)
         },
         main = list(paste0(title, "\n", sprintf("Receiver: %s", serno)), cex=1.5),
         ylab = list(ylab, cex=1.5),

@@ -1,0 +1,107 @@
+digraph data_flow {
+        graph [label="Sensorgnome Data Flow",labelfontsize=14,fontsize=36,fontname = "FreeSans"];
+        node [fontname = "FreeSans",labelfontsize=14,fontsize=14];
+        edge [fontname = "FreeSans",labelfontsize=14,fontsize=14];
+
+
+        subgraph clusterUser {
+                graph [label="User Computer"]
+
+                userBrowser [shape=box,label="Web\nBrowser"];
+                ftpClient [shape=box,label="FTP client"];
+
+                localFiles [shape=box,label="Raw SG files"];
+                networkDrive [shape=box,label="Network Drive"];
+        }
+
+        ## devices
+
+        Hub [shape=Mrecord, label="USB Hub"];
+        FuncubeDongle [shape=Mrecord, label="Funcube Dongle"];
+        USB_GPS [shape=Mrecord, label="USB GPS"];
+        Cape_GPS [shape=Mrecord, label="Cape GPS"];
+
+        ## files
+
+        deployment_txt [shape=Mrecord,label="{deployment.txt|boot drive|JSON format}"];
+        SG_tag_database [shape=Mrecord,label="{SG_tag_database.sqlite/.csv|onboard database}"];
+
+        ## programs
+
+        subgraph clusterSGProgs {
+                graph [label="Sensorgnome\nprograms"];
+
+                subgraph clusterNodejs {
+                        graph [label="Node JS"]
+
+                        master_js [shape=box,label="master.js\noverall control"];
+                        webserver_js [shape=box,label="webserver.js\nserve web interface\nto connected user"];
+                        VAH_js [shape=box,label="VAH.js\ncontrol vamp-alsa-host\nreceive pulse detections"];
+                        gps_js [shape=box,label="gps.js\nacquire fixes from gpsd"];
+                        hub_js [shape=box,label="hub.js\nmanage USB devices"];
+                        matron_js [shape=box,label="matron.js\nroute messages\nwithin node"];
+                        tagfinder_js [shape=box,label="tagfinder.js\ndlive tag finding"];
+                        uploader_js [shape=box,label="uploader.js\npush detetions\nto server"];
+                }
+
+                VAH [label="vamp-alsa-host\nc++\nread data from funcubedongles\ndetects pulses\n"];
+                chrony [label="chrony\nkeep system clock in sync with GPS/PPS"];
+                gpsd [label="gpsd\nread time,lat/lon\nfrom GPS"];
+                fcd [label="fcd\nset funcubedongle\nfrequency\nand\nfiltering"];
+                udev [shape=record,label="{udev\nreact to device detections|map USB hub port numbers}"];
+                find_tags [shape=record,label="{find_tags\ndetect tags from sequences of pulses}"];
+                auto_ssh [shape=record,label="{ssh/autossh|maintain ssh connection to sg.org server}"];
+                samba [shape=record,label="{samba/file server/files on \\192.168.7.2\data}"];
+                ftpd  [shape=record,label="{ftpd\nftp server\nfiles on ftp://192.168.7.2}"];
+        }
+
+        ## flow
+
+        VAH -> VAH_js[dir=both,label="start/stop\ndetected pulses"];
+        gpsd -> gps_js[label="GPS fixes"];
+        webserver_js -> userBrowser [dir="both",label="Web Interface"];
+
+        Cape_GPS -> gpsd[label="via ttyO4"];
+        Cape_GPS -> chrony[label="PPS pulses\nvia kernel interrupt"];
+
+        USB_GPS -> Hub[label="NMEA sentences"];
+        Hub -> gpsd[label="NMEA sentences"];
+        Hub -> VAH[label="funcube data"];
+        VAH -> Hub[label="Start/Stop streaming"];
+
+        fcd -> Hub[label="funcubedongle settings"];
+
+        FuncubeDongle -> Hub[label="I/Q as stereo\nS16_LE PCM\naudio data\n48kHz"];
+        Hub -> FuncubeDongle[label="Freq/Filter commands\nusing interrupt endpoint"];
+
+
+        master_js -> webserver_js;
+        master_js -> gps_js;
+        master_js -> VAH_js;
+        master_js -> hub_js;
+        master_js -> uploader_js;
+        master_js -> tagfinder_js;
+
+        udev -> hub_js[label="via synthetic devs\n in /dev/bonedongle"];
+        hub_js -> matron_js[label="devAdded/devRemoved"];
+
+        VAH -> matron_js -> webserver_js [label="detected pulses"];
+        gps_js -> matron_js -> webserver_js [label="GPS fixes"];
+        tagfinder_js -> matron_js -> webserver_js [label="tag finder\nOnboard tag DB only"];
+        find_tags -> tagfinder_js [label="tag detections"];
+        tagfinder_js -> find_tags [label="pulse detections"];
+        SG_tag_database -> find_tags [label="tag db"];
+
+        gpsd->chrony[label="NMEA date/time"];
+
+        uploader_js -> auto_ssh[label="push live info to server"];
+
+        deployment_txt -> master_js[label="acquisition plan"];
+
+        ftpd -> ftpClient;
+        ftpClient -> localFiles;
+        samba -> networkDrive;
+        networkDrive -> localFiles;
+
+
+}

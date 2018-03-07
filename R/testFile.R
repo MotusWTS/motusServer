@@ -67,7 +67,7 @@ testFile = function(files, tests=1:4) {
                     next
                 }
             } else if (grepl("\\.rar$", files[i], ignore.case=TRUE)) {
-                ec = attr(safeSys("unrar", "t", files[i], minErrorCode=255), "exitCode")
+                ec = attr(safeSys("lsar", files[i], minErrorCode=255), "exitCode")
                 if (ec != 0) {
                     rv[i] = 4L;  ## file is corrupt archive
                     next

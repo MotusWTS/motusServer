@@ -17,10 +17,9 @@ unpacking archives are queued.
 Called by \code{\link{processServer}}.  The file is sanity checked,
 unpacked if necessary, then run.
 }
-\author{
-John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
-}
 \seealso{
 \code{\link{processServer}}
 }
-
+\author{
+John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}

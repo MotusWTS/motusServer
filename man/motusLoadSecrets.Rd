@@ -28,7 +28,11 @@ TRUE if secrets were successfully loaded.
 \description{
 load secrets for motus web API
 }
+\note{
+This function also loads a shared secret for apache's mod-auth-tkt
+ticket authentication module.  This is parsed from the file
+whose path is MOTUS_MODAUTHTKT_SECRET_KEYFILE, defined in motusConstants.R
+}
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

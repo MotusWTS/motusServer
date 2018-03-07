@@ -20,11 +20,8 @@ makeTagProjDB = function(projectID, maxHits=NULL) {
     db = openMotusDB()
     con = db$con
 
-    ## open the cached motus metadata DB
-    mdb = safeSQL(getMotusMetaDB())
-
     ## get all motusTagIDs for that project
-    mids = mdb("select distinct tagID from tags where projectID = :projectID order by tagID", projectID=projectID)
+    mids = MetaDB("select distinct tagID from tags where projectID = :projectID order by tagID", projectID=projectID)
 
     db("create temporary table temp_tagIDs (tagID integer primary key)")
     dbWriteTable(con, "temp_tagIDs", mids, append=TRUE, row.names=FALSE)

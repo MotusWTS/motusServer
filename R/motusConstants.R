@@ -1,24 +1,34 @@
-#' Constants for the motus package.
+#' Constants for the motusServer package.
 #'
 #' API entry points:
 #'
 
 MOTUS_API_ENTRY_POINTS          = "http://motus.org/data/api/entrypoints.jsp"
 MOTUS_API_REGISTER_TAG          = "https://motus.org/api/tag/register"
-## As of 2017-09-28, use the beta server until further notice
-MOTUS_API_DEPLOY_TAG            = "https://beta.motus.org/api/tag/deploy"
+MOTUS_API_DEPLOY_TAG            = "https://motus.org/api/tag/deploy"
+MOTUS_API_SEARCH_TAGS           = "https://motus.org/api/tags/search"
 MOTUS_API_USER_VALIDATE         = "https://motus.org/api/user/validate"
-MOTUS_API_REGISTER_PROJECT      = "https://motus.org/data/api/v1.0/registerproject.jsp"
-MOTUS_API_REGISTER_RECEIVER     = "https://motus.org/data/api/v1.0/registersensor.jsp"
-MOTUS_API_LIST_PROJECTS         = "https://motus.org/data/api/v1.0/listprojects.jsp"
-MOTUS_API_RECEIVER_STATUS       = "https://motus.org/data/api/v1.0/listreceiverstatus.jsp"
-MOTUS_API_LIST_TAGS             = "https://motus.org/data/api/v1.0/listtags.jsp"
-MOTUS_API_LIST_SENSORS          = "https://motus.org/data/api/v1.0/listsensors.jsp"
-MOTUS_API_LIST_SENSOR_DEPS      = "https://motus.org/data/api/v1.0/listsensordeployments.jsp"
-MOTUS_API_LIST_SPECIES          = "https://motus.org/data/api/v1.0/listspecies.jsp"
-MOTUS_API_SEARCH_TAGS           = "https://motus.org/data/api/v1.0/searchtags.jsp"
-MOTUS_API_DEBUG                 = "https://motus.org/data/api/v1.0/debug.jsp"
-MOTUS_API_DELETE_TAG_DEPLOYMENT = "https://motus.org/data/api/v1.0/deletetagdeployment.jsp"
+MOTUS_API_REGISTER_RECEIVER     = "https://motus.org/api/receiver/register"
+MOTUS_API_LIST_PROJECTS         = "https://motus.org/api/projects"
+MOTUS_API_LIST_SENSORS          = "https://motus.org/api/receivers/list"
+MOTUS_API_LIST_SENSOR_DEPS      = "https://motus.org/api/receiver/sensordeployments"
+MOTUS_API_LIST_SPECIES          = "https://motus.org/api/species"
+
+## central repo where we track changes to motus metadata
+## this repo is cloned locally, and changes noticed when we cache motus metadata
+## are checked in and pushed back; This requires a public/private keypair in the
+## /home/XXX/.ssh folder on this server, where XXX is the user running the motusServers,
+## and an entry in /home/XXX/.ssh/config for the host 'github-motus-metadata-history' there
+## which indicates the ssh key to be used.
+## e.g. /home/sg/.ssh/config might contain:
+##
+##    Host github-motus-metadata-history
+##       HostName github.com
+##       User git
+##       IdentityFile ~/.ssh/id_dsa_github_motus_metadata_history
+##       IdentitiesOnly yes
+
+MOTUS_METADATA_HISTORY_REPO     = "git@github-motus-metadata-history:jbrzusto/motus-metadata-history"
 
 # a list of field names which must be formatted as floats so that
 # the motus API recognizes them correctly.  This means that if they
@@ -35,14 +45,6 @@ MOTUS_FLOAT_FIELDS = c("tsStart", "tsStartAnticipated", "tsEnd", "regStart", "re
 
 MOTUS_FLOAT_REGEX = sprintf("((%s):-?[0-9]+)([,}])",
                              paste(sprintf("\"%s\"", MOTUS_FLOAT_FIELDS), collapse="|"))
-
-## a pre-amble that gets pasted before upload tokens so they can easily be found in emails
-
-MOTUS_UPLOAD_TOKEN_PREFIX = "3cQejZ7j"
-
-## the regular expression for recognizing an authorization token in an email
-
-MOTUS_UPLOAD_TOKEN_REGEX = paste0(MOTUS_UPLOAD_TOKEN_PREFIX, "(?<token>[A-Za-z0-9]{10,100})")
 
 ## format of date/time in logfiles
 
@@ -69,7 +71,7 @@ MOTUS_QUEUEFILE_REGEX = paste0(MOTUS_LEADING_TIMESTAMP_REGEX, MOTUS_QUEUE_SEP, "
 
 ## "From" address for outgoing emails
 
-MOTUS_OUTGOING_EMAIL_ADDRESS = "no-reply@sensorgnome.org"
+MOTUS_OUTGOING_EMAIL_ADDRESS = "no-reply@motus.org"
 
 ## name of archive to hold "bad" files; this archive is stored in the folder
 ## for each top-level job; we append "NOAUTO" to the name to prevent it
@@ -82,27 +84,23 @@ MOTUS_BADFILE_ARCHIVE = "bad_files.zip.NOAUTO"
 #'@export
 
 MOTUS_PATH = list(
-    ROOT             = "/sgm",
-    BIN              = "/sgm/bin/",                  ## executable scripts
-    CACHE            = "/sgm/cache/",                ## recent results of large queries from motus.org
+    ROOT             = "/sgm",                       ## folder hierarchy on NAS
+    ROOT_LOCAL       = "/sgm_local",                 ## folder hierarchy on local HD
+    BIN              = "/sgm_local/bin/",            ## executable scripts and programs (store on HD)
+    CACHE            = "/sgm_local/",                ## recent results of large queries from motus.org (store on HD)
     CRYPTO           = "/sgm/crypto/",               ## public/private keypairs for ssh etc. by receivers
+    DB_BACKUPS       = "/sgm/db_backups/",           ## folder on NAS for daily backups of sqlite databases on local HD
     DONE             = "/sgm/done/",                 ## folders for completed jobs
-    DOWNLOADS        = "/sgm/downloads/",            ## manually-downloaded files; downloadXXX() checks here before (re) grabbing file
     ERRORS           = "/sgm/errors/",               ## save dumped call stacks of server errors
     FILE_REPO        = "/sgm/file_repo/",            ## as-is copies of files from all receivers; stored in SERNO/YYYY-MM-DD/ subfolders
-    INBOX            = "/sgm/inbox/",                ## emails go here, unless /sgm/EMBARGO exists
-    INBOX_EMBARGOED  = "/sgm/inbox_embargoed/",      ## incoming emails under embargo (not processed)
     INCOMING         = "/sgm/incoming/",             ## files / dirs moved here are processed by server(); this is the external / asynchronous
                                                      ## access point to the processing queue
-    LOCKS            = "/sgm/locks/",                ## locks for process queues and receiver DBs
     LOGS             = "/sgm/logs/",                 ## processing logs
-    MAIL_QUEUE       = "/sgm/queue/E/",              ## queue for processing emails by emailServer()
-    MOTR             = "/sgm/motr/",                 ## links to receiver DBs by motus ID
-    OLDROOT          = "/SG/",                       ## root of old-style folder hierarchy
+    METADATA_HISTORY = "/sgm/metadata_history/",     ## .git repo tracking metadata changes
     OUTBOX           = "/sgm/outbox/",               ## copies of all sent emails
     OUTBOX_EMBARGOED = "/sgm/outbox_embargoed/",     ## unsent outgoing emails
-    PARAM_OVERRIDES  = "/sgm/paramOverrides.sqlite", ## DB with table of receiver-boot-session-specific overrides for the tag finder
-    PLOTS            = "/sgm/plots/",                ## generated plots
+    PARAM_OVERRIDES  = "/sgm_local/paramOverrides.sqlite", ## DB with table of receiver-boot-session-specific overrides for the tag finder
+    PRODUCTS         = "/sgm/products/",             ## generated products (e.g. hourly summary plots and datasets)
     PRIORITY         = "/sgm/priority/",             ## jobs created here run on a processServer dedicated to short, fast jobs; e.g. updating attached SGs
     PUB              = "/sgm/pub/",                  ## web-visible public content
     QUEUES           = "/sgm/queue/",                ## queues for processing items
@@ -122,39 +120,39 @@ MOTUS_PATH = list(
     QUEUE104         = "/sgm/queue/104/",
     RECV             = "/sgm/recv/",                 ## receiver databases
     RECVLOG          = "/sgm/recvlog/",              ## logfiles from receivers
-    REFS             = "/sgm/refs/",                 ## links to receiver DBs by year, projCode, siteCode
-
     REMOTE           = structure("/sgm/remote/",     ## items dealing with remote attached receivers
                        owner="sg:sg_remote",
                        perm="g+rwx"),
 
     REMOTE_ATJOBS    = "/sgm/remote/atjobs/",        ## at-job IDs for syncReceiver jobs, by receiver serial number
     REMOTE_CONNECTIONS = "/sgm/remote/connections/", ## empty files whose names are serial numbers of connected receivers
-    REMOTE_LIVE      = "/sgm/remote/live.sqlite",    ## DB of live client connections to receivers via our web server
+    REMOTE_LIVE      = "/sgm_local/live.sqlite",     ## DB of live client connections to receivers via our web server
+    REMOTE_RECV_DB   = "/sgm_local/receivers.sqlite",## the database to hold info on remote receivers
     REMOTE_STREAMS   = "/sgm/remote/streams/",       ## .sqlite databases of all live content streamed from receivers
     REMOTE_SOCKETS   = "/sgm/remote/sockets/",       ## sockets used for the live webpage to connected receivers
-    SPAM             = "/sgm/spam/",                 ## saved invalid emails
-    SYNC             = "/sgm/remote/sync/",          ## when an empty file having a receiver serial number as its name is placed here,
+    SERVER_DB        = "/sgm_local/server.sqlite",         ## the database used to record server activity
+
+    SYNC             = "/sgm_local/sync/",           ## when an empty file having a receiver serial number as its name is `touch`ed here,
                                                      ## the receiver is sync'd remotely
     TAGS             = "/sgm/tags/",                 ## ??
     TAG_PROJ         = "/sgm/tag_proj/",             ## sqlite databases for all tag projects
     TAGREG_CLEANUP   = "/sgm/tagregCleanup.R",       ## script to provided tag registration cleanups downstream from motus
+    TEST_PRODUCTS    = "/sgm/test_products/",        ## products from testing jobs
+    TEST_WWW         = structure("/sgm/www/test/",   ## File hierarchy (testing version) to be served by apache to authenticated motus users
+                       perm = "g+rsx"),              ## listable/readable
     TMP              = "/sgm/tmp/",                  ## intermediate storage; persistent across reboots
     TRASH            = "/sgm/trash/",                ## files to be deleted once we know they've been processed
 
-    UPLOADS          = structure("/sgm/uploads/",    ## target in which the ProjectSend server makes hardlinks to its newly-uploaded files
+    UPLOADS          = "/sgm/uploads/",              ## folder where uploads ultimately go
+    UPLOADS_PARTIAL  = structure("/sgm/uploads/partial/",       ## folder where uploads go as they arrive; must be writable by www-data
                        owner="sg:www-data",
-                       perm="g+rwx"),
+                       perm="g+rws"),
+    UPLOAD_TESTING   = "/sgm/UPLOAD_TESTING",        ## file whose presence indicates upload jobs are to be marked with "isTesting"
 
-    UPLOAD_ARCHIVE   = "/raid5tb/uploads/files",     ## folder where ProjectSend stores uploaded files, filed by username
-
-                                                     ## must be writable by the user running the ProjectSend webserver (probably www-data)
-    USERAUTH         = structure("/sgm/userauth/",   ## folder to store sqlite database of user authentication cached from motus.org
-                       owner="sg:www-data",          ## this folder needs to have group set to "www-data" and have permissions g+rwx so that
-                       perm="g+rwx"),                ## Apache web server's mod_auth_external can read/write to it.
+    USERAUTH         = "/sgm_local/user_auth.sqlite",## database of user authentication tokens
 
     WWW              = structure("/sgm/www/",        ## File hierarchy to be served by apache to authenticated motus users
-                       owner="www-data:www-data")
+                       perm = "g+rsx")               ## listable/readable
 )
 
 ## main logfile name
@@ -177,32 +175,13 @@ MOTUS_ARCHIVE_REGEX = paste0("(?i)\\.(?<suffix>",
 ## silly dir() can't handle perl-style regex, so make another for that
 MOTUS_ARCHIVE_DIR_REGEX = paste0("\\.(", paste(MOTUS_ARCHIVE_SUFFIXES, collapse="|"), ")$")
 
-## allowed file suffixes for emailed data files:
-
-MOTUS_FILE_ATTACHMENT_SUFFIXES = c(
-    MOTUS_ARCHIVE_SUFFIXES,
-    "txt",                 ## Some users directly attach raw sensorgome files
-    "txt\\.gz",            ## to an email.
-    "dta"                  ## File from lotek receiver
-    )
-
-## regex to match filenames against for checking suffix
-
-MOTUS_FILE_ATTACHMENT_REGEX = paste0("(?i)\\.(?<suffix>",
-                                     paste(MOTUS_FILE_ATTACHMENT_SUFFIXES, collapse="|"),
-                                     ")$")
-
-
 ## regex to match receiver serial numbers (adapted from sgFilenameRegex, which differs
 ## in not using the 'SG-' prefix).
 
 MOTUS_SG_SERNO_REGEX = "(?i)(?<serno>SG-[0-9A-Z]{4}(?:RPi[123z]|BBBK|(BB[0-9][0-9A-Z]))[0-9A-Z]{4}(?:_[0-9])?)"
 
-## deprecated: path to db for looking up proj, site by serial number
-## and timestamp or bootnumber. This is for generating output in the
-## old format.
-
-MOTUS_RECV_MAP_DB = "/SG/receiver_map.sqlite"
+## regex to exactly match any receiver serial number
+MOTUS_RECV_SERNO_REGEX = "(?i)^(?:(?:(?:SG-[0-9A-Z]{4}(?:RPi[123z]|BBBK|(?:BB[0-9][0-9A-Z]))[0-9A-Z]{4}(?:_[0-9])?))|(?:Lotek-D?[0-9]+))$"
 
 ## regex for matching DOS filenames (names of SG data files which have
 ## been shortened to 8.3 form)
@@ -218,12 +197,6 @@ MOTUS_ADMIN_EMAIL = "jbrzusto@fastmail.fm"
 ## the sensorgnome.org username for the administrator
 
 MOTUS_ADMIN_USERNAME = "john"
-
-## the database used to record server activity
-MOTUS_SERVER_DB = "/sgm/server.sqlite"
-
-## the database to hold info on remote receivers
-MOTUS_REMOTE_RECV_DB = file.path(MOTUS_PATH$REMOTE, "receivers.sqlite")
 
 ## the table used to record locks on arbitrary symbols
 MOTUS_SYMBOLIC_LOCK_TABLE = "symLocks"
@@ -241,5 +214,15 @@ MOTUS_SG_EPOCH = 1262304000
 ## which should be matched case-insensitively
 MOTUS_TAGREG_MANIFEST_REGEXP = ".*tagreg.*\\.txt$"
 
-## sprintf-format string for URL of downloadable files; %d is for projectID
-MOTUS_DOWNLOAD_URL_FMT = "https://sensorgnome.org/download/%d"
+## sprintf-format string for URL of downloadable files; %s is for projectID or other special values
+MOTUS_DOWNLOAD_URL_FMT = "https://sgdata.motus.org/download/%s"
+
+## sprintf-format string for URL of downloadable files; %s is for projectID or other special values
+MOTUS_TEST_DOWNLOAD_URL_FMT = "https://sgdata.motus.org/download/test/%d"
+
+## location of secret key for mod_auth_tkt authorization used by some
+## of the XXXServer() functions in this package
+MOTUS_MODAUTHTKT_SECRET_KEYFILE = "/etc/apache2/TKTAuthSecret.inc"
+
+## path to motus metadata db cache
+MOTUS_METADB_CACHE = file.path(MOTUS_PATH$CACHE, "motus_meta_db.sqlite")

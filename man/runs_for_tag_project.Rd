@@ -11,7 +11,7 @@ runs_for_tag_project(env)
 
 \item{batchID}{integer batchID}
 
-\item{runID}{integer ID of largest run already obtained}
+\item{runID}{double ID of largest run already obtained}
 }
 \value{
 a data frame with the same schema as the runs table, but JSON-encoded as a list of columns
@@ -19,4 +19,3 @@ a data frame with the same schema as the runs table, but JSON-encoded as a list 
 \description{
 get runs by tag project from a batch
 }
-

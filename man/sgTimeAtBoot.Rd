@@ -33,4 +33,3 @@ This procedure needs to be made explicit in upstream processing; see:
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

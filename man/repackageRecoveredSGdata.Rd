@@ -4,20 +4,29 @@
 \alias{repackageRecoveredSGdata}
 \title{repackage recovered data into hourly files with appropriate names}
 \usage{
-repackageRecoveredSGdata(f, serno, path = tempdir(), submit = FALSE)
+repackageRecoveredSGdata(filename, serno, bootnum = 1000, path = getwd(),
+  submit = FALSE)
 }
 \arguments{
-\item{f}{path to file containing recovered records.}
+\item{filename}{path to file containing recovered records.}
 
 \item{serno}{character scalar receiver serial number; this is not
 available in records themselves, unfortunately.  Care must be
 taken to ensure the correct serial number is given, otherwise
 data will appear to come from the wrong receiver.  The GPS
 records are used to provide a sanity check on this, if a
-deployment for the receiver is known.}
+deployment for the receiver is known.
+example:  "SG-1234BBBK5678"}
+
+\item{bootnum}{starting boot number of the data, if known.
+Default: 1000.  This function tries to detect reboots by
+looking for large backward time jumps, but this doesn't always
+work, as SGs with cape GPS usually set their system time from
+battery-backed realtime clock clock before any file records are
+written.}
 
 \item{path}{character scalar: path in which to create the .zip archive
-of hourly files.  Default: a newly-created temporary directory.}
+of hourly files.  Default: \code{getwd()}}
 
 \item{submit}{logical scalar: if TRUE, "upload" the file so it is
 processed by the motus data-processing server.  Default: FALSE}
@@ -45,8 +54,9 @@ extracted by a root shell (on whichever device holds the SD card) with this comm
 
    strings /dev/mmcblk1 | grep -P '^(G|S|C|T|p[0-9]),[0-9]+([.0-9]+)?,' > recovered_records.txt
 
-or, if the card is installed in a remote SG which has connected to the motus/SG server with
-reverse tunnel port 43210, this command on the server:
+or, if the card is installed in a remote SG which has connected to
+the motus/SG server with reverse tunnel port 43210 (for example),
+this command on the server:
 
    sshpass -p root ssh -T -f -p 43210 root@localhost "strings /dev/mmcblk1 | grep -P '^(G|S|C|T|p[0-9]),[0-9]+([.0-9]+)?,'" > recovered_records.txt &
 
@@ -55,4 +65,3 @@ will extract the records on the SG and send them via SSH to the file recovered_r
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

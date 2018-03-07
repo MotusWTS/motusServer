@@ -57,10 +57,9 @@ In either case, if the receiver is a SensorGnome, the return value includes
 valid bnStart and bnEnd - the range of boot sessions corresponding to
 the corresponding receiver deployment.
 }
-\author{
-John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
-}
 \seealso{
 \link{\code{lockSymbol}}
 }
-
+\author{
+John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}

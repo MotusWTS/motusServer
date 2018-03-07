@@ -18,6 +18,8 @@
 #' \item serno    - serial number (e.g. "Lotek-1234") of receiver this file is from
 #' \item ts       - first timestamp from a detection in this file
 #' \item tsLast   - last timestamp from a detection in this file
+#' \item inRepo   - file came from file_repo (rather than being a new upload; happens when fully reprocessing)
+#' \item fid      - fileID, if file in or added to DB
 #' }
 #'
 #' @note If err is not NA for a file, then other fields for that file
@@ -40,137 +42,164 @@ ltMergeFiles = function(files, j, dbdir=MOTUS_PATH$RECV) {
         return()
     }
     if (file.info(files[1])$isdir)
-        ff = dir(files, recursive=TRUE, full.names=TRUE, pattern=".*\\.dta$", ignore.case=TRUE)
+        rv = dir(files, recursive=TRUE, full.names=TRUE, pattern=".*\\.dta$", ignore.case=TRUE)
     else
-        ff = sort(files)
+        rv = sort(files)
 
-    rv = data_frame(fullname = ff, nameNew = TRUE, dataNew = TRUE, use = FALSE, err = NA, serno = as.character(NA), ts = as.numeric(NA), tsLast = as.numeric(NA))
+    rv = data_frame(fullname = rv, nameNew = TRUE, dataNew = TRUE, use = FALSE, err = NA, serno=as.character(NA), ts = as.numeric(NA), tsLast = as.numeric(NA), fid=as.numeric(NA))
 
-    for (i in seq(along=ff)) {
-        f = ff[i]
-        size = file.info(f)$size
-        blob = readBin(f, raw(), n=size)
-        ll = (blob %>% rawToChar %>% strsplit("\r\n", fixed=TRUE)) [[1]]
-        skip = FALSE
-        x = NULL
-        tryCatch({
-            x <- readDTA(lines=ll)
-            rv$serno[i] = x$recv
-            if(nrow(x$tags) > 0) {
-                tsr = range(x$tags$ts)
-                rv$ts[i] = tsr[1]
-                rv$tsLast[i] = tsr[2]
-            }
-        }, error = function(e) {
-            rv$err[i] = as.character(e)
-            skip <- TRUE
-        })
-        if (skip)
+    ## read serial numbers from DTA files, returning NA for any files which fail to parse
+    rv$serno = sapply(rv$fullname, function(x) tryCatch(readDTA(x, numLines=20)$recv, error=function(e) NA), USE.NAMES=FALSE)
+
+    ## flag which files are already in the file repo
+    rv$fromRepo = beginsWith(rv$fullname, MOTUS_PATH$FILE_REPO)
+
+    for (serno in unique(rv$serno)) {
+        if (is.na(serno))
             next
 
         ## lock the receiver DB
-
-        lockSymbol(x$recv)
+        lockSymbol(serno)
 
         ## make sure we unlock the receiver DB when this function exits, even on error
         ## NB: the runMotusProcessServer script also drops any locks held by a given
         ## processServer after the latter exits.
 
-        on.exit(lockSymbol(x$recv, lock=FALSE))
+        on.exit(lockSymbol(serno, lock=FALSE))
 
-        src = getRecvSrc(x$recv)
-
-        ## compute file hash, then check whether it already is in database
-        fhash = digest(blob, algo="sha512", serialize=FALSE)
-
+        src = getRecvSrc(serno, dbdir=dbdir)
+        sql = safeSQL(src)
         files = tbl(src, "DTAfiles")
 
-        bname = basename(f)
-        if (files %>% filter(name==bname) %>% count %>% as.data.frame > 0) {
-            rv$nameNew[i] = FALSE
-        }
+        iRecv = which(rv$serno==serno)
+        for (i in iRecv) {
+            f = rv$fullname[i]
+            size = file.info(f)$size
+            blob = readBin(f, raw(), n=size)
+            ll = (blob %>% rawToChar %>% strsplit("\r\n", fixed=TRUE)) [[1]]
+            skip = FALSE
+            x = NULL
+            tryCatch({
+                x <- readDTA(lines=ll)
+                if(nrow(x$tags) > 0) {
+                    tsr = range(x$tags$ts)
+                    rv$ts[i] = tsr[1]
+                    rv$tsLast[i] = tsr[2]
+                }
+            }, error = function(e) {
+                rv$err[i] = as.character(e)
+                skip <- TRUE
+            })
+            if (skip)
+                next
 
-        this = files %>% filter(hash==fhash)
+            ## compute file hash, then check whether it already is in database
+            fhash = digest(blob, algo="sha512", serialize=FALSE)
 
-        if (this %>% count %>% as.data.frame > 0) {
-            rv$dataNew[i] = FALSE
-        } else {
+            bname = basename(f)
+            if (files %>% filter(name==bname) %>% count %>% as.data.frame > 0) {
+                rv$nameNew[i] = FALSE
+            }
 
-            comp = memCompress(blob, type="bzip2")
+            this = files %>% filter(hash==fhash)
 
-            ## sqlite connection
+            if (this %>% count %>% as.data.frame > 0) {
+                rv$dataNew[i] = FALSE
+            } else {
 
-            con = src$con
+                comp = memCompress(blob, type="bzip2")
 
-            ## write meta data
+                ## sqlite connection
 
-            meta = getMap(src)
+                con = src$con
 
-            meta$dbType = "receiver" ## indicate this is a receiver database (vs. a tagProject database)
-            meta$recvSerno = x$recv
-            meta$recvType = "Lotek"
-            meta$recvModel = getLotekModel(x$recv)
-
-            ## write file record
-            dbGetPreparedQuery(
-                con,
-                "insert into DTAfiles (name, size, tsBegin, tsEnd, tsDB, hash, contents, motusJobID) values (:name, :size, :tsBegin, :tsEnd, :tsDB, :hash, :contents, :motusJobID)",
-                data_frame(
-                    name       = bname,
-                    size       = length(blob),
-                    tsBegin    = min(x$tags$ts),
-                    tsEnd      = max(x$tags$ts),
-                    tsDB       = as.numeric(Sys.time()),
-                    hash       = fhash,
-                    contents   = list(comp), ## NB: make list, else dataframe replicates entire row for each byte!
-                    motusJobID = as.integer(j)
-                ) %>% as.data.frame
-            )
-            rv$use[i] = TRUE
-            fid = dbGetQuery(con, "select max(fileID) from DTAfiles")[[1,1]]
-
-            ## write tags records
-
-            ## FIXME: it would be nice to factor out antenna frequency,
-            ## codeset, gain, lat/lon as we do for SG records.  This would
-            ## make for much smaller data files.  But we can't do this by
-            ## timestamp, as these can jump around significantly in the
-            ## .DTA files, and so must use file (lexical) order.
-
-            if (isTRUE(nrow(x$tags) > 0)) {
+                ## write file record
                 dbGetPreparedQuery(
                     con,
-                    "insert or ignore into DTAtags (fileID, dtaline, ts, id, ant, sig, lat, lon, antFreq, gain, codeSet) values (:fileID, :dtaline, :ts, :id, :ant, :sig, :lat, :lon, :antFreq, :gain, :codeSet)",
+                    "insert into DTAfiles (name, size, tsBegin, tsEnd, tsDB, hash, contents, motusJobID) values (:name, :size, :tsBegin, :tsEnd, :tsDB, :hash, :contents, :motusJobID)",
                     data_frame(
-                        fileID  = fid,
-                        dtaline = x$tags$dtaline,
-                        ts      = x$tags$ts,
-                        id      = x$tags$id,
-                        ant     = x$tags$ant,
-                        sig     = x$tags$sig,
-                        lat     = x$tags$lat,
-                        lon     = x$tags$lon,
-                        antFreq = x$tags$antfreq,
-                        gain    = x$tags$gain,
-                        codeSet = x$tags$codeset
+                        name       = bname,
+                        size       = length(blob),
+                        tsBegin    = min(x$tags$ts),
+                        tsEnd      = max(x$tags$ts),
+                        tsDB       = as.numeric(Sys.time()),
+                        hash       = fhash,
+                        contents   = list(comp), ## NB: make list, else dataframe replicates entire row for each byte!
+                        motusJobID = as.integer(j)
                     ) %>% as.data.frame
                 )
+                rv$use[i] = TRUE
+                rv$fid[i] = dbGetQuery(con, "select max(fileID) from DTAfiles")[[1,1]]
+
+                ## write tags records
+
+                ## FIXME: it would be nice to factor out antenna frequency,
+                ## codeset, gain, lat/lon as we do for SG records.  This would
+                ## make for much smaller data files.  But we can't do this by
+                ## timestamp, as these can jump around significantly in the
+                ## .DTA files, and so must use file (lexical) order.
+
+                if (isTRUE(nrow(x$tags) > 0)) {
+                    dbGetPreparedQuery(
+                        con,
+                        "insert or ignore into DTAtags (fileID, dtaline, ts, id, ant, sig, lat, lon, antFreq, gain, codeSet) values (:fileID, :dtaline, :ts, :id, :ant, :sig, :lat, :lon, :antFreq, :gain, :codeSet)",
+                        data_frame(
+                            fileID  = rv$fid[i],
+                            dtaline = x$tags$dtaline,
+                            ts      = x$tags$ts,
+                            id      = x$tags$id,
+                            ant     = x$tags$ant,
+                            sig     = x$tags$sig,
+                            lat     = x$tags$lat,
+                            lon     = x$tags$lon,
+                            antFreq = x$tags$antfreq,
+                            gain    = x$tags$gain,
+                            codeSet = x$tags$codeset
+                        ) %>% as.data.frame
+                    )
+                }
+
+                ## write boottime records
+                if (isTRUE(length(x$boottimes) > 0)) {
+                    dbGetPreparedQuery(
+                        con,
+                        "insert or ignore into DTAboot (ts, fileID) values (:ts, :fileID)",
+                        data_frame(
+                            ts = mdy_hms(x$boottimes),
+                            fileID  = rv$fid[i]
+                        ) %>% as.data.frame
+                    )
+                }
+            }
+        }
+        ## save any files used in the receiver's folder in the file repo, if not already there.
+        iMove = iRecv[rv$use[iRecv] & !rv$fromRepo[iRecv]]
+        if (length(iMove) > 0) {
+            newNames = moveFilesUniquely(rv$fullname[iMove], file.path(MOTUS_PATH$FILE_REPO, serno), copyLinkTargets=TRUE)
+            ## some names had to change, so update them in the DB
+            for (jj in seq(along = iMove)) {
+                if (! is.na(newNames[jj]))
+                    sql("update DTAfiles set name=:name where fileID=:fileID",
+                        name = newNames[jj],
+                        fileID = rv$fid[iMove[jj]])
             }
         }
         ## unlock the receiver and drop the source
         lockSymbol(x$recv, lock=FALSE)
+        rm(sql)
         rm(src)
         gc()
-    }
 
-    ## save any files used in the receiver's folder in the file repo
-    for (recv in unique(rv$serno)) {
-        move = subset(rv, serno==recv & use)$fullname
-        if (length(move) > 0)
-            moveFilesUniquely(move, file.path(MOTUS_PATH$FILE_REPO, recv))
     }
-
-    ## delete all remaining files
-    toTrash(ff)
+    ## trash files which did not come from repo and which are not being used
+    toTrash(subset(rv, ! fromRepo & ! use)$fullname)
     return (rv)
+}
+
+#' does a string begin with another string
+#' @param x string in which to look for prefix
+#' @param y prefix to look for
+
+beginsWith = function(x, y) {
+    y == substr(x, 1, nchar(y))
 }

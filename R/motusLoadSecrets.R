@@ -16,6 +16,10 @@
 #'
 #' @return TRUE if secrets were successfully loaded.
 #'
+#' @note This function also loads a shared secret for apache's mod-auth-tkt
+#' ticket authentication module.  This is parsed from the file
+#' whose path is MOTUS_MODAUTHTKT_SECRET_KEYFILE, defined in motusConstants.R
+#'
 #' @export
 #'
 #' @importFrom jsonlite fromJSON
@@ -34,6 +38,11 @@ After receiving the file, use the function motusLoadSecrets(f) to load
 the secrets for a session, and saveSecrets() to store them permanently.")
     }
     MOTUS_SECRETS <<- fromJSON(textFileContents(f))
+
+    ## parse out the 'TKTAuthSecret' field from the apache config file
+    tktsecret = grep("TKTAuthSecret", readLines(MOTUS_MODAUTHTKT_SECRET_KEYFILE), val=TRUE)
+
+    MOTUS_SECRETS$mod_auth_tkt <<- charToRaw(read.table(textConnection(tktsecret), as.is=TRUE)[[2]])
 
     return (TRUE)
 }

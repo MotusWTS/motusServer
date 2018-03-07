@@ -1,0 +1,168 @@
+digraph data_flow {
+        graph [label="Motus Data Flow",labelfontsize=14,fontsize=36,fontname = "FreeSans"];
+        node [fontname = "FreeSans",labelfontsize=14,fontsize=14];
+        edge [fontname = "FreeSans",labelfontsize=14,fontsize=14];
+
+
+        ## user computer
+
+        subgraph clusterUser {
+                graph [label="User Computer"]
+
+                userBrowser [shape=box,label="Web\nBrowser"];
+                userR [shape=box,label="R session\nlibrary(motus)"];
+                userTagDB [shape=record,label="{Tag DB\nproject-NNN.motus\nbuilt with motus::tagme(NNN)|batches|hits|runs|tagDeps|recvDeps|species|antDeps|gps}"];
+                userRecvDB [shape=record,label="{Receiver DB\nSG-1234BBBKABCD.motus\nbuilt with motus::tagme('SG-1234BBBKABCD')|batches|hits|runs|tagDeps|recvDeps|species|antDeps|gps}"]
+                audacity [shape=box,label="Audacity\nRecording Tags"];
+                rawFiles [shape=box,label="Raw SG/Lotek files\nfrom Field"];
+        }
+
+
+        ## machines
+
+        SensorGnome [shape=box,label="SensorGnome\nReceiver"];
+        Lotek [shape=box,label="Lotek\nReceiver"];
+        FuncubeDongle [shape=record, label="Funcube Dongle"];
+
+        ## files
+
+        registrationPackage [shape=record,label="Tag Registration\nPackage\n.wav recordings\ntagreg.txt"];
+        SGfiles [shape=record,label="{SG data files|serial number\ntimestamp\nGPS fixes\nantenna settings\npulse detections}"];
+        DTAfiles [shape=record,label="{Lotek .DTA files|serial number\ntimestamp\nGPS fixes\nantenna settings\ntag detections}"];
+        summaryFiles [shape=record,label="{Hourly Summary Files\nby receiver|.png|.pdf|.rds}"];
+
+
+        ## databases
+
+        jobsDB [shape=record,label="{Job Database\nSQLite|jobs|symLocks}"];
+        metadataCache [shape=record,label="{Motus Metadata Cache\nSQLite|tags|tagDeps|recvDeps|paramOverrides|events}"];
+        masterDB [shape=record,label="{<MasterDB>Master DB\nMySQL|{{batches|hits|runs|gps|batchRuns}}}"];
+        receiverDB [shape=record, label="{Receiver DB\nOne Per Recv\nSQLite|{{batches|hits|runs|gps|<brport>batchRuns}}}"];
+        metadataTracker [shape=record,label="{Metadata Tracker|github repo\ntracks metadata changes\nhttps://github.com/jbrzusto/motus-metadata-history}"];
+
+
+        ## web sites
+
+        motus [shape=box,label="Motus Metadata API\nhttps://motus.org/api",labelfontsize=36,fontsize=36];
+        uploadSite [shape=box,label="Upload Site\nhttps://sensorgnome.org/upload\nmanage user upload of files\n\nProjectSend"];
+        downloadSite [shape=box,label="Download Site\nhttps://sensorgnome.org/download/[projectID]\nmanage downloads\nof summary files\nby projectID"];
+
+
+        ## processes
+
+        uploadServer [shape=box,label="Upload Server\nwatches for new completed uploads\nqueue new processing jobs\nR:uploadServer()"];
+        processServer1 [shape=box,label="Process\nServer\n#1\nR:processServer()"];
+        processServer2 [shape=box,label="Process\nServer\n#2"];
+        processServer3 [shape=box,label="Process\nServer\n#3"];
+        processServer4 [shape=box,label="Process\nServer\n#4"];
+        processServer101 [shape=box,label="Process\nServer\n(Priority #1)"];
+        processServer102 [shape=box,label="Process\nServer\n(Priority #2)"];
+        syncServer [shape=box,label="Sync Server\nwatches for attached SGs\nhourly dispatch\n of sync jobs\nR:syncServer()"];
+        dataServer [shape=box,label="Data Server\nanswers requests for data\nR:dataServer()"];
+        statusServer [shape=box,label="Status Server\nanswers requests for processing status\n\nhttps://sensorgnome.org/My_Job_Status\nhttps://sensorgnome.org/Internal_pages/Realtime_Sensorgnome_Status\nR:statusServer()"];
+
+
+        ## misc. objects
+
+        queue0 [shape=oval,label="Queue 0\ndispatch jobs"];
+        priorityQueue [shape=oval,label="Priority Queue\ndispatch\npriority jobs"];
+        newReceiver[shape=box,label="Unregistered Receiver\nData uploaded\nby motus user"];
+        tagRegistration [shape=record, label="{Tag Registration|id|burst interval|frequency|codeset|model}"];
+
+
+        #### Connections (data flow)
+
+        ## file creation
+
+        SensorGnome -> SGfiles;
+        Lotek -> DTAfiles;
+        audacity -> registrationPackage;
+        processServer1 -> tagRegistration;
+        processServer2 -> tagRegistration;
+        processServer3 -> tagRegistration;
+        processServer4 -> tagRegistration;
+        processServer1 -> newReceiver;
+        processServer2 -> newReceiver;
+        processServer3 -> newReceiver;
+        processServer4 -> newReceiver;
+        processServer1 -> receiverDB;
+        processServer2 -> receiverDB;
+        processServer3 -> receiverDB;
+        processServer4 -> receiverDB;
+        processServer101 -> receiverDB;
+        processServer102 -> receiverDB;
+        processServer1 -> summaryFiles;
+        processServer2 -> summaryFiles;
+        processServer3 -> summaryFiles;
+        processServer4 -> summaryFiles;
+        processServer101 -> summaryFiles;
+        processServer102 -> summaryFiles;
+        userR -> userTagDB;
+        userR -> userRecvDB;
+
+
+        ## file transfer
+
+        SGfiles -> rawFiles[label="User Site Visit"];
+        SGfiles -> syncServer[style="dashed",label="Attached\nReceiver\ninternet\nconnection"];
+        DTAfiles -> rawFiles[label="User Site Visit"];
+        rawFiles -> uploadSite[label="Zip into archive"];
+        registrationPackage -> uploadSite;
+        uploadSite -> uploadServer;
+        summaryFiles -> downloadSite;
+
+
+        ## Job creation / dispatch
+
+        uploadServer -> queue0;
+        queue0 -> processServer1;
+        queue0 -> processServer2;
+        queue0 -> processServer3;
+        queue0 -> processServer4;
+        syncServer -> priorityQueue;
+        priorityQueue -> processServer101;
+        priorityQueue -> processServer102;
+
+
+        ## sgdata HTTP requests/replies
+
+        statusServer -> userBrowser[label="  SG Live Web Interface\n  SG Realtime Status Summary\nProcessing Job Summary"];
+        SensorGnome -> statusServer[style=dashed,label="Live Web Interface\nGPS fixes\nOnboard Tag Detections"];
+        dataServer -> userR;
+        downloadSite -> userBrowser;
+        userBrowser -> motus[label="metadata\nentry"];
+
+
+        ## motus API calls
+
+        tagRegistration -> motus[label="  Register\n     Tag"];
+        newReceiver -> motus[label="  Register\n  Receiver"];
+        FuncubeDongle -> audacity[label="Set Freq. with\nQTHID/FCHID"];
+        motus -> metadataCache[label="  daily update"];
+        motus -> uploadSite[label="  credentials", dir="both"];
+        motus -> downloadSite[label="  credentials", dir="both"];
+        motus -> dataServer[label="  credentials", dir="both"];
+        motus -> statusServer[label="  credentials", dir="both"];
+
+
+        ## DB operations
+
+        receiverDB -> masterDB:MasterDB[label=" merge:\n  assign new global IDs\nfor batches\nruns, hits"];
+        masterDB -> dataServer;
+        metadataCache -> summaryFiles;
+        metadataCache -> dataServer;
+        jobsDB -> processServer1[dir="both"];
+        jobsDB -> processServer2[dir="both"];
+        jobsDB -> processServer3[dir="both"];
+        jobsDB -> processServer4[dir="both"];
+        jobsDB -> processServer101[dir="both"];
+        jobsDB -> processServer102[dir="both"];
+        jobsDB -> uploadServer[dir="both"];
+        jobsDB -> syncServer[dir="both"];
+        jobsDB -> statusServer;
+
+
+        ## Other
+
+        metadataCache -> metadataTracker[label="  check-in changes"];
+}

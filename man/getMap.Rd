@@ -7,7 +7,7 @@
 getMap(src, name = "meta")
 }
 \arguments{
-\item{src}{dplyr src_sqlite to a database}
+\item{src}{dplyr src_sqlite to a database or an SQLiteConnection}
 
 \item{name}{name of table in database; default: "meta"}
 }
@@ -24,10 +24,9 @@ NULL to it.
 }
 \examples{
 
-x = getMap(src_sqlite("SG-1234BBBK5678.motus"), "meta")
+x = getMap(safeSrcSQLite("SG-1234BBBK5678.motus"), "meta")
 x$recvSerno
 x$MACAddr <- "01235a3be098"
 x$recvSerno <- NULL
 x[["MACAddr"]]
 }
-

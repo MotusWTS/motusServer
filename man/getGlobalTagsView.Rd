@@ -59,10 +59,9 @@ to match the original columns.  These are done by \code{\link{exportGlobalTags}}
 
     class(ts) <- class(Sys.time())
 }
-\author{
-John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
-}
 \seealso{
 \code{\link{exportGlobalTags}} and \code{\link{tagview}}
 }
-
+\author{
+John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}

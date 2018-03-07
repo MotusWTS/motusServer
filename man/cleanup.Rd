@@ -4,7 +4,7 @@
 \alias{cleanup}
 \title{remove old processed data from a receiver database.}
 \usage{
-cleanup(src, dropTables = FALSE, vacuum = FALSE)
+cleanup(src, dropTables = FALSE, vacuum = dropFiles, dropFiles = FALSE)
 }
 \arguments{
 \item{src}{dplyr src_sqlite to receiver database}
@@ -13,9 +13,15 @@ cleanup(src, dropTables = FALSE, vacuum = FALSE)
 than just emptying them.  This makes sense if their schema
 has changed, but is usually not required, so the default is FALSE.}
 
-\item{vacuum}{boolean; if TRUE (the default), free unused storage
+\item{vacuum}{boolean; if TRUE, free unused storage
 from the database.  This can be slow, as the entire database is
-rewritten.}
+rewritten.  Default: \code{dropFiles}, so normally FALSE.}
+
+\item{dropFiles}{boolean; if TRUE, also delete all raw data files
+and information about them which are stored in the DB.
+WARNING: do not do this unless you have copies of the files
+stored elsewhere, e.g. in \code{MOTUS_PATH$file_repo}.
+Default: FALSE.}
 }
 \description{
 This deletes all output and record of processing.  Original
@@ -24,4 +30,3 @@ raw data is not affected.
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

@@ -9,7 +9,7 @@
 # $1: serial number
 #
 
-RECEIVER_DB=/sgm/remote/receivers.sqlite
+RECEIVER_DB=/sgm_local/receivers.sqlite
 
 if [[ "$1" == "-f" ]]; then
     FORCE=1

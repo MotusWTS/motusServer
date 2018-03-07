@@ -13,7 +13,15 @@ type of project to be listed.}
 \item{...:}{additional parameters to motusQuery()}
 }
 \value{
-the list of motus projects
+the list of motus projects, a data.frame with these columns
+
+\itemize{
+\item id integer; project ID
+\item name character; long name
+\item label character; short name for plotting etc.
+\item tagsPermissions; integer
+\item sensorsPermissions; integer
+}
 }
 \description{
 return a list of all motus projects
@@ -21,4 +29,3 @@ return a list of all motus projects
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

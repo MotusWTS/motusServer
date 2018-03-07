@@ -57,7 +57,7 @@ sgFindTags = function(src, tagDB, resume=TRUE, par = NULL, mbn) {
             sql("delete from batchState where progName='find_tags_motus' and monoBN=%d", bn)
 
         ## start the child;
-        bcmd = paste(cmd, pars, if (resume) "--resume", paste0("--bootnum=", bn), "--src_sqlite", tagDB, src$path, " 2>&1 ")
+        bcmd = paste(cmd, pars, if (resume) "--resume", paste0("--bootnum=", bn), "--src_sqlite", tagDB, attr(src$con, "dbname"), " 2>&1 ")
 
         cat("  => ", bcmd, "\n")
 

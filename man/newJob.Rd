@@ -39,10 +39,9 @@ the folder, while metadata are stored in the Twig object, which is
 maintained in persistent storage in the Copse's SQLite database.
 Jobs can have subjobs via the Twig's parent() relationship.
 }
-\author{
-John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
-}
 \seealso{
 \link{\code{Copse}}
 }
-
+\author{
+John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}

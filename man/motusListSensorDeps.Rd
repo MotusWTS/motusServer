@@ -12,7 +12,29 @@ motusListSensorDeps(projectID = NULL, ...)
 \item{...:}{additional parameters to motusQuery()}
 }
 \value{
-the list of sensor deployments for this project
+the list of sensor deployments for this project; a data.frame
+with these columns:
+\itemize{
+\item id
+\item serno
+\item receiverType
+\item deviceID
+\item macAddress
+\item status
+\item deployID
+\item name
+\item fixtureType
+\item latitude
+\item longitude
+\item isMobile
+\item tsStart
+\item tsEnd
+\item projectID
+\item elevation
+\item antennas; a list column, whose elements are themselves data.frames giving antenna deployments for each receiver
+}
+
+or NULL if there are no deployments for this project.
 }
 \description{
 return a list motus sensor deployments for a project
@@ -20,4 +42,3 @@ return a list motus sensor deployments for a project
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

@@ -25,4 +25,3 @@ All files and sub-directories are moved.
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

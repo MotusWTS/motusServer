@@ -98,4 +98,3 @@ deployments, that table will contain only one fix, but for mobile deployments,
 the table will contain a time series of fixes.  The view will use this table
 to provide lat/lon/elevation.
 }
-

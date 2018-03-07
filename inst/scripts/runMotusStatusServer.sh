@@ -28,7 +28,7 @@ while [[ "$1" != "" ]]; do
 
 Usage: runMotusStatusServer.sh [-h] [-t] [-p PORT]
 
-Run the motus email server which processes incoming data emails.
+Run the motus status server which replies to requests for job and server status.
 
    -h  show usage
 
@@ -43,6 +43,8 @@ EOF
         esac
     shift
 done
+
+export SPID=$$;
 
 PIDFILE=/sgm/statusServer.pid
 if [[ -s $PIDFILE ]]; then
@@ -70,6 +72,9 @@ function onExit {
     if [[ $TRACE != 0 && "$MYTMPDIR" =~ /tmp/tmp* ]]; then
         rm -rf "$MYTMPDIR"
     fi
+
+    ## delete locks held by this process
+    sqlite3 /sgm_local/server.sqlite "pragma busy_timeout=10000; delete from symLocks where owner=$SPID" > /dev/null
 }
 
 ## call the cleanup handler on exit

@@ -16,10 +16,9 @@ scripts which launch the email, status, and process servers,
 and is used by those scripts to remove locks if those
 servers die.
 }
-\author{
-John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
-}
 \seealso{
 \code{\link{lockSymbol}}
 }
-
+\author{
+John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}

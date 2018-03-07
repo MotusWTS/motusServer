@@ -8,7 +8,12 @@ if [[ "$*" == "" ]]; then
 Usage:  killMotusProcessServers.sh [-a] [-g] [ID] [ID] ...
 Kill motusProcessServer processes.  Specify the processes
 to kill by one or more integer ID numbers, or specify "-a"
-to kill all of them.
+to kill all of them.  ID are the queue numbers: 1, 2, 3, ...
+and 101, 102.
+
+Specify -g (for "graceful") to let each server finish any current
+subjob before quitting, so that jobs will be resumed without loss of
+data when the servers are subsequently restarted.
 
 EOF
     exit 1;
@@ -36,7 +41,11 @@ fi
 
 
 for i in $PNUMS; do
-    KILLFILE=/sgm/queue/0/kill$i
+    if [[ $i -lt 100 ]]; then
+        KILLFILE=/sgm/queue/0/kill$i
+    else
+        KILLFILE=/sgm/priority/kill$i
+    fi
     touch $KILLFILE
     if [[ ! $GRACEFUL ]]; then
         PID=`cat /sgm/processServer$i.pid`

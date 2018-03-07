@@ -1,12 +1,6 @@
-#' delete a set of batches and all related data from the motus transfer tables
-#'
-#' By default, we only permit this if the batches haven't been transferred to
-#' motus yet, but this can be overridden by the "force" parameter.
+#' delete a set of batches and all related data from the master data base
 #'
 #' @param batchIDs integer vector of batch IDs
-#'
-#' @param force allow deletion even if batches have already been transferred to motus.org
-#' Default: FALSE
 #'
 #' @return integer vector of those batchIDs which were actually deleted.
 #'
@@ -14,20 +8,13 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-dropBatchesFromTransfer = function(batchIDs, force=FALSE) {
+dropBatchesFromTransfer = function(batchIDs) {
+
+    stop("must be re-implemented")
 
     bid = paste(batchIDs, collapse=",")
-    tx = MotusDB("select batchID, tsMotus from batches where batchID in (%s)", bid)
+    tx = MotusDB("select batchID, status from batches where batchID in (%s)", bid)
 
-    txed = which(tx$tsMotus > 0)
-
-    if (! force && length(txed) > 0) {
-        tx = tx [-txed, ]
-        warning("force=FALSE, so not dropping already-transferred batches with these IDs:\n",
-                paste(batchIDs[txed], collapse=", "))
-        batchIDs = tx$batchID
-        bid = paste(batchIDs, collapse=",")
-    }
     if (nrow(tx) == 0)
         return(integer(0))  ## no batches to delete after all
 

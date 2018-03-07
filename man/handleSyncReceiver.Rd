@@ -25,10 +25,9 @@ Called by \code{\link{syncServer}}
 grabs any new data from the attached receiver, and
 re-runs the tagfinder
 }
-\author{
-John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
-}
 \seealso{
 \link{\code{syncServer}}
 }
-
+\author{
+John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
+}

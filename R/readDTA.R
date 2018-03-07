@@ -13,8 +13,7 @@
 #'     Useful if reading the file only to get a serial number, which
 #'     is within the first 20 lines. Default: -1, which reads all lines.
 #'
-#' @return if \code{sernoOnly} is TRUE, a character scalar receiver serial number such as "Lotek-123".
-#' Otherwise, a named list with some or all of these items:
+#' @return A named list with some or all of these items:
 #'
 #' \itemize{
 #' \item  recv serial number; e.g. "Lotek-123"
@@ -35,6 +34,7 @@
 #' }
 #' \item pieces chunks of text of various types
 #' \item piece.lines.before number of lines before pieces of various types
+#' \item boottimes character of formatted boot timestamps
 #' }
 #'
 #' @note The .DTA file is processed in lexical order, so that changes
@@ -84,6 +84,9 @@ readDTA = function(filename="", lines=NULL, numLines=-1) {
     ## Interpret these now.
 
     codeset = as.character(NA)
+    boottimes = character(0)
+
+    site_code = NA
 
     for (ip in seq(along=pieces)) {
         if (nchar(pieces[ip]) == 0)
@@ -103,11 +106,19 @@ readDTA = function(filename="", lines=NULL, numLines=-1) {
                },
 
                serial_no = {
-                   serno = tab[1,1]
+                   serno = tab[1, 1]
+               },
+
+               boottime = {
+                   boottimes = c(boottimes, paste(tab[1,1], tab[1, 2]))
+               },
+
+               site_code = {
+                   site_code = tab[1, 1]
                },
 
                code_set = {
-                   codeset = tab[1,1]
+                   codeset = tab[1, 1]
                },
 
                active_scan = {
@@ -138,7 +149,7 @@ readDTA = function(filename="", lines=NULL, numLines=-1) {
                        sig = tab[[7]],
                        lat = tab[[9]],
                        lon = tab[[10]],
-                       dtaline = piece.lines.before[ip] + 1:nrow(tab),
+                       dtaline = piece.lines.before[ip] + seq_len(nrow(tab)),
                        antfreq = tab[[3]],
                        gain = tab[[4]],
                        codeset = factor(1, labels=codeset),
@@ -154,7 +165,7 @@ readDTA = function(filename="", lines=NULL, numLines=-1) {
                        tab = cbind(tab, NA, NA)  ## lat and lon not available
 
                    names(tab) = c("ts", "chan", "id", "ant", "sig", "lat", "lon")
-                   tab$dtaline = piece.lines.before[ip] + 1:nrow(tab)
+                   tab$dtaline = piece.lines.before[ip] + seq_len(nrow(tab))
                    tab$ant = as.character(tab$ant)
 
                    tab = subset(tab, id != 999)
@@ -209,5 +220,18 @@ readDTA = function(filename="", lines=NULL, numLines=-1) {
         tags = subset(tags, ! is.na(tags$ts))
         tags = tags[order(tags$ts),]
     }
-    return (list(tags=tags, recv = paste0("Lotek-", serno), pieces=pieces, piece.lines.before=piece.lines.before))
+    serno = paste0("Lotek-", serno)
+    if (! is.na(site_code))  {
+        ## if a site_code was present, use it to possibly disambiguate duplicated
+        ## receivers.  Note that as soon as a rule matches, we use it and don't
+        ## look at further rules.
+        rules = MetaDB("select * from serno_collision_rules where serno=%s order by id", serno, .QUOTE=TRUE)
+        for (i in seq_len(nrow(rules))) {
+            if (isTRUE(eval(parse(text = rules$cond[i])))) {
+                serno = paste0(serno, rules$suffix[i])
+                break
+            }
+        }
+    }
+    return (list(tags=tags, recv = serno, pieces=pieces, piece.lines.before=piece.lines.before, boottimes=boottimes))
 }

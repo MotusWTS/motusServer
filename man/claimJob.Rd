@@ -23,4 +23,3 @@ processServer(), only one process will succeed in claiming the job.
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-

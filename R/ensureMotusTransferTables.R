@@ -17,7 +17,7 @@ ensureMotusTransferTables = function(recreate=c()) {
     if (isTRUE(recreate))
         recreate = motusTransferTables
 
-    have = src_tbls(src)
+    have = dbListTables(MotusDB$con)
     need = ! motusTransferTables %in% have
     if (! any(need) && length(recreate) == 0)
         return ()
@@ -39,4 +39,5 @@ ensureMotusTransferTables = function(recreate=c()) {
 
 motusTransferTables = c("batches", "gps", "runs", "runUpdates",
                         "hits", "batchAmbig", "batchProgs",
-                        "batchParams", "batchDelete")
+                        "batchParams", "batchDelete", "maxKeys", "bumpCounter", "uploads",
+                        "reprocess", "reprocessBootSessions", "reprocessBatches")
