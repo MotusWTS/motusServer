@@ -11,4 +11,10 @@ suppressMessages(suppressWarnings(library(motusServer)))
 ## open jobs and master databases
 ensureServerDB()
 openMotusDB()
+
+## force environment symbol USER to be set, which cron doesn't do
+## this is required for ltGetCodeset()
+## see https://github.com/jbrzusto/motusServer/issues/383
+
+Sys.setenv(USER="sg")
 refreshMotusMetaDBCache()
