@@ -43,4 +43,3 @@ present in the file_repo.
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
 }
-
