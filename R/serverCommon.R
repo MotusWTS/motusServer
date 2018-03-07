@@ -11,7 +11,6 @@
 serverCommon = function() {
 
     library(Rook)
-    library(hwriter)
     library(jsonlite)
 
     ## make sure the server database exists, is open, and put a safeSQL object in the global ServerDB

@@ -1016,7 +1016,9 @@ queueStatusApp = function(env) {
             class(info$ctime) = class(info$mtime) = c("POSIXt", "POSIXct")
             info$sj = sapply(info$sj, function(x) { j = strsplit(x, ",")[[1]]; t = table(j); paste(sprintf("%s(%d)", names(t), t), collapse=", ")})
             names(info) = c("ID", "Sender", "Type", "Created", "Last Activity", "Incomplete SubJobs")
-            res$write(hwrite(info, border=0, row.style=list('font-weight:bold'), row.bgcolor=rep(c("#ffffff", "#f0f0f0"), length=nrow(info))))
+            ## disable the following to drop dependency on hwrite; we're only carrying these functions along
+            ## to have the code available when writing the new live receiver API / page
+##            res$write(hwrite(info, border=0, row.style=list('font-weight:bold'), row.bgcolor=rep(c("#ffffff", "#f0f0f0"), length=nrow(info))))
         }
     }
     res$finish()
