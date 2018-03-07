@@ -382,6 +382,7 @@ CREATE TABLE batchState (
     tsData FLOAT(53),                             -- timestamp (seconds since unix epoch) of last processed line in previous input
     tsRun FLOAT(53),                              -- timestamp (seconds since unix epoch) when program was paused
     state  BLOB,                                  -- serialized state of program, if needed
+    version INT,                                  -- serialization version (MAJOR << 16 | MINOR)
 
     PRIMARY KEY (monoBN, progName)                -- only one saved state per program per boot session
 );
