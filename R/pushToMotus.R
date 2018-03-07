@@ -29,7 +29,7 @@ pushToMotus = function(src, batchStatus=1) {
     newBatches = batches %>%
         anti_join (motusTX, by="batchID") %>%
         arrange(batchID) %>%
-        filter(!is.na(tsBegin)) %>%
+        filter(!is.na(tsStart)) %>%
         collect
 
     if (nrow(newBatches) == 0)
