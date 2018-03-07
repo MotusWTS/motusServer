@@ -81,6 +81,9 @@ refreshMotusMetaDBCache = function() {
             stop("upstream listprojects API failing sanity check")
         }
 
+        ## replace copy of projects
+        meta("delete from projs")
+        dbWriteTable(meta$con, "projs", p, append=TRUE, row.names=FALSE)
         rv["projs"] = TRUE
 
         ## fill in *something* for missing project labels (first 3 words with underscores)
