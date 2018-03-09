@@ -1,17 +1,18 @@
 ## Interim Handling of Beeper Tags ##
 
-(2018 March 8) Beeper tag support is still not complete.  For now, we
+**2018 March 8** Beeper tag support is still not complete.  For now, we
 provide users with a database of pulses extracted from the raw
-receiver data files.  This happens when the tag finder is run with th
+receiver data files.  This happens when the tag finder is run with the
 `--pulses_only` option, e.g. via a project or receiver
-parameterOverride.
+parameterOverride.  These parameterOverrides are managed by motus.org
+staff at user request.
 
 ### Format of SERNO_beeper.sqlite ###
 
 This is an [sqlite](https://sqlite.org) file, which can be processed
 in R via the `RSQLite` or `dplyr` packages.
 
-The database contains two tables.  `params` records antenna parameter
+The database contains two tables:  `params` records antenna parameter
 settings, and has this schema:
 
 ```sql
@@ -26,7 +27,7 @@ errinfo VARCHAR       -- non-empty if error code non-zero
 );
 ```
 
-The `pulses` table contains detected pulses, and has this schema:
+and `pulses` contains detected pulses, and has this schema:
 ```sql
 CREATE TABLE pulses (
    batchID INTEGER,    -- batchID these pulses belong to
