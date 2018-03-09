@@ -100,13 +100,7 @@ handlePlotData = function(j) {
             print(rv$plot)
             dev.off()
 
-            targDir = getProjDir(info$projID[i], isTesting)
-            file.symlink(plotfilename, targDir)
-            file.symlink(pdfname, targDir)
-            file.symlink(datafilename, targDir)
-            url = getDownloadURL(info$projID[i], isTesting)
-            jobLog(j, paste0("Exported hourly dataset (and plot) to:  ", basename(datafilename), "(.png/.pdf)"))
-            jobProduced(j, file.path(url, basename(c(plotfilename, pdfname, datafilename))), info$projID[i], j$serno)
+            registerProducts(j, path=c(plotfilename, pdfname, datafilename), projectID=info$projID[i], isTesting=isTesting)
         }
     }
     closeRecvSrc(src)
