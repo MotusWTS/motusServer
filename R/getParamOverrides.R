@@ -48,24 +48,47 @@ tol = recvDepTol)[[1]]
 
     ## lookup project-wide overrides by date
 
+    projOR = NULL
     if (length(pid) > 0) {
         projOR = MetaDB("select printf('--%s %s', paramName, paramVal) from paramOverrides where projectID=:pid and progName=:progName
-and tsStart - :tol <= :tsStart and (tsEnd is null or tsEnd > :tsStart) order by tsStart desc limit 1",
+and tsStart - :tol <= :tsStart and (tsEnd is null or tsEnd > :tsStart)",
 pid=pid,
 progName=progName,
 tol=recvDepTol,
 tsStart=tsStart)[[1]]
-    } else {
-        projOR = NULL
+
+        ## append any "blanket" (non-time-dependent) overrides
+        projOR = c(projOR, MetaDB("select printf('--%s %s', paramName, paramVal) from paramOverrides where projectID=:pid and progName=:progName
+ and tsStart is null",
+ pid=pid,
+ progName=progName
+ )[[1]])
+
     }
 
     ## lookup receiver-specific overrides by date
 
-    recvOR = MetaDB("select  printf('--%s %s', paramName, paramVal) from paramOverrides where serno=:serno and progName=:progName
-and tsStart <= :tsStart and (tsEnd is null or tsEnd > :tsStart) order by tsStart desc limit 1",
-                  serno=serno,
-                  progName=progName,
-                  tsStart=tsStart)[[1]]
+    recvOR = NULL
+    if (! is.null(monoBN)) {
+        ## first try by monoBN, looking for the any overlapping overrides
+        projOR = MetaDB("select printf('--%s %s', paramName, paramVal) from paramOverrides where serno=:serno and progName=:progName
+and :monoBN between monoBNlow and monoBNhigh",
+serno=serno,
+progName=progName,
+monoBN=monoBN)[[1]]
+    }
+    ## next try by date
+    recvOR = c(recvOR, MetaDB("select  printf('--%s %s', paramName, paramVal) from paramOverrides where serno=:serno and progName=:progName
+and tsStart <= :tsStart and (tsEnd is null or tsEnd > :tsStart) order by tsStart",
+serno=serno,
+progName=progName,
+tsStart=tsStart)[[1]])
+
+    ## finally, find any "blanket" (non-time-dependent) overrides
+    recvOR = c(recvOR, MetaDB("select  printf('--%s %s', paramName, paramVal) from paramOverrides where serno=:serno and progName=:progName
+and tsStart is null",
+serno=serno,
+progName=progName)[[1]])
 
     ## Combine overrides, with any receiver-specific ones following
     ## and thus overriding the project-wide ones.
