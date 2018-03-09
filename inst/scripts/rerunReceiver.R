@@ -9,11 +9,14 @@ ARGS = commandArgs(TRUE)
 if (length(ARGS) == 0) {
     cat("
 
-Usage: rerunReceiver.R [-F] [-p] [-c] [-e] [-t] SERNO [BLO BHI]
+Usage: rerunReceiver.R [-F] [-p] [-c] [-e] [-t] [-P PROJECTID] [-U USERID] SERNO [BLO BHI]
 
 where:
 
  SERNO: receiver serial number; e.g. SG-0613BB000613 or Lotek-123
+ [PROJECTID]: integer ID of motus project which should own products
+ (will be overridden by receiver deployment records, where these exist)
+ [USERID]: integer ID of motus user who initiated the rerun
 
  BLO BHI: for an SG, you can specify a range of boot sessions by specifying
  BLO and BHI as the low and high boot sessions, respectively;
@@ -21,6 +24,11 @@ where:
 
  -p: run the job at high priority, on one of the processServers dedicated
      to short, fast jobs; this jumps the queue of processing uploaded data.
+
+ -P PROJECTID: specify integer ID of motus project that will own products; overridden by
+     receiver deployment records where these exist
+
+ -U USERID: specify integer ID of motus user who is submitting this job
 
  -e: don't re-run the tag finder; just re-export data
 
@@ -47,6 +55,8 @@ cleanup = FALSE
 monoBN = NULL
 fullRerun = FALSE
 isTesting = FALSE
+userID = NULL
+projectID = NULL
 
 while(isTRUE(substr(ARGS[1], 1, 1) == "-")) {
     switch(ARGS[1],
@@ -65,6 +75,14 @@ while(isTRUE(substr(ARGS[1], 1, 1) == "-")) {
            "-t" = {
                isTesting = TRUE
            },
+           "-P" = {
+               ARGS = ARGS[-1]
+               projectID = as.integer(ARGS[1])
+           },
+           "-U" = {
+               ARGS = ARGS[-1]
+               userID = as.integer(ARGS[1])
+           },
            {
                stop("Unknown argument: ", ARGS[1])
            })
@@ -78,6 +96,7 @@ ARGS = ARGS[-1]
 
 if (length(ARGS) > 0) {
     monoBN = range(as.integer(ARGS))
+    ARGS = ARGS[-1]
 }
 
 suppressMessages(suppressWarnings(library(motusServer)))
@@ -87,10 +106,12 @@ suppressMessages(suppressWarnings(library(motusServer)))
 loadJobs()
 
 if (fullRerun) {
-    j = newJob("fullRecvRerun", .parentPath=MOTUS_PATH$INCOMING, serno=serno, .enqueue=FALSE)
+    j = newJob("fullRecvRerun", .parentPath=MOTUS_PATH$INCOMING, serno=serno, motusUserID = userID, motusProjectID = projectID, .enqueue=FALSE)
     jobLog(j, paste0("Fully rerunning receiver ", serno, " from file_repo files."), summary=TRUE)
 } else {
-    j = newJob("rerunReceiver", .parentPath=MOTUS_PATH$INCOMING, serno=serno, monoBN=monoBN, exportOnly=exportOnly, cleanup=cleanup, .enqueue=FALSE)
+    j = newJob("rerunReceiver", .parentPath=MOTUS_PATH$INCOMING, serno=serno, monoBN=monoBN, exportOnly=exportOnly, cleanup=cleanup,
+                motusUserID = userID, motusProjectID = projectID,
+               .enqueue=FALSE)
     jobLog(j, paste0(if(isTRUE(exportOnly)) "Re-exporting data from" else "Rerunning", " receiver ", serno), summary=TRUE)
 }
 
