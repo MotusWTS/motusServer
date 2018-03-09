@@ -51,7 +51,7 @@ handleSGfindtags = function(j) {
     ## run the tag finder
     tryCatch({
         rv = sgFindTags(src, MOTUS_METADB_CACHE, resume=j$canResume, par = paste(sgDefaultFindTagsParams, por), mbn=j$monoBN)
-        if (any(por == "--pulses_only"))
+        if (grepl("--pulses_only", por, fixed=TRUE))
             newSubJob(j, "exportPulses", serno=serno, batchID=rv$batchID)
     }, error = function(e) {
         jobLog(j, paste(as.character(e), collapse="   \n"))
