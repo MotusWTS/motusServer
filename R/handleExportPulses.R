@@ -36,11 +36,13 @@ handleExportPulses = function(j) {
     on.exit(lockSymbol(serno, lock=FALSE))
 
     isTesting = isTRUE(topJob(j)$isTesting)
+    outDir = productsDir(serno, isTesting)
 
     src = getRecvSrc(serno)
     sql = safeSQL(src)
-    projectID = sql("select motusProjectID from batches where batchID=%d", batchID)
-    out = file.path(if (isTesting) MOTUS_PATH$WWW_TESTING else MOTUS_PATH$WWW, projectID, sprintf("%s_beeper.sqlite", serno))
+    projectID = sql("select motusProjectID from batches where batchID=%d", batchID)[[1]]
+
+    out = file.path(outDir, sprintf("%s_beeper.sqlite", serno))
 
     ## we'll copy directly from tables in the receiver DB to the output DB
     sql("ATTACH DATABASE '%s' as d", out)
@@ -52,9 +54,7 @@ handleExportPulses = function(j) {
 
     sql("DETACH DATABASE d");
     closeRecvSrc(src)
-    url = getDownloadURL(projectID)
-    jobLog(j, sprintf("Exported beeper pulses and antenna parameters for %s, batch %d to %s", serno, batchID, basename(out)))
-    jobProduced(j, file.path(url, basename(out)), projectID, serno)
+    registerProducts(j, out, projectID=projectID, isTesting=isTesting)
     return (TRUE)
 }
 
