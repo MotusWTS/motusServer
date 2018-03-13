@@ -22,11 +22,21 @@ handleUnpackArchive = function(j) {
     suffix = regexPieces(MOTUS_ARCHIVE_REGEX, bn)[[1]] %>% tolower
 
     cmd = NULL
+    ## generally, any error in unpacking should be propagated up the R stack
+    minErrorCode = 1
     if (isTRUE(length(suffix) > 0)) {
         cmd = switch(suffix,
                      "zip" = c("unzip", "-o"),       ## N.B.: put args in own strings
                      "7z"  = c("7z", "x", "-y"),
-                     "rar" = c("unar", "-f"),
+
+                     ## unar returns 1 on *any* error, even if due to a
+                     ## contained .gz file having a problem, so we have to
+                     ## use a different minErrorCode that effectively ignores
+                     ## all errors, and hopes that lsar in handleSanityChecks
+                     ## caught truly bogus .rar files
+                     ## see https://github.com/jbrzusto/motusServer/issues/390
+
+                     "rar" = {minErrorCode = 2; c("unar", "-f", "-nr")},
                      NULL)
     }
 
