@@ -47,7 +47,7 @@ ltFindTags = function(src, tagDB, par = NULL) {
     ## lookup each boottime in the DTAtags table, so we can tell which
     ## boot sessions actually have records
 
-    btrec = dbGetQuery(src$con, "select t1.relboot, (select ts from DTAtags as t2 where t2.ts >= t1.ts order by t2.ts limit 1) as mints from DTAboot as t1")
+    btrec = dbGetQuery(src$con, "select t1.relboot, (select ts from DTAtags as t2 where t2.ts >= t1.ts order by t2.ts limit 1) as mints from DTAboot as t1 where mints is not null")
 
     ## boot numbers to use are those where there's a time difference between
     ## first records at or after the boot timestamps; assume the last boot session
@@ -55,7 +55,7 @@ ltFindTags = function(src, tagDB, par = NULL) {
     bn = btrec$relboot[c(diff(btrec$mints)>0, TRUE)]
 
     ## drop the last bootnum if there are no DTAtags records after it.
-    if (dbGetQuery(src$con, "select not exists (select * from DTAtags as t1 where ts > (select max(ts) from DTAboot))")[[1]] == 1)
+    if (dbGetQuery(src$con, sprintf("select not exists (select * from DTAtags as t1 where ts > %f)", tail(btrec$mints, 1)))[[1]] == 1)
         bn = head(bn, -1)
 
     for (bootnum in bn) {
