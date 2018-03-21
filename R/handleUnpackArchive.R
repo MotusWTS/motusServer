@@ -24,9 +24,10 @@ handleUnpackArchive = function(j) {
     cmd = NULL
     ## generally, any error in unpacking should be propagated up the R stack
     minErrorCode = 1
+    postopts = ""
     if (isTRUE(length(suffix) > 0)) {
         cmd = switch(suffix,
-                     "zip" = c("unzip", "-o"),       ## N.B.: put args in own strings
+                     "zip" = {postopts = c("-x", "/"); c("unzip", "-o")},       ## N.B.: put args in own strings
                      "7z"  = c("7z", "x", "-y"),
 
                      ## unar returns 1 on *any* error, even if due to a
@@ -46,7 +47,7 @@ handleUnpackArchive = function(j) {
         return (FALSE)
     }
     jobLog(j, paste0("Unpacking file ", bn, " with ", paste(cmd, collapse=" ")))
-    res = safeSys("cd", dir, nq=";", cmd, file, shell=TRUE, splitOutput=TRUE)
+    res = safeSys("cd", dir, nq=";", cmd, file, postopts, shell=TRUE, splitOutput=TRUE)
     jobLog(j, c(head(res, 3), "...", tail(res, 3)))
     file.remove(file)
 
