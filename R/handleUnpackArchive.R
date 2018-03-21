@@ -15,7 +15,11 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 handleUnpackArchive = function(j) {
-    file = j$file
+    ## in case `j$file` has a stale queue component due to the job
+    ## being retried on a new queue, fix it; see https://github.com/jbrzusto/motusServer#393
+
+    file = sub(paste0("^", MOTUS_PATH$QUEUES, '[0-9]+'), file.path(MOTUS_PATH$QUEUES, MOTUS_PROCESS_NUM), perl=TRUE, j$file)
+
     bn = basename(file)
     dir = jobPath(j)
 
