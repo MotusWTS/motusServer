@@ -28,7 +28,7 @@ handleUnpackArchive = function(j) {
     cmd = NULL
     ## generally, any error in unpacking should be propagated up the R stack
     minErrorCode = 1
-    postopts = ""
+    postopts = NULL
     if (isTRUE(length(suffix) > 0)) {
         cmd = switch(suffix,
                      "zip" = {postopts = c("-x", "/"); c("unzip", "-o")},       ## N.B.: put args in own strings
