@@ -2,10 +2,10 @@
 % Please edit documentation in R/statusServer2.R
 \name{get_receiver_info}
 \alias{get_receiver_info}
-\title{return a list of files for a receiver}
+\title{return information for a receiver}
 \usage{
 get_receiver_info(env)
 }
 \description{
-return a list of files for a receiver
+return information for a receiver
 }

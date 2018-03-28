@@ -334,6 +334,24 @@ projects.
          Sort order for this item is descending by `day`.  For a Lotek receiver, `countFS` is not meaningful
          because files span multiple days, so it is set to the same value as `countDB`.
 
+### get_receiver_file ###
+
+   get_receiver_file (serno, fileID, authToken)
+
+   - return: a text file; for this API call, the reply has headers that a browser will interpret
+     as if a file were being downloaded.
+
+     - `serno`: receiver serial number
+     - `fileID`: integer file ID for that receiver
+
+     Note: to minimize server resources used for this API call, files are transmitted as
+     they appear in the file repository (i.e. either uncompressed as `.txt` or
+     compressed as `.txt.gz`).
+     Additionally, the `Content-Encoding` header for a .gz file is given as `gzip`, which
+     means a web browser will automatically decompress the file before saving it.
+     Either way, the user ends up with an uncompressed text file whose name ends in `.txt`,
+     **not in `.txt.gz`**
+
 ### get_receiver_info ###
 
    get_receiver_info (serno, authToken)
@@ -400,7 +418,7 @@ projects.
 
 ### get_upload_info ###
 
-   get_upload_info (uploadID, sha1, listContents)
+   get_upload_info (uploadID, sha1, listContents, authToken)
 
       - uploadID: integer (optional); ID of uploaded file
       - sha1: string, hex digits (optional); sha1 hash of file contents
@@ -429,7 +447,7 @@ projects.
 
 ### serno_collision_rules ###
 
-   serno_collision_rules (action, id, serno, cond, suffix) - administrative users only
+   serno_collision_rules (action, id, serno, cond, suffix, authToken) - administrative users only
 
       - action: string (required); one of "get", "put", or "delete".  Presence and
         use of other parameters depends on this value.
@@ -450,7 +468,8 @@ projects.
 
    Semantics:
 
-   `action == "get"`:  fetch all rules whose `id` was specified or whose `serno` was        specified, or all rules if neither was specified.  The return value is an
+   `action == "get"`:  fetch all rules whose `id` was specified or whose `serno` was
+   specified, or all rules if neither was specified.  The return value is an
        object with these  named fields:
           - id; integer; rule ID
           - serno; string; bare receiver serial number
@@ -467,8 +486,94 @@ projects.
        or for which the user specified a `serno`.  The return value is as
        for `action == "get"`, but includes only those rules just deleted.
 
+### get param_overrides ###
+
+   get_param_overrides(id, projectID, serno, progName, authToken) - administrative users only
+
+      - id: optional; integer array of param override IDs
+      - projectID: optional; integer array of motus project IDs
+      - serno: optional; string array of receiver serial numbers
+      - progName: optional; string array of program names to which parameter overrides apply
+
+   return the set of all parameter overrides matching all specified criteria.
+   If no criteria are supplied, then all overrides are returned.  The returned object has these
+   array items:
+
+      - id: integer; IDs of parameter overrides
+      - projectID: integer; motus project IDs (each can be null)
+      - serno: character; device serial numbers (each can be null)
+      - tsStart: double; starting timestamps (each can be null; seconds since 1 Jan 1970 GMT)
+      - tsEnd: double; ending timestamps (each can be null; seconds since 1 Jan 1970 GMT)
+      - monoBNlow: integer; starting boot session numbers (each can be null; used for SGs only)
+      - monoBNhigh: integer; ending boot session numbers (each can be null; used for SGs only)
+      - progName: character; names of programs to which override applies; typically 'find_tags_motus'
+      - paramName: character; names of parameters (e.g. 'default_freq')
+      - paramVal: double; values for parameters (each can be null if parameter is just a flag)
+      - why: character; human-readable reason for each override
+
+### delete_param_overrides ###
+
+   delete_param_overrides(id, authToken) - administrative users only
+
+      - id: integer array of param override IDs
+
+   delete the parameter overrides whose IDs are in `id`, returning a boolean array of the
+   same length indicating which IDs were deleted.
+
+### add_param_overrides ###
+
+   add_param_overrides(projectID, serno, tsStart, tsEnd, monoBNlow, monoBNhigh, progName, paramName, paramVal, why, authToken)
+
+      - projectID: integer; motus project IDs (can be null)
+      - serno: character; device serial numbers (can be null)
+      Exactly one of `serno` or `projectID` must be specified.
+
+      - tsStart: double; starting timestamp (can be null; seconds since 1 Jan 1970 GMT)
+      - tsEnd: double; ending timestamp (can be null; seconds since 1 Jan 1970 GMT)
+      - monoBNlow: integer; starting boot session number (can be null; used for SGs only)
+      - monoBNhigh: integer; ending boot session number (can be null; used for SGs only)
+      - progName: character; name of program to which override applies; typically 'find_tags_motus'
+      - paramName: character; name of parameter (e.g. 'default_freq')
+      - paramVal: double; value for parameter (can be null if parameter is just a flag)
+      - why: character; human-readable reason for override
+
+   returns an object with this item:
+
+      - id: integer ID of new parameter override
+
+   or an item called `error` if the override already exists or there were problems
+   with the specified parameters.
+
+### describe_program ###
+
+   describe_program(progName, authToken) - administrative users only
+
+      - progName: (optional) string scalar giving name of program for which
+      to return information
+
+   return information about a program.
+
+   If `progName` is not specified,
+   then return an object with this array item:
+
+      - progName: string array of possible values for `progName`.
+
+   If `progName` is specified, then return an object with these array items:
+
+      - paramName: parameter name
+      - paramIsFlag: boolean; if `true`, parameter does not take a value; otherwise,
+        parameter takes a floating point value
+      - paramInfo: human-readable description of parameter
+
+   and these non-array items:
+
+      - version: string scalar; current version of program
 
 ## Changelog ##
+
+2018-03-27
+   - add new entry `get_receiver_file` to allow download of individual raw receiver
+     files (by serno, fileID)
 
 2018-02-22
    - add new entry `serno_collision_rules` which can get, set, or delete rules for

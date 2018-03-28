@@ -254,3 +254,13 @@ dt {
      text-decoration:none;
      text-shadow: 1px 1px 1px #555;
 }
+
+#download_file_form {
+    display: none;
+}
+
+.download_recv_file:hover {
+     text-decoration:none;
+     text-shadow: 1px 1px 1px #555;
+}
+;

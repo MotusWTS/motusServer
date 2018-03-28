@@ -768,6 +768,9 @@ function initStatus2Page() {
     // attach a click handler to any field with class job_id that's in a recv_files or upload file section
     $(".recv_files,.upload_info").on("click", ".job_id", on_click_jobs_table_row);
 
+    // attach a click handler to any field with class download_recv_file that's in a recv_files section
+    $(".recv_files").on("click", ".download_recv_file", on_click_download_recv_file);
+
     // attach a click handler to any field with class receiver_serno that's in a job_details section
     $(".job_details").on("click", ".receiver_serno", on_click_receiver_serno);
 
@@ -1129,4 +1132,27 @@ function show_upload_info2(x) {
             width:900,
             title:"Details of uploaded file #" + x.uploadID
         });
+};
+
+// @function get_receiver_file: use a hidden form to download a receiver file,
+// given the receiver serno and fileID.
+
+function get_recv_file(serno, fileID) {
+    $("#download_file_json").val(JSON.stringify(
+        {
+            authToken:state.authToken,
+            serno:serno,
+            fileID:fileID
+        }
+    ))
+    $("#download_file_form").submit()
+};
+
+function on_click_download_recv_file(event) {
+    // extract the serno and fileID from the "currentTarget" of the event
+    // then download that file
+
+    // don't handle event if this is a selection
+    if (window.getSelection().toString().length == 0)
+        get_recv_file(event.currentTarget.getAttribute("serno"), event.currentTarget.getAttribute("fileID"));
 };

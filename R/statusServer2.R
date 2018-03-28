@@ -57,6 +57,7 @@ allStatusApps = c("status_api_info",
                   "authenticate_user",
                   "process_new_upload",
                   "list_receiver_files",
+                  "get_receiver_file",
                   "get_receiver_info",
                   "get_job_stackdump",
                   "retry_job",
@@ -642,8 +643,53 @@ list_receiver_files = function(env) {
     return_from_app(rv)
 }
 
+#' return a single downloadable file for a receiver
 
-#' return a list of files for a receiver
+get_receiver_file = function(env) {
+    json = fromJSON(parent.frame()$postBody["json"], simplifyVector=FALSE)
+
+    if (tracing)
+        browser()
+
+    auth = validate_request(json, needProjectID=FALSE)
+    if (inherits(auth, "error")) return(auth)
+
+    ## parameters
+    serno     = safe_arg(json, serno, char)
+    fileID    = safe_arg(json, fileID, int)
+
+    ## validate
+
+    if (is.null(serno))
+        return(error_from_app("must specify receiver serial number (`serno`)"))
+
+    path = getRecvDBPath(serno)
+    if (is.null(path))
+        return(error_from_app("invalid receiver serial number (`serno`)"))
+    if (!file.exists(path))
+        return(error_from_app("receiver not known to motus"))
+
+    isSG = getRecvType(serno) == "SENSORGNOME"
+    sql = safeSQL(getRecvSrc(serno))
+
+    fi = sql("select * from %s where fileID=%d", SQL(if (isSG) "files" else "DTAfiles"), fileID)
+    isComp = TRUE
+    if (isTRUE(nrow(fi) == 1)) {
+        ## get path to file; note that Lotek files are not stored in a YYYY-MM-DD subfolder
+        path = file.path(MOTUS_PATH$FILE_REPO,
+                         serno,
+                         if (isSG) format(structure(fi$ts, class=class(Sys.time())), "%Y-%m-%d") else "",
+                         fi$name)
+        if (isTRUE(fi$isDone > 0)) {
+            return(return_file_from_app(paste0(path, ".gz"), name=basename(path), encoding="gzip"))
+        } else {
+            return(return_file_from_app(path))
+        }
+    }
+    return_from_app(list(error="invalid fileID for this receiver"))
+}
+
+#' return information for a receiver
 
 get_receiver_info = function(env) {
     json = fromJSON(parent.frame()$postBody["json"], simplifyVector=FALSE)

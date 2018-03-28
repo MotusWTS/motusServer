@@ -98,6 +98,11 @@
     </div>
     <div class="upload_info">
     </div>
+    <div class="download_file">
+      <form id="download_file_form" method="POST" action="/status/get_receiver_file">
+        <input type="hidden" id="download_file_json" name="json">
+      </form>
+    </div>
 
     <!--         Template 'scripts' follow       -->
 
@@ -317,7 +322,7 @@
           <td>⟦fileID⟧</td>
           <td>⟦bootnum⟧</td>
           <td>⟦monoBN⟧</td>
-          <td>⟦name⟧</td>
+          <td><span class="download_recv_file" serno="⟦serno⟧" fileID="⟦fileID⟧">⟦name⟧</span></td>
           <td class="byte_count">⟦contentSize⟧</td>
           <td class="byte_count">⟦fileSize⟧</td>
           <td ⟦&jobIDattr⟧>⟦jobID⟧</td>
