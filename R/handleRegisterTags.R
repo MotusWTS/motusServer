@@ -67,7 +67,7 @@ handleRegisterTags = function(j) {
     projs = motusListProjects()
     projectID = as.integer(meta$motusProjID)
     if (is.na(projectID)) {
-        projectID = projs$id[grep(meta$motusProjID, projs$code)]
+        projectID = projs$id[grep(meta$motusProjID, projs$label)]
         if (length(projectID) != 1) {
             projectID = projs$id[grep(meta$motusProjID, projs$name)]
             if (length(projectID) != 1)
