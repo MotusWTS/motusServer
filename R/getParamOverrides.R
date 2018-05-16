@@ -71,7 +71,7 @@ tsStart=tsStart)[[1]]
     recvOR = NULL
     if (! is.null(monoBN)) {
         ## first try by monoBN, looking for the any overlapping overrides
-        projOR = MetaDB("select printf('--%s %s', paramName, paramVal) from paramOverrides where serno=:serno and progName=:progName
+        recvOR = MetaDB("select printf('--%s %s', paramName, paramVal) from paramOverrides where serno=:serno and progName=:progName
 and :monoBN between monoBNlow and monoBNhigh",
 serno=serno,
 progName=progName,
