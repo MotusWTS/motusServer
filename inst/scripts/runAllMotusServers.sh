@@ -3,6 +3,16 @@
 # run all motus servers, with N process servers; default N=4
 #
 
+if [[ "$UID" == "0" ]]; then
+
+    cat <<EOF
+
+Refusing to run servers as root.  Please run as user `sg`.
+
+EOF
+    exit 1
+fi
+
 if [[ "$1" == "-h" ]]; then
 
     cat <<EOF
