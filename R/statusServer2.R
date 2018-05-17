@@ -216,7 +216,7 @@ list_jobs = function(env) {
     if (!is.null(done))
         where = c(where, switch(as.character(done), `1` = "t1.done > 0", `0` = "t1.done = 0", `-1` = "t1.done < 0"))
     if (!is.null(log))
-        where = c(where, sprintf("t1.data glob '%s'", log))
+        where = c(where, sprintf("t2.data glob '%s'", log))
     if (!is.null(serno))
         where = c(where, sprintf("json_extract(t2.data, '$.serno')='%s'", serno))
 
