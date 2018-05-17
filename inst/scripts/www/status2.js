@@ -817,6 +817,9 @@ function initStatus2Page() {
 //  -  uploadID=N: show the details of specified upload file
 //  -  jobsForSerno=XXX: show jobs related to receiver XXX, which should be
 //     a receiver serial number, e.g. "SG-1234BBBK5678" or "Lotek-158"
+//  -  logMatch=XXX: show jobs having string XXX in their log messages.
+//     "XXX" can include the glob characters "*" (match anything, possibly
+//     empty) and "?" (match a single character)
 
 function handle_initial_query(query) {
 
@@ -832,6 +835,8 @@ function handle_initial_query(query) {
         type = "uploadID";
     } else if (jobsForSerno = query.get("jobsForSerno")) {
         type = "jobsForSerno";
+    } else if (logMatch = query.get("logMatch")) {
+        type = "logMatch";
     }
 
     switch(type) {
@@ -846,7 +851,12 @@ function handle_initial_query(query) {
         break;
     case "jobsForSerno":
         state.selector = {serno:jobsForSerno};
-        // fall through
+        show_job_list();
+        break;
+    case "logMatch":
+        state.selector = {log:logMatch};
+        show_job_list();
+        break;
     default:
         show_job_list();
     }
