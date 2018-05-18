@@ -820,6 +820,7 @@ function initStatus2Page() {
 //  -  logMatch=XXX: show jobs having string XXX in their log messages.
 //     "XXX" can include the glob characters "*" (match anything, possibly
 //     empty) and "?" (match a single character)
+//  - projectID=P: show jobs belonging to motus project P (integer)
 
 function handle_initial_query(query) {
 
@@ -837,29 +838,34 @@ function handle_initial_query(query) {
         type = "jobsForSerno";
     } else if (logMatch = query.get("logMatch")) {
         type = "logMatch";
+    } else if (projectID = query.get("projectID")) {
+        type = "projectID";
     }
 
     switch(type) {
     case "jobID":
         show_job_details(jobID);
+        return;
         break;
     case "serno":
         show_recv_info(serno);
+        return;
         break;
     case "uploadID":
         show_upload_info(uploadID);
+        return;
         break;
     case "jobsForSerno":
         state.selector = {serno:jobsForSerno};
-        show_job_list();
         break;
     case "logMatch":
         state.selector = {log:logMatch};
-        show_job_list();
         break;
+    case "projectID":
+        state.selector = {motusProjectID:parseInt(projectID)};
     default:
-        show_job_list();
     }
+    show_job_list();
 };
 
 
