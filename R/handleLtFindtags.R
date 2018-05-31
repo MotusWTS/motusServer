@@ -40,7 +40,7 @@ handleLtFindtags = function(j) {
     src = getRecvSrc(serno)
 
     ## get parameter overrides
-    por = getParamOverrides(serno, tsStart=Sys.time())
+    por = getParamOverrides(serno, tsStart=Sys.time(), motusProjectID = topJob(j)$motusProjectID)
 
     rv = ltFindTags(src, MOTUS_METADB_CACHE, par=paste(ltDefaultFindTagsParams, por))
 

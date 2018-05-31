@@ -17,6 +17,10 @@
 #' start of deployment dates, and/or the estimate of boot session time is
 #' inaccurate.  Default: 10*24*3600 which is 10 days.
 #'
+#' @param motusProjectID integer scalar; if supplied, and if no
+#'     appropriate deployment record can be found for the receiver, this is
+#' used to look-up project-based parameter overrides.
+#'
 #' @return a character scalar of parameters, ready for the command line; if there
 #' are no applicable overrides, returns ""
 #'
@@ -28,11 +32,15 @@
 #' In both cases, the override period can be specified as well.  A receiver-specific
 #' override will override a project-wide override, if both are applicable.
 #'
+#' @note If no deployment record can be found for the receiver, the specified
+#' motusProjectID is used to look-up project-specific parameter overrides.
+#' see:  https://github.com/jbrzusto/motusServer/issues/406
+#'
 #' @export
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-getParamOverrides = function(serno, monoBN=NULL, tsStart=NA, progName="find_tags_motus", recvDepTol=10*24*3600) {
+getParamOverrides = function(serno, monoBN=NULL, tsStart=NA, progName="find_tags_motus", recvDepTol=10*24*3600, motusProjectID=NULL) {
 
     if (!is.null(monoBN)) {
         ## lookup the timestamp for the start of this boot session
@@ -49,6 +57,14 @@ tol = recvDepTol)[[1]]
     ## lookup project-wide overrides by date
 
     projOR = NULL
+
+    ## Fix for: https://github.com/jbrzusto/motusServer/issues/406
+    ## If no project found for this receiver, check again using the projectID
+    ## specified in the top-level project, which is typically a data upload.
+    if (length(pid) == 0 && length(motusProjectID) > 0) {
+        pid = motusProjectID
+    }
+
     if (length(pid) > 0) {
         projOR = MetaDB("select printf('--%s %s', paramName, paramVal) from paramOverrides where projectID=:pid and progName=:progName
 and tsStart - :tol <= :tsStart and (tsEnd is null or tsEnd > :tsStart)",

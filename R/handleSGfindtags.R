@@ -43,7 +43,7 @@ handleSGfindtags = function(j) {
     src = getRecvSrc(serno)
 
     ## get parameter overrides
-    por = getParamOverrides(serno, monoBN = j$monoBN)
+    por = getParamOverrides(serno, monoBN = j$monoBN, motusProjectID = topJob(j)$motusProjectID)
     if (por != "")
         jobLog(j, paste0("Got parameter overrides: ", por))
 
