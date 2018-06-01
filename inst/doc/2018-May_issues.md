@@ -83,9 +83,10 @@ have been re-run with that corrected.
 **Problem:** recently-registered tags are not showing up in data from receivers where
 they are known to be present.
 
-**Cause:** the tag finder is working with an old (stale) version of tag metadata that
-doesn't include the newly-registered tags.  The tag finder only searches for tags (and
-so only detects) tags it knows are active.
+**Cause:** the tag finder is working with an old (stale) version of
+tag metadata that doesn't include the newly-registered tags.  The tag
+finder only searches for (and so only detects) tags it knows are
+active.
 
 ### Normal Operation ###
 
