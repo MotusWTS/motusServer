@@ -11,7 +11,8 @@ MOTUS_API_USER_VALIDATE         = "https://motus.org/api/user/validate"
 MOTUS_API_REGISTER_RECEIVER     = "https://motus.org/api/receiver/register"
 MOTUS_API_LIST_PROJECTS         = "https://motus.org/api/projects"
 MOTUS_API_LIST_SENSORS          = "https://motus.org/api/receivers/list"
-MOTUS_API_LIST_SENSOR_DEPS      = "https://motus.org/api/receiver/sensordeployments"
+# 2018 June 6: call beta server until fix to https://github.com/MotusDev/MotusAPI/issues/7 goes live
+MOTUS_API_LIST_SENSOR_DEPS      = "https://beta.motus.org/api/receiver/sensordeployments"
 MOTUS_API_LIST_SPECIES          = "https://motus.org/api/species"
 
 ## central repo where we track changes to motus metadata
