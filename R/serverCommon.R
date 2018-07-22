@@ -13,6 +13,10 @@ serverCommon = function() {
     library(Rook)
     library(jsonlite)
 
+    ## set a 2 minute timeout for all requests to motus.org
+    ## - see https://github.com/jbrzusto/motusServer/issues/409
+    httr::config(timeout(120))
+
     ## make sure the server database exists, is open, and put a safeSQL object in the global ServerDB
     ## this is the database responsible for managing processing jobs
     ensureServerDB()
