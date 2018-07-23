@@ -4,21 +4,33 @@
 \alias{postInstall}
 \title{code to run after installing a new version of this package.}
 \usage{
-postInstall()
+postInstall(root = "/")
+}
+\arguments{
+\item{root}{character scalar path to root of installation.
+Default: "/" This parameter allows testing the function without
+clobbering system files.  e.g. specifying
+\code{root="/tmp/PItest"} will create the folder "/tmp/PItest"
+and then install the root_overlay files there.}
 }
 \description{
-After re-installing the motusServer package, this function is executed
-to fix ownership, permissions, and links outside the R package tree.
+code to run after installing a new version of this package.
 }
 \details{
+After (re-)installing the motusServer package, this
+    function is executed to install files outside the R package
+    tree, and set ownership and permissions appropriately.  Details
+    of which files are installed is in the file
+    inst/root_overlay.md
+
 If you install the motusServer R package using this command line:
 
-sudo su -c 'cd /home/sg/src/motusServer; /usr/local/bin/rpack -g .' sg
+   sudo su -c 'cd /home/sg/src/motusServer; /usr/local/bin/rpack -g .' sg
 
 then this function will be run by that script.  Otherwise, you can
-do so manually from the command line like so:
+do so manually from the shell like this:
 
-Rscript -e 'motusServer:::postInstall()'
+   Rscript -e 'motusServer:::postInstall()'
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
