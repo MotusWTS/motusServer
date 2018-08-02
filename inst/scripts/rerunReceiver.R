@@ -37,6 +37,12 @@ where:
 
  -F: full rerun: delete all internally-stored files before running, then behave
      as if full contents of file_repo for that receiver consists of new files
+     WARNING:  this option makes the rerun very slow; each data file is scanned
+     twice, once to test validity/completeness of a .gz file while populating
+     the receiver database's 'files' table, and then again when running the tag
+     finder.  Unless you have reason to think the 'files' table doesn't match
+     the contents of the receiver's file_repo folder, you should use '-c'
+     instead of this option.
 
  -t: mark job output as `isTesting`; data from such batches will only be returned
      for admin users who specify they want to see testing batches.
