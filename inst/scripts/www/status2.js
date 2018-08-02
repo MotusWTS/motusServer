@@ -440,7 +440,7 @@ function fmt_done(status, queue, jobID) {
         if (! queue || ! (queue > 0))
             return '<span class="status_waiting">Waiting</span>';
         else
-            return '<span class="status_running">Running on Queue # ' + Math.round(queue) + '</span>';
+            return '<span class="status_running">Running on Process Server # ' + Math.round(queue) + '</span>';
         break;
     case 1:
         return '<span class="status_okay">Okay</span>';
