@@ -9,14 +9,16 @@ ARGS = commandArgs(TRUE)
 if (length(ARGS) == 0) {
     cat("
 
-Usage: rerunReceiver.R [-F] [-p] [-c] [-e] [-t] [-P PROJECTID] [-U USERID] SERNO [BLO BHI]
+Usage: rerunReceiver.R [-F] [-p] [-c] [-e] [-t] -P PROJECTID -U USERID SERNO [BLO BHI]
 
 where:
 
  SERNO: receiver serial number; e.g. SG-0613BB000613 or Lotek-123
- [PROJECTID]: integer ID of motus project which should own products
+ PROJECTID: integer ID of motus project which should own products
  (will be overridden by receiver deployment records, where these exist)
- [USERID]: integer ID of motus user who initiated the rerun
+ USERID: integer ID of motus user who initiated the rerun
+
+Note: the -P and -U options are now mandatory.
 
  BLO BHI: for an SG, you can specify a range of boot sessions by specifying
  BLO and BHI as the low and high boot sessions, respectively;
@@ -95,6 +97,8 @@ while(isTRUE(substr(ARGS[1], 1, 1) == "-")) {
     ARGS = ARGS[-1]
 }
 
+if (is.null(userID) || is.null(projectID))
+    stop("You must specify a motus user (using -U) and motus project (using -P).")
 serno = sub("\\.motus$", "", perl=TRUE, ARGS[1])
 if (is.na(serno)) stop("You must specify a receiver serial number.")
 
