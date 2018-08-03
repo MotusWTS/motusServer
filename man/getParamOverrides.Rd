@@ -5,7 +5,8 @@
 \title{Get the parameter overrides for a receiver and time or boot session.}
 \usage{
 getParamOverrides(serno, monoBN = NULL, tsStart = NA,
-  progName = "find_tags_motus", recvDepTol = 10 * 24 * 3600)
+  progName = "find_tags_motus", recvDepTol = 10 * 24 * 3600,
+  motusProjectID = NULL)
 }
 \arguments{
 \item{serno}{character scalar; serial number of receiver, e.g. "Lotek-123" or
@@ -24,6 +25,10 @@ Default: "find_tags_motus"}
 up the project ID for a receiver?  Sometimes, people have recorded incorrect
 start of deployment dates, and/or the estimate of boot session time is
 inaccurate.  Default: 10*24*3600 which is 10 days.}
+
+\item{motusProjectID}{integer scalar; if supplied, and if no
+    appropriate deployment record can be found for the receiver, this is
+used to look-up project-based parameter overrides.}
 }
 \value{
 a character scalar of parameters, ready for the command line; if there
@@ -40,6 +45,10 @@ eventually motus will provide user-editable fields for these.
 An override can be specified for either a whole project, or for a receiver.
 In both cases, the override period can be specified as well.  A receiver-specific
 override will override a project-wide override, if both are applicable.
+
+If no deployment record can be found for the receiver, the specified
+motusProjectID is used to look-up project-specific parameter overrides.
+see:  https://github.com/jbrzusto/motusServer/issues/406
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
