@@ -10,6 +10,10 @@
 
 serverCommon = function() {
 
+    ## workaround strange R bug in dir() relating to non-ascii filenames
+    ## (see https://github.com/jbrzusto/motusServer/issues/398 )
+    ignore = rawToChar(as.raw(c(0xeb, 0xc9, 0xde)))
+
     library(Rook)
     library(jsonlite)
 
