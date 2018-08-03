@@ -25,6 +25,7 @@ Here are the files:
 % root root 644 /etc/apache2/sites-available/002-sgdata-nossl.conf
 % root root 644 /etc/cron.d/refreshMotusMetaDB
 % root root 644 /etc/cron.d/sqlite_daily_backup
+% root root 644 /etc/cron.d/monthly_trash_dump
 % root root 755 /etc/init.d/sshd-sg
 
 ```

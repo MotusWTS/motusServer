@@ -192,7 +192,7 @@ ltMergeFiles = function(files, j, dbdir=MOTUS_PATH$RECV) {
 
     }
     ## trash files which did not come from repo and which are not being used
-    toTrash(subset(rv, ! fromRepo & ! use)$fullname)
+    toTrash(subset(rv, ! fromRepo & ! use)$fullname, j)
     return (rv)
 }
 

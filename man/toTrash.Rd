@@ -4,18 +4,24 @@
 \alias{toTrash}
 \title{send files to the trash folder for eventual deletion}
 \usage{
-toTrash(f)
+toTrash(f, j)
 }
 \arguments{
 \item{f}{character vector of full paths to files}
+
+\item{j}{integer scalar jobID}
 }
 \value{
 TRUE
 }
 \description{
-We keep all "dispoable" files in one folder.  They are retained there
-until we can verify they are no longer needed.  Perhaps we'll reap
-them periodically after X weeks.  The trash file is \code{MOTUS_PATH$TRASH}.
+We keep all "disposable" files in one folder, with a subfolder
+hierarchy based on job ID.  They are retained there until we can
+verify they are no longer needed.  A monthly cron job reaps
+the oldest files.
+}
+\details{
+\code{MOTUS_PATH$TRASH}.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}

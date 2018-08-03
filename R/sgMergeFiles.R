@@ -357,7 +357,7 @@ sgMergeFiles = function(files, j, dbdir = MOTUS_PATH$RECV) {
     file.remove(ff[isLink])
 
     ## remove remaining files
-    toTrash(ff[!isLink & !keep])
+    toTrash(ff[!isLink & !keep], j)
 
     return (list(
         info = structure(allf %>%
