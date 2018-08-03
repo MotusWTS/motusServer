@@ -42,7 +42,8 @@ CREATE TABLE IF NOT EXISTS paramOverrides (
 -- the override can apply to all receiver deployments for
 -- the specified projectID, and the given time range or monoBN range.
 
-    projectID INT,                             -- project ID for this override;
+    id INTEGER PRIMARY KEY NOT NULL,           -- unique ID for this override
+    projectID INT,                             -- project ID for this override
     serno CHAR(32),                            -- serial number of device involved in this event (if any)
     tsStart FLOAT(53),                         -- starting timestamp for this override (Lotek only)
     tsEnd FLOAT(53),                           -- ending timestamp for this override (Lotek only)
