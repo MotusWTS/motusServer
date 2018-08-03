@@ -241,5 +241,6 @@ file.path(MOTUS_PATH$METADATA_HISTORY, "tag_deployments.csv"), row.names=FALSE)
     meta("COMMIT")
     dbDisconnect(meta$con)
 
+    plotTagTimeline()
     return (rv)
 }
