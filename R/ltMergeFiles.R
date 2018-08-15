@@ -26,8 +26,7 @@
 #'     might not be set appropriately in the return value.
 #'
 #' @details Any files which are not identical to an existing file are saved
-#' in the file repository at \code{MOTUS_PATH$FILE_REPO}, in addition to
-#' being stored internally in the receiver database.  The names will be
+#' in the file repository at \code{MOTUS_PATH$FILE_REPO}.  The names will be
 #' modified if necessary to avoid collisions with existing files.
 #'
 #' Remaining files are deleted.
@@ -107,8 +106,6 @@ ltMergeFiles = function(files, j, dbdir=MOTUS_PATH$RECV) {
                 rv$dataNew[i] = FALSE
             } else {
 
-                comp = memCompress(blob, type="bzip2")
-
                 ## sqlite connection
 
                 con = src$con
@@ -116,7 +113,7 @@ ltMergeFiles = function(files, j, dbdir=MOTUS_PATH$RECV) {
                 ## write file record
                 dbGetPreparedQuery(
                     con,
-                    "insert into DTAfiles (name, size, tsBegin, tsEnd, tsDB, hash, contents, motusJobID) values (:name, :size, :tsBegin, :tsEnd, :tsDB, :hash, :contents, :motusJobID)",
+                    "insert into DTAfiles (name, size, tsBegin, tsEnd, tsDB, hash, motusJobID) values (:name, :size, :tsBegin, :tsEnd, :tsDB, :hash, :motusJobID)",
                     data_frame(
                         name       = bname,
                         size       = length(blob),
@@ -124,7 +121,6 @@ ltMergeFiles = function(files, j, dbdir=MOTUS_PATH$RECV) {
                         tsEnd      = max(x$tags$ts),
                         tsDB       = as.numeric(Sys.time()),
                         hash       = fhash,
-                        contents   = list(comp), ## NB: make list, else dataframe replicates entire row for each byte!
                         motusJobID = as.integer(j)
                     ) %>% as.data.frame
                 )

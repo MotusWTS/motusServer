@@ -102,7 +102,7 @@ tsEnd    double,                                   -- latest timestamp in file
 tsDB     double,                                   -- timestamp when file was read into this database
 hash     text unique,                              -- because Lotek filenames are arbitrary and user-created,
                                                    -- we ensure uniqueness in the DB via SHA-512 hash of uncompressed contents
-contents BLOB,                                     -- contents of file; bzip2-compressed text contents of file
+contents BLOB,                                     -- null; obsolete: see https://github.com/jbrzusto/motusServer/issues/414
 motusJobID integer                                 -- job whose processing added/updated this file.
 )
 ");
