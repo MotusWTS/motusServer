@@ -207,7 +207,6 @@ sgMergeFiles = function(files, j, dbdir = MOTUS_PATH$RECV) {
         ## sqlite connection
 
         con = src$con
-        dbExecute(con, "pragma journal_mode=wal")
 
         ## existing files in database
 
@@ -316,7 +315,6 @@ sgMergeFiles = function(files, j, dbdir = MOTUS_PATH$RECV) {
             }
         }
         ## shut down this sqlite connection
-        dbGetQuery(con, "pragma journal_mode=delete")
         closeRecvSrc(src)
         rm(src, meta)
 
