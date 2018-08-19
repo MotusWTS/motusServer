@@ -33,15 +33,6 @@ serverCommon = function() {
     ## open the motus metadata cache DB and assign handle to global MetaDB
     MetaDB <<- safeSQL(getMotusMetaDB())
 
-    ## authentication options
-
-    ## lifetime of authorization token: 3 days
-    OPT_AUTH_LIFE <<- 3 * 24 * 3600
-
-    ## number of random bits in authorization token;
-    ## gets rounded up to nearest multiple of 8
-    OPT_TOKEN_BITS <<- 33 * 8
-
     ## get user auth database, ensuring it has a valid auth table
 
     AuthDB <<- safeSQL(MOTUS_PATH$USERAUTH)

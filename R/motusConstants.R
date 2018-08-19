@@ -226,3 +226,12 @@ MOTUS_MODAUTHTKT_SECRET_KEYFILE = "/etc/apache2/TKTAuthSecret.inc"
 
 ## path to motus metadata db cache
 MOTUS_METADB_CACHE = file.path(MOTUS_PATH$CACHE, "motus_meta_db.sqlite")
+
+## authentication options
+
+## lifetime of authorization token in seconds; default: 3 days
+MOTUS_AUTH_LIFE = 3 * 24 * 3600
+
+## number of random bits in authorization token;
+## gets rounded up to nearest multiple of 8
+MOTUS_TOKEN_BITS = 33 * 8

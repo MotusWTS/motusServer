@@ -49,7 +49,6 @@ statusServer2 = function(port = 0x57A7, tracing=FALSE, maxRows=20L) {
 }
 
 ## a string giving the list of apps for this server
-## Note that we re-use authenticate_user from dataServer.R
 
 allStatusApps = c("status_api_info",
                   "list_jobs",
