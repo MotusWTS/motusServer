@@ -6,7 +6,7 @@
 
 all: motus_data_overview.pdf modelLotekTagLifeSpan.pdf modelLotekTagLifeSpan.rda tags_view_graph.pdf data_flow.pdf sensorgnome_data_flow.pdf
 
-%.pdf %.rda: %.Rmd
+%.pdf %.rda: %.Rmd lotekTagLifespanByBatteryAndBI.csv
 	Rscript -e "library(rmarkdown);render(commandArgs(TRUE)[1])" $<
 
 %.pdf %.svg: %.dot
