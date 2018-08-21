@@ -9,12 +9,23 @@
 
 suppressMessages(suppressWarnings(library(motusServer)))
 ## open jobs and master databases
-ensureServerDB()
-openMotusDB()
+invisible({
+    ## we don't want output unless there is a problem, as output
+    ## is emailed to addresses in MOTUS_ADMIN_EMAIL, defined
+    ## in motusConstants.R
 
-## force environment symbol USER to be set, which cron doesn't do
-## this is required for ltGetCodeset()
-## see https://github.com/jbrzusto/motusServer/issues/383
+    ensureServerDB()
+    openMotusDB()
 
-Sys.setenv(USER="sg")
-refreshMotusMetaDBCache()
+    ## force environment symbol USER to be set, which cron doesn't do
+    ## this is required for ltGetCodeset()
+    ## see https://github.com/jbrzusto/motusServer/issues/383
+
+    Sys.setenv(USER="sg")
+    x = refreshMotusMetaDBCache()
+})
+
+if (! all(x)) {
+    cat(sprintf("Error refreshing motus metadata cache!\nThese items failed: %s",
+                paste(names(x)[! x], collapse=", ")))
+}

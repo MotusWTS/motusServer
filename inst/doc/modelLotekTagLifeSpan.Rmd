@@ -101,7 +101,13 @@ because the naming scheme isn't consistent enough to bother doing it
 programmatically.
 
 ```{r}
-## Models and the batteries they correspond to
+## Models and the batteries they correspond to.  Note that
+## we include a model called 'unknown' which corresponds to
+## a battery called 'unknown' that is assigned a life equal
+## to the average of those for NTQB-2, NTQB-3-2.
+## This forces a warning to be emailed to the motus admin whenever
+## the metadata cache is updated, because an unmodelled tag
+## is a serious metadata issue.
 
 modelBattery = list(
 "NTQB-1-LW"  = "1-LW",
@@ -140,9 +146,9 @@ modelBattery = list(
 "NTQB2-2" = "2",
 "NTQB2-3-2" = "3-2",
 "NTQB2-4-2S" = "4-2",
-## "NTQB2-5-1" = "???",
 "NTQB2-6-1" = "6-1",
-"NTQB2-6-2" = "6-2"
+"NTQB2-6-2" = "6-2",
+"unknown" = "unknown"
 )
 
 modPar = NULL
