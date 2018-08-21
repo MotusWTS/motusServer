@@ -1,0 +1,56 @@
+#!/bin/bash
+#
+# rpack: roxygenize, build, and install an R package from source
+# If the package has a function called postInstall(), then that
+# function will be run in R after (re)installing the package.
+# Also, for any sub-directory of inst that contains a file called
+# 'Makefile', the command 'make' is run there before building
+# the package.
+
+# Author: John Brzustowski
+
+if [[ "$1" == "-g" ]]; then
+    GLOBAL=1
+    shift
+else
+    GLOBAL=0
+fi
+
+PACKAGEDIR=$1
+if [[ "$PACKAGEDIR" == "" ]]; then
+    cat <<EOF
+
+rpack - roxygenize, build, and install an R package from source
+
+Usage: rpack [-g] PACKAGEDIR
+
+If -g is specified, the package is installed globally; otherwise, only for the user.
+
+EOF
+    exit 1;
+fi
+
+find $PACKAGEDIR/inst -name "Makefile" -type f -exec bash -c 'cd `dirname {}`; make' ';'
+Rscript -e "library(roxygen2); roxygenize('$PACKAGEDIR');"
+
+LOGFILE=/tmp/rpack.log.txt
+BUILDLINE=/tmp/rpack.buildline.txt
+R CMD build $PACKAGEDIR | tee $LOGFILE
+tail -1l $LOGFILE > $BUILDLINE
+read A B C < $BUILDLINE
+C=${C/‘/};
+C=${C/’/};
+if (( $GLOBAL )); then
+    sudo R CMD INSTALL $C
+else
+    R CMD INSTALL $C
+fi
+
+## if running in package directory, move source package out;
+## otherwise, these accumulate and get included in the package
+if [[ "$PACKAGEDIR" == "." ]]; then
+    mv -f $C ..
+fi
+
+PACKAGE=`grep Package: $PACKAGEDIR/DESCRIPTION | cut -d ' ' -f 2`
+Rscript -e "library(stringi);$PACKAGE:::postInstall()"
