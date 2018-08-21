@@ -28,7 +28,7 @@ and BI is the burst interval, in seconds.
 \note{
 for any values in \code{model} which are not known, we use
 the explicit model "unknown" which is defined in lotekTagLifespanByBatteryAndBI
-as an average of NTQB2 and NTQB3-2.  We warn about this so that
+as an average of NTQB-2 and NTQB-3-2.  We warn about this so that
 the admin user gets a regular reminder of this situation.
 see:
    https://github.com/MotusDev/Motus-TO-DO/issues/327#issuecomment-414180027
