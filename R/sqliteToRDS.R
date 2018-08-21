@@ -68,9 +68,9 @@
 #'     include 'limit' and 'offset' phrases.
 #'
 #' @param bind.data values for query parameters, if any; see
-#' \link{\code{dbSendPreparedQuery}}.  Defaults to \code{data.frame(x=0L)},
+#' \link{\code{dbSendQuery}}.  Defaults to \code{data.frame(x=0L)},
 #' i.e. a trivial data.frame meant only to pass the sanity checks
-#' imposed by \code{dbSendPreparedQuery()}
+#' imposed by \code{dbSendQuery()}
 #'
 #' @param out character scalar; name of file to which the query
 #'     results will be saved.  Should end in ".rds".
@@ -106,7 +106,7 @@ sqliteToRDS = function(con, query, bind.data=data.frame(x=0L), out, classes = NU
     ## get the result types by asking for the first row of the
     ## query
 
-    res = dbSendPreparedQuery(con, query, bind.data)
+    res = dbSendQuery(con, query, params = bind.data)
     block = dbFetch(res, n=1)
     if (nrow(block) == 0) {
         saveRDS(NULL, out)
@@ -141,7 +141,7 @@ sqliteToRDS = function(con, query, bind.data=data.frame(x=0L), out, classes = NU
 
     ## get levels for each of these columns; we wrap the original query in a select distinct
     for (f in fact)
-        colLevels[[f]] = dbGetPreparedQuery(con, paste0("select distinct ", col[[1]][f], " from (", query, ")"), bind.data)[[1]]
+        colLevels[[f]] = dbGetQuery(con, paste0("select distinct ", col[[1]][f], " from (", query, ")"), params=bind.data)[[1]]
 
     ## which columns are to be exported as logical?
     logi = which(col[[2]] == "integer" &  sapply(seq_len(n), function(x) 'logical' %in% useClass[[x]]))
@@ -180,7 +180,7 @@ sqliteToRDS = function(con, query, bind.data=data.frame(x=0L), out, classes = NU
     ## main loop for reading result blocks and distributing them
     ## We start with a block already available in "block".
 
-    res = dbSendPreparedQuery(con, query, bind.data)
+    res = dbSendQuery(con, query, params=bind.data)
     while (TRUE) {
         block = dbFetch(res, n=rowsPerBlock)
         nr = nr + nrow(block)

@@ -60,9 +60,9 @@ names.motusMap = function(map) {
 
 `[[<-.motusMap` = function(map, key, value) {
     if (! is.null(value))
-        dbGetPreparedQuery(attr(map, "con"), sprintf("insert or replace into %s (key, val) values (:key, :val)", attr(map, "name")), data.frame(key=key, val=value, stringsAsFactors=FALSE))
+        dbGetQuery(attr(map, "con"), sprintf("insert or replace into %s (key, val) values (:key, :val)", attr(map, "name")), params=data.frame(key=key, val=value, stringsAsFactors=FALSE))
     else
-        dbGetPreparedQuery(attr(map, "con"), sprintf("delete from %s where key=:key", attr(map, "name")), data.frame(key=key))
+        dbGetQuery(attr(map, "con"), sprintf("delete from %s where key=:key", attr(map, "name")), params=data.frame(key=key))
     return(invisible(map))
 }
 
@@ -94,7 +94,7 @@ names.motusMap = function(map) {
 #' @export
 
 `[[.motusMap` = function(map, key) {
-    return (dbGetPreparedQuery(attr(map, "con"), sprintf("select val from %s where key=:key", attr(map, "name")), data.frame(key=key, stringsAsFactors=FALSE))[[1]])
+    return (dbGetQuery(attr(map, "con"), sprintf("select val from %s where key=:key", attr(map, "name")), params=data.frame(key=key, stringsAsFactors=FALSE))[[1]])
 }
 
 #' Return the value of an item from a motusMap.

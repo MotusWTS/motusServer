@@ -111,10 +111,10 @@ ltMergeFiles = function(files, j, dbdir=MOTUS_PATH$RECV) {
                 con = src$con
 
                 ## write file record
-                dbGetPreparedQuery(
+                dbGetQuery(
                     con,
                     "insert into DTAfiles (name, size, tsBegin, tsEnd, tsDB, hash, motusJobID) values (:name, :size, :tsBegin, :tsEnd, :tsDB, :hash, :motusJobID)",
-                    data_frame(
+                    params = data_frame(
                         name       = bname,
                         size       = length(blob),
                         tsBegin    = min(x$tags$ts),
@@ -136,10 +136,10 @@ ltMergeFiles = function(files, j, dbdir=MOTUS_PATH$RECV) {
                 ## .DTA files, and so must use file (lexical) order.
 
                 if (isTRUE(nrow(x$tags) > 0)) {
-                    dbGetPreparedQuery(
+                    dbGetQuery(
                         con,
                         "insert or ignore into DTAtags (fileID, dtaline, ts, id, ant, sig, lat, lon, antFreq, gain, codeSet) values (:fileID, :dtaline, :ts, :id, :ant, :sig, :lat, :lon, :antFreq, :gain, :codeSet)",
-                        data_frame(
+                        params = data_frame(
                             fileID  = rv$fid[i],
                             dtaline = x$tags$dtaline,
                             ts      = x$tags$ts,
@@ -157,10 +157,10 @@ ltMergeFiles = function(files, j, dbdir=MOTUS_PATH$RECV) {
 
                 ## write boottime records
                 if (isTRUE(length(x$boottimes) > 0)) {
-                    dbGetPreparedQuery(
+                    dbGetQuery(
                         con,
                         "insert or ignore into DTAboot (ts, fileID) values (:ts, :fileID)",
-                        data_frame(
+                        params = data_frame(
                             ts = mdy_hms(x$boottimes),
                             fileID  = rv$fid[i]
                         ) %>% as.data.frame
