@@ -5,9 +5,8 @@
 \title{return a list of all motus tags}
 \usage{
 motusSearchTags(projectID = NULL, tsStart = NULL, tsEnd = NULL,
-  searchMode = c("startsBetween", "overlaps"), defaultLifespan = 90,
-  lifespanBuffer = 1.5, regStart = NULL, regEnd = NULL, mfgID = NULL,
-  ...)
+  searchMode = c("startsBetween", "overlaps"), mfgID = NULL,
+  status = NULL, ...)
 }
 \arguments{
 \item{projectID:}{integer scalar; motus internal project ID}
@@ -22,23 +21,13 @@ portion of the time span \code{c(tsStart, tsEnd)}, while
 "startsBetween" looks for tags with deployment start times in
 the same range.}
 
-\item{defaultLifeSpan:}{integer scalar; default lifespan of tags,
-in days; used when motus does not know the lifespan for a tag.}
-
-\item{lifeSpanBuffer:}{numeric scalar; amount by which nominal
-lifespan is multiplied to get maximum possible lifespan.}
-
-\item{regStart:}{numeric scalar; if not NULL, search for tags
-registered no earlier than this date, and ignore deployment
-dates.}
-
-\item{regEnd:}{numeric scalar; if not NULL, search for tags
-registered no later than this date, and ignore deployment
-dates.}
-
 \item{mfgID:}{character scalar; typically a small integer; return
 only records for tags with this manufacturer ID (usually
 printed on the tag)}
+
+\item{status:}{integer; if non-NULL, returns only tags with the
+specified status.  1L = tag finished; 2L = tag active; 0L = tag
+not yet deployed}
 
 \item{...:}{additional parameters to motusQuery()}
 }
@@ -88,6 +77,10 @@ the data.frame of motus tags and their meta data satisfying
 }
 \description{
 return a list of all motus tags
+}
+\note{
+As of 2018-08-24, filtering by `tsStart` and `tsEnd` fails to return any tags
+whose `tsEnd` is NULL; see https://github.com/MotusDev/MotusAPI/issues/8
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
