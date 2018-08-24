@@ -7,10 +7,10 @@
 #' and inactivated.  This allows the database to be used against any
 #' receiver dataset, regardless of the dates.
 #'
-#' @param m tbl with full tag info from motus, as returned by
+#' @param m data.frame with full tag info from motus, as returned by
 #' motusSearchTags()
 #'
-#' @param s sqlite_src database where tables "tags" and "events" will
+#' @param s safeSQL object; database where tables "tags" and "events" will
 #'     be created.
 #'
 #' @param cleanBI logical; if TRUE, attempt to clean the burst interval;

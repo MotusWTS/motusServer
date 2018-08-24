@@ -7,10 +7,10 @@
 cleanTagRegistrations(m, s, cleanBI = FALSE)
 }
 \arguments{
-\item{m}{tbl with full tag info from motus, as returned by
+\item{m}{data.frame with full tag info from motus, as returned by
 motusSearchTags()}
 
-\item{s}{sqlite_src database where tables "tags" and "events" will
+\item{s}{safeSQL object; database where tables "tags" and "events" will
 be created.}
 
 \item{cleanBI}{logical; if TRUE, attempt to clean the burst interval;
