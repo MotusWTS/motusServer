@@ -18,7 +18,7 @@ TARGETDIR=/sgm/db_backups/$DOM
 LOGFILE=/sgm/logs/backups.txt
 
 rm -rf $TARGETDIR/*
-mkdir $TARGETDIR
+mkdir $TARGETDIR > /dev/null 2>&1
 
 echo "$DATE: Backing up sqlite files from $SRCDIR to $TARGETDIR" >> $LOGFILE
 for db in $SQLITEDBS ; do
