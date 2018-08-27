@@ -1,12 +1,7 @@
 #!/bin/bash
 #
 # rpack: roxygenize, build, and install an R package from source
-# If the package has a function called postInstall(), then that
-# function will be run in R after (re)installing the package.
-# Also, for any sub-directory of inst that contains a file called
-# 'Makefile', the command 'make' is run there before building
-# the package.
-
+# see 'Usage' message below for details.
 # Author: John Brzustowski
 
 if [[ "$1" == "-g" ]]; then
@@ -24,7 +19,14 @@ rpack - roxygenize, build, and install an R package from source
 
 Usage: rpack [-g] PACKAGEDIR
 
-If -g is specified, the package is installed globally; otherwise, only for the user.
+If '-g' is specified, the package is installed globally, and the
+postInstall() function is called after (re)installing the
+package. Otherwise, the package is installed only for the current
+user, and the postInstall() function is not called.
+
+Regardless of whether '-g' is specified, for every sub-directory of
+'$PACKAGEDIR/inst' that contains a file called 'Makefile', the command
+'make' is run there before building the package.
 
 EOF
     exit 1;
@@ -53,4 +55,6 @@ if [[ "$PACKAGEDIR" == "." ]]; then
 fi
 
 PACKAGE=`grep Package: $PACKAGEDIR/DESCRIPTION | cut -d ' ' -f 2`
-Rscript -e "library(stringi);$PACKAGE:::postInstall()"
+if (( $GLOBAL )); then
+    Rscript -e "library(stringi);$PACKAGE:::postInstall()"
+fi
