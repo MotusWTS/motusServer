@@ -16,10 +16,15 @@
 #' @param cleanBI logical; if TRUE, attempt to clean the burst interval;
 #' otherwise, leave it as-is.  Default: FALSE.
 #'
-#' @return returns modified m; side effect: creates or overwrite the table "tags"
-#' in \code{s}, which will contain cleaned tag registrations.  Also
-#' creates or overwrites table "events", giving activation / deactivation
+#' @return returns modified m.
+#' Side effect:
+#' \itemize{
+#' \item creates or overwrite the table "tags"
+#' in \code{s}, which will contain cleaned tag registrations
+#' \item creates or overwrites table "events" in \code{s}, which contains activation / deactivation
 #' timestamps for each tag deployment.
+#' \item updates the file "tags.csv" in the metadata history repository
+#' }
 #'
 #' The \code{events} table looks like this:
 #' \strong{events:}
@@ -291,14 +296,14 @@ cleanTagRegistrations = function(m, s, cleanBI = FALSE) {
     nodups$nomFreq = round(nodups$nomFreq, 3)          ## upstream problems with conversion from lower-precision float
     nodups$nomFreq[nodups$nomFreq==166.376] == 166.38  ## from my own registration mistakes
 
+    dbWriteTable(s$con, "tmptags", nodups %>% as.data.frame, row.names=FALSE, overwrite=TRUE)
+    s("delete from tags where tagID in (select distinct tagID from tmptags)")
+    s("insert into tags select * from tmptags")
+    s("drop table tmptags")
 
-    dbWriteTable(s$con, "tags", nodups %>% as.data.frame, overwrite=TRUE)
-
-    ## record tags table summary to the history repo
-    write.csv(nodups %>%
-              select (tagID, manufacturer, model, codeSet, nomFreq, mfgID, period) %>%
-              arrange(tagID) %>% as.data.frame,
-              file.path(MOTUS_PATH$METADATA_HISTORY, "tags.csv"), row.names=FALSE)
+    ## re-record tags table summary in the history repo
+    s("select tagID, manufacturer, model, codeSet, nomFreq, mfgID, period from tags order by tagID") %>%
+    write.csv(file.path(MOTUS_PATH$METADATA_HISTORY, "tags.csv"), row.names=FALSE)
 
     ## now create events table
     ## This has the columns: ts, tagID, event (0 or 1)
@@ -308,9 +313,11 @@ cleanTagRegistrations = function(m, s, cleanBI = FALSE) {
 
     events = tagOn %>% bind_rows(tagOff) %>% arrange(ts)
 
-    dbWriteTable(s$con, "events", events %>% as.data.frame, overwrite=TRUE)
-
-    dbGetQuery(s$con, "create index events_ts on events(ts)")
+    dbWriteTable(s$con, "tmpevents", events %>% as.data.frame, overwrite=TRUE, row.names=FALSE)
+    s("delete from events where tagID in (select distinct tagID from tmpevents)")
+    s("insert into events select * from tmpevents")
+    s("drop table tmpevents")
+    s("create index if not exists events_ts on events(ts)")
 
     return (clean)
 }

@@ -17,10 +17,15 @@ be created.}
 otherwise, leave it as-is.  Default: FALSE.}
 }
 \value{
-returns modified m; side effect: creates or overwrite the table "tags"
-in \code{s}, which will contain cleaned tag registrations.  Also
-creates or overwrites table "events", giving activation / deactivation
+returns modified m.
+Side effect:
+\itemize{
+\item creates or overwrite the table "tags"
+in \code{s}, which will contain cleaned tag registrations
+\item creates or overwrites table "events" in \code{s}, which contains activation / deactivation
 timestamps for each tag deployment.
+\item updates the file "tags.csv" in the metadata history repository
+}
 
 The \code{events} table looks like this:
 \strong{events:}

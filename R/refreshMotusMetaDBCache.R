@@ -60,80 +60,28 @@ refreshMotusMetaDBCache = function() {
     ## begin the update-metadata transaction
     meta("BEGIN EXCLUSIVE TRANSACTION")
 
+    ## grab projects
+    p = motusListProjects()
+    if (nrow(p) < 20) { ## arbitrary sanity check
+        stop("upstream listprojects API failing sanity check")
+    }
+    ## fill in *something* for missing project labels (first 3 words with underscores)
+    fix = is.na(p$label)
+    p$label[fix] = unlist(lapply(strsplit(gsub(" - ", " ", p$name[fix]), " ", fixed=TRUE), function(n) paste(head(n, 3), collapse="_")))
+    rv["projs"] = TRUE
+
+    ## replace copy of projects
+    meta("delete from projs")
+    dbWriteTable(meta$con, "projs", p, append=TRUE, row.names=FALSE)
+
     ## grab tags
     tryCatch({
         t = motusSearchTags()
         if (nrow(t) < 1000) { ## arbitrary sanity check
             stop("upstream searchtags API failing sanity check")
         }
-
-        ## clean up tag registrations (only runs on server with access to full Lotek codeset)
-        ## creates tables "tags" and "events" from the first parameter
-        ## and records tags table to the metadata history repo
-
-        t = cleanTagRegistrations(t, meta)
-
-        rv["tags"] = TRUE
-
-        ## grab projects
-        p = motusListProjects()
-        if (nrow(p) < 20) { ## arbitrary sanity check
-            stop("upstream listprojects API failing sanity check")
-        }
-
-        ## replace copy of projects
-        meta("delete from projs")
-        dbWriteTable(meta$con, "projs", p, append=TRUE, row.names=FALSE)
-        rv["projs"] = TRUE
-
-        ## fill in *something* for missing project labels (first 3 words with underscores)
-        fix = is.na(p$label)
-        p$label[fix] = unlist(lapply(strsplit(gsub(" - ", " ", p$name[fix]), " ", fixed=TRUE), function(n) paste(head(n, 3), collapse="_")))
-
-        ## add a fullID label for each tagDep
-        t$fullID = sprintf("%s#%s:%.1f@%g", p$label[match(t$projectID, p$id)], t$mfgID, t$period, t$nomFreq)
-        t = t[, c(1:2, match("deployID", names(t)): ncol(t))]
-
-        ## write just the deployment portion of the records to tagDeps
-        ## first writing to a temporary table to perform a deployment-closing query
-        dbWriteTable(meta$con, "tmpTagDeps", t, overwrite=TRUE, row.names=FALSE, temporary=TRUE)
-
-        ## End any unterminated deployments of tags which have a later deployment.
-        ## The earlier deployment is ended 1 second before the (earliest) later one begins.
-
-        meta("update tmpTagDeps set tsEnd = (select min(t2.tsStart) - 1 from tmpTagDeps as t2 where t2.tsStart > tmpTagDeps.tsStart and tmpTagDeps.tagID=t2.tagID) where tsEnd is null and tsStart is not null");
-
-        ## Copy to the real table (we do this, rather than write
-        ## directly with dbWriteTable, to preserve existence of
-        ## indexes on tagDeps)
-
-        meta("delete from tagDeps")
-        meta("insert into tagDeps select * from tmpTagDeps")
-        meta("drop table tmpTagDeps")
-
-        ## replace slim copy of tag deps in mysql database
-        MotusDB("delete from tagDeps")
-        dbWriteTable(MotusDB$con, "tagDeps", dbGetQuery(meta$con, "select projectID, tagID as motusTagID, tsStart, tsEnd from tagDeps order by projectID, tagID"),
-                         append=TRUE, row.names=FALSE)
-
-        ## write tagDeps table into the metadata history repo
-        write.csv(dbGetQuery(meta$con, "
-select
-   tagID,
-   projectID,
-   tsStart,
-   tsEnd,
-   tsStartCode,
-   tsEndCode
-from
-   tagDeps
-order by
-   tagID,
-   tsStart
-"
-),
-file.path(MOTUS_PATH$METADATA_HISTORY, "tag_deployments.csv"), row.names=FALSE)
-        rv["tagDeps"] = TRUE
+        updateMetadataForTags(t, meta, p=p)
+        rv[c("tags", "projs", "tagDeps")] = TRUE
     }, error = function(e) {
         motusLog("%s: tagdeps: %s", funName, as.character(e))
     })
@@ -229,13 +177,8 @@ file.path(MOTUS_PATH$METADATA_HISTORY, "tag_deployments.csv"), row.names=FALSE)
         motusLog("%s: paramOverrides: %s", funName, as.character(e))
     })
 
-    ## in case there were any changes, commit them to the repo and push to git hub
-    safeSys(paste0("cd ", MOTUS_PATH$METADATA_HISTORY, "; if ( git commit --no-gpg-sign --author='motus_data_server <sgdata@motus.org>' -a -m 'revised upstream' ); then git push; fi"), quote=FALSE)
-
-    ## grab git commit hash and store in meta db
-
-    map = getMap(meta$con)
-    map$hash = sub("\n", "", safeSys(paste0("cd ", MOTUS_PATH$METADATA_HISTORY, "; git rev-parse HEAD"), quote=FALSE)[1])
+    ## commit any changes to the git repo that tracks history
+    commitMetadataHistory(meta)
 
     ## and now the moment we've all been waiting for
     meta("COMMIT")

@@ -43,6 +43,7 @@
 
 handleRegisterTags = function(j) {
 
+    newTagIDs = integer(0)
     meta = list(motusProjID=NULL, tagModel=NULL, nomFreq=NULL, species=NULL, deployDate=NULL, codeSet=NULL)
     lcMetaNames = tolower(names(meta))
     p = jobPath(j)
@@ -288,6 +289,7 @@ handleRegisterTags = function(j) {
             tag = paste0(id, ":", round(meanbi, 2))
             if (! regError) {
                 jobLog(j, paste0("Success: tag ", tag, " was registered as motus tag ", rv$tagID, " under project ", projectID))
+                newTagIDs = c(newTagIDs, rv$tagID)
                 if (! is.null(speciesID) && ! is.na(deployDate)) {
                     ## try register a deployment on the given species and/or date
                     rv2 = motusDeployTag(tagID=as.integer(rv$tagID), speciesID=speciesID, projectID=projectID, tsStart=as.numeric(deployDate))
@@ -323,5 +325,16 @@ handleRegisterTags = function(j) {
     url = getDownloadURL(projectID, isTesting)
     jobLog(j, sprintf("\nThe on-board database for your recent tags is available here:\n    %s\n\nInstructions for installing it on a sensorgnome are here:\n   https://sensorgnome.org/VHF_Tag_Registration/Uploading_the_tags_database_file_to_your_SensorGnome\n", url), summary=TRUE)
     jobProduced(j, file.path(url, basename(dbFile)), projectID)
+    if (length(newTagIDs) > 0) {
+        ## directly update the tags, tagDeps, and events tables in the metadata cache
+        ## and in the motus DB.  See:  https://github.com/jbrzusto/motusServer/issues/412
+        newTags = subset(motusSearchTags(projectID=projectID), tagID %in% newTagIDs)
+        if (isTRUE(nrow(newTags) > 0)) {
+            MetaDB("BEGIN EXCLUSIVE TRANSACTION")
+            updateMetadataForTags(newTags, MetaDB, fixBI=FALSE)
+            commitMetadataHistory(MetaDB)
+            MetaDB("COMMIT")
+        }
+    }
     return(TRUE)
 }
