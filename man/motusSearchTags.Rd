@@ -5,8 +5,7 @@
 \title{return a list of all motus tags}
 \usage{
 motusSearchTags(projectID = NULL, tsStart = NULL, tsEnd = NULL,
-  searchMode = c("startsBetween", "overlaps"), mfgID = NULL,
-  status = NULL, ...)
+  searchMode = "startsBetween", mfgID = NULL, status = NULL, ...)
 }
 \arguments{
 \item{projectID:}{integer scalar; motus internal project ID}
@@ -16,7 +15,7 @@ motusSearchTags(projectID = NULL, tsStart = NULL, tsEnd = NULL,
 \item{tsEnd:}{numeric scalar; end of active period}
 
 \item{searchMode:}{character scalar; type of search
-desired. "overlaps" looks for tags active during at least a
+desired. "overlap" looks for tags active during at least a
 portion of the time span \code{c(tsStart, tsEnd)}, while
 "startsBetween" looks for tags with deployment start times in
 the same range.}

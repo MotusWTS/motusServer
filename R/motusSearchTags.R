@@ -7,7 +7,7 @@
 #' @param tsEnd: numeric scalar; end of active period
 #'
 #' @param searchMode: character scalar; type of search
-#'     desired. "overlaps" looks for tags active during at least a
+#'     desired. "overlap" looks for tags active during at least a
 #'     portion of the time span \code{c(tsStart, tsEnd)}, while
 #'     "startsBetween" looks for tags with deployment start times in
 #'     the same range.
@@ -73,8 +73,8 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-motusSearchTags = function(projectID = NULL, tsStart = NULL, tsEnd = NULL, searchMode=c("startsBetween", "overlaps"), mfgID = NULL, status = NULL, ...) {
-    searchMode = match.arg(searchMode)
+motusSearchTags = function(projectID = NULL, tsStart = NULL, tsEnd = NULL, searchMode="startsBetween", mfgID = NULL, status = NULL, ...) {
+    searchMode = match.arg(searchMode, c("startsBetween", "overlap"))
 
     colMap = c(
         "tagID" = "id",
@@ -121,7 +121,7 @@ motusSearchTags = function(projectID = NULL, tsStart = NULL, tsEnd = NULL, searc
                    tsStart   = tsStart,
                    tsEnd     = tsEnd,
                    status    = status,
-                   qSearchMode = searchMode,
+                   searchMode = searchMode,
                    mfgID     = mfgID
                ), ...)
 
