@@ -146,9 +146,9 @@ modelBattery = list(
 "NTQB2-2" = "2",
 "NTQB2-3-2" = "3-2",
 "NTQB2-4-2S" = "4-2",
+"NTQB2-5-1" = "unknown",
 "NTQB2-6-1" = "6-1",
-"NTQB2-6-2" = "6-2",
-"unknown" = "unknown"
+"NTQB2-6-2" = "6-2"
 )
 
 modPar = NULL
