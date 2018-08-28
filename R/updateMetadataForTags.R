@@ -59,6 +59,7 @@ updateMetadataForTags = function(t, meta, p = meta("select * from projs"), fixBI
     meta("insert into tagDeps select * from tmpTagDeps")
 
     ## update slim copy of tag deps in mysql database
+    openMotusDB()
     dbWriteTable(MotusDB$con, "tmpTagDeps", dbGetQuery(meta$con, "select projectID, tagID as motusTagID, tsStart, tsEnd from tmpTagDeps"),
                  row.names=FALSE, overwrite=TRUE)
     MotusDB("delete from tagDeps where motusTagID in (select distinct motusTagID from tmpTagDeps)")
