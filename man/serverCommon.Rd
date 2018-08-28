@@ -4,7 +4,11 @@
 \alias{serverCommon}
 \title{common code required by all XXXServer() functions}
 \usage{
-serverCommon()
+serverCommon(withHTTP = TRUE)
+}
+\arguments{
+\item{withHTTP}{logical; does this server respond to http requests?
+default: TRUE}
 }
 \value{
 TRUE

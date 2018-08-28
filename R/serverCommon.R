@@ -1,5 +1,8 @@
 #' common code required by all XXXServer() functions
 #'
+#' @param withHTTP logical; does this server respond to http requests?
+#' default: TRUE
+#'
 #' @return TRUE
 #'
 #' @note side effects are to load libraries, open databases, assign to global variables
@@ -8,18 +11,19 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-serverCommon = function() {
+serverCommon = function(withHTTP = TRUE) {
 
     ## workaround strange R bug in dir() relating to non-ascii filenames
     ## (see https://github.com/jbrzusto/motusServer/issues/398 )
     ignore = rawToChar(as.raw(c(0xeb, 0xc9, 0xde)))
 
-    library(Rook)
-    library(jsonlite)
-
-    ## set a 2 minute timeout for all requests to motus.org
-    ## - see https://github.com/jbrzusto/motusServer/issues/409
-    httr::config(httr::timeout(120))
+    if (withHTTP) {
+        library(Rook)
+        library(jsonlite)
+        ## set a 2 minute timeout for all requests to motus.org
+        ## - see https://github.com/jbrzusto/motusServer/issues/409
+        httr::config(httr::timeout(120))
+    }
 
     ## make sure the server database exists, is open, and put a safeSQL object in the global ServerDB
     ## this is the database responsible for managing processing jobs
@@ -30,14 +34,15 @@ serverCommon = function() {
 
     MotusCon <<- MotusDB$con
 
-    ## open the motus metadata cache DB and assign handle to global MetaDB
-    MetaDB <<- safeSQL(getMotusMetaDB())
+    ## open the motus metadata cache DB
+    getMotusMetaDB()
 
-    ## get user auth database, ensuring it has a valid auth table
+    if (withHTTP) {
+        ## get user auth database, ensuring it has a valid auth table
 
-    AuthDB <<- safeSQL(MOTUS_PATH$USERAUTH)
-    AuthDB("create table if not exists auth (token TEXT UNIQUE PRIMARY KEY, expiry REAL, userID INTEGER, projects TEXT, receivers TEXT, userType TEXT)")
-    AuthDB("create index if not exists auth_expiry on auth (expiry)")
-
-    TRUE
+        AuthDB <<- safeSQL(MOTUS_PATH$USERAUTH)
+        AuthDB("create table if not exists auth (token TEXT UNIQUE PRIMARY KEY, expiry REAL, userID INTEGER, projects TEXT, receivers TEXT, userType TEXT)")
+        AuthDB("create index if not exists auth_expiry on auth (expiry)")
+    }
+    return(TRUE)
 }
