@@ -81,11 +81,19 @@ function onExit {
 
 trap onExit EXIT
 
+KILLFILE=/sgm_local/kill.statusServer.$PORT
+rm -f $KILLFILE
+
 echo $$ > $PIDFILE
 
 if [[ $TRACE == 0 ]]; then
     while (( 1 )); do
         nohup Rscript -e "library(motusServer);statusServer(port=$PORT, tracing=FALSE)" >> /sgm/logs/status.txt 2>&1
+        ## check for a file called $KILLFILE, and if it exists, delete it and quit
+        if [[ -f $KILLFILE ]]; then
+            rm -f $KILLFILE
+            exit 0
+        fi
         sleep 15
     done
 else

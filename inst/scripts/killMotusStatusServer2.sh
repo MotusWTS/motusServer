@@ -48,12 +48,15 @@ done
 
 STATUS_SERVER_KILL_URL=http://localhost:$PORT/custom/_shutdown
 
+KILLFILE=/sgm_local/kill.statusServer2.$PORT
+touch $KILLFILE
+
 if [[ "$GRACEFUL" != "" ]]; then
     ## send the kill request, waiting up to 5 minutes for a reply,
     ## at which point the server has shut itself down, or is so
     ## busy a graceful shutdown is impossible.
     echo 'sending shutdown request to statusServer (API version) and waiting up to 1 minute'
-    GET -t1m $STATUS_SERVER_KILL_URL
+    GET -t1m -d $STATUS_SERVER_KILL_URL
 fi
 
 PIDFILE=/sgm/statusServer2-$PORT.pid
