@@ -7,7 +7,20 @@
 # to respond.  This prevents any requests from being
 # interrupted.
 
-STATUS_SERVER_KILL_URL=http://localhost:59059/custom/_shutdown
+PORT=59059
+
+while [[ "$1" != "" ]]; do
+        -p)
+            PORT=$2
+            if [[ "$PORT" == "" ]]; then
+                echo Error: port must be numeric
+                exit 1;
+            fi
+            shift
+            ;;
+done
+
+STATUS_SERVER_KILL_URL=http://localhost:$PORT/custom/_shutdown
 
 KILLFILE=/sgm_local/kill.statusServer.$PORT
 touch $KILLFILE
@@ -24,6 +37,6 @@ PIDFILE=/sgm/statusServer.pid
 PID=`cat $PIDFILE`
 if [[ "$PID" != "" ]]; then
     pkill -g $PID
-    echo `date +%Y-%m-%dT%H-%M-%S.%6N`: Status server killed. >> /sgm/logs/mainlog.txt
+    echo `date +%Y-%m-%dT%H-%M-%S.%6N`: Status server on port $PORT killed. >> /sgm/logs/mainlog.txt
     rm -f $PIDFILE
 fi
