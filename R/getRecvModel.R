@@ -43,6 +43,9 @@ getRecvModel = function(serno) {
     } else {
         ## get bare serial number by dropping "Lotek-" (first 6 chars)
         bareno = substring(serno, 7)
+        ## drop any disambiguation suffix (e.g. "_1") as this is not
+        ## relevant to model determination
+        bareno = sub("_[0-9]$", "", bareno, perl=TRUE)
 
         ## map to model as per info from Lotek:
 
