@@ -20,5 +20,8 @@ productsDir = function(serno, isTesting=FALSE) {
     mainDir = if (isTesting) MOTUS_PATH$TEST_PRODUCTS else MOTUS_PATH$PRODUCTS
     outDir = file.path(mainDir, serno)
     dir.create(outDir, mode="0770")
+    ## give user write permission to just-created directory!
+    ## workaround for: https://github.com/MotusDev/Motus-TO-DO/issues/325
+    Sys.chmod(outDir)
     return(outDir)
 }
