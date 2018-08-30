@@ -10,6 +10,7 @@
 PORT=59059
 
 while [[ "$1" != "" ]]; do
+    case "$1" in
         -p)
             PORT=$2
             if [[ "$PORT" == "" ]]; then
@@ -18,6 +19,7 @@ while [[ "$1" != "" ]]; do
             fi
             shift
             ;;
+    esac
 done
 
 STATUS_SERVER_KILL_URL=http://localhost:$PORT/custom/_shutdown
