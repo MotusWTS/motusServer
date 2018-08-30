@@ -85,23 +85,23 @@ handlePlotData = function(j) {
         rv = NULL
         tryCatch({
             rv = makeReceiverPlot(src, MOTUS_METADB_CACHE, title, condense, ts = unlist(info[i, c("tsStart", "tsEnd")]), unlist(info[i, c("bnStart", "bnEnd")]))
+            if (!is.null(rv)) {
+                saveRDS(rv$data, datafilename)
+                png(plotfilename, width=rv$width, height=rv$height, type="cairo-png")
+                print(rv$plot)
+                dev.off()
+
+                ## make a pdf too, assuming a 90 dpi display
+                pdfname = sub("\\.png$", ".pdf", plotfilename, perl=TRUE)
+                pdf(pdfname, width=rv$width / 90, height=rv$height / 90)
+                print(rv$plot)
+                dev.off()
+
+                registerProducts(j, path=c(plotfilename, pdfname, datafilename), projectID=info$projID[i], isTesting=isTesting)
+                }
         }, error = function(e) {
-            jobLog(j, paste0("Error `", as.character(e), "` while trying to make plot for ", serno, " and parameters ", capture.output(info[i,])))
+            jobLog(j, paste0("Error `", as.character(e), "` while trying to make plot for ", serno, " ", year, "_", proj, "_", site))
         })
-        if (!is.null(rv)) {
-            saveRDS(rv$data, datafilename)
-            png(plotfilename, width=rv$width, height=rv$height, type="cairo-png")
-            print(rv$plot)
-            dev.off()
-
-            ## make a pdf too, assuming a 90 dpi display
-            pdfname = sub("\\.png$", ".pdf", plotfilename, perl=TRUE)
-            pdf(pdfname, width=rv$width / 90, height=rv$height / 90)
-            print(rv$plot)
-            dev.off()
-
-            registerProducts(j, path=c(plotfilename, pdfname, datafilename), projectID=info$projID[i], isTesting=isTesting)
-        }
     }
     closeRecvSrc(src)
     return (TRUE)
