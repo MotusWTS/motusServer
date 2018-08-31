@@ -20,6 +20,7 @@ while [[ "$1" != "" ]]; do
             shift
             ;;
     esac
+    shift
 done
 
 STATUS_SERVER_KILL_URL=http://localhost:$PORT/custom/_shutdown
