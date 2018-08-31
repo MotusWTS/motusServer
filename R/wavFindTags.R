@@ -13,6 +13,10 @@
 #'
 #' @param tdb path to the tag database file
 #'
+#' @param pd character scalar; which pulse detector to use.  One of
+#' c("findpulsefdbatch" or "findpulsetdbatch").  Names one of the
+#' VAMP plugins in the library lotek-plugins.so  Default: "findpulsetdbatch"
+#'
 #' @param pdpars named list of parameters to the pulse detector
 #'
 #' @param tfpars named list of parameters to the tag finder.
@@ -25,7 +29,7 @@
 #' \item sig; signal strength in dB max
 #' }
 #'
-#' @param maxFreqSD maximum freqsd of returned detections; default: 0.1
+#' @param maxFreqSD maximum freqsd of returned detections; default: 0.2
 #' kHz
 #'
 #' @note uses external programs vamp-host and find_tags_unifile, and
@@ -36,8 +40,9 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 wavFindTags = function(f, tdb,
+                       pd="findpulsetdbatch",
                        pdpars=list(minsnr=8, minfreq=0, maxfreq=24, plen=2.5),
-                       tfpars=list(min_dfreq=-24, max_dfreq=24, signal_slop=30, frequency_slop=0.2, pulses_to_confirm=4, pulse_slop=1.5, max_skipped_bursts=3, default_freq=166.376), maxFreqSD=0.1
+                       tfpars=list(min_dfreq=-24, max_dfreq=24, signal_slop=30, frequency_slop=0.2, pulses_to_confirm=4, pulse_slop=1.5, max_skipped_bursts=3, default_freq=166.376), maxFreqSD=0.2
                        ){
 
     tmpf = tempfile(rep("file", 2))
@@ -48,7 +53,7 @@ wavFindTags = function(f, tdb,
 
     safeSys("/sgm/bin/vamp-host",
             pars=paste0("-a ", names(pdpars), "=", pdpars, collapse = " "),
-            "/sgm/bin/lotek-plugins.so:findpulsefdbatch:pulses",
+            paste0("/sgm/bin/lotek-plugins.so:", pd, ":pulses"),
             f,
             "-o",
             tmpf[1],
