@@ -4,7 +4,7 @@
 \alias{wavFindTags}
 \title{detect tags in a .wav audio file}
 \usage{
-wavFindTags(f, tdb, pd = "findpulsetdbatch", pdpars = list(minsnr = 8,
+wavFindTags(f, tdb, pd = "findpulsetdbatch", pdpars = list(minsnr = 5,
   minfreq = 0, maxfreq = 24, plen = 2.5), tfpars = list(min_dfreq = -24,
   max_dfreq = 24, signal_slop = 30, frequency_slop = 0.2, pulses_to_confirm = 4,
   pulse_slop = 1.5, max_skipped_bursts = 3, default_freq = 166.376,
