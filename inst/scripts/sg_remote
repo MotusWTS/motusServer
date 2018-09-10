@@ -117,8 +117,12 @@ if serno == "NEW":
         curs.execute('pragma busy_timeout=30000');
 
         # generate a port number for tunnelling back into the receiver
+		# the subquery gets the smallest unassigned tunnelport number that
+		# is larger than the first assigned one.  This avoids leaving holes
+		# in the port number space when receivers are "removed" due to
+		# e.g. re-imaging the SD card from a BBW or RPI receiver
 
-        curs.execute('insert into receivers (serno, tunnelport) values (:serno, (select 1 + max(tunnelport) from receivers))', {
+        curs.execute('insert into receivers (serno, tunnelport) values (:serno, (select min(t1.tunnelport)+1 from receivers as t1 left join receivers as t2 on t1.tunnelport=t2.tunnelport-1 where t2.tunnelport is null))', {
             "serno": serno})
         if DEBUG:
             ff.write ("inserted\n")
