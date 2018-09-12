@@ -110,7 +110,7 @@ Tag deactivation events are generated using these items, again in order of prefe
 <em>BI</em> is the tag burst interval, in seconds, and <em>marginOfError</em> has been chosen to be 50%.<br>
 <em>predictTagLifespan</em> is an R function that models tag life as a function of tag model and burst interval;<br>
 it is based on a simple model of power consumption, and agrees well with the specs
- published by Lotek.  Details of the model are <a href="https://github.com/jbrzusto/motus-R-package/blob/master/modelLotekTagLifeSpan.pdf">here.</a></br>
+ published by Lotek.  Details of the model are <a href="https://github.com/jbrzusto/motusServer/blob/master/inst/doc/modelLotekTagLifeSpan.pdf">here.</a></br>
 
 <em>guessTagModel</em> associates a default tag model with each species,<br>
 where we have reason to believe that model is the one most commonly used for it.<br>
