@@ -30,6 +30,9 @@ handleSGfindtags = function(j) {
 
     jobLog(j, paste0("Running tag finder on receiver ", serno, " boot session ", j$monoBN, if (j$canResume) " (resumed)"))
 
+    if (updateTagDeployments())
+        jobLog(j, "Some tag deployment metadata were updated from motus.org")
+
     ## lock this receiver's DB
 
     lockSymbol(serno)
