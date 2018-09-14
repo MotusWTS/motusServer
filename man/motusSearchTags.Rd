@@ -5,14 +5,15 @@
 \title{return a list of all motus tags}
 \usage{
 motusSearchTags(projectID = NULL, tsStart = NULL, tsEnd = NULL,
-  searchMode = "startsBetween", mfgID = NULL, status = NULL, ...)
+  searchMode = "startsBetween", mfgID = NULL, status = NULL,
+  tsLastModified = NULL, ...)
 }
 \arguments{
 \item{projectID:}{integer scalar; motus internal project ID}
 
-\item{tsStart:}{numeric scalar; start of active period}
+\item{tsStart:}{numeric scalar; unix timestamp; start of active period}
 
-\item{tsEnd:}{numeric scalar; end of active period}
+\item{tsEnd:}{numeric scalar; unix timestamp; end of active period}
 
 \item{searchMode:}{character scalar; type of search
 desired. "overlap" looks for tags active during at least a
@@ -27,6 +28,11 @@ printed on the tag)}
 \item{status:}{integer; if non-NULL, returns only tags with the
 specified status.  1L = tag finished; 2L = tag active; 0L = tag
 not yet deployed}
+
+\item{tsLastModified:}{numeric scalar; unix timestamp; metadata
+modification threshold; if not NULL, only records modified
+since \code{tsLastModified} are returned.  Allows us to update
+the tagDeps records in the metadata cache.}
 
 \item{...:}{additional parameters to motusQuery()}
 }
@@ -80,6 +86,8 @@ return a list of all motus tags
 \note{
 As of 2018-08-24, filtering by `tsStart` and `tsEnd` fails to return any tags
 whose `tsEnd` is NULL; see https://github.com/MotusDev/MotusAPI/issues/8
+
+support for \code{tsLastModified} is pending, so specifying it currently returns \code{data.frame()}
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}

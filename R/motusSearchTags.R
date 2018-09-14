@@ -2,9 +2,9 @@
 #'
 #' @param projectID: integer scalar; motus internal project ID
 #'
-#' @param tsStart: numeric scalar; start of active period
+#' @param tsStart: numeric scalar; unix timestamp; start of active period
 #'
-#' @param tsEnd: numeric scalar; end of active period
+#' @param tsEnd: numeric scalar; unix timestamp; end of active period
 #'
 #' @param searchMode: character scalar; type of search
 #'     desired. "overlap" looks for tags active during at least a
@@ -19,6 +19,11 @@
 #' @param status: integer; if non-NULL, returns only tags with the
 #'     specified status.  1L = tag finished; 2L = tag active; 0L = tag
 #'     not yet deployed
+#'
+#' @param tsLastModified: numeric scalar; unix timestamp; metadata
+#'     modification threshold; if not NULL, only records modified
+#'     since \code{tsLastModified} are returned.  Allows us to update
+#'     the tagDeps records in the metadata cache.
 #'
 #' @param ...: additional parameters to motusQuery()
 #'
@@ -69,12 +74,21 @@
 #' @note As of 2018-08-24, filtering by `tsStart` and `tsEnd` fails to return any tags
 #' whose `tsEnd` is NULL; see https://github.com/MotusDev/MotusAPI/issues/8
 #'
+#' @note support for \code{tsLastModified} is pending, so specifying it currently returns \code{data.frame()}
+#'
 #' @export
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-motusSearchTags = function(projectID = NULL, tsStart = NULL, tsEnd = NULL, searchMode="startsBetween", mfgID = NULL, status = NULL, ...) {
+motusSearchTags = function(projectID = NULL, tsStart = NULL, tsEnd = NULL, searchMode="startsBetween", mfgID = NULL, status = NULL, tsLastModified = NULL, ...) {
     searchMode = match.arg(searchMode, c("startsBetween", "overlap"))
+
+    ##### delete this block once upstream supports the tsLastModified parameter for api/tags/search
+
+    if (! is.null(tsLastModified))
+        return (data.frame())
+
+    ##### end of block to delete
 
     colMap = c(
         "tagID" = "id",
@@ -117,12 +131,13 @@ motusSearchTags = function(projectID = NULL, tsStart = NULL, tsEnd = NULL, searc
 
     mot = motusQuery(MOTUS_API_SEARCH_TAGS, requestType="get",
                list(
-                   projectID = projectID,
-                   tsStart   = tsStart,
-                   tsEnd     = tsEnd,
-                   status    = status,
-                   searchMode = searchMode,
-                   mfgID     = mfgID
+                   projectID       = projectID,
+                   tsStart         = tsStart,
+                   tsEnd           = tsEnd,
+                   status          = status,
+                   searchMode      = searchMode,
+                   mfgID           = mfgID,
+                   tsLastModified  = tsLastModified
                ), ...)
 
     if (! isTRUE(nrow(mot) > 0))
