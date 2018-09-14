@@ -23,7 +23,9 @@ updateTagDeployments = function() {
         ts = as.numeric(file.info(MOTUS_METADB_CACHE)$mtime)
         MetaDB("insert into meta values ('tsTagDepsLastModified', %f)", ts)
     }
-    t = motusSearchTags(tsLastModified = ts)
+    ## grab any tag deployment changes since we last updated
+    ## (note the 300 second slop in case server clocks are out of sync)
+    t = motusSearchTags(tsLastModified = ts - 300)
     if (nrow(t) > 0) {
         updateMetadataForTags(t)
         return(TRUE)
