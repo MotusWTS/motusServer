@@ -35,7 +35,7 @@ refreshMotusMetaDBCache = function() {
     ## try to lock the db (by trying to lock its name)
     lockSymbol(db)
 
-    ## make sure we unlock the receiver DB when this function exits, even on error
+    ## make sure we unlock the meta DB when this function exits, even on error
     ## NB: the runMotusProcessServer script also drops any locks held by a given
     ## processServer after the latter exits.
 
