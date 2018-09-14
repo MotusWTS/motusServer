@@ -10,7 +10,8 @@
 #'
 #' @param t: data.frame of tags, as returned by motusSearchTags()
 #'
-#' @param meta: safeSQL object to metadata DB
+#' @param meta: safeSQL object to metadata DB; default: the global
+#' variable \code{MetaDB}
 #'
 #' @param p: data.frame of projects, as returned by motusListProjects()
 #' default: meta("select * from projs")
@@ -31,7 +32,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-updateMetadataForTags = function(t, meta, p = meta("select * from projs"), fixBI=FALSE) {
+updateMetadataForTags = function(t, meta=MetaDB, p = meta("select * from projs"), fixBI=FALSE) {
 
     ## clean up tag registrations (only runs on server with access to full Lotek codeset)
     ## creates tables "tags" and "events" from the first parameter

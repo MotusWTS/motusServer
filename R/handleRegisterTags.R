@@ -331,7 +331,7 @@ handleRegisterTags = function(j) {
         newTags = subset(motusSearchTags(projectID=projectID), tagID %in% newTagIDs)
         if (isTRUE(nrow(newTags) > 0)) {
             MetaDB("BEGIN EXCLUSIVE TRANSACTION")
-            updateMetadataForTags(newTags, MetaDB, fixBI=FALSE)
+            updateMetadataForTags(newTags)
             commitMetadataHistory(MetaDB)
             MetaDB("COMMIT")
         }

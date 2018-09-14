@@ -4,13 +4,14 @@
 \alias{updateMetadataForTags}
 \title{update metadata for a set of tags}
 \usage{
-updateMetadataForTags(t, meta, p = meta("select * from projs"),
+updateMetadataForTags(t, meta = MetaDB, p = meta("select * from projs"),
   fixBI = FALSE)
 }
 \arguments{
 \item{t:}{data.frame of tags, as returned by motusSearchTags()}
 
-\item{meta:}{safeSQL object to metadata DB}
+\item{meta:}{safeSQL object to metadata DB; default: the global
+variable \code{MetaDB}}
 
 \item{p:}{data.frame of projects, as returned by motusListProjects()
 default: meta("select * from projs")}
