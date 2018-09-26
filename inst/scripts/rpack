@@ -37,13 +37,14 @@ Rscript -e "library(roxygen2); roxygenize('$PACKAGEDIR');"
 
 LOGFILE=/tmp/rpack.log.txt
 BUILDLINE=/tmp/rpack.buildline.txt
+PACKAGE_TREE=/home/sg/installed-R-packages
 R CMD build $PACKAGEDIR | tee $LOGFILE
 tail -1l $LOGFILE > $BUILDLINE
 read A B C < $BUILDLINE
 C=${C/‘/};
 C=${C/’/};
 if (( $GLOBAL )); then
-    sudo R CMD INSTALL $C
+    sudo R CMD INSTALL -l $PACKAGE_TREE $C
 else
     R CMD INSTALL $C
 fi
