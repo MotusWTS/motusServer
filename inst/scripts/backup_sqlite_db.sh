@@ -27,6 +27,10 @@ fi
 TABLES=`sqlite3 $SRC .tables`
 
 for t in $TABLES; do
+    if [[ $t =~ .*_ ]]; then
+        ## skip views, which we always name with a '_' prefix
+        continue
+    fi
     echo backing up table $t
 
     ## copy in batches, paging by rowid of source table
@@ -49,6 +53,8 @@ SELECT max(rowid) FROM $t ORDER BY ROWID LIMIT $CHUNK_ROWS ;
 COMMIT;
 DETACH DATABASE d;
 EOF`
+    ## drop reply to pragma
+    NEWMAXROWID=${NEWMAXROWID#30000}
     MAXROWID=""
     while [[ "$MAXROWID" != "$NEWMAXROWID" ]]; do
         MAXROWID=$NEWMAXROWID
@@ -61,6 +67,8 @@ SELECT max(rowid) from $t where rowid > $MAXROWID ORDER BY ROWID LIMIT $CHUNK_RO
 COMMIT;
 DETACH DATABASE d;
 EOF`
+        ## drop reply to pragma
+        NEWMAXROWID=${NEWMAXROWID#30000}
         sleep 0.1
     done
 done
