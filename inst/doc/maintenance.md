@@ -39,7 +39,7 @@ The Server runs on debian linux 8.8
   needed by the version of R used on the Server.
 
 - however, as suggested here: http://zvfak.blogspot.com/2012/06/updating-r-but-keeping-your-installed.html
-  We are installing non-bundled R packages to a separate directory,
+  we install non-bundled R packages to a separate directory,
   `/home/sg/installed-R-packages` so that if only a minor update/upgrade
   is made to R, the packages will be preserved and need not be reinstalled.
   This requires the file `/home/sg/.Renviron` with this line:
