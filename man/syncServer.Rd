@@ -20,8 +20,8 @@ This function does not return; it is meant for use in an R
 }
 \description{
 Watch for new files in \code{MOTUS_PATH$SYNC}.  When a file is
-found, it's assumed the name is the serial number of an attached
-receiver, and a 'syncReceiver' job is queued for that receiver, if
+found, it's treated as describing a method and serial number for
+syncing, and a new syncReceiver job is queued for the receiver, if
 there isn't already an unfinished one for it. The syncReceiver job
 is queued via /sgm/priority, bypassing jobs running from uploaded
 data or manually on the server.  This is to provide relatively low
@@ -29,12 +29,10 @@ latency for both users watching online receivers, and because the
 internet connection to the receiver might be intermittent.
 }
 \note{
-this depends on some other process placing uploaded files into
-the folder \code{MOTUS_PATH$SYNC}.  This is done by a shell script
-launched from the sg_remote program that is run on the server
-by each attached receiver.  The last step of the shell script is
-to cause its own relaunch after a random time interval, via an
-'at' job.
+this depends on some other process creating files in
+the folder \code{MOTUS_PATH$SYNC}.  In the motus set-up, this
+will be done from the server at sensorgnome.org, which manages
+and hosts networked SGs.
 }
 \seealso{
 \link{\code{handleSyncReceiver}}

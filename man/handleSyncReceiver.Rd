@@ -12,7 +12,12 @@ handleSyncReceiver(j)
 \itemize{
 
 \item serno character scalar; the receiver serial number
-
+\item method; method for reaching the receiver.  So far, this
+must be an integer, representing a tunnel port number (i.e.
+number of a port on localhost that has been mapped back
+to the ssh port (22) on the remote SG, typically via
+the server at sensorgnome.org  Tunnel port numbers start
+at 40000 and do not exceed 65535.
 }}
 }
 \value{
