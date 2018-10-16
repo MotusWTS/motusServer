@@ -48,7 +48,7 @@ syncServer = function(tracing = FALSE, fileEvent="CLOSE_WRITE") {
     repeat {
         touchFile = feed()             ## this might might wait a long time
         file.remove(touchFile)         ## the file is empty, was only needed to trigger this event
-        parts = regexPieces("(?<method>.*):(?<serno>SG-[0-9A-Z]{12})", basename(touchFile))[[1]]
+        parts = regexPieces("(?<method>.*):(?<serno>SG-[0-9A-Z]{12}):(?<motusUserID>[0-9]+):(?<motusProjectID>[0-9]+)", basename(touchFile))[[1]]
         if (! is.na(as.integer(parts["method"]))) {
             ## only valid method so far is an integer, representing the tunnel port #
             if (tracing)
@@ -56,7 +56,12 @@ syncServer = function(tracing = FALSE, fileEvent="CLOSE_WRITE") {
 
             ## only create the job if there isn't already an unfinished syncReceiver job for this SG
             if (length(Jobs[type=='syncReceiver' & done==0 & .$serno==R(parts["serno"])]) == 0) {
-                j = newJob("syncReceiver", .parentPath=MOTUS_PATH$INCOMING, .enqueue=FALSE, serno=parts["serno"], method=parts["method"], queue="0")
+                j = newJob("syncReceiver", .parentPath=MOTUS_PATH$INCOMING, .enqueue=FALSE,
+                           serno=parts["serno"],
+                           method=parts["method"],
+                           motusUserID=parts["motusUserID"],
+                           motusProjectID=parts["motusProjectID"],
+                           queue="0")
                 moveJob(j, MOTUS_PATH$PRIORITY)
             }
             file.remove(touchFile)
