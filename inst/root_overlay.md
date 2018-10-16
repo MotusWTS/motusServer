@@ -14,8 +14,8 @@ items `USER GROUP PERMISSIONS PATH` where:
 The files to be installed are in the `inst/root` tree of the package repo, with
 generic ownership and permissions.
 
-For example, the line `% root root 644 /etc/ssh/sshd_sg_config` indicates the
-file `inst/root_overlay/etc/ssh/sshd_sg_config` will be copied to `/etc/ssh/sshd_sg_config`,
+For example, the line `% root root 644 /etc/cron.d/sqlite_daily_backup` indicates the
+file `inst/root_overlay/etc/cron.d/sqlite_daily_backup` will be copied to `/etc/cron.d/sqlite_daily_backup`,
 its ownership will be `root:root`, and its mode will be 644 (rw-r-r-).
 
 Here are the files:
@@ -26,7 +26,6 @@ Here are the files:
 % root root 644 /etc/cron.d/refreshMotusMetaDB
 % root root 644 /etc/cron.d/sqlite_daily_backup
 % root root 644 /etc/cron.d/monthly_trash_dump
-% root root 755 /etc/init.d/sshd-sg
 
 ```
 And here are symlinks we need to connect some external programs to content
