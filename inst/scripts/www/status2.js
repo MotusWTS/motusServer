@@ -420,6 +420,17 @@ function fmt_params(x, with_links=false) {
     return rv.replace(/filename = \/.*\/[0-9]+_[^_]+_/, "filename = ");
 };
 
+// @ function fixSGdataURL: URL-encode file basename portion of URL
+// @ param u: data product URL
+// This URL-encodes the product filename, which might
+// contain characters such as '#'; see https://github.com/jbrzusto/motusServer#423
+
+function fixSGdataURL(u) {
+    var parts = u.split("/");
+    parts.push(encodeURIComponent(parts.pop()))
+    return parts.join("/");
+};
+
 // @function user_type
 // return user type from authToken, or "" if none available
 
@@ -471,7 +482,7 @@ function show_job_details2(x) {
     // database.  Unfortunately, this means vectors of length 1 are
     // JSON-encoded as scalars, instead of arrays.  This is a problem
     // for fields such as `products_` which should always be an array, even if
-    // of length 1.  For now,t he workaround is to wrap fields which *should be*
+    // of length 1.  For now, the workaround is to wrap fields which *should be*
     // arrays in the `toArray()` function defined above.
 
     // Note that this doesn't apply to columns returned by the API, which are
@@ -498,7 +509,7 @@ function show_job_details2(x) {
                                    },
                                    products: json[0].products_ && json[0] ? {
                                        __transpose__: true,
-                                       link: toArray(json[0].products_),
+                                       link: toArray(json[0].products_).map(i=>fixSGdataURL(i)),
                                        name: toArray(json[0].products_).map(i=>i.replace(/^.*\//, ""))
                                    } : null
                                },
