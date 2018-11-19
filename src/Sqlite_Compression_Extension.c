@@ -215,12 +215,13 @@ static void GZreadFile( sqlite3_context *context, int argc, sqlite3_value **argv
     nIn = sqlite3_value_int(argv[1]);
   }
   if( nIn > 0 ) {
-    gzf = gzdopen(dup(fileno(in)), "rb");
+    gzf = gzdopen(fileno(in), "rb");
     if (gzf != 0) {
       inBuf = sqlite3_malloc( nIn );
       // WARNING only works for file sizes <= 2^31 bytes
       nOut = gzread(gzf, inBuf, nIn);
       gzclose(gzf);
+      in = 0;
       if( nOut < 0) {
         sqlite3_free(inBuf);
       } else {
@@ -231,7 +232,8 @@ static void GZreadFile( sqlite3_context *context, int argc, sqlite3_value **argv
       }
     }
   }
-  fclose(in);
+  if (in)
+    fclose(in);
 }
 
 static void gzcompress( sqlite3_context *context, int argc, sqlite3_value **argv){
