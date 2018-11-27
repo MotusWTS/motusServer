@@ -184,14 +184,14 @@ MOTUS_RECV_SERNO_REGEX = "(?i)^(?:(?:(?:SG-[0-9A-Z]{4}(?:RPi[123z]|BBBK|(?:BB[0-
 
 MOTUS_DOS_FILENAME_REGEX = "^[a-zA-Z0-9]+~[0-9].(GZ|TXT)"
 
-## the unfortunate individual who receives emails when things need attention
+## Make the following symbols available outside the package
+
 #'@export
 
-MOTUS_ADMIN_EMAIL = "jbrzusto@fastmail.fm"
-
-## the sensorgnome.org username for the administrator
-
-MOTUS_ADMIN_USERNAME = "john"
+## the unfortunate individual who receives emails when things need attention
+## we use a local address, and rely on the forwarding in /home/sg/.forward
+## to move it to real users.
+MOTUS_ADMIN_EMAIL = "sg@sgdata.motus.org"
 
 ## the table used to record locks on arbitrary symbols
 MOTUS_SYMBOLIC_LOCK_TABLE = "symLocks"
