@@ -1351,19 +1351,3 @@ allReceiversApp = function(env) {
     res$write(html)
     res$finish()
 }
-
-getUploadTokenApp =  function(env) {
-    req <- Rook::Request$new(env)
-    res <- Rook::Response$new()
-    res$header("Cache-control", "no-cache")
-
-    user <- req$GET()[['user']]
-    email <- req$GET()[['email']]
-
-    ## generate the token using openssl's rand_bytes
-
-    rv = getUploadToken(user, email)
-
-    res$write(sprintf('<pre>Token: %s<br><br>Email: %s<br><br>Expires:%s</pre>', rv$token, email, format(rv$expiry, "%Y %b %d %H:%M:%S GMT")))
-    res$finish()
-}
