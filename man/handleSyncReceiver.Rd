@@ -18,6 +18,13 @@ number of a port on localhost that has been mapped back
 to the ssh port (22) on the remote SG, typically via
 the server at sensorgnome.org  Tunnel port numbers start
 at 40000 and do not exceed 65535.
+\item motusUserID integer scalar; the ID of the motus user
+who registered the receiver for remote sync
+[only used by \code{\link{handleSGfindtags}} and \code{\link{handleLtFindtags}}]
+\item motusProjectID integer scalar; the ID of the motus
+project specified when the receiver was registered for
+remote sync [only used by \code{\link{handleSGfindtags}} and \code{\link{handleLtFindtags}}]
+
 }}
 }
 \value{
