@@ -15,38 +15,48 @@
 ##   /sgm/bin/decryptLotekDB.R
 ##
 
-cat("\n\nI'm going to decrypt the Lotek coded ID databases into locked RAM.\nThis will permit full use of the codeset by code run for privileged users.\nThe passphrase is case-sensitive, and includes spaces.\nPlease enter it now: ")
-
 options(warn = -1)
-source = "/home/sg/lotekdb/Lotek4.sqlite.gpg"
-target = "/home/sg/ramfs/Lotek4.sqlite"
-## because of how Rscript works, we can't just read a line from stdin, so
-## instead, spawn a new shell to read in the passphrase, with echo turned off temporarily
-pp = system("stty -echo; read x; stty echo; printf '%s\n' $x", intern=TRUE)
+sources = c("/home/sg/lotekdb/Lotek4.sqlite.gpg", "/home/sg/lotekdb/Lotek3.sqlite.gpg")
+targets = c("/home/sg/ramfs/Lotek4.sqlite",       "/home/sg/ramfs/Lotek3.sqlite")
 
-cmd = sprintf("sudo su -c 'umask 077; gpg -d --passphrase-fd 0 --batch %s > %s 2>/dev/null' sg\n", source, target)
-
-p = pipe(cmd, "w")
-
-cat(pp, file=p)
-
-close(p)
-
-source = "/home/sg/lotekdb/Lotek3.sqlite.gpg"
-target = "/home/sg/ramfs/Lotek3.sqlite"
-
-cmd = sprintf("sudo su -c 'umask 077; gpg -d --passphrase-fd 0 --batch %s > %s 2>/dev/null' sg\n", source, target)
-
-p = pipe(cmd, "w")
-
-cat(pp, file=p)
-
-close(p)
-
-size = as.integer(system(sprintf("sudo su -c 'stat -c %%s %s' sg", target), intern=TRUE, ignore.stderr=TRUE))
-if (isTRUE(size > 0)) {
-    cat("\n   This seems to have worked!\n\n")
-} else {
-    cat("\n   Warning: this failed.  You can try again.\n\n")
+if (! isTRUE(Sys.getenv("USER") == "sg")) {
+    cat("This script must be run as user 'sg'; try:\n\n   sudo su -c /sgm/bin/decryptLotekDB.R sg\n\n")
+    q("no")
 }
-q("yes")
+if (isTRUE(all(file.size(targets) > 0)) && ! isTRUE(commandArgs(TRUE)[1] == "-f")) {
+    cat("The database appears to have already been decrypted.\nIf not, try:\n\n   /sgm/bin/decryptLotekDB.R -f\n\nto force decryption.\n")
+    q("no")
+}
+cat("I'm going to decrypt the Lotek coded ID databases into locked RAM.\nThis will permit full use of the codeset by code run for privileged users.\nIf you interrupt this script, you might need to do\n\n   stty echo\n\nto restore terminal echo.\nThe passphrase is case-sensitive, and includes spaces.\nPlease enter the passphrase: ")
+
+## because Rscript uses stdin to refer to the script file, we can't just read the
+## passphrase from there.
+## Instead, spawn a new shell to read the passphrase, with echo turned off temporarily
+pp = system("stty -echo; read x; stty echo; printf '%s\n' $x", intern=TRUE)
+cat("\n")
+
+## decrypt each file
+## we do this into a temporary, then move the temporary to the target, to achieve
+## atomicity in case more than one admin attempts to do this at the same time
+for (i in seq(along=sources)) {
+    cat("Decrypting ", sources[i], "...")
+    tmptarget = paste0(targets[i], ".tmp")
+    cmd = sprintf("gpg -d --passphrase-fd 0 --batch %s > %s 2>/dev/null && mv -f %s %s", sources[i], tmptarget, tmptarget, targets[i])
+    p = pipe(cmd, "w")
+    cat(pp, file=p)
+    close(p)
+    cat("\n")
+}
+
+if (isTRUE(all(file.size(targets) > 0))) {
+    try({
+        for (targ in targets) {
+            system(sprintf("sqlite3 %s .schema > /dev/null", targets[i]))
+        }
+        cat("\nDatabases have been decrypted successfully.\n\nHit enter to start motus data processing servers:\n")
+        system("read x; /sgm/bin/runAllMotusServers.sh")
+        q("no")
+    }, silent=TRUE)
+}
+cat("\n   Warning: decryption failed. Wrong passphrase?\n\n")
+q("no")
