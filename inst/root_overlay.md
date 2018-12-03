@@ -25,6 +25,7 @@ Here are the files:
 % root root 644 /etc/cron.d/refreshMotusMetaDB
 % root root 644 /etc/cron.d/sqlite_daily_backup
 % root root 644 /etc/cron.d/monthly_trash_dump
+% root root 644 /etc/sysctl.d/local.conf
 % root root 755 /etc/rc.local
 ```
 And here are symlinks we need to connect some external programs to content
