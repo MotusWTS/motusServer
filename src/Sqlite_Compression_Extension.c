@@ -215,12 +215,13 @@ static void GZreadFile( sqlite3_context *context, int argc, sqlite3_value **argv
     nIn = sqlite3_value_int(argv[1]);
   }
   if( nIn > 0 ) {
-    gzf = gzdopen(dup(fileno(in)), "rb");
+    gzf = gzdopen(fileno(in), "rb");
     if (gzf != 0) {
       inBuf = sqlite3_malloc( nIn );
       // WARNING only works for file sizes <= 2^31 bytes
       nOut = gzread(gzf, inBuf, nIn);
       gzclose(gzf);
+      in = 0;
       if( nOut < 0) {
         sqlite3_free(inBuf);
       } else {
@@ -231,7 +232,8 @@ static void GZreadFile( sqlite3_context *context, int argc, sqlite3_value **argv
       }
     }
   }
-  fclose(in);
+  if (in)
+    fclose(in);
 }
 
 static void gzcompress( sqlite3_context *context, int argc, sqlite3_value **argv){
@@ -276,6 +278,30 @@ static void gzuncompress( sqlite3_context *context, int argc, sqlite3_value **ar
   }
 }
 
+/*
+** Implementation of the "readfile2(X)" SQL function.  The entire content
+** of the file named X is read and returned as a BLOB; it is first gz-decompressed
+** if the 2nd argument is TRUE.  NULL is returned
+** if the file does not exist or is unreadable.
+** Simply delegates to either GZreadFile or readFileFunc.
+*/
+static void readfileFunc2(
+                         sqlite3_context *context,
+                         int argc,
+                         sqlite3_value **argv
+                         ) {
+  const char *zName;
+  FILE *in;
+  long nIn;
+  void *pBuf;
+
+  if (sqlite3_value_int(argv[1])) {
+    return GZreadFile(context, 1, argv);
+  } else {
+    return readfileFunc(context, 1, argv);
+  }
+};
+
 int sqlite3_extension_init(
                            sqlite3 *db,
                            char **pzErrMsg,
@@ -286,6 +312,7 @@ int sqlite3_extension_init(
   sqlite3_create_function(db, "bz2uncompress", 2, SQLITE_UTF8, 0, &BZ2uncompressFunc, 0, 0);
   sqlite3_create_function(db, "gzreadfile", -1, SQLITE_UTF8, 0, &GZreadFile, 0, 0);
   sqlite3_create_function(db, "readfile", 1, SQLITE_UTF8, 0, &readfileFunc, 0, 0);
+  sqlite3_create_function(db, "readfile2", 2, SQLITE_UTF8, 0, &readfileFunc2, 0, 0);
   sqlite3_create_function(db, "writefile", 3, SQLITE_UTF8, 0, &writefileFunc, 0, 0);
   sqlite3_create_function(db, "gzcompress", 1, SQLITE_UTF8, 0, &gzcompress, 0, 0);
   sqlite3_create_function(db, "gzuncompress", 1, SQLITE_UTF8, 0, &gzuncompress, 0, 0);

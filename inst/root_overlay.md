@@ -11,12 +11,11 @@ items `USER GROUP PERMISSIONS PATH` where:
  - `PERMISSIONS` is the desired file permission string, in octal format
  - `PATH` is the path to the file relative to root
 
-The files to be installed are in the `inst/root` tree of the package repo, with
+The files to be installed are in the `inst/root_overlay` tree of the package repo, with
 generic ownership and permissions.
 
-For example, the line `% root root 644 /etc/ssh/sshd_sg_config` indicates the
-file `inst/root_overlay/etc/ssh/sshd_sg_config` will be copied to `/etc/ssh/sshd_sg_config`,
-its ownership will be `root:root`, and its mode will be 644 (rw-r-r-).
+For example, the line `% root root 644 /etc/cron.d/sqlite_daily_backup` indicates the
+file `inst/root_overlay/etc/cron.d/sqlite_daily_backup` will be copied to `/etc/cron.d/sqlite_daily_backup`, its ownership will be `root:root`, and its mode will be 644 (rw-r--r--).
 
 Here are the files:
 
@@ -26,8 +25,8 @@ Here are the files:
 % root root 644 /etc/cron.d/refreshMotusMetaDB
 % root root 644 /etc/cron.d/sqlite_daily_backup
 % root root 644 /etc/cron.d/monthly_trash_dump
-% root root 755 /etc/init.d/sshd-sg
-
+% root root 644 /etc/sysctl.d/local.conf
+% root root 755 /etc/rc.local
 ```
 And here are symlinks we need to connect some external programs to content
 provided by this package.  These are given as `% src -> dst`
@@ -46,9 +45,6 @@ provided by this package.  These are given as `% src -> dst`
 
 # additional message for status page
 % /var/www/html/status_message.html -> /sgm_local/bin/www/status_message.html
-
-# upload pages (yes, directly from the source folder.  Not smart!)
-% /var/www/html/upload -> /home/sg/src/ProjectSend
 
 # robots.txt - keep webcrawlers off this server; at most, the /sgm/pub folder would
 # be worth indexing, but there should be other links to all that content elsewhere.

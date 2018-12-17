@@ -120,20 +120,15 @@ MOTUS_PATH = list(
     QUEUE104         = "/sgm/queue/104/",
     RECV             = "/sgm/recv/",                 ## receiver databases
     RECVLOG          = "/sgm/recvlog/",              ## logfiles from receivers
-    REMOTE           = structure("/sgm/remote/",     ## items dealing with remote attached receivers
-                       owner="sg:sg_remote",
-                       perm="g+rwx"),
+    SERVER_DB        = "/sgm_local/server.sqlite",   ## the database used to record processing server activity
 
-    REMOTE_ATJOBS    = "/sgm/remote/atjobs/",        ## at-job IDs for syncReceiver jobs, by receiver serial number
-    REMOTE_CONNECTIONS = "/sgm/remote/connections/", ## empty files whose names are serial numbers of connected receivers
-    REMOTE_LIVE      = "/sgm_local/live.sqlite",     ## DB of live client connections to receivers via our web server
-    REMOTE_RECV_DB   = "/sgm_local/receivers.sqlite",## the database to hold info on remote receivers
-    REMOTE_STREAMS   = "/sgm/remote/streams/",       ## .sqlite databases of all live content streamed from receivers
-    REMOTE_SOCKETS   = "/sgm/remote/sockets/",       ## sockets used for the live webpage to connected receivers
-    SERVER_DB        = "/sgm_local/server.sqlite",         ## the database used to record server activity
+    SYNC             = "/sgm_local/sync/",           ## the sync server watches this directory for new empty files named
+                                                     ## N:SERNO, where N is a tunnel port and SERNO is a serial number.  When
+                                                     ## created, receiver SERNO is rsync'd to the local copy of its data files, and
+                                                     ## any new data are processed.  Creation of files in the watch folder,
+                                                     ## and mapping of local ports back to SGs is handled
+                                                     ## by the server at sensorgnome.org
 
-    SYNC             = "/sgm_local/sync/",           ## when an empty file having a receiver serial number as its name is `touch`ed here,
-                                                     ## the receiver is sync'd remotely
     TAGS             = "/sgm/tags/",                 ## ??
     TAG_PROJ         = "/sgm/tag_proj/",             ## sqlite databases for all tag projects
     TAGREG_CLEANUP   = "/sgm/tagregCleanup.R",       ## script to provided tag registration cleanups downstream from motus
@@ -181,7 +176,7 @@ MOTUS_ARCHIVE_DIR_REGEX = paste0("\\.(", paste(MOTUS_ARCHIVE_SUFFIXES, collapse=
 MOTUS_SG_SERNO_REGEX = "(?i)(?<serno>SG-[0-9A-Z]{4}(?:RPi[123z]|BBBK|(BB[0-9][0-9A-Z]))[0-9A-Z]{4}(?:_[0-9])?)"
 
 ## regex to exactly match any receiver serial number
-MOTUS_RECV_SERNO_REGEX = "(?i)^(?:(?:(?:SG-[0-9A-Z]{4}(?:RPi[123z]|BBBK|(?:BB[0-9][0-9A-Z]))[0-9A-Z]{4}(?:_[0-9])?))|(?:Lotek-D?[0-9]+))$"
+MOTUS_RECV_SERNO_REGEX = "(?i)^(?:(?:(?:SG-[0-9A-Z]{4}(?:RPi[123z]|BBBK|(?:BB[0-9][0-9A-Z]))[0-9A-Z]{4}(?:_[0-9])?))|(?:Lotek-D?[0-9]+(?:_[0-9])?))$"
 
 ## regex for matching DOS filenames (names of SG data files which have
 ## been shortened to 8.3 form)
@@ -189,14 +184,14 @@ MOTUS_RECV_SERNO_REGEX = "(?i)^(?:(?:(?:SG-[0-9A-Z]{4}(?:RPi[123z]|BBBK|(?:BB[0-
 
 MOTUS_DOS_FILENAME_REGEX = "^[a-zA-Z0-9]+~[0-9].(GZ|TXT)"
 
-## the unfortunate individual who receives emails when things need attention
+## Make the following symbols available outside the package
+
 #'@export
 
-MOTUS_ADMIN_EMAIL = "jbrzusto@fastmail.fm"
-
-## the sensorgnome.org username for the administrator
-
-MOTUS_ADMIN_USERNAME = "john"
+## the unfortunate individual who receives emails when things need attention
+## we use a local address, and rely on the forwarding in /home/sg/.forward
+## to move it to real users.
+MOTUS_ADMIN_EMAIL = "sg@sgdata.motus.org"
 
 ## the table used to record locks on arbitrary symbols
 MOTUS_SYMBOLIC_LOCK_TABLE = "symLocks"
@@ -226,3 +221,12 @@ MOTUS_MODAUTHTKT_SECRET_KEYFILE = "/etc/apache2/TKTAuthSecret.inc"
 
 ## path to motus metadata db cache
 MOTUS_METADB_CACHE = file.path(MOTUS_PATH$CACHE, "motus_meta_db.sqlite")
+
+## authentication options
+
+## lifetime of authorization token in seconds; default: 3 days
+MOTUS_AUTH_LIFE = 3 * 24 * 3600
+
+## number of random bits in authorization token;
+## gets rounded up to nearest multiple of 8
+MOTUS_TOKEN_BITS = 33 * 8

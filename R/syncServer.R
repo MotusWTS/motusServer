@@ -1,8 +1,8 @@
 #' watch for attached receivers and sync files from them
 #'
 #' Watch for new files in \code{MOTUS_PATH$SYNC}.  When a file is
-#' found, it's assumed the name is the serial number of an attached
-#' receiver, and a 'syncReceiver' job is queued for that receiver, if
+#' found, it's treated as describing a method and serial number for
+#' syncing, and a new syncReceiver job is queued for the receiver, if
 #' there isn't already an unfinished one for it. The syncReceiver job
 #' is queued via /sgm/priority, bypassing jobs running from uploaded
 #' data or manually on the server.  This is to provide relatively low
@@ -19,12 +19,10 @@
 #' @return This function does not return; it is meant for use in an R
 #'     script run in the background.
 #'
-#' @note this depends on some other process placing uploaded files into
-#' the folder \code{MOTUS_PATH$SYNC}.  This is done by a shell script
-#' launched from the sg_remote program that is run on the server
-#' by each attached receiver.  The last step of the shell script is
-#' to cause its own relaunch after a random time interval, via an
-#' 'at' job.
+#' @note this depends on some other process creating files in
+#' the folder \code{MOTUS_PATH$SYNC}.  In the motus set-up, this
+#' will be done from the server at sensorgnome.org, which manages
+#' and hosts networked SGs.
 #'
 #' @seealso \link{\code{handleSyncReceiver}}
 #'
@@ -50,18 +48,25 @@ syncServer = function(tracing = FALSE, fileEvent="CLOSE_WRITE") {
     repeat {
         touchFile = feed()             ## this might might wait a long time
         file.remove(touchFile)         ## the file is empty, was only needed to trigger this event
-        serno = basename(touchFile)
-        if (is.null(getRecvDBPath(serno))) {
-            ## getRecvDBPath does a sanity check on the serial number, returning NULL on failure
-            next
-        }
-        if (tracing)
-            browser()
+        parts = regexPieces("(?<method>.*):(?<serno>SG-[0-9A-Z]{12}):(?<motusUserID>[0-9]+):(?<motusProjectID>[0-9]+)", basename(touchFile))[[1]]
+        if (! is.na(as.integer(parts["method"]))) {
+            ## only valid method so far is an integer, representing the tunnel port #
+            if (tracing)
+                browser()
 
-        ## only create the job if there isn't already an unfinished syncReceiver job for this SG
-        if (length(Jobs[type=='syncReceiver' & done==0 & .$serno==R(serno)]) == 0) {
-            j = newJob("syncReceiver", .parentPath=MOTUS_PATH$INCOMING, .enqueue=FALSE, serno=serno, queue="0")
-            moveJob(j, MOTUS_PATH$PRIORITY)
+            ## only create the job if there isn't already an unfinished syncReceiver job for this SG
+            if (length(Jobs[type=='syncReceiver' & done==0 & .$serno==R(parts["serno"])]) == 0) {
+                j = newJob("syncReceiver", .parentPath=MOTUS_PATH$INCOMING, .enqueue=FALSE,
+                           serno=parts["serno"],
+                           method=parts["method"],
+                           motusUserID=parts["motusUserID"],
+                           motusProjectID=parts["motusProjectID"],
+                           queue="0")
+                moveJob(j, MOTUS_PATH$PRIORITY)
+            }
+            file.remove(touchFile)
+        } else {
+            motusLog("Unknown method for sync server", basename(touchFile))
         }
     }
     motusLog("Sync server stopped")

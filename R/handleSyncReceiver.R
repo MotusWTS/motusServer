@@ -10,6 +10,18 @@
 #' \itemize{
 #'
 #' \item serno character scalar; the receiver serial number
+#' \item method; method for reaching the receiver.  So far, this
+#' must be an integer, representing a tunnel port number (i.e.
+#' number of a port on localhost that has been mapped back
+#' to the ssh port (22) on the remote SG, typically via
+#' the server at sensorgnome.org  Tunnel port numbers start
+#' at 40000 and do not exceed 65535.
+#' \item motusUserID integer scalar; the ID of the motus user
+#' who registered the receiver for remote sync
+#' [only used by \code{\link{handleSGfindtags}} and \code{\link{handleLtFindtags}}]
+#' \item motusProjectID integer scalar; the ID of the motus
+#' project specified when the receiver was registered for
+#' remote sync [only used by \code{\link{handleSGfindtags}} and \code{\link{handleLtFindtags}}]
 #'
 #' }
 #'
@@ -23,19 +35,14 @@
 
 handleSyncReceiver = function(j) {
     serno = j$serno
-
+    port = as.integer(j$method)
+    if (is.na(port)|| port < 40000 || port > 65535) {
+        jobLog(j, paste0("Invalid method for syncing receiver ", serno, ": ", j$method))
+        return(FALSE)
+    }
     repoDir = file.path(MOTUS_PATH$FILE_REPO, serno)
     if (!file.exists(repoDir))
         dir.create(repoDir)
-
-    ## get the port number (drop the "SG-" prefix from serno)
-    port = ServerDB("select tunnelport from remote.receivers where serno=:serno", serno=substring(serno, 4))[[1]]
-
-    ## ignore request if there's no tunnel port known for this serial number
-    if (! isTRUE(port > 0)) {
-        jobLog(j, paste0("No tunnel port for receiver ", serno), summary=TRUE)
-        return(FALSE)
-    }
 
     ## lock the receiver
 

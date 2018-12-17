@@ -207,7 +207,6 @@ sgMergeFiles = function(files, j, dbdir = MOTUS_PATH$RECV) {
         ## sqlite connection
 
         con = src$con
-        dbExecute(con, "pragma journal_mode=wal")
 
         ## existing files in database
 
@@ -284,11 +283,11 @@ sgMergeFiles = function(files, j, dbdir = MOTUS_PATH$RECV) {
 
                 if (newf$new[i]) {
                     ## not yet in database
-                    dbGetPreparedQuery(
+                    dbGetQuery(
                         con,
                         "insert into files (name, size, bootnum, monoBN, ts, tscode, tsDB, isDone, motusJobID) values (:name, :size, :bootnum, :monoBN, :ts, :tscode, :tsDB, :isDone, :motusJobID)",
 
-                        data.frame(
+                        params = data.frame(
                             name             = newf$Fname[i],
                             size             = len,
                             bootnum          = newf$Fbootnum[i],
@@ -302,10 +301,10 @@ sgMergeFiles = function(files, j, dbdir = MOTUS_PATH$RECV) {
                         )
                     )
                 } else {
-                    dbGetPreparedQuery(
+                    dbGetQuery(
                         con,
                         "update files set size=:size, isDone=:isDone, motusJobID=:motusJobID where fileID=:fileID ",
-                        data.frame(
+                        params = data.frame(
                             size       = len,
                             isDone     = newf$Fcomp[i] == ".gz",  ## incomplete compressed files are dropped above
                             motusJobID = as.integer(j),
@@ -316,7 +315,6 @@ sgMergeFiles = function(files, j, dbdir = MOTUS_PATH$RECV) {
             }
         }
         ## shut down this sqlite connection
-        dbGetQuery(con, "pragma journal_mode=delete")
         closeRecvSrc(src)
         rm(src, meta)
 

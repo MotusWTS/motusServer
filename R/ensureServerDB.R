@@ -4,7 +4,6 @@
 #' processes from running a job on the same receiver in parallel)
 #' It also holds all job information in table \code{jobs}, but that
 #' table is ensured by the call to \link{\code{Copse()}} in \link{\code{loadJobs()}}
-#' And it holds a table of remotely-registered receivers and their credentials.
 #'
 #' @param installing; logical scalar; if TRUE, the caller is part of
 #' package installation, rather than a running server, and the locking
@@ -45,27 +44,5 @@ CREATE TABLE IF NOT EXISTS products (
     ServerDB("CREATE INDEX IF NOT EXISTS products_serno on products(serno)")
     ServerDB("CREATE INDEX IF NOT EXISTS products_projectID on products(projectID)")
 
-    ServerDB(sprintf("ATTACH DATABASE '%s' as remote", MOTUS_PATH$REMOTE_RECV_DB))
-
-    ServerDB('
-CREATE TABLE IF NOT EXISTS remote.receivers (
-    serno        text unique primary key, -- only one entry per receiver
-    creationdate real,                    -- timestamp when this entry was created
-    tunnelport   integer unique,          -- port used on server for reverse tunnel back to sensorgnome
-    pubkey       text,                    -- unique public/private key pair used by sensorgnome to login to server
-    privkey      text,
-    verified     integer default 0);      -- has receiver been verified?
-')
-    ServerDB('
-CREATE TABLE IF NOT EXISTS remote.deleted_receivers (
-    ts           real,                    -- deletion timestamp
-    serno        text,                    -- possibly multiple entries per receiver
-    creationdate real,                    -- timestamp when this entry was created
-    tunnelport   integer,                 -- port used on server for reverse tunnel back to sensorgnome
-    pubkey       text,                    -- unique public/private key pair used by sensorgnome to login to server
-    privkey      text,
-    verified     integer default 0        -- non-zero when verified
-);
-')
     return(invisible(NULL))
 }

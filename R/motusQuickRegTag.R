@@ -190,5 +190,10 @@ motusQuickRegTag = function(projectID,
             deployID = resD$deployID
         }
     }
+    MetaDB("BEGIN EXCLUSIVE TRANSACTION")
+    newTags = motusSearchTags(projectID=projectID) %>% subset(tagID == res$tagID)
+    updateMetadataForTags(newTags)
+    commitMetadataHistory(MetaDB)
+    MetaDB("COMMIT")
     return (c(res$tagID, deployID, period))
 }

@@ -5,40 +5,34 @@
 \title{return a list of all motus tags}
 \usage{
 motusSearchTags(projectID = NULL, tsStart = NULL, tsEnd = NULL,
-  searchMode = c("startsBetween", "overlaps"), defaultLifespan = 90,
-  lifespanBuffer = 1.5, regStart = NULL, regEnd = NULL, mfgID = NULL,
-  ...)
+  searchMode = "startsBetween", mfgID = NULL, status = NULL,
+  tsLastModified = NULL, ...)
 }
 \arguments{
 \item{projectID:}{integer scalar; motus internal project ID}
 
-\item{tsStart:}{numeric scalar; start of active period}
+\item{tsStart:}{numeric scalar; unix timestamp; start of active period}
 
-\item{tsEnd:}{numeric scalar; end of active period}
+\item{tsEnd:}{numeric scalar; unix timestamp; end of active period}
 
 \item{searchMode:}{character scalar; type of search
-desired. "overlaps" looks for tags active during at least a
+desired. "overlap" looks for tags active during at least a
 portion of the time span \code{c(tsStart, tsEnd)}, while
 "startsBetween" looks for tags with deployment start times in
 the same range.}
 
-\item{defaultLifeSpan:}{integer scalar; default lifespan of tags,
-in days; used when motus does not know the lifespan for a tag.}
-
-\item{lifeSpanBuffer:}{numeric scalar; amount by which nominal
-lifespan is multiplied to get maximum possible lifespan.}
-
-\item{regStart:}{numeric scalar; if not NULL, search for tags
-registered no earlier than this date, and ignore deployment
-dates.}
-
-\item{regEnd:}{numeric scalar; if not NULL, search for tags
-registered no later than this date, and ignore deployment
-dates.}
-
 \item{mfgID:}{character scalar; typically a small integer; return
 only records for tags with this manufacturer ID (usually
 printed on the tag)}
+
+\item{status:}{integer; if non-NULL, returns only tags with the
+specified status.  1L = tag finished; 2L = tag active; 0L = tag
+not yet deployed}
+
+\item{tsLastModified:}{numeric scalar; unix timestamp; metadata
+modification threshold; if not NULL, only records modified
+since \code{tsLastModified} are returned.  Allows us to update
+the tagDeps records in the metadata cache.}
 
 \item{...:}{additional parameters to motusQuery()}
 }
@@ -88,6 +82,12 @@ the data.frame of motus tags and their meta data satisfying
 }
 \description{
 return a list of all motus tags
+}
+\note{
+As of 2018-08-24, filtering by `tsStart` and `tsEnd` fails to return any tags
+whose `tsEnd` is NULL; see https://github.com/MotusDev/MotusAPI/issues/8
+
+support for \code{tsLastModified} is pending, so specifying it currently returns \code{data.frame()}
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}

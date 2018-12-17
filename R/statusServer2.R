@@ -49,7 +49,6 @@ statusServer2 = function(port = 0x57A7, tracing=FALSE, maxRows=20L) {
 }
 
 ## a string giving the list of apps for this server
-## Note that we re-use authenticate_user from dataServer.R
 
 allStatusApps = c("status_api_info",
                   "list_jobs",
@@ -1350,21 +1349,5 @@ allReceiversApp = function(env) {
     html = paste(html, paste(tbl, collapse="\n"), "</table>", sep="\n")
 
     res$write(html)
-    res$finish()
-}
-
-getUploadTokenApp =  function(env) {
-    req <- Rook::Request$new(env)
-    res <- Rook::Response$new()
-    res$header("Cache-control", "no-cache")
-
-    user <- req$GET()[['user']]
-    email <- req$GET()[['email']]
-
-    ## generate the token using openssl's rand_bytes
-
-    rv = getUploadToken(user, email)
-
-    res$write(sprintf('<pre>Token: %s<br><br>Email: %s<br><br>Expires:%s</pre>', rv$token, email, format(rv$expiry, "%Y %b %d %H:%M:%S GMT")))
     res$finish()
 }

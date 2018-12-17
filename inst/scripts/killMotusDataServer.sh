@@ -48,12 +48,15 @@ done
 
 DATA_SERVER_KILL_URL=http://localhost:$PORT/custom/_shutdown
 
+KILLFILE=/sgm_local/kill.dataServer.$PORT
+touch $KILLFILE
+
 if [[ "$GRACEFUL" != "" ]]; then
     ## send the kill request, waiting up to 5 minutes for a reply,
     ## at which point the server has shut itself down, or is so
     ## busy a graceful shutdown is impossible.
     echo 'sending shutdown request to dataServer and waiting up to 5 minutes'
-    GET -t5m $DATA_SERVER_KILL_URL
+    GET -t5m -d $DATA_SERVER_KILL_URL
 fi
 
 PIDFILE=/sgm/dataServer-$PORT.pid

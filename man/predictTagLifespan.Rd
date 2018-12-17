@@ -9,7 +9,7 @@ predictTagLifespan(model, bi, dutyCycle = 1)
 \arguments{
 \item{model}{character vector of tag models}
 
-\item{bi}{burst interval, in seconds}
+\item{bi}{numeric vector; burst interval, in seconds}
 
 \item{dutyCycle}{fraction of time tag is transmitting. The usual
 value, 1.0 is the default. Non-default values would be
@@ -24,6 +24,16 @@ function estimates the 80\% lifespan for those tags.
 The model is lifeSpan = D / (1 + rt * dutyCycle / BI),
 where D and rt are fitted parameters, dutyCycle is in [0, 1],
 and BI is the burst interval, in seconds.
+}
+\note{
+for any values in \code{model} which are not known, we use
+the explicit model "unknown" which is defined in lotekTagLifespanByBatteryAndBI
+as an average of NTQB-2 and NTQB-3-2.  We warn about this so that
+the admin user gets a regular reminder of this situation.
+see:
+   https://github.com/MotusDev/Motus-TO-DO/issues/327#issuecomment-414180027
+and:
+   https://github.com/jbrzusto/motusServer/issues/416
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}

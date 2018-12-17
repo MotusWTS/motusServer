@@ -27,6 +27,9 @@ handleLtFindtags = function(j) {
     serno = j$serno
     jobLog(j, paste0("Running tag finder on receiver ", serno))
 
+    if (updateTagDeployments())
+        jobLog(j, "Some tag deployment metadata were updated from motus.org")
+
     ## lock this receiver's database
     lockSymbol(serno)
 

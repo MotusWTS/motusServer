@@ -4,7 +4,8 @@
 \alias{safeSQLiteConnect}
 \title{open a 'safe' connection to an sqlite database}
 \usage{
-safeSQLiteConnect(path, create = FALSE, busyTimeout = 300)
+safeSQLiteConnect(path, create = FALSE, busyTimeout = 300,
+  cacheSize = 200)
 }
 \arguments{
 \item{path}{path to database}
@@ -15,6 +16,9 @@ safeSQLiteConnect(path, create = FALSE, busyTimeout = 300)
 default: 300.  A positive value causes the function to wait
 for another process to unlock the database, rather than returning
 immediately with an error.}
+
+\item{cacheSize}{size of sqlite page cache to use, in MBytes.
+default: 200}
 }
 \value{
 a DBI:dbConnection to the sqlite database, or NULL on failure

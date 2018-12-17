@@ -20,7 +20,6 @@ This database holds a table of symbolic locks (e.g. to prevent multiple
 processes from running a job on the same receiver in parallel)
 It also holds all job information in table \code{jobs}, but that
 table is ensured by the call to \link{\code{Copse()}} in \link{\code{loadJobs()}}
-And it holds a table of remotely-registered receivers and their credentials.
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}

@@ -18,6 +18,9 @@
 #'     for another process to unlock the database, rather than returning
 #'     immediately with an error.
 #'
+#' @param cacheSize size of sqlite page cache to use, in MBytes.
+#'    default: 200
+#'
 #' @return a DBI:dbConnection to the sqlite database, or NULL on failure
 #'
 #' @note parameters, return value, and semantics are identical to
@@ -28,7 +31,7 @@
 #'
 #' @author minor changes from dplyr::src_sqlite by John Brzustowski
 
-safeSQLiteConnect = function (path, create = FALSE, busyTimeout=300)
+safeSQLiteConnect = function (path, create = FALSE, busyTimeout=300, cacheSize=200)
 {
     con = NULL
     if (create || file.exists(path)) {
@@ -36,6 +39,8 @@ safeSQLiteConnect = function (path, create = FALSE, busyTimeout=300)
             con = DBI::dbConnect(RSQLite::SQLite(), path, synchronous=NULL)
             DBI::dbExecute(con, sprintf("pragma busy_timeout=%d", busyTimeout * 1000))
             DBI::dbExecute(con, "pragma synchronous=off")
+            ## set the page cache size; negative args are in kb, positive in units of page size
+            DBI::dbExecute(con, sprintf("pragma cache_size=%f", - cacheSize * 1024))
         }, silent=TRUE)
     }
     return(con)

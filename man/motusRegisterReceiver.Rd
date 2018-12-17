@@ -4,15 +4,10 @@
 \alias{motusRegisterReceiver}
 \title{register a receiver with motus (admin only)}
 \usage{
-motusRegisterReceiver(serno, secretKey = NULL)
+motusRegisterReceiver(serno)
 }
 \arguments{
 \item{serno:}{character vector, such as "SG-1234BBBK5678"}
-
-\item{secretKey:}{if NULL, generate a pair of public/private ssh keys
-for the receiver, and use the SHA1-sum of the private key file as the
-secretKey.  Otherwise, this is an upper case hex string giving the
-secretKey for the receiver.}
 }
 \value{
 the query result, which will be a list.  If registration is successful,
