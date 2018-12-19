@@ -75,7 +75,11 @@ ltMergeFiles = function(files, j, dbdir=MOTUS_PATH$RECV) {
             f = rv$fullname[i]
             size = file.info(f)$size
             blob = readBin(f, raw(), n=size)
-            ll = (blob %>% rawToChar %>% strsplit("\r\n", fixed=TRUE)) [[1]]
+            ll = (blob %>% rawToChar)
+            ## fix encoding: wherever there are non-ascii characters, assume 'Latin-1'
+            ## see: https://github.com/jbrzusto/motusServer/issues/429
+            Encoding(ll) = "latin1"
+            ll = strsplit(ll, "\r\n", fixed=TRUE) [[1]]
             skip = FALSE
             x = NULL
             tryCatch({

@@ -52,6 +52,10 @@ readDTA = function(filename="", lines=NULL, numLines=-1) {
         ## read the DTA file in; we don't sweat line endings this way
         lines = readLines(filename, n = numLines)
 
+    ## fix encoding: wherever there are non-ascii characters, assume 'Latin-1'
+    ## see: https://github.com/jbrzusto/motusServer/issues/429
+    Encoding(lines) = "latin1"
+
     date.format = "%m/%d/%y %H:%M:%OS"
 
     ## frequency and gain tables, needed for figuring out the antenna frequency and
