@@ -47,8 +47,35 @@ ltMergeFiles = function(files, j, dbdir=MOTUS_PATH$RECV) {
 
     rv = data_frame(fullname = rv, nameNew = TRUE, dataNew = TRUE, use = FALSE, err = NA, serno=as.character(NA), ts = as.numeric(NA), tsLast = as.numeric(NA), fid=as.numeric(NA))
 
-    ## read serial numbers from DTA files, returning NA for any files which fail to parse
-    rv$serno = sapply(rv$fullname, function(x) tryCatch(readDTA(x, numLines=20)$recv, error=function(e) NA), USE.NAMES=FALSE)
+    ## read serial numbers from DTA files, returning NA for any files which fail to parse or for which we can't
+    ## get a serial number
+    rv$serno = NA
+    for (i in seq(along = rv$serno)) {
+        f = rv$fullname[i]
+        tryCatch({
+            hdr = readDTA(f, numLines=20)
+            if (hdr$recv == "Lotek-NA") {
+                ## For some .DTA files, the serial number appears as the "Site Code"
+                ## We'll assume this is the case, but verify against the deployment metadata whether
+                ## the filename begins with the same 3 letters as any deployment name for that receiver.
+                serno = paste0("Lotek-", hdr$siteCode)
+                depInfo = MetaDB("select serno, name from recvDeps where serno='%s'", serno)
+                fnprefix = substring(basename(f), 1, 3)
+                if (isTRUE(any(grepl(paste0("^", fnprefix), depInfo$name, ignore.case=TRUE, perl=TRUE)))) {
+                    rv$serno[i] = serno
+                    jobLog(j, paste("Warning:  file", basename(f), "contains no serial number!\nI'm guessing from the Site Code",
+                                    hdr$siteCode, "and metadata DB that this file is for", serno, ".\nIf I'm wrong, detections will appear under the wrong receiver!\n"))
+                } else {
+                    jobLog(j, paste("Warning: file", basename(f), "contains no serial number.\nIts Site Code is ", hdr$siteCode," which might be its serial number\nbut I can't find a deployment name for that receiver\nwhich matches `", substr(basename(f), 1, 3), "`,\nso I will not process this file"))
+                }
+            } else {
+                rv$serno[i] = hdr$recv
+            }
+        },
+        error = function(e) {
+            jobLog(j, paste0("File ", basename(f), " failed to parse: ", e))
+        })
+    }
 
     ## flag which files are already in the file repo
     rv$fromRepo = beginsWith(rv$fullname, MOTUS_PATH$FILE_REPO)
