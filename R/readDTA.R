@@ -17,6 +17,7 @@
 #'
 #' \itemize{
 #' \item  recv serial number; e.g. "Lotek-123"
+#' \item  siteCode; integer; code for site
 #' \item  tags a data.frame with these columns:
 #' \itemize{
 #'
@@ -91,6 +92,7 @@ readDTA = function(filename="", lines=NULL, numLines=-1) {
     boottimes = character(0)
 
     site_code = NA
+    serno = NA
 
     for (ip in seq(along=pieces)) {
         if (nchar(pieces[ip]) == 0)
@@ -237,5 +239,5 @@ readDTA = function(filename="", lines=NULL, numLines=-1) {
             }
         }
     }
-    return (list(tags=tags, recv = serno, pieces=pieces, piece.lines.before=piece.lines.before, boottimes=boottimes))
+    return (list(tags=tags, recv = serno, siteCode = site_code, pieces = pieces, piece.lines.before = piece.lines.before, boottimes = boottimes))
 }
