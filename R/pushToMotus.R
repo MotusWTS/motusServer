@@ -341,15 +341,14 @@ insert
    into batchRuns (
       select
          %d as batchID,
-         runID,
-         tagDepProjectID
+         t1.runID,
+         t2.tagDepProjectID
       from
-         runs
-      where
-         runID in (%s)
+         tempRunUpdates as t1
+         join runs as t2 on t1.runID=t2.runID
    )
 ",
-txBatchID, paste(runUpd$runID, collapse=","))
+txBatchID)
         }
         dbClearResult(res)
 
