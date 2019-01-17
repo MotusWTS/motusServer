@@ -20,7 +20,8 @@ Default: 10000}
 does not return; meant to be run as a server.
 }
 \description{
-serve http requests for tag detection data
+The API is described here:
+https://github.com/jbrzusto/motusClient/blob/master/inst/doc/upstream_api.md
 }
 \author{
 John Brzustowski \email{jbrzusto@REMOVE_THIS_PART_fastmail.fm}
