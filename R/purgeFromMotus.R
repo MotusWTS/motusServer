@@ -24,7 +24,7 @@ purgeFromMotus = function(src) {
     bdrop = MotusDB("select batchID from batches where motusDeviceID=%d", deviceID)
     if (nrow(bdrop) > 0) {
 
-        bdrop = paste(bdrop[[1]], collapse=",")
+        bdrop = DBI::SQL(paste(bdrop[[1]], collapse=","))
 
         ## drop related records from tables.  To maintain referential integrity
         ## while dropping, we must do batches last, and runs after hits.

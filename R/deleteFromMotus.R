@@ -64,7 +64,7 @@ deleteFromMotus = function(src, reason="not given", monoBN=NULL, tsStart=0, tsEn
     ## mark batches as having been deleted by negating the ID field, but make sure we're not adding a duplicated negated batchID
     ## FIXME: why are we doing this weirdness?
 
-    sql("update motusTX set batchID=-batchID where batchID in (%s) and not batchID in (select -batchID from motusTX where batchID < 0)", paste(bn, collapse=","))
+    sql("update motusTX set batchID=-batchID where batchID in (%s) and not batchID in (select -batchID from motusTX where batchID < 0)", DBI::SQL(paste(bn, collapse=",")))
 
     ## record all groups of consecutive batches to be deleted
 
