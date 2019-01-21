@@ -11,6 +11,9 @@
 #'
 #' @param rv the object to return.
 #'
+#' @param isJSON logical; is `rv` already JSON?  If so, serialization
+#' of `rv` to JSON is skipped.  Default: FALSE
+#'
 #' @return the return value suitable as a return value for a Rook app.
 #'     This is the result of calling \code{Rook::Response}'s
 #'     \code{finish()} method.
@@ -22,7 +25,7 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-return_from_app = function(rv) {
+return_from_app = function(rv, isJSON=FALSE) {
     n = 1
     ## ascend up to 10 frames to find an environment called `env`
     while (n < 10) {
@@ -39,7 +42,11 @@ return_from_app = function(rv) {
     res$header("Cache-control", "no-cache")
     res$header("Content-Type", "application/json")
     res$header("Content-Encoding", compress)
-    payload = unclass(toJSON(rv, auto_unbox=TRUE, dataframe="columns"))
+    if (isJSON) {
+        payload = rv
+    } else {
+        payload = unclass(toJSON(rv, auto_unbox=TRUE, dataframe="columns"))
+    }
     if (compress == "gzip") {
         ## sigh: another R edge case: memCompress (, type="gzip") doesn't include headers
         ## so we use gzcon() instead
