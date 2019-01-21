@@ -7,7 +7,7 @@
 #' the query.
 #'
 #' @return If there is no item with the given name in \code{x},
-#' then return NULL.
+#' then return \code{nullValue}.
 #'
 #' @param x list object with names
 #' @param name unquoted object name
@@ -17,14 +17,16 @@
 #' dropping any additional items. Otherwise, return a vector with the
 #' same length as the item from \code{x}.  If \code{type=="list"}, the
 #' vector is of mode "list".
+#' @param nullValue if the item is not present, return this value.
+#' default: NULL
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-safe_arg = function(x, name, type, scalar=TRUE) {
+safe_arg = function(x, name, type, scalar=TRUE, nullValue=NULL) {
     name = as.character(substitute(name))
     type = as.character(substitute(type))
     if (! name %in% names(x))
-        return(NULL)
+        return(nullValue)
     class = match.arg(type, c("character", "integer", "logical", "numeric", "list"))
 
     rv = as(x[[name]], class)

@@ -4,7 +4,7 @@
 \alias{safe_arg}
 \title{Extract an argument from a list ensuring SQL-safety}
 \usage{
-safe_arg(x, name, type, scalar = TRUE)
+safe_arg(x, name, type, scalar = TRUE, nullValue = NULL)
 }
 \arguments{
 \item{x}{list object with names}
@@ -18,10 +18,13 @@ or abbreviation thereof.}
 dropping any additional items. Otherwise, return a vector with the
 same length as the item from \code{x}.  If \code{type=="list"}, the
 vector is of mode "list".}
+
+\item{nullValue}{if the item is not present, return this value.
+default: NULL}
 }
 \value{
 If there is no item with the given name in \code{x},
-then return NULL.
+then return \code{nullValue}.
 }
 \description{
 If the list contains an item of the given name, the return value
