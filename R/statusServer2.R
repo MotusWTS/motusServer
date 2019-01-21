@@ -64,7 +64,8 @@ allStatusApps = c("status_api_info",
                   "serno_collision_rules",
                   "get_param_overrides",
                   "delete_param_overrides",
-                  "add_param_override"
+                  "add_param_override",
+                  "describe_program"
                   )
 
 sortColumns = c("ctime", "mtime", "id", "type", "motusProjectID", "motusUserID")
@@ -1057,7 +1058,7 @@ delete_param_overrides = function(env) {
     where = paste0("where id in (", paste(id, collapse=","), ")")
     have = MetaDB(paste0("select id from paramOverrides ", where))
     MetaDB(paste0("delete from paramOverrides ", where))
-    return_from_app(data.frame(deleted=id %in% have))
+    return_from_app(data.frame(deleted=! (id %in% have)))
 }
 
 ## add_param_override
@@ -1093,14 +1094,42 @@ add_param_override = function(env) {
     auth = validate_request(json, needProjectID=FALSE, needAdmin=TRUE)
     if (inherits(auth, "error")) return(auth)
 
-    projectID = safe_arg(json, projectID, int,    scalar=TRUE)
-    serno     = safe_arg(json, serno,     char,   scalar=TRUE)
-    tsStart   = safe_arg(json, tsStart,   double, scalar=TRUE)
-    progName  = safe_arg(json, progName,  char,   scalar=TRUE)
-    paramName = safe_arg(json, paramName, char,   scalar=TRUE)
-    paramVal  = safe_arg(json, paramVal,  double, scalar=TRUE)
-    why       = safe_arg(json, why,       char,   scalar=TRUE)
-    return(error_from_app("add_param_override not yet implemented"))
+    projectID    = safe_arg(json, projectID,  int,     scalar=TRUE, nullValue="null")
+    serno        = safe_arg(json, serno,      char,    scalar=TRUE, nullValue="null")
+    tsStart      = safe_arg(json, tsStart,    numeric, scalar=TRUE, nullValue="null")
+    tsEnd        = safe_arg(json, tsEnd,      numeric, scalar=TRUE, nullValue="null")
+    monoBNlow    = safe_arg(json, monoBNlow,  int,     scalar=TRUE, nullValue="null")
+    monoBNhigh   = safe_arg(json, monoBNhigh, int,     scalar=TRUE, nullValue="null")
+    progName     = safe_arg(json, progName,   char,    scalar=TRUE)
+    paramName    = safe_arg(json, paramName,  char,    scalar=TRUE)
+    paramVal     = safe_arg(json, paramVal,   numeric, scalar=TRUE)
+    why          = safe_arg(json, why,        char,    scalar=TRUE, nullValue="")
+    if (is.null(serno) && is.null(projectID))
+        return(error_from_app("Need to specify one of serno, projectID"))
+
+    if (is.null(progName) || is.null(paramName) || is.null(paramVal) || is.null(why))
+        return(error_from_app("Need to specify all of progName, paramName, paramVal, why"))
+
+    if (is.null(serno)) serno = ""
+
+    ## Note the use of '%s' format strings for numeric fields; R's
+    ## sprintf converts automatically from numerics to strings, and
+    ## this lets us use "null" for permitted missing values.
+
+    MetaDB("insert into paramOverrides (projectID,serno,tsStart,tsEnd,monoBNlow,monoBNhigh,progName,paramName,paramVal,why) values (%d,%s,%s,%s,%s,%s,%s,%s,%f,%s)",
+           projectID,
+           serno,
+           tsStart,
+           tsEnd,
+           monoBNlow,
+           monoBNhigh,
+           progName,
+           paramName,
+           paramVal,
+           why,
+           .QUOTE=TRUE)
+
+    return_from_app(MetaDB("select id from paramOverrides where rowid=last_insert_rowid()"))
 }
 
 ## describe_program(progName, authToken) - administrative users only
@@ -1114,16 +1143,34 @@ add_param_override = function(env) {
 
 ##   - progName: string array of possible values for `progName`.
 
-## If progName is specified, then return an object with these array items:
+## If progName is specified, then return an object with these items:
+##   - version: string array of current version of program, from `git describe`
+##   - build_ts: numeric timestamp of build
+##   - options:  a list of parameter descriptions; each item has these fields:
+##      - name: character;
+##      - description: character; human-readable description
+##      - default: real, integer, or logical;
+##      - type: "real", "logical", or "integer"
 
-##   - paramName: parameter name
-##   - paramIsFlag: boolean; if `true`, parameter does not take a value; otherwise,
-##     parameter takes a floating point value
-##   - paramInfo: human-readable description of parameter
+describe_program = function(env) {
+    json = fromJSON(parent.frame()$postBody["json"], simplifyVector=FALSE)
 
-## and these non-array items:
+    if (tracing)
+        browser()
 
-##  - version: string scalar; current version of program
+    auth = validate_request(json, needProjectID=FALSE, needAdmin=TRUE)
+    if (inherits(auth, "error")) return(auth)
+
+    progName     = safe_arg(json, progName,   char,    scalar=TRUE)
+    if (is.null(progName)) {
+        return(return_from_app(list(progName=c("find_tags_motus"))))
+    }
+    if (progName == "find_tags_motus") {
+        return(return_from_app(system("find_tags_motus --info_only", intern=TRUE), isJSON=TRUE))
+    }
+    error_from_app("Unknown program")
+}
+
 
 ################################################################################
 ############## OBSOLETE ########################################################

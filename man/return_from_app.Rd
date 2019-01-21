@@ -4,10 +4,13 @@
 \alias{return_from_app}
 \title{return an object from a Rook app}
 \usage{
-return_from_app(rv)
+return_from_app(rv, isJSON = FALSE)
 }
 \arguments{
 \item{rv}{the object to return.}
+
+\item{isJSON}{logical; is `rv` already JSON?  If so, serialization
+of `rv` to JSON is skipped.  Default: FALSE}
 }
 \value{
 the return value suitable as a return value for a Rook app.
