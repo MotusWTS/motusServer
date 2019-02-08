@@ -181,6 +181,18 @@ replace into
         ## accumulate unique tag project IDs:
         tagDepProjIDs = c()
 
+        ## create a map from local (i.e. valid in the receiver DB) run IDs to global ones (i.e. valid in the master DB)
+
+        ## first, grab the portion of the map for runs touched in this batch but begun earlier.
+        runIDtable = sql("select cast(t1.runID as text), cast(t1.runID + t2.offsetRunID as real) from runs as t1 join motusTX as t2 on t1.batchIDbegin=t2.batchID where t1.runID in (select distinct runID from batchRuns where batchID=%d)", b$batchID)
+        ## runIDMap will be a numeric vector whose names are the local runIDs (as strings) and whose values are the global runIDs
+        if (nrow(runIDtable) > 0) {
+            runIDMap = runIDtable[[2]]
+            names(runIDMap) = runIDtable[[1]]
+        } else {
+            runIDMap = numeric(0)
+        }
+
         ## ----------  copy new runs  ----------
 
         ## get count of new runs and 1st run ID for this batch
@@ -219,7 +231,8 @@ order by
                 runs = dbFetch(res, CHUNK_ROWS)
                 if (nrow(runs) == 0)
                     break
-                runs$runID        = runs$runID        + offsetRunID
+                ## add new runs to the runIDMap
+                runs$runID = runIDMap[as.character(runs$runID)] = runs$runID + offsetRunID
                 runs$batchIDbegin = txBatchID
                 dbWriteTable(mtcon, "runs", runs, append=TRUE, row.names=FALSE)
 
@@ -328,15 +341,14 @@ insert
    into batchRuns (
       select
          %d as batchID,
-         runID,
-         tagDepProjectID
+         t1.runID,
+         t2.tagDepProjectID
       from
-         runs
-      where
-         runID in (%s)
+         tempRunUpdates as t1
+         join runs as t2 on t1.runID=t2.runID
    )
 ",
-txBatchID, paste(runUpd$runID, collapse=","))
+txBatchID)
         }
         dbClearResult(res)
 
@@ -357,7 +369,8 @@ txBatchID, paste(runUpd$runID, collapse=","))
                 if (nrow(hits) == 0)
                     break
                 hits$hitID   = hits$hitID   + offsetHitID
-                hits$runID   = hits$runID   + offsetRunID
+                ## use the runIDMap to correct runIDs; valid for both new and continuing runs
+                hits$runID   = runIDMap[as.character(hits$runID)]
                 hits$batchID = hits$batchID + offsetBatchID
                 dbWriteTable(mtcon, "hits", hits, append=TRUE, row.names=FALSE)
 

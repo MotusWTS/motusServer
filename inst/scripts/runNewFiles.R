@@ -10,14 +10,16 @@ ARGS = commandArgs(TRUE)
 
 if (length(ARGS) == 0) {
     cat("
-
-Usage: runNewFiles.R [-p] [-n|-l] [-m] [-s] DIR
+Usage: runNewFiles.R [-t] [-p] [-n|-l] [-m] [-s] -U motusUserID -P motusProjectID DIR
 
 where:
 
  DIR: path to the folder containing new files
 
- -p: if specified, run on one of the priority processServers, jumping
+ -t: mark any generated data batches as 'test' batches, which are not
+  normally returned via the data server
+
+ -p: run on one of the priority processServers, jumping
   the queue ahead of any uploaded data jobs
 
  -l: symlink to the new files; create a new folder with symlinks to
@@ -36,9 +38,13 @@ where:
   is checked to see whether it is all zeroes, or an invalid
   archive. This is normally skipped for files already on the server.
 
+ -U: motus User ID, an integer; records who initiated processing
+
+ -P: motus Project ID, an integer; asserts ownership of output data
+
 A new job with type 'serverFiles' will be created and placed into the
-master queue (queue 0), from where a processServer can claim it.  The
-sender will be: ",
+master queue (queue 0) or priority queue from where a processServer can claim it.  The
+person receiver a completion notice will be: ",
 
 MOTUS_ADMIN_EMAIL,
 "\n"
@@ -46,14 +52,20 @@ MOTUS_ADMIN_EMAIL,
     q(save="no", status=1)
 }
 
+isTesting = FALSE
 priority = FALSE
 preserve = TRUE
 sanityCheck = FALSE
 symLink = FALSE
 mergeOnly = FALSE
+motusUserID = NA
+motusProjectID = NA
 
 while(isTRUE(substr(ARGS[1], 1, 1) == "-")) {
     switch(ARGS[1],
+           "-t" = {
+               isTesting = TRUE
+           },
            "-p" = {
                priority = TRUE
            },
@@ -69,6 +81,14 @@ while(isTRUE(substr(ARGS[1], 1, 1) == "-")) {
            "-l" = {
                symLink = TRUE
            },
+           "-U" = {
+               motusUserID = as.integer(ARGS[2])
+               ARGS = ARGS[-1]
+           },
+           "-P" = {
+               motusProjectID = as.integer(ARGS[2])
+               ARGS = ARGS[-1]
+           },
            {
                stop("Unknown argument: ", ARGS[1])
            })
@@ -77,11 +97,20 @@ while(isTRUE(substr(ARGS[1], 1, 1) == "-")) {
 
 DIR=ARGS[1]
 
+if (any(is.na(c(motusUserID, motusProjectID, DIR)))) {
+    stop("Error: motusUserID, motusProjectID and DIR must all be given")
+}
+
+
 ## create and enqueue a job to process the new files
 
 loadJobs()
 
-j = newJob("serverFiles", .parentPath=MOTUS_PATH$INCOMING, replyTo=MOTUS_ADMIN_EMAIL, valid=TRUE, sanityCheck=sanityCheck, .enqueue=FALSE, mergeOnly=mergeOnly)
+j = newJob("serverFiles", .parentPath=MOTUS_PATH$INCOMING, replyTo=MOTUS_ADMIN_EMAIL, valid=TRUE, sanityCheck=sanityCheck, .enqueue=FALSE, motusUserID = motusUserID, motusProjectID = motusProjectID, mergeOnly=mergeOnly)
+if (isTesting) {
+   j$isTesting = TRUE
+}
+
 jobLog(j, paste0("Merging new files from server directory ", DIR))
 ## move, hardlink, or copy files to the job's dir
 

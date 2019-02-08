@@ -37,15 +37,12 @@ Defaults to N=4.
 
 Specifying -h gives this message.
 
-Specifying -s forces deletion of all entries in the server's symLocks table.
+Specifying -s forces deletion of all entries in the server\'s symLocks table.
 This should be used at boot time, and only at boot time, to delete stale locks
 from an unclean shutdown (e.g. power outage).
 ```
 
-Other commands of interest (assuming /sgm/bin is on the user's $PATH)
-
-**
-
+Other commands of interest (assuming /sgm/bin is on the user's`\$PATH`)
 
  > Can other user accounts be configured to do the same tasks? If so,
  > how? If not, what is the password for sg?
@@ -64,13 +61,54 @@ login via ssh on the server, than anyone in the `sudo` group can
 authorize that person to ssh in as user `sg` by doing `sudo cat
 /home/someone/.ssh/id_*.pub >> /home/sg/.ssh/authorized_keys`
 
+## Updates ##
+
+ > What is the procedure to rebuild motusServer and install it on
+ > sgdata.motus.org?
 
 
-Updates:
+```bash
+## to rebuild the motusServer package after changes to source
+sudo su sg # if not already logged in as user `sg`
+cd ~/src/motusServer
+# runs the script /sgm/bin/rpack which
+# - regenerates the roxygen-based documentation for the package
+# - rebuilds the package
+# - re-installs the package
+# Errors will abort this process, leaving the current version
+# in place.
+rpack -g .
 
-What is the procedure to rebuild motusServer and install it on sgdata.motus.org?
+## running servers continue to user the previous version until
+## restarted, so after the above completes successfully, do:
+/sgm/bin/killAllMotusServers.sh
+/sgm/bin/runAllMotusServers.sh
+```
 
-What is the procedure to rebuild find_tags and install it on sgdata.motus.org?
+ > What is the procedure to rebuild find_tags and install it on
+ > sgdata.motus.org?
+
+```bash
+sudo su sg # if not already logged in as user `sg`
+cd ~/src/find_tags
+# make sure you are on the correct branch
+git checkout master
+cd src
+# rebuild from scratch, using two cores
+make clean; make -j 2 find_tags_motus
+sudo make install # install in /sgm/bin
+```
+There is a second version of the tag finder called `find_tags_unifile` that
+is used on the SGs themselves, and to register tags on the server.  This is
+rebuilt like so:
+```bash
+# if not already logged in as user `sg`
+sudo su sg
+cd ~/src/find_tags
+# switch to the separate branch for this version
+git checkout find_tags_unifile
+make clean; make -j 2 find_tags_unifile
+```
 
 Are there library dependencies which we should be aware of? Can/should we run apt update/upgrade regularly? R update.packages()?
 

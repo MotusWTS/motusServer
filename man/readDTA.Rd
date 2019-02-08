@@ -22,6 +22,7 @@ A named list with some or all of these items:
 
 \itemize{
 \item  recv serial number; e.g. "Lotek-123"
+\item  siteCode; integer; code for site
 \item  tags a data.frame with these columns:
 \itemize{
 

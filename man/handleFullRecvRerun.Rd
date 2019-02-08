@@ -13,6 +13,11 @@ handleFullRecvRerun(j)
 
 \item serno character scalar; the receiver serial number
 
+\item [optional] paramOverrides; if present, must be a string scalar
+specifying parameters to the tag finder, which will be appended to
+any default and registered override values; thus, parameter values specified
+here will override those from other sources.  This item is handled
+in \code{\link{handleSGfindtags}} or \code{\link{handleLtFindtags}}
 }}
 }
 \value{

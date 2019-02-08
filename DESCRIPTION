@@ -1,5 +1,5 @@
 Package: motusServer
-Version: 0.2.15
+Version: 0.2.24
 Title: Operate a server to process data for http://motus.org
 Description: Process raw data from receivers and store results in
     transfer tables polled by http://motus.org . Results use native motus
@@ -24,7 +24,7 @@ Depends:
     stringi,
     XML
 License: GPL-2+
-Date: 2018-11-27
+Date: 2019-01-21
 RoxygenNote: 6.0.1
 LazyData: true
 Suggests: testthat

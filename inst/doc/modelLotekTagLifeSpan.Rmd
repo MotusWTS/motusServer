@@ -1,10 +1,12 @@
 ---
 title: "Lotek Tag Lifespan Model"
 author: "John Brzustowski"
-date: "4 April, 2016"
+date: "21 January, 2019"
 output:
    pdf_document :
        toc: false
+       fig_width: 7
+       fig_height: 7
 ---
 
 ```{r setup, include=FALSE}
@@ -94,6 +96,9 @@ pred = rbind(data.frame(
     bi=1:40,
     lifespan=par[["1-LW", "D"]] / (1 + par[["1-LW", "rt"]] / (1:40)))
   , pred)
+
+## mark which rows are measurements
+pred = cbind(pred, isMeasured = paste(pred$battery, pred$bi) %in% paste(lt$battery, lt$bi))
 ```
 
 Now map model names to batteries.  We do this as a simple table
@@ -142,13 +147,14 @@ modelBattery = list(
 "ACT-521" = "521",
 "ACT-626" = "626",
 "ACT-393" = "393",
-"NTQB2-1" = "1",
-"NTQB2-2" = "2",
-"NTQB2-3-2" = "3-2",
-"NTQB2-4-2S" = "4-2",
-"NTQB2-5-1" = "unknown",
-"NTQB2-6-1" = "6-1",
-"NTQB2-6-2" = "6-2"
+"NTQB2-1" = "2-1",
+"NTQB2-2" = "2-2",
+"NTQB2-3-2" = "2-3-2",
+"NTQB2-4-2" = "2-4-2",
+"NTQB2-4-2S" = "2-4-2",
+"NTQB2-5-1" = "2-5-1",
+"NTQB2-6-1" = "2-6-1",
+"NTQB2-6-2" = "2-6-2"
 )
 
 modPar = NULL
@@ -173,17 +179,14 @@ internal resistance.  The table provided by Lotek only covers $2 <= BI
 down to 1s and from 20 to 40s using the fitted model.
 
 ```{r}
-xyplot(log10(lifespan)~bi, groups=battery, pred,
-       auto.key=list(corner=c(.6,.1), columns=3),
-       main="Reported (X) and Predicted (o) Tag Lifespan by Battery Type",
+xyplot(log10(lifespan)~bi|as.factor(battery), pred,
+       main="Reported (+) and Predicted Tag Lifespan\nby Battery Type and Burst Interval",
        xlab="Burst Interval (seconds)",
        ylab="Lifespan (log10(days); 1->10, 2->100, 3->1000)",
-       type="b",
-       panel = function(x, y, type, groups, ...) {
-           panel.xyplot(x, y, type, groups, ...)
-           meas = which(x %in% c(2, 5, 10, 20) & groups != "1-LW")
-           panel.points(x[meas], y[meas], pch="X", cex=1.5)
-           panel.abline(h=0, lty=2, col="gray")
+       type="l",
+       panel = function(x, y, type, subscripts, ...) {
+           panel.xyplot(x, y, type, ...)
+           panel.points(x[pred$isMeasured[subscripts]], y[pred$isMeasured[subscripts]], pch="+", cex=2, col="black")
            }
        )
 ```

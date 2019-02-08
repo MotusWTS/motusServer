@@ -9,7 +9,7 @@ ARGS = commandArgs(TRUE)
 if (length(ARGS) == 0) {
     cat("
 
-Usage: rerunReceiver.R [-F] [-p] [-c] [-e] [-t] -P PROJECTID -U USERID SERNO [BLO BHI]
+Usage: rerunReceiver.R [-F] [-p] [-c] [-e] [-t] [-o PARAM_OVERRIDES] -P PROJECTID -U USERID SERNO [BLO BHI]
 
 where:
 
@@ -46,6 +46,12 @@ Note: the -P and -U options are now mandatory.
      the contents of the receiver's file_repo folder, you should use '-c'
      instead of this option.
 
+ -o PARAM_OVERRIDES:  specify job-specific overrides to the tag finder parameters.
+     PARAM_OVERRIDES is a quoted string scalar with space-separated
+     tag finder options; e.g. `-o '--default_frequency 150.1 --unsigned_dfreq'`
+     To see a list of possible parameters, run '/sgm/bin/find_tags_motus --help'
+     This script doesn't verify the syntax or semantics of such overrides.
+
  -t: mark job output as `isTesting`; data from such batches will only be returned
      for admin users who specify they want to see testing batches.
 
@@ -65,6 +71,7 @@ fullRerun = FALSE
 isTesting = FALSE
 userID = NULL
 projectID = NULL
+paramOverrides = NULL
 
 while(isTRUE(substr(ARGS[1], 1, 1) == "-")) {
     switch(ARGS[1],
@@ -79,6 +86,10 @@ while(isTRUE(substr(ARGS[1], 1, 1) == "-")) {
            },
            "-F" = {
                fullRerun = TRUE
+           },
+           "-o" = {
+               ARGS = ARGS[-1]
+               paramOverrides = ARGS[1]
            },
            "-t" = {
                isTesting = TRUE
@@ -125,8 +136,13 @@ if (fullRerun) {
     jobLog(j, paste0(if(isTRUE(exportOnly)) "Re-exporting data from" else "Rerunning", " receiver ", serno), summary=TRUE)
 }
 
-if (isTesting)
+if (isTesting) {
    j$isTesting = TRUE
+}
+
+if (isTRUE(nchar(paramOverrides) > 0)) {
+    j$paramOverrides = paramOverrides
+}
 
 ## move the job to the queue 0 or the priority queue
 

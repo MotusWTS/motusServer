@@ -12,7 +12,7 @@ dropBatchesFromTransfer = function(batchIDs) {
 
     stop("must be re-implemented")
 
-    bid = paste(batchIDs, collapse=",")
+    bid = DBI::SQL(paste(batchIDs, collapse=","))
     tx = MotusDB("select batchID, status from batches where batchID in (%s)", bid)
 
     if (nrow(tx) == 0)
@@ -39,7 +39,7 @@ dropBatchesFromTransfer = function(batchIDs) {
 
     if (length(runIDs) > 0) {
         runBatchCount = MotusDB("select runID, batchID, count(*) as n from hits where runID in (%s) group by runID, batchID order by runID, batchID",
-                                paste(runIDs, collapse=",")) %>% as.tbl
+                                DBI::SQL(paste(runIDs, collapse=","))) %>% as.tbl
 
         ## a function to fix the entry for a single run from a
         fixup = function(x) {

@@ -53,6 +53,8 @@ handleUnpackArchive = function(j) {
     jobLog(j, paste0("Unpacking file ", bn, " with ", paste(cmd, collapse=" ")))
     res = safeSys("cd", dir, nq=";", cmd, file, postopts, shell=TRUE, splitOutput=TRUE)
     jobLog(j, c(head(res, 3), "...", tail(res, 3)))
+    ## ensure correct permissions; see https://github.com/jbrzusto/motusServer/issues/426
+    ignore = safeSys("chmod", "-R", "0744", dir, shell=TRUE)
     file.remove(file)
 
     newSubJob(j, "sanityCheck", dir=dir)

@@ -61,7 +61,11 @@ allStatusApps = c("status_api_info",
                   "get_job_stackdump",
                   "retry_job",
                   "get_upload_info",
-                  "serno_collision_rules"
+                  "serno_collision_rules",
+                  "get_param_overrides",
+                  "delete_param_overrides",
+                  "add_param_override",
+                  "describe_program"
                   )
 
 sortColumns = c("ctime", "mtime", "id", "type", "motusProjectID", "motusUserID")
@@ -973,381 +977,580 @@ serno_collision_rules = function(env) {
     return_from_app(rv)
 }
 
-queueStatusApp = function(env) {
-    ## return summary of master queue and processing queues
-    ## parameters:
-    ## - none so far
 
-    req = Rook::Request$new(env)
-    res = Rook::Response$new()
 
-    res$header("Cache-control", "no-cache")
-    res$header("Content-Type", "text/html; charset=utf-8")
-    ## is upload server running?
-    us = file.exists("/sgm/uploadServer.pid")
+## get param_overrides
 
-    ## number of upload jobs waiting, started, completed successfully, completed with error
-    uinfo = ServerDB("select count(*) from jobs where type = 'uploadFile' and queue == '0'
-            union all select count(*) from jobs where type = 'uploadFile' and queue != '0'
-            union all select count(*) from jobs where type = 'uploadProcessed' and done>0
-            union all select count(*) from jobs where type = 'uploadProcessed' and done<0")[[1]]
+## get_param_overrides(id, projectID, serno, progName, authToken) - administrative users only
 
-    ## number of embargoed emails awaiting processing
-    emb = length(dir("/sgm/inbox_embargoed"))
+##   - id: optional; integer array of param override IDs
+##   - projectID: optional; integer array of motus project IDs
+##   - serno: optional; string array of receiver serial numbers
+##   - progName: optional; string array of program names to which parameter overrides apply
 
-    ## number of emails in inbox, awaiting processing
-    inb = length(dir("/sgm/inbox"))
+## return the set of all parameter overrides matching all specified criteria. If no criteria are supplied, then all overrides are returned. The returned object has these array items:
 
-    ## is emailServer running?
-    es = file.exists("/sgm/emailServer.pid")
+##   - id: integer; IDs of parameter overrides
+##   - projectID: integer; motus project IDs (each can be null)
+##   - serno: character; device serial numbers (each can be null)
+##   - tsStart: double; starting timestamps (each can be null; seconds since 1 Jan 1970 GMT)
+##   - tsEnd: double; ending timestamps (each can be null; seconds since 1 Jan 1970 GMT)
+##   - monoBNlow: integer; starting boot session numbers (each can be null; used for SGs only)
+##   - monoBNhigh: integer; ending boot session numbers (each can be null; used for SGs only)
+##   - progName: character; names of programs to which override applies; typically 'find_tags_motus'
+##   - paramName: character; names of parameters (e.g. 'default_freq')
+##   - paramVal: double; values for parameters (each can be null if parameter is just a flag)
+##   - why: character; human-readable reason for each override
 
-    ## num jobs in email queue
-    qm = ServerDB("select count(distinct t1.id) from jobs as t1 join jobs as t2 on t1.id=t2.stump where t1.pid is null and t1.queue='E' and t2.done=0")[[1]]
+get_param_overrides = function(env) {
+    json = fromJSON(parent.frame()$postBody["json"], simplifyVector=FALSE)
 
-    ## num jobs waiting to be assigned to a processor
-    q0 = ServerDB("select count(*) from jobs where pid is null and queue='0' and done=0")[[1]]
+    if (tracing)
+        browser()
 
-    ## which processServers, if any, are running
-    pids = dir("/sgm", pattern="^processServer[0-9]+.pid$", full.names=TRUE)
-    if (length(pids) > 0)
-        qr = as.integer(unlist(regexPieces("processServer(?<qn>[0-9]+).pid", pids)))
-    else
-        qr = integer(0)
+    auth = validate_request(json, needProjectID=FALSE, needAdmin=TRUE)
+    if (inherits(auth, "error")) return(auth)
 
-    ul = "---------------------------------------------\n"
-    res$write(paste0(
-        "<small>As of ", format(Sys.time(), "%d %b %Y %H:%M:%S (GMT)</small>"),
-        "<pre>",
-        "<b>Upload Server</b>\n",
-        " - ", if (! us) "<b>not</b> ", "running\n",
-        " - files received by upload: ", uinfo[1]+uinfo[2], "\n",
-        " - files waiting for a processor: ", uinfo[1], "\n",
-        " - files with processing completed successfully: ", uinfo[3], "\n",
-        " - files where processing stopped with an error: ", uinfo[4], "\n",
-        ul,
-        "<b>Embargoed INBOX</b>\n",
-        emb, " email(s) awaiting manual intervention\n",
-        ul,
-        "<b>INBOX</b>\n",
-        inb, " email(s) awaiting Email Server\n",
-        ul,
-        "<b>Email Server</b>\n",
-        " - ", if (! es) "<b>not</b> ", "running\n",
-        " - has ", qm, " email(s) partially processed\n",
-        ul,
-        "<b>Master Queue</b>\n",
-        q0, " jobs waiting for a Tagfinder Processor\n"
-        ))
+    id        = safe_arg(json, id,        int,  scalar=FALSE)
+    projectID = safe_arg(json, projectID, int,  scalar=FALSE)
+    serno     = safe_arg(json, serno,     char, scalar=FALSE)
+    progName  = safe_arg(json, progName,  char, scalar=FALSE)
 
-    ## for each tagfinder process, show its status and queue length
-
-    for (p in c(1:8, 101:104)) {
-        pc = as.character(p)
-        running = p %in% qr
-        jj = ServerDB("select distinct t1.id from jobs as t1 join jobs as t2 on t1.id = t2.stump where t1.pid is null and t1.queue=:p and t2.done=0", p=pc)[[1]]
-        jdone = ServerDB("select count(*) from jobs as t1 where t1.pid is null and t1.queue=:p and t1.done!=0", p=pc)[[1]]
-        jbad = ServerDB("select count(distinct t1.id) from jobs as t1 join jobs as t2 on t1.id = t2.stump where t1.pid is null and t1.queue=:p and t2.done<0", p=pc)[[1]]
-        res$write(paste0(ul,
-          "<b>Tagfinder Processor #", p, ifelse(p > 100, " (priority) ", ""), "</b>\n",
-          " - ", if (! running) "<b>not</b> ", "running\n",
-          "<b>Jobs:</b>\n",
-          " - successfully completed: ", jdone - jbad, "\n",
-          " - completed with error(s): ", jbad, "\n",
-          " - incomplete: ", length(jj), "\n"
-          ))
-        if (length(jj) > 0) {
-            res$write("<b>Incomplete jobs:</b>")
-            info = ServerDB("select t1.id, coalesce(json_extract(t1.data, '$.replyTo[0]'), json_extract(t1.data, '$.replyTo')), t1.type, t1.ctime, t1.mtime, group_concat(t2.type) as sj from jobs as t1 join jobs as t2 on t1.id=t2.stump where t1.id in (:jj) and t2.done == 0 group by t1.id order by t1.id desc", jj=jj)
-            class(info$ctime) = class(info$mtime) = c("POSIXt", "POSIXct")
-            info$sj = sapply(info$sj, function(x) { j = strsplit(x, ",")[[1]]; t = table(j); paste(sprintf("%s(%d)", names(t), t), collapse=", ")})
-            names(info) = c("ID", "Sender", "Type", "Created", "Last Activity", "Incomplete SubJobs")
-            ## disable the following to drop dependency on hwrite; we're only carrying these functions along
-            ## to have the code available when writing the new live receiver API / page
-##            res$write(hwrite(info, border=0, row.style=list('font-weight:bold'), row.bgcolor=rep(c("#ffffff", "#f0f0f0"), length=nrow(info))))
-        }
+    where = "where 1 "
+    if (! is.null(id)) {
+        where = paste0("and (id in (", paste(id, collapse=","), "))")
     }
-    res$finish()
+    if (! is.null(projectID)) {
+        where = paste0(where, "and (projectID in (", paste(projectID, collapse=","), "))")
+    }
+    if (! is.null(serno)) {
+        where = paste0(where, "and (serno in (", paste(serno, collapse=","), "))")
+    }
+    if (! is.null(serno)) {
+        where = paste0(where, "and (progName in (", paste(progName, collapse=","), "))")
+    }
+    rv = MetaDB(paste0("select * from paramOverrides ", where))
+    return_from_app(rv)
 }
 
-connectedReceiversApp = function(env) {
+## delete_param_overrides
 
-    req <- Rook::Request$new(env)
-    res <- Rook::Response$new()
+## delete_param_overrides(id, authToken) - administrative users only
 
-    res$header("Cache-control", "no-cache")
-    res$header("Content-Type", "text/html; charset=utf-8")
+##   - id: integer array of param override IDs
 
-    user <- req$GET()[['user']]
-    token <- req$GET()[['token']]
+## delete the parameter overrides whose IDs are in id, returning a boolean array of the same length indicating which IDs were deleted.
 
-    ## saveRDS(env, "/tmp/request.rds") ## for debugging
+delete_param_overrides = function(env) {
+    json = fromJSON(parent.frame()$postBody["json"], simplifyVector=FALSE)
 
-    ## list of serial numbers of connected receivers
-    recv = dir(MOTUS_PATH$REMOTE_CONNECTIONS)
+    if (tracing)
+        browser()
 
-    ## list of mapped tunnel ports (character vector)
-    ports = system("netstat -n -l -t 2>/dev/null | grep 127.0.0.1 | gawk '{split($4, A, /:/); pn=0+A[2]; if (pn >= 40000 && pn < 50000) print pn}'", intern=TRUE)
+    auth = validate_request(json, needProjectID=FALSE, needAdmin=TRUE)
+    if (inherits(auth, "error")) return(auth)
 
-    ## get list of receiver serial numbers by port
+    id        = safe_arg(json, id,        int,  scalar=FALSE)
 
-    if (length(ports) > 0) {
-        portByRecv = ServerDB(sprintf("select tunnelport,serno from remote.receivers where tunnelport in (%s)", paste(ports, collapse=",")))
-        rownames(portByRecv) = portByRecv$serno
-    } else {
-        portByRecv = NULL
+    if (is.null(id)) {
+        return(error_from_app("Need to specify one or more ids of param_overrides to delete"))
     }
-
-    ## add in receivers with an ssh port mapped but no live data streaming
-    ## this can happen for various reasons, e.g. if the master js process
-    ## on the SG has died.
-
-    connRecv = recv
-    recv = unique(c(recv, portByRecv$serno))
-
-    ## get latest project/site names for any receivers
-    YEAR = format(Sys.time(), "%Y")
-    ## get most recent project, site for each receiver deployment
-    projSite = MetaDB(sprintf("select t1.serno as Serno, t3.label as Project, t1.name as Site, t3.id as projectID from recvDeps as t1 left join recvDeps as t2 on t1.serno=t2.serno and t1.tsStart < t2.tsStart join projs as t3 on t1.projectID=t3.id where t1.serno in ('%s') and t2.serno is null", paste0("SG-", recv, collapse="','")))
-
-    rownames(projSite)=substring(projSite$Serno, 4)
-
-
-    Now = Sys.time()
-    now = as.numeric(Now)
-    html = sprintf(
-        "
-<br>This table generated at %s
-<br>
-<table rows=%d cols=%d border=1>
-<tr><th>Serial No.<br>Click for SG<br>Web Interface</th><th>Tunnel Port</th><th>Lat/Lon<br>Click for Map</th><th>Project, Site<br>Click for Download Page</th><th>Boot<br>Count</th><th>Connected<br>Since</th><th>Ants with Hits<br>Latest Hour</th><th>Latest Hit on Tag<br>Known to Receiver</th><th>When</th><th>Hits Today</th><th>Total Hits</th><th>Live User</th></tr>",
-format(Now, "%Y %b %d %H:%M:%S GMT"),
-1 + length(recv), 10)
-
-    tbl = character(length(recv))
-
-
-    con = safeSQLiteConnect(MOTUS_PATH$REMOTE_LIVE)
-    sql = function(...) dbGetQuery(con, sprintf(...))
-    if (! is.null(user)) {
-        old_token = sql("select token from user_tokens where user='%s'", user)
-
-        if (nrow(old_token) == 0 || old_token[1,1] != token)
-            ## auth token is new or has changed, so insert new one with timestamp
-            sql("insert or replace into user_tokens (user, token, ts) values ('%s', '%s', '%f')", user, token, as.numeric(Sys.time()))
-    }
-    ## get the list of SG <-> user connections
-    loggedIn = sql("select serno,user,ts from port_maps")
-    dbDisconnect(con)
-    rownames(loggedIn) = loggedIn$serno
-    class(loggedIn$ts) = c("POSIXt", "POSIXct")
-
-    for (i in seq(along=recv)) {
-        db = file.path(MOTUS_PATH$REMOTE_STREAMS, paste0(recv[i], ".sqlite"))
-        if (file.exists(db)) {
-            con = safeSQLiteConnect(db)
-            bootCount = dbGetQuery(con, "select max (parval) from metadata where parname = 'bootCount'")[1,1]
-            if (is.na(bootCount))
-                bootCount = 0
-            gps = dbGetQuery(con, "select * from gps where ts != 'NaN' order by ts desc limit 1")
-            tag = dbGetQuery(con, "select * from taghits order by ts desc limit 1")
-            numHits = dbGetQuery(con, "select count(*) from taghits")
-            numHitsToday = dbGetQuery(con, sprintf("select count(*) from taghits where ts >= %f", trunc(Now, "days")))
-            ##        devices = dbGetQuery(con, "select * from devices order by ts")
-            lastCon = dbGetQuery(con, "select serverts from connections order by serverts desc limit 1")
-            ports = unlist(dbGetQuery(con, sprintf("select distinct port from taghits where serverts >= %f", now-3600))[,1])
-            if (length(ports) == 0)
-                ports = ""
-            if (nrow(lastCon) > 0) {
-                lastCon = lastCon[1,1]
-            } else {
-                lastCon = 0
-            }
-            class(lastCon) = c("POSIXt", "POSIXct")
-            ## if (nrow(devices) > 0) {
-            ##   numAnts = sum(unlist(tapply(seq_len(nrow(devices)), devices$port,
-            ##     function(i) {
-            ##       j = tail(i, 1)
-            ##       devices$action[j] == 'A' && grepl("funcube", devices$type[j], ignore.case=TRUE)
-            ##     })))
-            ## } else {
-            ##   numAnts = 0
-            ## }
-            dbDisconnect(con)
-        } else {
-            bootCount = 1
-            gps = NULL
-            tag = NULL
-            numHits = 0
-            numHitsToday = 0
-            ports = ""
-            lastCon = structure(0, class=c("POSIXt", "POSIXct"))
-        }
-        haveTags = ! (is.null(tag) || nrow(tag) == 0)
-
-        if (haveTags) {
-            class(tag$ts) = c("POSIXt", "POSIXct")
-            msg = list(tag = paste(tag$tagID, "on ant", tag$port[1]),
-                       ts = paste(format(round(diff(c(tag$ts[1], Now)), 3)), "ago"))
-        } else {
-            msg = list(tag = "none while connected", ts = "")
-            numHits = numHitsToday = 0
-        }
-
-        if (is.null(gps) || nrow(gps) == 0) {
-            gps = list(lat=0, lon=0)
-            if (haveTags)
-                tag$ts[1] = structure(tag$serverts[1], class=c("POSIXt", "POSIXct"))
-        }
-
-        tunnelport = as.character(portByRecv[recv[i], "tunnelport"])
-        if (length(tunnelport) == 0 || is.na(tunnelport))
-            tunnelport = "none"
-
-        user = loggedIn[recv[i], "user"]
-        if (is.na(user))
-            userMsg = ""
-        else
-            userMsg = sprintf("%s @ %s", user, format(loggedIn[recv[i], "ts"], "%b %d - %H:%M"))
-
-        try({
-            if (tunnelport != "none") {
-                anchor = sprintf('<a href="https://live.sensorgnome.org/SESSION_SG-%s_%s" style="color: #000000">%s</a>',
-                                 recv[i],
-                                 token,
-                                 recv[i])
-            } else {
-                anchor = sprintf("%s", recv[i])
-            }
-
-            ps = projSite[recv[i], c("Project", "Site")]
-
-            if (is.na(ps[[1]])) {
-                ps = c("unregistered deployment")
-            } else {
-                ps = as.character(ps)
-            }
-            latLon = paste(round(gps$lat, 3), round(gps$lon, 3), sep=",")
-            latLonURL = sprintf("https://google.com/search?q=%.6f,%.6f", gps$lat, gps$lon)
-
-
-            psURL = getDownloadURL(projSite[recv[i], "projectID"])
-            tbl[i] = sprintf('<tr><td style="background-color: %s">%s</td><td style="text-align:center">%s</td><td style="text-align:center"><a href="%s">%s</a></td><td style="text-align:center"><a href="%s">%s</a></td><td style="text-align:center">%d</td><td style="text-align:center">%s</td><td style="text-align:center">%s</td><td style="text-align:center">%s</td><td style="text-align:center">%s</td><td style="text-align:center">%.0f</td><td style="text-align:center">%.0f</td><td style="text-align:center">%s</td></tr>',
-                             if (recv[i] %in% connRecv) "#80ff80" else "#ff8080",
-                             anchor,
-                             tunnelport,
-                             latLonURL,
-                             latLon,
-                             psURL,
-                             paste(ps, collapse=","),
-                             bootCount,
-                             format(lastCon, "%d %b %H:%M"),
-                             paste(sort(ports), collapse=", "),
-                             msg$tag,
-                             msg$ts,
-                             numHitsToday,
-                             numHits,
-                             userMsg
-                             )
-
-        }, silent=TRUE)
-    }
-
-    html = paste(html, paste(tbl, collapse="\n"), '</table><br>If a receiver is shown with a <span style="background-color:#ff8080">red background</span>, then it is connected by secure shell but does not have a data-streaming connection.  This might be because its master control process has died.  Troubleshooting via ssh tunnel is recommended.<br><br>If an SG has a streaming connection but no tunnel port, you cannot connect to its web interface.  Wait 5 minutes and check again whether the tunnel port has been assigned.', sep="\n")
-
-    res$write(html)
-    res$finish()
+    where = paste0("where id in (", paste(id, collapse=","), ")")
+    have = MetaDB(paste0("select id from paramOverrides ", where))
+    MetaDB(paste0("delete from paramOverrides ", where))
+    return_from_app(data.frame(deleted=! (id %in% have)))
 }
 
-allReceiversApp = function(env) {
-    req <- Rook::Request$new(env)
-    res <- Rook::Response$new()
+## add_param_override
 
-    res$header("Cache-control", "no-cache")
+## add_param_override(projectID, serno, tsStart, tsEnd, monoBNlow, monoBNhigh, progName, paramName, paramVal, why, authToken)
 
-    html1 = "<div><ul>"
+##   - projectID: integer; motus project IDs (can be null)
+##   - serno: character; device serial numbers (can be null)
+##   Exactly one of `serno` or `projectID` must be specified.
 
-    f = dir(MOTUS_PATH$REMOTE_STREAMS, pattern=".*\\.sqlite$", full.names=TRUE)
-    recv_with_db = sub(".sqlite$", "", basename(f))
+##   - tsStart: double; starting timestamp (can be null; seconds since 1 Jan 1970 GMT)
+##   - tsEnd: double; ending timestamp (can be null; seconds since 1 Jan 1970 GMT)
+##   - monoBNlow: integer; starting boot session number (can be null; used for SGs only)
+##   - monoBNhigh: integer; ending boot session number (can be null; used for SGs only)
+##   - progName: character; name of program to which override applies; typically 'find_tags_motus'
+##   - paramName: character; name of parameter (e.g. 'default_freq')
+##   - paramVal: double; value for parameter (can be null if parameter is just a flag)
+##   - why: character; human-readable reason for override
 
-    recv = ServerDB("select * from remote.receivers where verified=1 order by serno")
+## returns an object with this item:
 
-    recv$connNow = file.exists(file.path(MOTUS_PATH$REMOTE_CONNECTIONS, recv$serno))
+##   - id: integer ID of new parameter override
 
-    class(recv$creationdate) = c("POSIXt", "POSIXct")
-    recv$db = f[match(recv$serno, recv_with_db)]
+## or an item called error if the override already exists or there were problems with the specified parameters.
+## describe_program
 
-    recv = recv[order(1 - recv$connNow, recv$serno),]
-    Now = Sys.time()
-    now = as.numeric(Now)
-    html = sprintf(
-"
-<br>This table generated at %s
-<br>
-<table rows=%d cols=%d border=1>
-<tr><th>Serial No.</th><th>Lat</th><th>Lon</th><th>Boot<br>Count</th><th>Ants with Hits<br>Latest Hour</th><th>Latest Tag Hit</th><th>When</th><th>Hits Today</th><th>Total Hits</th></tr>",
-      format(Now, "%Y %b %d %H:%M:%S GMT"),
-      1 + nrow(recv), 9)
+add_param_override = function(env) {
+    json = fromJSON(parent.frame()$postBody["json"], simplifyVector=FALSE)
 
-    tbl = character(nrow(recv))
-    for (i in seq(along=tbl)) {
-      if (is.na(recv$db)[i]) {
-        tbl[i] = sprintf('<tr><td>%s</td><td colspan=8>No data received</td></tr>', recv$serno[i])
-      } else {
-        con = safeSQLiteConnect(file.path(MOTUS_PATH$REMOTE_STREAMS, paste0(recv$serno[i], ".sqlite")))
-        bootCount = dbGetQuery(con, "select max (parval) from metadata where parname = 'bootCount'")[1,1]
-        if (is.na(bootCount))
-          bootCount = 0
-        gps = dbGetQuery(con, "select * from gps where ts != 'NaN' order by ts desc limit 1")
-        tag = dbGetQuery(con, "select * from taghits order by ts desc limit 1")
-        numHits = dbGetQuery(con, "select count(*) from taghits")
-        numHitsToday = dbGetQuery(con, sprintf("select count(*) from taghits where ts >= %f", trunc(Now, "days")))
-        devices = dbGetQuery(con, "select * from devices order by ts")
-        lastCon = dbGetQuery(con, "select serverts from connections order by serverts desc limit 1")
-        ports = unlist(dbGetQuery(con, sprintf("select distinct port from taghits where serverts >= %f", now-3600))[,1])
-        if (nrow(lastCon) > 0) {
-          lastCon = lastCon[1,1]
-        } else {
-          lastCon = 0
-        }
-        if (nrow(devices) > 0) {
-          numAnts = sum(unlist(tapply(seq_len(nrow(devices)), devices$port,
-            function(i) {
-              j = tail(i, 1)
-              devices$action[j] == 'A' && grepl("funcube", devices$type[j], ignore.case=TRUE)
-            })))
-        } else {
-          numAnts = 0
-        }
-        dbDisconnect(con)
-        class(tag$ts) = c("POSIXt", "POSIXct")
+    if (tracing)
+        browser()
 
-        if (is.null(tag) || nrow(tag) == 0) {
-          tag = list(tagID = 0, antFreq=0, port=0, ts=structure(0, class=c("POSIXt", "POSIXct")))
-          numHits = numHitsToday = 0
-        }
+    auth = validate_request(json, needProjectID=FALSE, needAdmin=TRUE)
+    if (inherits(auth, "error")) return(auth)
 
-        if (is.null(gps) || nrow(gps) == 0) {
-          gps = list(lat=0, lon=0)
-          tag$ts[1] = structure(tag$serverts[1], class=c("POSIXt", "POSIXct"))
-        }
+    projectID    = safe_arg(json, projectID,  int,     scalar=TRUE, nullValue="null")
+    serno        = safe_arg(json, serno,      char,    scalar=TRUE, nullValue="null")
+    tsStart      = safe_arg(json, tsStart,    numeric, scalar=TRUE, nullValue="null")
+    tsEnd        = safe_arg(json, tsEnd,      numeric, scalar=TRUE, nullValue="null")
+    monoBNlow    = safe_arg(json, monoBNlow,  int,     scalar=TRUE, nullValue="null")
+    monoBNhigh   = safe_arg(json, monoBNhigh, int,     scalar=TRUE, nullValue="null")
+    progName     = safe_arg(json, progName,   char,    scalar=TRUE)
+    paramName    = safe_arg(json, paramName,  char,    scalar=TRUE)
+    paramVal     = safe_arg(json, paramVal,   numeric, scalar=TRUE)
+    why          = safe_arg(json, why,        char,    scalar=TRUE, nullValue="")
+    if (is.null(serno) && is.null(projectID))
+        return(error_from_app("Need to specify one of serno, projectID"))
 
-        try({
-        tbl[i] = sprintf('<tr><td style="background-color: %s">%s</td><td>%.4f</td><td>%.4f</td><td>%d</td><td>%s</td><td>%d @ %.3f on Ant %d</td><td>%s ago</td><td>%.0f</td><td>%.0f</td></tr>',
-             (if (recv$connNow[i]) "#80ff80" else if (now - lastCon < 600) "#ffff80" else "#ff8080"),
-             recv$serno[i],
-             gps$lat,
-             gps$lon,
-             bootCount,
-             paste(sort(ports), collapse=", "),
-             tag$tagID[1], tag$antFreq[1], tag$port[1],
-             format(round(diff(c(tag$ts[1], Now)), 3)),
-             numHitsToday,
-             numHits)
-      }, silent=TRUE)
-      }
-    }
-    html = paste(html, paste(tbl, collapse="\n"), "</table>", sep="\n")
+    if (is.null(progName) || is.null(paramName) || is.null(paramVal) || is.null(why))
+        return(error_from_app("Need to specify all of progName, paramName, paramVal, why"))
 
-    res$write(html)
-    res$finish()
+    if (is.null(serno)) serno = ""
+
+    ## Note the use of '%s' format strings for numeric fields; R's
+    ## sprintf converts automatically from numerics to strings, and
+    ## this lets us use "null" for permitted missing values.
+
+    MetaDB("insert into paramOverrides (projectID,serno,tsStart,tsEnd,monoBNlow,monoBNhigh,progName,paramName,paramVal,why) values (%d,%s,%s,%s,%s,%s,%s,%s,%f,%s)",
+           projectID,
+           serno,
+           tsStart,
+           tsEnd,
+           monoBNlow,
+           monoBNhigh,
+           progName,
+           paramName,
+           paramVal,
+           why,
+           .QUOTE=TRUE)
+
+    return_from_app(MetaDB("select id from paramOverrides where rowid=last_insert_rowid()"))
 }
+
+## describe_program(progName, authToken) - administrative users only
+
+##   - progName: (optional) string scalar giving name of program for which
+##   to return information
+
+## return information about a program.
+
+## If progName is not specified, then return an object with this array item:
+
+##   - progName: string array of possible values for `progName`.
+
+## If progName is specified, then return an object with these items:
+##   - version: string array of current version of program, from `git describe`
+##   - build_ts: numeric timestamp of build
+##   - options:  a list of parameter descriptions; each item has these fields:
+##      - name: character;
+##      - description: character; human-readable description
+##      - default: real, integer, or logical;
+##      - type: "real", "logical", or "integer"
+
+describe_program = function(env) {
+    json = fromJSON(parent.frame()$postBody["json"], simplifyVector=FALSE)
+
+    if (tracing)
+        browser()
+
+    auth = validate_request(json, needProjectID=FALSE, needAdmin=TRUE)
+    if (inherits(auth, "error")) return(auth)
+
+    progName     = safe_arg(json, progName,   char,    scalar=TRUE)
+    if (is.null(progName)) {
+        return(return_from_app(list(progName=c("find_tags_motus"))))
+    }
+    if (progName == "find_tags_motus") {
+        return(return_from_app(system("find_tags_motus --info_only", intern=TRUE), isJSON=TRUE))
+    }
+    error_from_app("Unknown program")
+}
+
+
+################################################################################
+############## OBSOLETE ########################################################
+################################################################################
+
+## queueStatusApp = function(env) {
+##     ## return summary of master queue and processing queues
+##     ## parameters:
+##     ## - none so far
+
+##     req = Rook::Request$new(env)
+##     res = Rook::Response$new()
+
+##     res$header("Cache-control", "no-cache")
+##     res$header("Content-Type", "text/html; charset=utf-8")
+##     ## is upload server running?
+##     us = file.exists("/sgm/uploadServer.pid")
+
+##     ## number of upload jobs waiting, started, completed successfully, completed with error
+##     uinfo = ServerDB("select count(*) from jobs where type = 'uploadFile' and queue == '0'
+##             union all select count(*) from jobs where type = 'uploadFile' and queue != '0'
+##             union all select count(*) from jobs where type = 'uploadProcessed' and done>0
+##             union all select count(*) from jobs where type = 'uploadProcessed' and done<0")[[1]]
+
+##     ## number of embargoed emails awaiting processing
+##     emb = length(dir("/sgm/inbox_embargoed"))
+
+##     ## number of emails in inbox, awaiting processing
+##     inb = length(dir("/sgm/inbox"))
+
+##     ## is emailServer running?
+##     es = file.exists("/sgm/emailServer.pid")
+
+##     ## num jobs in email queue
+##     qm = ServerDB("select count(distinct t1.id) from jobs as t1 join jobs as t2 on t1.id=t2.stump where t1.pid is null and t1.queue='E' and t2.done=0")[[1]]
+
+##     ## num jobs waiting to be assigned to a processor
+##     q0 = ServerDB("select count(*) from jobs where pid is null and queue='0' and done=0")[[1]]
+
+##     ## which processServers, if any, are running
+##     pids = dir("/sgm", pattern="^processServer[0-9]+.pid$", full.names=TRUE)
+##     if (length(pids) > 0)
+##         qr = as.integer(unlist(regexPieces("processServer(?<qn>[0-9]+).pid", pids)))
+##     else
+##         qr = integer(0)
+
+##     ul = "---------------------------------------------\n"
+##     res$write(paste0(
+##         "<small>As of ", format(Sys.time(), "%d %b %Y %H:%M:%S (GMT)</small>"),
+##         "<pre>",
+##         "<b>Upload Server</b>\n",
+##         " - ", if (! us) "<b>not</b> ", "running\n",
+##         " - files received by upload: ", uinfo[1]+uinfo[2], "\n",
+##         " - files waiting for a processor: ", uinfo[1], "\n",
+##         " - files with processing completed successfully: ", uinfo[3], "\n",
+##         " - files where processing stopped with an error: ", uinfo[4], "\n",
+##         ul,
+##         "<b>Embargoed INBOX</b>\n",
+##         emb, " email(s) awaiting manual intervention\n",
+##         ul,
+##         "<b>INBOX</b>\n",
+##         inb, " email(s) awaiting Email Server\n",
+##         ul,
+##         "<b>Email Server</b>\n",
+##         " - ", if (! es) "<b>not</b> ", "running\n",
+##         " - has ", qm, " email(s) partially processed\n",
+##         ul,
+##         "<b>Master Queue</b>\n",
+##         q0, " jobs waiting for a Tagfinder Processor\n"
+##         ))
+
+##     ## for each tagfinder process, show its status and queue length
+
+##     for (p in c(1:8, 101:104)) {
+##         pc = as.character(p)
+##         running = p %in% qr
+##         jj = ServerDB("select distinct t1.id from jobs as t1 join jobs as t2 on t1.id = t2.stump where t1.pid is null and t1.queue=:p and t2.done=0", p=pc)[[1]]
+##         jdone = ServerDB("select count(*) from jobs as t1 where t1.pid is null and t1.queue=:p and t1.done!=0", p=pc)[[1]]
+##         jbad = ServerDB("select count(distinct t1.id) from jobs as t1 join jobs as t2 on t1.id = t2.stump where t1.pid is null and t1.queue=:p and t2.done<0", p=pc)[[1]]
+##         res$write(paste0(ul,
+##           "<b>Tagfinder Processor #", p, ifelse(p > 100, " (priority) ", ""), "</b>\n",
+##           " - ", if (! running) "<b>not</b> ", "running\n",
+##           "<b>Jobs:</b>\n",
+##           " - successfully completed: ", jdone - jbad, "\n",
+##           " - completed with error(s): ", jbad, "\n",
+##           " - incomplete: ", length(jj), "\n"
+##           ))
+##         if (length(jj) > 0) {
+##             res$write("<b>Incomplete jobs:</b>")
+##             info = ServerDB("select t1.id, coalesce(json_extract(t1.data, '$.replyTo[0]'), json_extract(t1.data, '$.replyTo')), t1.type, t1.ctime, t1.mtime, group_concat(t2.type) as sj from jobs as t1 join jobs as t2 on t1.id=t2.stump where t1.id in (:jj) and t2.done == 0 group by t1.id order by t1.id desc", jj=jj)
+##             class(info$ctime) = class(info$mtime) = c("POSIXt", "POSIXct")
+##             info$sj = sapply(info$sj, function(x) { j = strsplit(x, ",")[[1]]; t = table(j); paste(sprintf("%s(%d)", names(t), t), collapse=", ")})
+##             names(info) = c("ID", "Sender", "Type", "Created", "Last Activity", "Incomplete SubJobs")
+##             ## disable the following to drop dependency on hwrite; we're only carrying these functions along
+##             ## to have the code available when writing the new live receiver API / page
+## ##            res$write(hwrite(info, border=0, row.style=list('font-weight:bold'), row.bgcolor=rep(c("#ffffff", "#f0f0f0"), length=nrow(info))))
+##         }
+##     }
+##     res$finish()
+## }
+
+## connectedReceiversApp = function(env) {
+
+##     req <- Rook::Request$new(env)
+##     res <- Rook::Response$new()
+
+##     res$header("Cache-control", "no-cache")
+##     res$header("Content-Type", "text/html; charset=utf-8")
+
+##     user <- req$GET()[['user']]
+##     token <- req$GET()[['token']]
+
+##     ## saveRDS(env, "/tmp/request.rds") ## for debugging
+
+##     ## list of serial numbers of connected receivers
+##     recv = dir(MOTUS_PATH$REMOTE_CONNECTIONS)
+
+##     ## list of mapped tunnel ports (character vector)
+##     ports = system("netstat -n -l -t 2>/dev/null | grep 127.0.0.1 | gawk '{split($4, A, /:/); pn=0+A[2]; if (pn >= 40000 && pn < 50000) print pn}'", intern=TRUE)
+
+##     ## get list of receiver serial numbers by port
+
+##     if (length(ports) > 0) {
+##         portByRecv = ServerDB(sprintf("select tunnelport,serno from remote.receivers where tunnelport in (%s)", paste(ports, collapse=",")))
+##         rownames(portByRecv) = portByRecv$serno
+##     } else {
+##         portByRecv = NULL
+##     }
+
+##     ## add in receivers with an ssh port mapped but no live data streaming
+##     ## this can happen for various reasons, e.g. if the master js process
+##     ## on the SG has died.
+
+##     connRecv = recv
+##     recv = unique(c(recv, portByRecv$serno))
+
+##     ## get latest project/site names for any receivers
+##     YEAR = format(Sys.time(), "%Y")
+##     ## get most recent project, site for each receiver deployment
+##     projSite = MetaDB(sprintf("select t1.serno as Serno, t3.label as Project, t1.name as Site, t3.id as projectID from recvDeps as t1 left join recvDeps as t2 on t1.serno=t2.serno and t1.tsStart < t2.tsStart join projs as t3 on t1.projectID=t3.id where t1.serno in ('%s') and t2.serno is null", paste0("SG-", recv, collapse="','")))
+
+##     rownames(projSite)=substring(projSite$Serno, 4)
+
+
+##     Now = Sys.time()
+##     now = as.numeric(Now)
+##     html = sprintf(
+##         "
+## <br>This table generated at %s
+## <br>
+## <table rows=%d cols=%d border=1>
+## <tr><th>Serial No.<br>Click for SG<br>Web Interface</th><th>Tunnel Port</th><th>Lat/Lon<br>Click for Map</th><th>Project, Site<br>Click for Download Page</th><th>Boot<br>Count</th><th>Connected<br>Since</th><th>Ants with Hits<br>Latest Hour</th><th>Latest Hit on Tag<br>Known to Receiver</th><th>When</th><th>Hits Today</th><th>Total Hits</th><th>Live User</th></tr>",
+## format(Now, "%Y %b %d %H:%M:%S GMT"),
+## 1 + length(recv), 10)
+
+##     tbl = character(length(recv))
+
+
+##     con = safeSQLiteConnect(MOTUS_PATH$REMOTE_LIVE)
+##     sql = function(...) dbGetQuery(con, sprintf(...))
+##     if (! is.null(user)) {
+##         old_token = sql("select token from user_tokens where user='%s'", user)
+
+##         if (nrow(old_token) == 0 || old_token[1,1] != token)
+##             ## auth token is new or has changed, so insert new one with timestamp
+##             sql("insert or replace into user_tokens (user, token, ts) values ('%s', '%s', '%f')", user, token, as.numeric(Sys.time()))
+##     }
+##     ## get the list of SG <-> user connections
+##     loggedIn = sql("select serno,user,ts from port_maps")
+##     dbDisconnect(con)
+##     rownames(loggedIn) = loggedIn$serno
+##     class(loggedIn$ts) = c("POSIXt", "POSIXct")
+
+##     for (i in seq(along=recv)) {
+##         db = file.path(MOTUS_PATH$REMOTE_STREAMS, paste0(recv[i], ".sqlite"))
+##         if (file.exists(db)) {
+##             con = safeSQLiteConnect(db)
+##             bootCount = dbGetQuery(con, "select max (parval) from metadata where parname = 'bootCount'")[1,1]
+##             if (is.na(bootCount))
+##                 bootCount = 0
+##             gps = dbGetQuery(con, "select * from gps where ts != 'NaN' order by ts desc limit 1")
+##             tag = dbGetQuery(con, "select * from taghits order by ts desc limit 1")
+##             numHits = dbGetQuery(con, "select count(*) from taghits")
+##             numHitsToday = dbGetQuery(con, sprintf("select count(*) from taghits where ts >= %f", trunc(Now, "days")))
+##             ##        devices = dbGetQuery(con, "select * from devices order by ts")
+##             lastCon = dbGetQuery(con, "select serverts from connections order by serverts desc limit 1")
+##             ports = unlist(dbGetQuery(con, sprintf("select distinct port from taghits where serverts >= %f", now-3600))[,1])
+##             if (length(ports) == 0)
+##                 ports = ""
+##             if (nrow(lastCon) > 0) {
+##                 lastCon = lastCon[1,1]
+##             } else {
+##                 lastCon = 0
+##             }
+##             class(lastCon) = c("POSIXt", "POSIXct")
+##             ## if (nrow(devices) > 0) {
+##             ##   numAnts = sum(unlist(tapply(seq_len(nrow(devices)), devices$port,
+##             ##     function(i) {
+##             ##       j = tail(i, 1)
+##             ##       devices$action[j] == 'A' && grepl("funcube", devices$type[j], ignore.case=TRUE)
+##             ##     })))
+##             ## } else {
+##             ##   numAnts = 0
+##             ## }
+##             dbDisconnect(con)
+##         } else {
+##             bootCount = 1
+##             gps = NULL
+##             tag = NULL
+##             numHits = 0
+##             numHitsToday = 0
+##             ports = ""
+##             lastCon = structure(0, class=c("POSIXt", "POSIXct"))
+##         }
+##         haveTags = ! (is.null(tag) || nrow(tag) == 0)
+
+##         if (haveTags) {
+##             class(tag$ts) = c("POSIXt", "POSIXct")
+##             msg = list(tag = paste(tag$tagID, "on ant", tag$port[1]),
+##                        ts = paste(format(round(diff(c(tag$ts[1], Now)), 3)), "ago"))
+##         } else {
+##             msg = list(tag = "none while connected", ts = "")
+##             numHits = numHitsToday = 0
+##         }
+
+##         if (is.null(gps) || nrow(gps) == 0) {
+##             gps = list(lat=0, lon=0)
+##             if (haveTags)
+##                 tag$ts[1] = structure(tag$serverts[1], class=c("POSIXt", "POSIXct"))
+##         }
+
+##         tunnelport = as.character(portByRecv[recv[i], "tunnelport"])
+##         if (length(tunnelport) == 0 || is.na(tunnelport))
+##             tunnelport = "none"
+
+##         user = loggedIn[recv[i], "user"]
+##         if (is.na(user))
+##             userMsg = ""
+##         else
+##             userMsg = sprintf("%s @ %s", user, format(loggedIn[recv[i], "ts"], "%b %d - %H:%M"))
+
+##         try({
+##             if (tunnelport != "none") {
+##                 anchor = sprintf('<a href="https://live.sensorgnome.org/SESSION_SG-%s_%s" style="color: #000000">%s</a>',
+##                                  recv[i],
+##                                  token,
+##                                  recv[i])
+##             } else {
+##                 anchor = sprintf("%s", recv[i])
+##             }
+
+##             ps = projSite[recv[i], c("Project", "Site")]
+
+##             if (is.na(ps[[1]])) {
+##                 ps = c("unregistered deployment")
+##             } else {
+##                 ps = as.character(ps)
+##             }
+##             latLon = paste(round(gps$lat, 3), round(gps$lon, 3), sep=",")
+##             latLonURL = sprintf("https://google.com/search?q=%.6f,%.6f", gps$lat, gps$lon)
+
+
+##             psURL = getDownloadURL(projSite[recv[i], "projectID"])
+##             tbl[i] = sprintf('<tr><td style="background-color: %s">%s</td><td style="text-align:center">%s</td><td style="text-align:center"><a href="%s">%s</a></td><td style="text-align:center"><a href="%s">%s</a></td><td style="text-align:center">%d</td><td style="text-align:center">%s</td><td style="text-align:center">%s</td><td style="text-align:center">%s</td><td style="text-align:center">%s</td><td style="text-align:center">%.0f</td><td style="text-align:center">%.0f</td><td style="text-align:center">%s</td></tr>',
+##                              if (recv[i] %in% connRecv) "#80ff80" else "#ff8080",
+##                              anchor,
+##                              tunnelport,
+##                              latLonURL,
+##                              latLon,
+##                              psURL,
+##                              paste(ps, collapse=","),
+##                              bootCount,
+##                              format(lastCon, "%d %b %H:%M"),
+##                              paste(sort(ports), collapse=", "),
+##                              msg$tag,
+##                              msg$ts,
+##                              numHitsToday,
+##                              numHits,
+##                              userMsg
+##                              )
+
+##         }, silent=TRUE)
+##     }
+
+##     html = paste(html, paste(tbl, collapse="\n"), '</table><br>If a receiver is shown with a <span style="background-color:#ff8080">red background</span>, then it is connected by secure shell but does not have a data-streaming connection.  This might be because its master control process has died.  Troubleshooting via ssh tunnel is recommended.<br><br>If an SG has a streaming connection but no tunnel port, you cannot connect to its web interface.  Wait 5 minutes and check again whether the tunnel port has been assigned.', sep="\n")
+
+##     res$write(html)
+##     res$finish()
+## }
+
+## allReceiversApp = function(env) {
+##     req <- Rook::Request$new(env)
+##     res <- Rook::Response$new()
+
+##     res$header("Cache-control", "no-cache")
+
+##     html1 = "<div><ul>"
+
+##     f = dir(MOTUS_PATH$REMOTE_STREAMS, pattern=".*\\.sqlite$", full.names=TRUE)
+##     recv_with_db = sub(".sqlite$", "", basename(f))
+
+##     recv = ServerDB("select * from remote.receivers where verified=1 order by serno")
+
+##     recv$connNow = file.exists(file.path(MOTUS_PATH$REMOTE_CONNECTIONS, recv$serno))
+
+##     class(recv$creationdate) = c("POSIXt", "POSIXct")
+##     recv$db = f[match(recv$serno, recv_with_db)]
+
+##     recv = recv[order(1 - recv$connNow, recv$serno),]
+##     Now = Sys.time()
+##     now = as.numeric(Now)
+##     html = sprintf(
+## "
+## <br>This table generated at %s
+## <br>
+## <table rows=%d cols=%d border=1>
+## <tr><th>Serial No.</th><th>Lat</th><th>Lon</th><th>Boot<br>Count</th><th>Ants with Hits<br>Latest Hour</th><th>Latest Tag Hit</th><th>When</th><th>Hits Today</th><th>Total Hits</th></tr>",
+##       format(Now, "%Y %b %d %H:%M:%S GMT"),
+##       1 + nrow(recv), 9)
+
+##     tbl = character(nrow(recv))
+##     for (i in seq(along=tbl)) {
+##       if (is.na(recv$db)[i]) {
+##         tbl[i] = sprintf('<tr><td>%s</td><td colspan=8>No data received</td></tr>', recv$serno[i])
+##       } else {
+##         con = safeSQLiteConnect(file.path(MOTUS_PATH$REMOTE_STREAMS, paste0(recv$serno[i], ".sqlite")))
+##         bootCount = dbGetQuery(con, "select max (parval) from metadata where parname = 'bootCount'")[1,1]
+##         if (is.na(bootCount))
+##           bootCount = 0
+##         gps = dbGetQuery(con, "select * from gps where ts != 'NaN' order by ts desc limit 1")
+##         tag = dbGetQuery(con, "select * from taghits order by ts desc limit 1")
+##         numHits = dbGetQuery(con, "select count(*) from taghits")
+##         numHitsToday = dbGetQuery(con, sprintf("select count(*) from taghits where ts >= %f", trunc(Now, "days")))
+##         devices = dbGetQuery(con, "select * from devices order by ts")
+##         lastCon = dbGetQuery(con, "select serverts from connections order by serverts desc limit 1")
+##         ports = unlist(dbGetQuery(con, sprintf("select distinct port from taghits where serverts >= %f", now-3600))[,1])
+##         if (nrow(lastCon) > 0) {
+##           lastCon = lastCon[1,1]
+##         } else {
+##           lastCon = 0
+##         }
+##         if (nrow(devices) > 0) {
+##           numAnts = sum(unlist(tapply(seq_len(nrow(devices)), devices$port,
+##             function(i) {
+##               j = tail(i, 1)
+##               devices$action[j] == 'A' && grepl("funcube", devices$type[j], ignore.case=TRUE)
+##             })))
+##         } else {
+##           numAnts = 0
+##         }
+##         dbDisconnect(con)
+##         class(tag$ts) = c("POSIXt", "POSIXct")
+
+##         if (is.null(tag) || nrow(tag) == 0) {
+##           tag = list(tagID = 0, antFreq=0, port=0, ts=structure(0, class=c("POSIXt", "POSIXct")))
+##           numHits = numHitsToday = 0
+##         }
+
+##         if (is.null(gps) || nrow(gps) == 0) {
+##           gps = list(lat=0, lon=0)
+##           tag$ts[1] = structure(tag$serverts[1], class=c("POSIXt", "POSIXct"))
+##         }
+
+##         try({
+##         tbl[i] = sprintf('<tr><td style="background-color: %s">%s</td><td>%.4f</td><td>%.4f</td><td>%d</td><td>%s</td><td>%d @ %.3f on Ant %d</td><td>%s ago</td><td>%.0f</td><td>%.0f</td></tr>',
+##              (if (recv$connNow[i]) "#80ff80" else if (now - lastCon < 600) "#ffff80" else "#ff8080"),
+##              recv$serno[i],
+##              gps$lat,
+##              gps$lon,
+##              bootCount,
+##              paste(sort(ports), collapse=", "),
+##              tag$tagID[1], tag$antFreq[1], tag$port[1],
+##              format(round(diff(c(tag$ts[1], Now)), 3)),
+##              numHitsToday,
+##              numHits)
+##       }, silent=TRUE)
+##       }
+##     }
+##     html = paste(html, paste(tbl, collapse="\n"), "</table>", sep="\n")
+
+##     res$write(html)
+##     res$finish()
+## }

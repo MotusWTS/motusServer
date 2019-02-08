@@ -119,7 +119,7 @@ a server-side script, you need to specify the `X-Forwarded-For`
 header explicitly, in which case no value will be generated automatically.
 Here's an example in php:
 
-``` php
+```php
 /// @param $url: full URL of API entry
 /// @param $par: associative array of API parameters
 
@@ -518,15 +518,16 @@ projects.
       - id: integer array of param override IDs
 
    delete the parameter overrides whose IDs are in `id`, returning a boolean array of the
-   same length indicating which IDs were deleted.
+   same length indicating which IDs are now **not** in the database (i.e. were deleted
+   or were already not present).
 
-### add_param_overrides ###
+### add_param_override ###
 
-   add_param_overrides(projectID, serno, tsStart, tsEnd, monoBNlow, monoBNhigh, progName, paramName, paramVal, why, authToken)
+   add_param_override(projectID, serno, tsStart, tsEnd, monoBNlow, monoBNhigh, progName, paramName, paramVal, why, authToken)
 
-      - projectID: integer; motus project IDs (can be null)
-      - serno: character; device serial numbers (can be null)
-      Exactly one of `serno` or `projectID` must be specified.
+      - projectID: integer; motus project ID (can be null)
+      - serno: character; device serial number (can be null)
+      Exactly one of `serno` or `projectID` must not be null.
 
       - tsStart: double; starting timestamp (can be null; seconds since 1 Jan 1970 GMT)
       - tsEnd: double; ending timestamp (can be null; seconds since 1 Jan 1970 GMT)
@@ -570,6 +571,9 @@ projects.
       - version: string scalar; current version of program
 
 ## Changelog ##
+
+2019-01-21
+   - clarify return value of delete_param_overrides
 
 2018-03-27
    - add new entry `get_receiver_file` to allow download of individual raw receiver
