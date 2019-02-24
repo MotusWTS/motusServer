@@ -2,6 +2,7 @@
 echo "sgdata.bsc-eoc.org" >/etc/hostname
 
 # Add user sg
+adduser sg
 addgroup sg_remote
 adduser sg sg-remote
 
@@ -9,33 +10,33 @@ adduser sg sg-remote
 apt-get update
 apt-get upgrade
 
-apt-get install r-base
-apt-get install r-base-dev
-apt-get install libgit2-dev
-apt-get install libcurl4-openssl-dev
-apt-get install libssl-dev
-apt-get install mariadb-server
-apt-get install libmariadbclient-dev
-apt-get install libxml2-dev
-apt-get install sqlite3
-apt-get install libsqlite3-dev
-apt-get install graphviz
-apt-get install apache2
-apt-get install gdebi
-apt-get install libcanberra-gtk-module
+apt-get install -y r-base
+apt-get install -y r-base-dev
+apt-get install -y libgit2-dev
+apt-get install -y libcurl4-openssl-dev
+apt-get install -y libssl-dev
+apt-get install -y mariadb-server
+apt-get install -y libmariadbclient-dev
+apt-get install -y libxml2-dev
+apt-get install -y sqlite3
+apt-get install -y libsqlite3-dev
+apt-get install -y graphviz
+apt-get install -y apache2
+apt-get install -y gdebi
+apt-get install -y libcanberra-gtk-module
 
 # Add R packages
-R <<EOF
-install.packages('dbplyr')
-install.packages('httr')
-install.packages('hwriter')
-install.packages('lubridate')
-install.packages('proto')
-install.packages('RCurl')
-install.packages('RMySQL')
-install.packages('Rook')
-install.packages('RSQLite')
-install.packages('sendmailR')
-install.packages('XML')
+R --vanilla <<EOF
+install.packages('dbplyr', repos='http://cran.utstat.utoronto.ca/')
+install.packages('httr', repos='http://cran.utstat.utoronto.ca/')
+install.packages('hwriter', repos='http://cran.utstat.utoronto.ca/')
+install.packages('lubridate', repos='http://cran.utstat.utoronto.ca/')
+install.packages('proto', repos='http://cran.utstat.utoronto.ca/')
+install.packages('RCurl', repos='http://cran.utstat.utoronto.ca/')
+install.packages('RMySQL', repos='http://cran.utstat.utoronto.ca/')
+install.packages('Rook', repos='http://cran.utstat.utoronto.ca/')
+install.packages('RSQLite', repos='http://cran.utstat.utoronto.ca/')
+install.packages('sendmailR', repos='http://cran.utstat.utoronto.ca/')
+install.packages('XML', repos='http://cran.utstat.utoronto.ca/')
 
 EOF
