@@ -1,14 +1,15 @@
 # Set up machine
 echo "sgdata.bsc-eoc.org" >/etc/hostname
+echo "127.0.0.1       sgdata.bsc-eoc.org" >>/etc/hosts
 
 # Add user sg
-adduser sg
+useradd -m sg
 addgroup sg_remote
-adduser sg sg-remote
+adduser sg sg_remote
 
 # Add required packages
 apt-get update
-apt-get upgrade
+apt-get upgrade -y
 
 apt-get install -y r-base
 apt-get install -y r-base-dev
