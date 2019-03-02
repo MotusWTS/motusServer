@@ -87,8 +87,19 @@ syncServer = function(tracing = FALSE, fileEvent="CLOSE_WRITE", defaultMotusUser
             if (is.na(motusUserID))
                 motusUserID = defaultMotusUserID
 
-            ## only create the job if there isn't already an unfinished syncReceiver job for this SG
-            if (length(Jobs[type=='syncReceiver' & done==0 & .$serno==R(serno)]) == 0) {
+            ## only create the job if any previous syncReceiver job for this SG has completed
+            dosync = TRUE
+            jj = query(Jobs, sprintf("select max(id) from jobs where type='syncReceiver' and json_extract(data, '$.serno') == '%s'", serno))[[1]]
+            if (isTRUE(jj > 0)) {
+                ## there's at least one sync job for this receiver; make sure it has completed
+                ## by checking that none of its subjobs has status 0
+                jj = query(Jobs, sprintf("select max(id) from jobs where stump=%d and done == 0", jj))[[1]]
+                if (isTRUE(jj > 0)) {
+                    dosync = FALSE
+                    motusLog("Sync job underway for %s; not starting another", serno)
+                }
+            }
+            if (dosync) {
                 j = newJob("syncReceiver", .parentPath=MOTUS_PATH$INCOMING, .enqueue=FALSE,
                            serno=serno,
                            method=method,
@@ -101,7 +112,7 @@ syncServer = function(tracing = FALSE, fileEvent="CLOSE_WRITE", defaultMotusUser
             }
             file.remove(touchFile)
         } else {
-            motusLog("Unknown method for sync server", basename(touchFile))
+            motusLog("Unknown method for sync server: %s", basename(touchFile))
         }
     }
     motusLog("Sync server stopped")
