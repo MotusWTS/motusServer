@@ -159,6 +159,7 @@ list_jobs = function(env) {
     full                   = isTRUE(safe_arg(options, full, logical))
     includeSubjobs         = isTRUE(safe_arg(options, includeSubjobs, logical))
     errorOnly              = isTRUE(safe_arg(options, errorOnly, logical))
+    excludeSync            = isTRUE(safe_arg(options, excludeSync, logical))
     limit                  = safe_arg(options, limit, int)
     if (is.null(limit))
         limit = MAX_ROWS_PER_REQUEST
@@ -216,6 +217,8 @@ list_jobs = function(env) {
     }
     if (!is.null(type))
         where = c(where, sprintf("t1.type in (%s)", paste0("'", type, "'", collapse=",")))
+    if (excludeSync)
+        where = c(where, "t1.type <> 'syncReceiver'")
     if (!is.null(done))
         where = c(where, switch(as.character(done), `1` = "t1.done > 0", `0` = "t1.done = 0", `-1` = "t1.done < 0"))
     if (!is.null(log))
