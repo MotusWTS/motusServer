@@ -846,6 +846,8 @@ function initStatus2Page() {
 //     "XXX" can include the glob characters "*" (match anything, possibly
 //     empty) and "?" (match a single character)
 //  - projectID=P: show jobs belonging to motus project P (integer)
+//  - excludeSync=BOOL: exclude (if BOOL is true) or don't exclude (if BOOL is false
+//    or missing) syncReceiver jobs
 
 function handle_initial_query(query) {
 
@@ -866,7 +868,8 @@ function handle_initial_query(query) {
     } else if (projectID = query.get("projectID")) {
         type = "projectID";
     }
-
+    state.excludeSync = query.get("excludeSync") == 1
+    $("#exclude_sync_option").prop("checked", state.excludeSync).change()
     switch(type) {
     case "jobID":
         show_job_details(jobID);
