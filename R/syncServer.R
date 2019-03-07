@@ -65,7 +65,7 @@ syncServer = function(tracing = FALSE, fileEvent="CLOSE_WRITE", defaultMotusUser
 
         parts = regexPieces("(?:method=(?<method>[^,]*))|(?:serno=(?<serno>SG-[0-9A-Z]{12}))|(?:motusUserID=(?<motusUserID>[0-9]+))|(?:motusProjectID=(?<motusProjectID>[0-9]+))|(?:isTesting=(?<isTesting>[[:alnum:]]+))", basename(touchFile))[[1]]
 
-        if (! is.na(as.integer(parts["method"]))) {
+        if (! is.na(as.integer(parts["method"])) && ! is.na(parts["serno"])) {
             ## only valid method so far is an integer, representing the tunnel port #
             serno = parts["serno"]
             method = parts["method"]
