@@ -18,6 +18,8 @@ These are:
 \item   use_events             use the events table in the tag database, so that tags are only sought while alive
 \item   max_skipped_bursts     seconds; maximum amount of time between detections in a tag run
 \item   default_freq           MHz; default antenna frequency, when not provided in input
+\item   sig_slop               signal slop; not supposed to affect data from Lotek receivers, but set to negative
+                               as a workaround for https://github.com/jbrzusto/find_tags/issues/74
 }
 }
 \author{
