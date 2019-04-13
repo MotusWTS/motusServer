@@ -75,10 +75,10 @@ handleRerunReceiver = function(j) {
     }
 
     if (isLotek) {
-        ## get most recent year, if no timestamps specified
+        ## get last 4 years, if no timestamps specified
         if (is.null(ts)) {
             now = as.numeric(Sys.time())
-            ts = c(now - 24 * 365.25 * 3600, now)
+            ts = c(now - 4 * 365.25 * 24 * 60 * 60, now)
         }
     } else {
         ## for an SG, get all boot sessions within the range, or all if null

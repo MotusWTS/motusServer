@@ -1,5 +1,5 @@
 Package: motusServer
-Version: 0.2.26
+Version: 0.2.27
 Title: Operate a server to process data for http://motus.org
 Description: Process raw data from receivers and store results in
     transfer tables polled by http://motus.org . Results use native motus
