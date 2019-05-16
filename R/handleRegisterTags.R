@@ -88,7 +88,7 @@ handleRegisterTags = function(j) {
     ## ignore hyphens when matching model
     tmi = match(gsub("-", "", tagModel, perl=TRUE), gsub("-", "", rownames(tagLifespanPars), perl=TRUE))
     if (is.na(tmi)) {
-        errs = c(errs, paste0("Invalid tag model: ", tagModel, "; must be one of:\n", paste(rownames(tagLifespanPars), collapse=", ")))
+        errs = c(errs, paste0("Invalid tag model: ", tagModel, "; must be one of:\n", paste(sort(rownames(tagLifespanPars)), collapse="\n")))
     } else {
         ## fix up any hyphens so upstream recognizes the model string
         tagModel = rownames(tagLifespanPars)[tmi]
