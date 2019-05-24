@@ -88,7 +88,7 @@ handleRegisterTags = function(j) {
     ## ignore hyphens when matching model
     tmi = match(gsub("-", "", tagModel, perl=TRUE), gsub("-", "", rownames(tagLifespanPars), perl=TRUE))
     if (is.na(tmi)) {
-        errs = c(errs, paste0("Invalid tag model: ", tagModel, "; must be one of:\n", paste(rownames(tagLifespanPars), collapse=", ")))
+        errs = c(errs, paste0("Invalid tag model: ", tagModel, "; must be one of:\n", paste(sort(rownames(tagLifespanPars)), collapse="\n")))
     } else {
         ## fix up any hyphens so upstream recognizes the model string
         tagModel = rownames(tagLifespanPars)[tmi]
@@ -152,6 +152,9 @@ handleRegisterTags = function(j) {
         stop(paste(errs, collapse="\n"))
 
     wavFiles = dir(p, recursive=TRUE, pattern="^.*tag[0-9]+(\\.[0-9])?(@[.0-9]+)?.wav$", ignore.case=TRUE, full.names=TRUE)
+
+    if(length(wavFiles) == 0)
+        stop(paste("No .wav files matching the expected filename pattern found. Should be similar to 'tag123.wav' or 'tag123.1.wav' or 'tag123@150.1.wav', case insensitive."))
 
     ## extract data.frame of tag IDs as character strings
     info = splitToDF("(?i)tag(?<id>[0-9]+(?:\\.[0-9])?)(@(?<fcdfreq>[0-9]+\\.[0-9]*))?.wav$", basename(wavFiles), guess=FALSE)
