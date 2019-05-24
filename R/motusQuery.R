@@ -81,11 +81,12 @@ motusQuery = function (API, params = NULL, requestType="post", show=FALSE, json=
             break
         }, error=function(e) {
             retries <- retries + 1
+            errmsg = htmltools::htmlEscape(as.character(e))
             if (retries > maxRetries) {
-                cat("ERROR: ", as.character(e), "\n", file=log)
-                stop ("MotusQuery failed with error; ", as.character(e))
+                cat("ERROR: ", errmsg, "\n", file=log)
+                stop ("MotusQuery failed with error; ", errmsg)
             }
-            if (any(grepl("TLS packet with unexpected length", as.character(e)))) {
+            if (any(grepl("TLS packet with unexpected length", errmsg))) {
                 Sys.sleep(5)
             }
         })

@@ -4,7 +4,8 @@
 \alias{syncServer}
 \title{watch for attached receivers and sync files from them}
 \usage{
-syncServer(tracing = FALSE, fileEvent = "CLOSE_WRITE")
+syncServer(tracing = FALSE, fileEvent = "CLOSE_WRITE",
+  defaultMotusUserID = 347, defaultMotusProjectID = 1)
 }
 \arguments{
 \item{tracing}{logical scalar, default FALSE.  If TRUE, enter
@@ -13,6 +14,15 @@ debug browser before handling each new file upload.}
 \item{fileEvent}{character scalar; default: "CLOSE_WRITE".
 Empty files are created in \code{MOTUS_PATH$SYNC} via the
 'touch' command, so this is the last event in that case.}
+
+\item{defaultMotusUserID}{integer scalar; userID recorded for
+job if we're unable to find an appropriate receiver deployment
+and/or we're unable to
+default: 347 = jeremy}
+
+\item{defaultMotusProjectID}{integer scalar; projectID recorded for
+job if we're unable to find an appropriate receiver deployment;
+default: 1 = motus Ontario array.}
 }
 \value{
 This function does not return; it is meant for use in an R

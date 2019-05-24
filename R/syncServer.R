@@ -16,6 +16,15 @@
 #' Empty files are created in \code{MOTUS_PATH$SYNC} via the
 #' 'touch' command, so this is the last event in that case.
 #'
+#' @param defaultMotusUserID integer scalar; userID recorded for
+#' job if we're unable to find an appropriate receiver deployment
+#' and/or we're unable to
+#' default: 347 = jeremy
+#'
+#' @param defaultMotusProjectID integer scalar; projectID recorded for
+#' job if we're unable to find an appropriate receiver deployment;
+#' default: 1 = motus Ontario array.
+#'
 #' @return This function does not return; it is meant for use in an R
 #'     script run in the background.
 #'
@@ -30,12 +39,15 @@
 #'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
-syncServer = function(tracing = FALSE, fileEvent="CLOSE_WRITE") {
+syncServer = function(tracing = FALSE, fileEvent="CLOSE_WRITE", defaultMotusUserID = 347, defaultMotusProjectID = 1) {
     if(tracing)
         options(error=recover)
 
     ensureServerDirs()
     motusLog("Sync server started")
+
+    ## open the motus metadata cache DB
+    getMotusMetaDB()
 
     ## load jobs
     loadJobs()
@@ -48,25 +60,59 @@ syncServer = function(tracing = FALSE, fileEvent="CLOSE_WRITE") {
     repeat {
         touchFile = feed()             ## this might might wait a long time
         file.remove(touchFile)         ## the file is empty, was only needed to trigger this event
-        parts = regexPieces("(?<method>.*):(?<serno>SG-[0-9A-Z]{12}):(?<motusUserID>[0-9]+):(?<motusProjectID>[0-9]+)", basename(touchFile))[[1]]
-        if (! is.na(as.integer(parts["method"]))) {
+        ## lazy parse of filename which might look like
+        ## /sgm_local/sync/method=1234,serno=SG-5016BBBK15A4,isTesting=TRUE
+
+        parts = regexPieces("(?:method=(?<method>[^,]*))|(?:serno=(?<serno>SG-[0-9A-Z]{12}))|(?:motusUserID=(?<motusUserID>[0-9]+))|(?:motusProjectID=(?<motusProjectID>[0-9]+))|(?:isTesting=(?<isTesting>[[:alnum:]]+))", basename(touchFile))[[1]]
+
+        if (! is.na(as.integer(parts["method"])) && ! is.na(parts["serno"])) {
             ## only valid method so far is an integer, representing the tunnel port #
+            serno = parts["serno"]
+            method = parts["method"]
+            motusUserID = parts["motusUserID"]
+            motusProjectID = parts["motusProjectID"]
+            isTesting = parts["isTesting"]
+
             if (tracing)
                 browser()
 
-            ## only create the job if there isn't already an unfinished syncReceiver job for this SG
-            if (length(Jobs[type=='syncReceiver' & done==0 & .$serno==R(parts["serno"])]) == 0) {
+            ## get sensible values for motus ProjectID and UserID
+            if (is.na(motusProjectID)) {
+                ## lookup the latest unterminated deployment for this receiver, and use that
+                ## project ID
+                motusProjectID = MetaDB("select projectID from recvDeps where serno = '%s' and tsEnd is null order by tsStart desc limit 1", serno)[[1]]
+                if (length(motusProjectID) == 0)
+                    motusProjectID = defaultMotusProjectID
+            }
+            if (is.na(motusUserID))
+                motusUserID = defaultMotusUserID
+
+            ## only create the job if any previous syncReceiver job for this SG has completed
+            dosync = TRUE
+            jj = query(Jobs, sprintf("select max(id) from jobs where type='syncReceiver' and json_extract(data, '$.serno') == '%s'", serno))[[1]]
+            if (isTRUE(jj > 0)) {
+                ## there's at least one sync job for this receiver; make sure it has completed
+                ## by checking that none of its subjobs has status 0
+                jj = query(Jobs, sprintf("select max(id) from jobs where stump=%d and done == 0", jj))[[1]]
+                if (isTRUE(jj > 0)) {
+                    dosync = FALSE
+                    motusLog("Sync job underway for %s; not starting another", serno)
+                }
+            }
+            if (dosync) {
                 j = newJob("syncReceiver", .parentPath=MOTUS_PATH$INCOMING, .enqueue=FALSE,
-                           serno=parts["serno"],
-                           method=parts["method"],
-                           motusUserID=parts["motusUserID"],
-                           motusProjectID=parts["motusProjectID"],
+                           serno=serno,
+                           method=method,
+                           motusUserID=motusUserID,
+                           motusProjectID=motusProjectID,
                            queue="0")
+                if (isTRUE(isTesting))
+                    j$isTesting = TRUE
                 moveJob(j, MOTUS_PATH$PRIORITY)
             }
             file.remove(touchFile)
         } else {
-            motusLog("Unknown method for sync server", basename(touchFile))
+            motusLog("Unknown method for sync server: %s", basename(touchFile))
         }
     }
     motusLog("Sync server stopped")

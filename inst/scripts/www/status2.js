@@ -271,7 +271,8 @@ function show_job_list() {
         options:{
             includeUnknownProjects:true,
             full:true,
-            errorOnly:state.errorOnly
+            errorOnly:state.errorOnly,
+            excludeSync:state.excludeSync
         },
         order:{
             sortBy: state.sortBy,
@@ -677,6 +678,11 @@ function on_error_only(event) {
     show_job_list();
 };
 
+function on_exclude_sync(event) {
+    state.excludeSync = $("#exclude_sync_option").is(":checked");
+    show_job_list();
+};
+
 function on_keyup_find_job_key(evt) {
     if (evt.keyCode==13)
         $("#find_job_button").click();
@@ -736,6 +742,8 @@ function initStatus2Page() {
         sortDesc: true,
         // should only jobs with (subjobs having) errors be shown?
         errorOnly: false,
+        // should receiver sync jobs be excluded?
+        excludeSync: false,
         lastKey : [],
         forwardFromKey: true, // when paging up/down; we specify first/last key, and direction from it
         // other
@@ -773,6 +781,9 @@ function initStatus2Page() {
     // attach a click handler to the error_only_option checkbox
     $("#error_only_option").checkboxradio().on("click", on_error_only);
 
+    // attach a click handler to the error_only_option checkbox
+    $("#exclude_sync_option").checkboxradio().on("click", on_exclude_sync);
+
     // attach a click handler to any field with class job_id that's in a recv_files section
     $(".recv_info").on("click", ".recv_file_day_count", on_click_recv_file_day_count);
 
@@ -801,6 +812,9 @@ function initStatus2Page() {
 
     // read the state of the checkbox, which might be preserved across reloads
     state.errorOnly = $("#error_only_option").is(":checked");
+
+    // read the state of the checkbox, which might be preserved across reloads
+    state.excludeSync = $("#exclude_sync_option").is(":checked");
 
     // set the state of the job key entry; this is the text criterion used
     // by some of the filtering modes (e.g. jobs by receiver serial number)
@@ -832,6 +846,8 @@ function initStatus2Page() {
 //     "XXX" can include the glob characters "*" (match anything, possibly
 //     empty) and "?" (match a single character)
 //  - projectID=P: show jobs belonging to motus project P (integer)
+//  - excludeSync=BOOL: exclude (if BOOL is true) or don't exclude (if BOOL is false
+//    or missing) syncReceiver jobs
 
 function handle_initial_query(query) {
 
@@ -852,7 +868,8 @@ function handle_initial_query(query) {
     } else if (projectID = query.get("projectID")) {
         type = "projectID";
     }
-
+    state.excludeSync = query.get("excludeSync") == 1
+    $("#exclude_sync_option").prop("checked", state.excludeSync).change()
     switch(type) {
     case "jobID":
         show_job_details(jobID);

@@ -34,8 +34,15 @@
 
       -->
     <title>Status of Motus Processing</title>
+    <!-- 2019-05-08 use cdn version; debian update broken
     <script language="javascript" type="text/javascript"
             src="/javascript/jquery/jquery.min.js"></script>
+      -->
+<script
+			  src="https://code.jquery.com/jquery-1.12.4.min.js"
+			  integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ="
+			  crossorigin="anonymous"></script>
+		
     <script language="javascript" type="text/javascript"
             src="/download/status2.js"></script>
     <script language="javascript" type="text/javascript"
@@ -75,6 +82,8 @@
       <span id="find_job_button"></span>
       <label for="error_only_option">only with errors</label>
       <input type="checkbox" name="error_only_option" id="error_only_option">
+      <label for="exclude_sync_option">exclude sync jobs</label>
+      <input type="checkbox" name="exclude_sync_option" id="exclude_sync_option" checked>
     </div>
     <!-- filled in by mustach.js from templates, when appropriate API calls are made  -->
 

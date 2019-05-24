@@ -35,6 +35,10 @@
 lockSymbol = function(symbol, owner=getPGID(), lock=TRUE, block=TRUE) {
     ## Note: the locking is achieved by the UNIQUE PRIMARY KEY property on symbol
 
+    ## sanity check on `symbol`; see: https://github.com/jbrzusto/motusServer/issues/437
+    if (! isTRUE(nchar(symbol) > 0))
+        stop("invalid symbol ", symbol)
+
     if (lock) {
         ## try to lock this serial number to our process number; this
         ## fails at the sqlite level if there's already a lock on the

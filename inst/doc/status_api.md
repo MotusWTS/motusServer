@@ -195,6 +195,7 @@ projects.
             jobs initiated by staff or otherwise not having a useful concept of project
           - includeSubjobs: boolean: include jobs which are not top-level jobs?; default `false`
           - errorOnly: boolean: if true, only show top jobs for which a subjob had an error.
+          - excludeSync: boolean: if true, omit `syncReceiver` jobs (there will be many of these)
           - full: if `true`, then full details for the job (typically its parameters, log, summary, and list of
             product files) are returned in a JSON-formatted column called `data`
           - countOnly: boolean; if `true`, return only a count of jobs for the given projectID and/or userID,

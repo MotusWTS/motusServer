@@ -25,19 +25,24 @@ handleUploadProcessed = function(j) {
      replyTo = tj$replyTo[1]
      if (length(replyTo) > 0) {
          email(replyTo, paste0("motus job ", tj, ": processing complete"),
-           paste0("Thank-you for the upload - it has been processed.  Any product(s) are listed here:\n\n   ",
-                  paste(sapply(jobProduced(tj), URLencode), collapse="\n   "),
-                  "\n\nProcessing Summary:\n\n", tj$summary_, "\n\nYou can see the detailed log here:
+           paste0("Thank-you for the upload - it has been processed.
+
+You should check the detailed log for processing errors and warnings, here:
 
     https://sgdata.motus.org/status?jobID=", tj, "
 
- if you log in with your motus.org credentials.
+Any product(s) are listed here:
+
+    ", paste(sapply(jobProduced(tj), URLencode), collapse="\n   "), "
+
+Processing Summary:
+
+", tj$summary_, "
 
  Regards,
 
- The people at motus.org / sensorgnome.org
- "
- ), attachment = tj$emailAttachment)
+ The people at Motus.
+"), attachment = tj$emailAttachment)
      }
     return(TRUE)
 }
