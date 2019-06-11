@@ -110,65 +110,134 @@ git checkout find_tags_unifile
 make clean; make -j 2 find_tags_unifile
 ```
 
-Are there library dependencies which we should be aware of? Can/should we run apt update/upgrade regularly? R update.packages()?
+ > Are there library dependencies which we should be aware of? Can/should we run apt update/upgrade regularly? R update.packages()?
 
-Restarting:
+For now, updating anything may break the server. Fixing this is currently our first priority.
 
-When should the motusServer processes be restarted, and how should it be done?
+## Restarting ##
 
-When the sgdata server is restarted, what (if anything) needs to be done to get everything running again?
+ > When should the motusServer processes be restarted, and how should it be done?
 
-If we were to migrate to a new physical server or set up a test/development server, what would we have to set up on the new server? Which files should or shouldn't be copied to new servers?
+ As user `sg` run `/sgm/bin/rerunMotusServers.sh -g`. Flags documented in https://github.com/MotusWTS/motusServer/blob/master/inst/scripts/rerunMotusServers.sh
 
-Parameters:
-What is the procedure to add a new duplicate receiver serial number?
+ Alternately, run `killMotusDataServer.sh` followed by `runAllMotusServers.sh`.
 
-What is the procedure to add a new tag model?
+ > When the sgdata server is restarted, what (if anything) needs to be done to get everything running again?
 
-What's the procedure to change the default parameters for a receiver? For a project?
+Lotek codesets have to be loaded into memory (they're encrypted); an email is sent to the admin, telling them to run a certain script. The email is sent to addresses listed in `/home/sg/.forward`.
 
-Is there a way to set parameters for one deployment of a particular receiver but not another (the noisy site problem)?
+ > If we were to migrate to a new physical server or set up a test/development server, what would we have to set up on the new server? Which files should or shouldn't be copied to new servers?
 
-How do we decide what a receiver's parameters should be?
+## Parameters ##
 
-What other parameters should we expect to have to modify, and how, why, etc.?
+ > What is the procedure to add a new duplicate receiver serial number?
 
-Errors:
+ Update `/sgm_local/motus_meta_db.sqlite`, table `serno_collision_rules`.
 
-When should a job be re-run, and how should it be done?
+ > What is the procedure to add a new tag model?
 
-When a job that previously stopped due to an error is rerun after the cause of the error is fixed, sometimes it generates the message "There were no new files in the dataset, so I didn't do anything.", even though the files weren't processed due to the error. What should be done in this case?
+?
 
-When should a file be re-uploaded by a user?
+ > What's the procedure to change the default parameters for a receiver? For a project?
 
-If a file is uploaded to the wrong project, how should that be corrected?
+As of 2018-09-04, parameter overrides are cached in `/sgm_local/motus_meta_db.sqlite`. The intention is to download them from the main Motus database, but right now they are coming from `/sgm_local/paramOverrides.sqlite`. So: update paramOverrides.sqlite for delayed effect (cache is refreshed every 24 hours), and update the cache as well for immediate effect.
 
-When should a receiver be re-run, and how should it be done?
+Exactly one of projectID and serno should be specified. tsStart, tsEnd, monoBNlow, and monoBNhigh are all optional. progName is always 'find_tags_motus' (barring further development). Documentation for paramName and paramVal created at: https://github.com/MotusDev/Motus-TO-DO/issues/465
 
-When a receiver is re-run, do any email notifications get sent? Are earlier detections and other products deleted?
+ > Is there a way to set parameters for one deployment of a particular receiver but not another (the noisy site problem)?
 
-Are there other manual interventions we should expect to have to perform, and what are the procedures for them?
+Yes, start and finish dates may be specified for each override.
 
-Batches:
+ > How do we decide what a receiver's parameters should be?
 
-We have some batches with the same deviceID and monoBN that do not have overlapping tsBegin and tsEnd, but have large gaps (e.g. >= 1 year) between the end of one batch and the start of the next. Is this expected?
+Best guidance so far is at https://github.com/MotusDev/Motus-TO-DO/issues/465
 
-What is the best way to identify duplicate batches? We have pairs of batches with the same deviceID and overlapping tsBegin and tsEnd, where some pairs have the same monoBN and others have different monoBN. Sometimes both tsBegin and tsEnd are identical, sometimes one or the other is different, and sometimes they're both different.
+ > What other parameters should we expect to have to modify, and how, why, etc.?
 
-Miscellaneous:
+## Errors ##
 
-Can the files in the trash directory be safely deleted? (There are currently (May 25th) ~134GB of files in the trash directory, 129GB of which are more than a month old, compared to 8.8TB in /sgm with 5.3TB free on the partition. So space isn't really a concern, just the non-UTF8 filename bug.)
+ > When should a job be re-run, and how should it be done?
 
-Outstanding ?: How are internet-connected receivers going to be, or are being handled in terms of data transfer to sgdata?
+ > When a job that previously stopped due to an error is rerun after the cause of the error is fixed, sometimes it generates the message "There were no new files in the dataset, so I didn't do anything.", even though the files weren't processed due to the error. What should be done in this case?
+
+ > When should a file be re-uploaded by a user?
+
+ > If a file is uploaded to the wrong project, how should that be corrected?
+
+ > When should a receiver be re-run, and how should it be done?
+
+How: as `sg` run `/sgm/bin/rerunReceiver.R -c -U <user ID> -P <project ID> <receiver serial number>`. Flags documented at https://github.com/MotusWTS/motusServer/blob/master/inst/scripts/rerunReceiver.R
+
+ > When a receiver is re-run, do any email notifications get sent? Are earlier detections and other products deleted?
+
+No emails are sent. Old batches of detections are saved. (In the main Motus database, at least. Unsure how many copies of things are saved on sgdata. What is certain: all uploaded files are archived.) Old plots are overwritten.
+
+ > Are there other manual interventions we should expect to have to perform, and what are the procedures for them?
+
+Rebuild a project's tag database (for upload to a SensorGnome):
+```bash
+sudo su sg
+R
+library(motusServer)
+serverCommon()
+createRecvTagDB(<projectId>, c('2013-1', '2018-4'))
+q()
+```
+
+Manually register a tag (when you've manually extracted the period from a recording):
+```bash
+sudo su sg
+R
+library(motusServer)
+getMotusMetaDB()
+ensureServerDB()
+motusQuickRegTag(
+ projectID=219,
+ mfgID="215",
+ period=7.098,
+ model="NTQB2-6-1",
+ species="DUNL",
+ nomFreq=150.1,
+ tsStart=lubridate::ymd_hms("2018-10-10T00-00-00"),
+ dateBin="2018-4"
+)
+q()
+```
+
+## Batches ##
+
+ > We have some batches with the same deviceID and monoBN that do not have overlapping tsBegin and tsEnd, but have large gaps (e.g. >= 1 year) between the end of one batch and the start of the next. Is this expected?
+
+The so-called monotonic boot number (monoBN) does in fact get reset occasionally. The assumption it never gets reset has led to a lot of bugs.
+
+ > What is the best way to identify duplicate batches? We have pairs of batches with the same deviceID and overlapping tsBegin and tsEnd, where some pairs have the same monoBN and others have different monoBN. Sometimes both tsBegin and tsEnd are identical, sometimes one or the other is different, and sometimes they're both different.
+
+There are three timelines: explicit timestamps, monoBN, and the time of upload. If they all agree, great. If not, then:
+ - ignore timestamps before 2010 (many receivers report timestamps starting at 1970-01-01 right after being turned on, until the GPS is used to set the clocks to the actual time)
+ - timestamps after 2010 are most often correct (exception: GPS freezes, detected by finding a long series of identical timestamps and lat-longs)
+ - the "monotonic" boot number is occasionally reset to 0, use good timestamps and upload times to detect when this happens
+ - use the corrected monoBN timeline and upload times to put data lacking good timestamps into a coherent timeline with the good timestamps
+
+## Miscellaneous ##
+
+ > Can the files in the trash directory be safely deleted? (There are currently (May 25th) ~134GB of files in the trash directory, 129GB of which are more than a month old, compared to 8.8TB in /sgm with 5.3TB free on the partition. So space isn't really a concern, just the non-UTF8 filename bug.)
+
+ > Outstanding ?: How are internet-connected receivers going to be, or are being handled in terms of data transfer to sgdata?
 
 
-Development:
+## Development ##
 
-What are the most important bugs you're aware of?
+ > What are the most important bugs you're aware of?
 
-Are there any particular quirks of the architecture which bother you, or are likely to surprise us?
+ > Are there any particular quirks of the architecture which bother you, or are likely to surprise us?
 
-What are the most important missing features, in the pipe or in your head, that you want to see done, and what’s the basic roadmap for their completion? Some/most of these may already be documented somewhere, so we should make sure we know where and understand what we can.
-e.g.	frequency override as discussed?
-Storing and managing CTT LifeTag data?
-Connected receivers – data flow and updates?
+ > What are the most important missing features, in the pipe or in your head, that you want to see done, and what’s the basic roadmap for their completion? Some/most of these may already be documented somewhere, so we should make sure we know where and understand what we can.
+ > e.g.	frequency override as discussed?
+ > Storing and managing CTT LifeTag data?
+ > Connected receivers – data flow and updates?
+
+## More useful stuff ##
+
+Master tag lifetime chart, useful for diagnosing certain types of bugs: https://sgdata.motus.org/public/motus_tag_timeline.html (Unfortunately, this chart only shows one deployment per tag, so you have to go diving in the database to figure out tags with multiple deployments.)
+
+What John B. did to diagnose one bug: https://github.com/MotusDev/Motus-TO-DO/issues/236#issuecomment-398172576
