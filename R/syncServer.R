@@ -76,6 +76,15 @@ syncServer = function(tracing = FALSE, fileEvent="CLOSE_WRITE", defaultMotusUser
             if (tracing)
                 browser()
 
+            ## fix serial number if it's a duplicate
+            rules = MetaDB("select * from serno_collision_rules where serno = '%s' order by id", serno, .QUOTE = FALSE)
+            for (i in seq_len(nrow(rules))) {
+                if (eval(parse(text = rules$cond[i]))) {
+                    serno = paste0(serno, rules$suffix[i])
+                    break
+                }
+            }
+
             ## get sensible values for motus ProjectID and UserID
             if (is.na(motusProjectID)) {
                 ## lookup the latest unterminated deployment for this receiver, and use that
