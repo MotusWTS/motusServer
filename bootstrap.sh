@@ -8,16 +8,15 @@ addgroup sg_remote
 adduser sg sg_remote
 
 # Add required packages
+echo 'deb http://cran.utstat.utoronto.ca/bin/linux/debian jessie-cran35' >>/etc/apt/sources.list
 apt-get update
 apt-get upgrade -y
 
-apt-get install -y r-base
-apt-get install -y r-base-dev
+apt-get install -y --force-yes r-base
 apt-get install -y libgit2-dev
 apt-get install -y libcurl4-openssl-dev
-apt-get install -y libssl-dev
 apt-get install -y mariadb-server
-apt-get install -y libmariadbclient-dev
+apt-get install -y libmariadb-client-lgpl-dev
 apt-get install -y libxml2-dev
 apt-get install -y sqlite3
 apt-get install -y libsqlite3-dev
@@ -39,5 +38,6 @@ install.packages('Rook', repos='http://cran.utstat.utoronto.ca/')
 install.packages('RSQLite', repos='http://cran.utstat.utoronto.ca/')
 install.packages('sendmailR', repos='http://cran.utstat.utoronto.ca/')
 install.packages('XML', repos='http://cran.utstat.utoronto.ca/')
+install.packages('roxygen2', repos='http://cran.utstat.utoronto.ca/')
 
 EOF
