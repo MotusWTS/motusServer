@@ -76,6 +76,11 @@ syncServer = function(tracing = FALSE, fileEvent="CLOSE_WRITE", defaultMotusUser
             if (tracing)
                 browser()
 
+            ## handle known duplicate serial numbers
+            ## TODO: add a new column to serno_collision_rules and use a method similar to that used in parseFilenames instead of hard-coding the serial number
+            if(serno = 'SG-2616BBBK1111' & method = 40458)
+                serno = paste0(serno, '_1')
+
             ## get sensible values for motus ProjectID and UserID
             if (is.na(motusProjectID)) {
                 ## lookup the latest unterminated deployment for this receiver, and use that
