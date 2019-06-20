@@ -76,14 +76,10 @@ syncServer = function(tracing = FALSE, fileEvent="CLOSE_WRITE", defaultMotusUser
             if (tracing)
                 browser()
 
-            ## fix serial number if it's a duplicate
-            rules = MetaDB("select * from serno_collision_rules where serno = '%s' order by id", serno, .QUOTE = FALSE)
-            for (i in seq_len(nrow(rules))) {
-                if (eval(parse(text = rules$cond[i]))) {
-                    serno = paste0(serno, rules$suffix[i])
-                    break
-                }
-            }
+            ## handle known duplicate serial numbers
+            ## TODO: add a new column to serno_collision_rules and use a method similar to that used in parseFilenames instead of hard-coding the serial number
+            if(serno = 'SG-2616BBBK1111' & method = 40458)
+                serno = paste0(serno, '_1')
 
             ## get sensible values for motus ProjectID and UserID
             if (is.na(motusProjectID)) {
