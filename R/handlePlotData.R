@@ -26,6 +26,11 @@ handlePlotData = function(j) {
     motusProjectID = tj$motusProjectID
     motusUserID = tj$motusUserID
 
+    if(tj$type == 'syncReceiver' & (serno == 'SG-5113BBBK2972' | serno == 'SG-5113BBBK2853')) {
+        jobLog(j, 'Temporarily skipping syncReceiver plot generation for this receiver due to issue #507')
+        return(TRUE);
+    }
+
     lockSymbol(serno)
 
     ## make sure we unlock the receiver DB when this function exits, even on error
