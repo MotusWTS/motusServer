@@ -26,7 +26,7 @@ handlePlotData = function(j) {
     motusProjectID = tj$motusProjectID
     motusUserID = tj$motusUserID
 
-    if(tj$type == 'syncReceiver' & (serno == 'SG-5113BBBK2972' | serno == 'SG-5113BBBK2853')) {
+    if(tj$type == 'syncReceiver' & (serno == 'SG-5113BBBK2972' | serno == 'SG-5113BBBK2853' | serno == 'SG-4414BBBK0737' | serno == 'SG-5016BBBK1B68')) {
         jobLog(j, 'Temporarily skipping syncReceiver plot generation for this receiver due to issue #507')
         return(TRUE);
     }
