@@ -60,7 +60,7 @@ handleSyncReceiver = function(j) {
     ## Note:  we only pull files which include the bare (without "SG-") serial number
     ## of the receiver.  Otherwise, we might grab files on a card or memory stick which
     ## had files from other receivers.
-    rv = safeSys(sprintf("rsync --rsync-path='ionice -c 2 -n 7 nice -n 10 rsync' --size-only --out-format '%%n' -r -e 'sshpass -p bone ssh -oStrictHostKeyChecking=no -p %d' --filter='+ **/' --filter='+ **%s**' --filter='- **' bone@localhost:/media/*/SGdata/ /sgm/file_repo/%s/", port, substring(serno, 4), serno), quote=FALSE, minErrorCode=1000, splitOutput=TRUE)
+    rv = safeSys(sprintf("rsync --rsync-path='ionice -c 2 -n 7 nice -n 10 rsync' --size-only --out-format '%%n' -r -e 'sshpass -p bone ssh -oStrictHostKeyChecking=no -p %d' --filter='+ **/' --filter='+ **%s**' --filter='- **' bone@localhost:/media/*/SGdata/ /sgm/file_repo/%s/", port, substring(serno, 4, 15), serno), quote=FALSE, minErrorCode=1000, splitOutput=TRUE)
 
     ## remove directories, else these will be traversed, leading to double
     ## listings of files
