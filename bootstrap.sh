@@ -8,7 +8,7 @@ addgroup sg_remote
 adduser sg sg_remote
 
 # Add required packages
-echo 'deb http://cran.utstat.utoronto.ca/bin/linux/debian jessie-cran35' >>/etc/apt/sources.list
+echo 'deb http://cran.utstat.utoronto.ca/bin/linux/debian jessie-cran35/' >>/etc/apt/sources.list
 apt-get update
 apt-get upgrade -y
 
