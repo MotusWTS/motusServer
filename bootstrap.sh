@@ -24,6 +24,7 @@ apt-get install -y graphviz
 apt-get install -y apache2
 apt-get install -y gdebi
 apt-get install -y libcanberra-gtk-module
+apt-get install -y git
 
 # Add R packages
 R --vanilla <<EOF
