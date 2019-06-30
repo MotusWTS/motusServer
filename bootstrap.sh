@@ -6,6 +6,9 @@ echo "127.0.0.1       sgdata.bsc-eoc.org" >>/etc/hosts
 useradd -m sg
 addgroup sg_remote
 adduser sg sg_remote
+adduser sg sudo
+mkdir /sgm
+mkdir /sgm/logs
 
 # Add required packages
 echo 'deb http://cran.utstat.utoronto.ca/bin/linux/debian jessie-cran35/' >>/etc/apt/sources.list
