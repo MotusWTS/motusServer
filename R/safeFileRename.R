@@ -34,7 +34,7 @@ safeFileRename = function(from, to) {
     ## get device number each directory resides on; requires that sum of path lengths of unique top-level directories
     ## don't exceed the shell's command-line buffer
 
-    try({
+    tryCatch({
         devNo = function(x) system(paste0("stat -c '%d' ", paste0('"', x, '"', collapse=" ")), intern=TRUE)
 
         levels(src$dirname) = devNo(levels(src$dirname))
