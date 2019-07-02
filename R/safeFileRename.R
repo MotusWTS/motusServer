@@ -34,10 +34,14 @@ safeFileRename = function(from, to) {
     ## get device number each directory resides on; requires that sum of path lengths of unique top-level directories
     ## don't exceed the shell's command-line buffer
 
-    devNo = function(x) system(paste0("stat -c '%d' ", paste0('"', x, '"', collapse=" ")), intern=TRUE)
+    try({
+        devNo = function(x) system(paste0("stat -c '%d' ", paste0('"', x, '"', collapse=" ")), intern=TRUE)
 
-    levels(src$dirname) = devNo(levels(src$dirname))
-    levels(dst$dirname) = devNo(levels(dst$dirname))
+        levels(src$dirname) = devNo(levels(src$dirname))
+        levels(dst$dirname) = devNo(levels(dst$dirname))
+    }, error = function(e) {
+        stop(paste0("safeFileRename has failed with the message:\n", e$message, "\nOften this is because an archive with too many files was uploaded. Try uploading the files for one receiver at a time."))
+    })
 
     ## which src, dst pairs are on the same filesystem?
     samefs = as.character(src$dirname) == as.character(dst$dirname)
