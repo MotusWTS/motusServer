@@ -67,7 +67,7 @@ handleRegisterTags = function(j) {
 
     projs = motusListProjects()
     projectID = as.integer(meta$motusProjID)
-    if (is.na(projectID)) {
+    if (length(projectID) > 0 && is.na(projectID)) {
         projectID = projs$id[grep(meta$motusProjID, projs$label)]
         if (length(projectID) != 1) {
             projectID = projs$id[grep(meta$motusProjID, projs$name)]
@@ -76,7 +76,7 @@ handleRegisterTags = function(j) {
         }
     }
     if (! isTRUE(projectID %in% projs$id)) {
-        errs = c(errs, paste0("Invalid or ambiguous motus project id: ", meta$motusProjID))
+        errs = c(errs, paste0("Missing, invalid, or ambiguous Motus project ID: ", meta$motusProjID))
     }
 
     tagModel = meta$tagModel
