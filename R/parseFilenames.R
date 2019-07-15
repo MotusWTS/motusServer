@@ -41,8 +41,9 @@ parseFilenames = function(f, base=basename(f), checkDOS=TRUE) {
         return(rv)
 
     ## add the "SG-" prefix; everywhere else in this package, serial numbers of SGs start with "SG-".
+    ## make an exception for CTT serial numbers (those already have the CTT prefix included).
 
-    rv$serno = ifelse(is.na(rv$serno), NA, paste0("SG-", rv$serno))
+    rv$serno = ifelse(is.na(rv$serno), NA, ifelse(substring(toupper(rv$serno),1,4)=="CTT-",toupper(rv$serno),paste0("SG-", rv$serno)))
 
     ## check and correct 8.3 DOS filenames, which are shortened SG filenames
 
