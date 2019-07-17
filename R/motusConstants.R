@@ -173,10 +173,14 @@ MOTUS_ARCHIVE_DIR_REGEX = paste0("\\.(", paste(MOTUS_ARCHIVE_SUFFIXES, collapse=
 ## regex to match receiver serial numbers (adapted from sgFilenameRegex, which differs
 ## in not using the 'SG-' prefix).
 
-MOTUS_SG_SERNO_REGEX = "(?i)(?<serno>SG-[0-9A-Z]{4}(?:RPi[123z]|BBBK|(BB[0-9][0-9A-Z]))[0-9A-Z]{4}(?:_[0-9])?)"
+MOTUS_SG_SERNO_REGEX = "SG-[0-9A-Z]{4}(?:RPi[123z]|BBBK|BB[0-9][0-9A-Z])[0-9A-Z]{4}(?:_[0-9])?"
+
+MOTUS_LOTEK_SERNO_REGEX = "Lotek-D?[0-9]+(?:_[0-9])?"
+
+MOTUS_CTT_SERNO_REGEX = "CTT-[0-9]{12,16}"
 
 ## regex to exactly match any receiver serial number
-MOTUS_RECV_SERNO_REGEX = "(?i)^(?:(?:(?:SG-[0-9A-Z]{4}(?:RPi[123z]|BBBK|(?:BB[0-9][0-9A-Z]))[0-9A-Z]{4}(?:_[0-9])?))|(?:Lotek-D?[0-9]+(?:_[0-9])?))$"
+MOTUS_RECV_SERNO_REGEX = paste0("(?i)^(?:(?:", MOTUS_SG_SERNO_REGEX, ")|(?:", MOTUS_LOTEK_SERNO_REGEX, ")|(?:", MOTUS_CTT_SERNO_REGEX, "))$")
 
 ## regex for matching DOS filenames (names of SG data files which have
 ## been shortened to 8.3 form)

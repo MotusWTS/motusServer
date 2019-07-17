@@ -23,13 +23,14 @@ handleLogs = function(j) {
     ## "match found", rather than an error.  So we specify minErrorCode=2
 
     path = jobPath(j)
-    res = safeSys('zgrep -P -h --binary-files=text', paste0('"', MOTUS_SG_SERNO_REGEX, '"'), paste0(path, '/*'), '2>/dev/null | head -1l', shell=TRUE, quote=FALSE, minErrorCode=2)
+    sernoRegex = paste0('(?i)(?<serno>', MOTUS_SG_SERNO_REGEX, ')')
+    res = safeSys('zgrep -P -h --binary-files=text', paste0('"', sernoRegex, '"'), paste0(path, '/*'), '2>/dev/null | head -1l', shell=TRUE, quote=FALSE, minErrorCode=2)
 
     if (length(res) == 0)
         return (FALSE)   ## no serial number found
 
     ## split out the serial number
-    serno = regexPieces(MOTUS_SG_SERNO_REGEX, res)[[1]]["serno"][1]
+    serno = regexPieces(sernoRegex, res)[[1]]["serno"][1]
 
     ## archive the folder
     newdir = file.path(MOTUS_PATH$RECVLOG, serno, format(file.mtime(path), "%Y-%m-%dT%H-%M-%S"))

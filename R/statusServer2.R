@@ -590,7 +590,6 @@ files_from_repo = function (serno, day=NULL) {
     return(as.tbl(rv))
 }
 
-SERNO_REGEX = paste0('^((', motusServer:::MOTUS_SG_SERNO_REGEX, ')|(', 'Lotek-D?[0-9]+))$')
 DAY_REGEX = "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
 
 #' return a list of files for a receiver
