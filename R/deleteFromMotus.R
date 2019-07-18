@@ -42,7 +42,7 @@ deleteFromMotus = function(src, reason="not given", monoBN=NULL, tsStart=0, tsEn
     stop("must be reimplemented")
 
     meta = getMap(src)
-    isSG = meta$recvType == "SENSORGNOME"
+    isSG = meta$recvType == "SENSORGNOME" | meta$recvType == "SENSORSTATION"
     if (isSG && is.null(monoBN))
         stop("Must specify monoBN for SG receiver")
 

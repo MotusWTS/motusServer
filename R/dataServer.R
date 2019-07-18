@@ -165,7 +165,7 @@ from
 #'    \itemize{
 #'       \item projectID; integer ID of project that deployed the receiver
 #'       \item serno; character serial number, e.g. "SG-1214BBBK3999", "Lotek-8681"
-#'       \item receiverType; character "SENSORGNOME" or "LOTEK"
+#'       \item receiverType; character "SENSORGNOME" or "LOTEK" or "SENSORSTATION"
 #'       \item deviceID; integer device ID (internal to motus)
 #'       \item status; character deployment status
 #'       \item name; character; typically a site name
@@ -944,7 +944,7 @@ where
 #'       \item deployID; integer deployment ID (internal to motus, but links to antDeps)
 #'       \item projectID; integer ID of project that deployed the receiver
 #'       \item serno; character serial number, e.g. "SG-1214BBBK3999", "Lotek-8681"
-#'       \item receiverType; character "SENSORGNOME" or "LOTEK"
+#'       \item receiverType; character "SENSORGNOME" or "LOTEK" or "SENSORSTATION"
 #'       \item deviceID; integer device ID (internal to motus)
 #'       \item status; character deployment status
 #'       \item name; character; typically a site name

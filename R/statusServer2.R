@@ -518,20 +518,20 @@ process_new_upload = function(env) {
 #' this will only include files from the given day.
 
 files_from_recv_DB = function (serno, day=NULL) {
-    isSG = getRecvType(serno) == "SENSORGNOME"
+    isLotek = getRecvType(serno) == "LOTEK"
     sql = safeSQL(getRecvSrc(serno))
-    if (isSG) {
+    if (isLotek) {
+        if (is.null(day)) {
+            rv = sql("select strftime('%Y-%m-%d', datetime(day, 'unixepoch')) as day, 1 as count from (select distinct 24*3600*round(ts/(24*3600)) as day from DTAtags where ts is not null order by ts)")
+        } else {
+            rv = sql("select fileID, name, null as bootnum, null as monoBN, size, motusJobID as jobID from DTAfiles order by fileID")
+        }
+    } else {
         if (is.null(day)) {
             rv = sql('select day, count(*) as count from (select fileID, strftime("%Y-%m-%d", datetime(ts, "unixepoch")) as day from files) as j group by j.day order by j.day desc')
         } else {
             tsRange = c(0, 24*3600) + as.numeric(ymd_hms(paste(day, "00:00:00")))
             rv = sql("select fileID, name, bootnum, monoBN, size as contentSize, motusJobID as jobID from files where ts between :dayStart and :dayEnd order by fileID", dayStart=tsRange[1], dayEnd=tsRange[2])
-        }
-    } else {
-        if (is.null(day)) {
-            rv = sql("select strftime('%Y-%m-%d', datetime(day, 'unixepoch')) as day, 1 as count from (select distinct 24*3600*round(ts/(24*3600)) as day from DTAtags where ts is not null order by ts)")
-        } else {
-            rv = sql("select fileID, name, null as bootnum, null as monoBN, size, motusJobID as jobID from DTAfiles order by fileID")
         }
     }
     return(as.tbl(rv))
@@ -566,9 +566,12 @@ files_from_recv_DB = function (serno, day=NULL) {
 #' without a ".gz" suffix, but the size is of the .gz file on disk
 
 files_from_repo = function (serno, day=NULL) {
-    isSG = getRecvType(serno) == "SENSORGNOME"
+    isLotek = getRecvType(serno) == "LOTEK"
     repo = file.path(MOTUS_PATH$FILE_REPO, serno)
-    if (isSG) {
+    if (isLotek) {
+        files = dir(repo, full.names=TRUE)
+        rv = data.frame(name=I(basename(files)), fileSize=file.size(files))
+    } else {
         if (is.null(day)) {
             ## count only one of "XXX.txt.gz", "XXX.txt"
             counts = sapply(dir(repo), function(day) sum(!duplicated(sub("\\.gz$", "", dir(file.path(repo, day))))))
@@ -583,9 +586,6 @@ files_from_repo = function (serno, day=NULL) {
             dupRev = duplicated(bareNames, fromLast=TRUE)
             rv = data.frame(name=I(bareNames[!dup]), fileSize=file.size(files)[!dupRev])
         }
-    } else {
-        files = dir(repo, full.names=TRUE)
-        rv = data.frame(name=I(basename(files)), fileSize=file.size(files))
     }
     return(as.tbl(rv))
 }
@@ -618,17 +618,17 @@ list_receiver_files = function(env) {
     if (!file.exists(path))
         return(error_from_app("receiver not known to motus"))
 
-    isSG = getRecvType(serno) == "SENSORGNOME"
+    isLotek = getRecvType(serno) == "LOTEK"
 
     rv = list(serno=serno)
 
     if (is.null(day)) {
         db = files_from_recv_DB(serno)
-        if (isSG) {
+        if (isLotek) {
+            fc = db %>% mutate(countFS=1) %>% as.data.frame
+        } else {
             fs = files_from_repo(serno)
             fc = db %>% full_join(fs, by="day") %>% arrange(desc(day)) %>% as.data.frame
-        } else {
-            fc = db %>% mutate(countFS=1) %>% as.data.frame
         }
         names(fc) = c("day", "countDB", "countFS")
         fc$countDB[is.na(fc$countDB)] = 0
@@ -674,16 +674,16 @@ get_receiver_file = function(env) {
     if (!file.exists(path))
         return(error_from_app("receiver not known to motus"))
 
-    isSG = getRecvType(serno) == "SENSORGNOME"
+    isLotek = getRecvType(serno) == "LOTEK"
     sql = safeSQL(getRecvSrc(serno))
 
-    fi = sql("select * from %s where fileID=%d", SQL(if (isSG) "files" else "DTAfiles"), fileID)
+    fi = sql("select * from %s where fileID=%d", SQL(if (isLotek) "DTAfiles" else "files"), fileID)
     isComp = TRUE
     if (isTRUE(nrow(fi) == 1)) {
         ## get path to file; note that Lotek files are not stored in a YYYY-MM-DD subfolder
         path = file.path(MOTUS_PATH$FILE_REPO,
                          serno,
-                         if (isSG) format(structure(fi$ts, class=class(Sys.time())), "%Y-%m-%d") else "",
+                         if (isLotek) "" else format(structure(fi$ts, class=class(Sys.time())), "%Y-%m-%d"),
                          fi$name)
         if (isTRUE(fi$isDone > 0)) {
             return(return_file_from_app(paste0(path, ".gz"), name=basename(path), encoding="gzip"))
