@@ -13,11 +13,14 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 getRecvType = function(serno, lotekModel=TRUE) {
-    if (substr(toupper(serno), 1, 5) == "LOTEK") {
+    if (toupper(substr(serno, 1, 5)) == "LOTEK") {
         if (lotekModel)
             return(paste0("LOTEK", getRecvModel(serno)))
         else
             return("LOTEK")
+    }
+    if (toupper(substr(serno, 1, 3)) == "CTT") {
+        return("SENSORSTATION")
     }
     return ("SENSORGNOME")
 }
