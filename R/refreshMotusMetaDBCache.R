@@ -126,7 +126,7 @@ refreshMotusMetaDBCache = function() {
         recv = recv %>% as.data.frame
         ## workaround until upstream changes format of serial numbers for Lotek receivers
         recv$serno = sub("(SRX600|SRX800|SRX-DL)", "Lotek", perl=TRUE, recv$serno)
-        recv$receiverType = getRecvType(recv$serno, lotekModel=FALSE)
+        recv$receiverType = ifelse(grepl("^SG-", recv$serno, perl=TRUE), "SENSORGNOME", ifelse(grepl("^CTT-", recv$serno, perl=TRUE), "SENSORSTATION", "LOTEK"))
         if (nrow(recv) < 100 || nrow(ant) < 100) { ## arbitrary sanity check
             stop("upstream listsensordeps API failing sanity check")
         }
