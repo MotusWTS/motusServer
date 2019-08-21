@@ -518,7 +518,7 @@ process_new_upload = function(env) {
 #' this will only include files from the given day.
 
 files_from_recv_DB = function (serno, day=NULL) {
-    isLotek = getRecvType(serno) == "LOTEK"
+    isLotek = getRecvType(serno, lotekModel=FALSE) == "LOTEK"
     sql = safeSQL(getRecvSrc(serno))
     if (isLotek) {
         if (is.null(day)) {
@@ -566,7 +566,7 @@ files_from_recv_DB = function (serno, day=NULL) {
 #' without a ".gz" suffix, but the size is of the .gz file on disk
 
 files_from_repo = function (serno, day=NULL) {
-    isLotek = getRecvType(serno) == "LOTEK"
+    isLotek = getRecvType(serno, lotekModel=FALSE) == "LOTEK"
     repo = file.path(MOTUS_PATH$FILE_REPO, serno)
     if (isLotek) {
         files = dir(repo, full.names=TRUE)
@@ -618,7 +618,7 @@ list_receiver_files = function(env) {
     if (!file.exists(path))
         return(error_from_app("receiver not known to motus"))
 
-    isLotek = getRecvType(serno) == "LOTEK"
+    isLotek = getRecvType(serno, lotekModel=FALSE) == "LOTEK"
 
     rv = list(serno=serno)
 
@@ -674,7 +674,7 @@ get_receiver_file = function(env) {
     if (!file.exists(path))
         return(error_from_app("receiver not known to motus"))
 
-    isLotek = getRecvType(serno) == "LOTEK"
+    isLotek = getRecvType(serno, lotekModel=FALSE) == "LOTEK"
     sql = safeSQL(getRecvSrc(serno))
 
     fi = sql("select * from %s where fileID=%d", SQL(if (isLotek) "DTAfiles" else "files"), fileID)
