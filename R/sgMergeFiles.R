@@ -179,9 +179,7 @@ sgMergeFiles = function(files, j, dbdir = MOTUS_PATH$RECV) {
 
     resumable = logical()
 
-    for (recv in recvs) {
-        if (is.na(recv))
-            next
+    for (recv in recvs[!is.na(recvs)]) {
 
         ## lock the receiver
 
