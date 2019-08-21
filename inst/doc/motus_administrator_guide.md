@@ -71,6 +71,7 @@ authorize that person to ssh in as user `sg` by doing `sudo cat
 ## to rebuild the motusServer package after changes to source
 sudo su sg # if not already logged in as user `sg`
 cd ~/src/motusServer
+git pull
 # runs the script /sgm/bin/rpack which
 # - regenerates the roxygen-based documentation for the package
 # - rebuilds the package
