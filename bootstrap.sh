@@ -6,6 +6,9 @@ echo "127.0.0.1       sgdata.bsc-eoc.org" >>/etc/hosts
 useradd -m sg
 addgroup sg_remote
 adduser sg sg_remote
+adduser sg sudo
+mkdir /sgm
+mkdir /sgm/logs
 
 # Add required packages
 echo 'deb http://cran.utstat.utoronto.ca/bin/linux/debian jessie-cran35/' >>/etc/apt/sources.list
@@ -25,6 +28,7 @@ apt-get install -y apache2
 apt-get install -y gdebi
 apt-get install -y libcanberra-gtk-module
 apt-get install -y mariadb-server
+apt-get install -y git
 
 # Add R packages
 R --vanilla <<EOF

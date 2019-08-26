@@ -1,0 +1,47 @@
+This is the call tree for the processServer.
+
+processServer
+* ensureServerDirs
+* serverCommon
+  * ensureServerDB
+    * safeSQL
+      * safeSQLiteConnect
+    * lockSymbol
+  * openMotusDB
+    * safeSQL
+      * safeSQLiteConnect
+  * getMotusMetaDB
+    * refreshMotusMetaDBCache
+      * lockSymbol
+      * safeSys
+      * safeSQL
+      * motusListProjects
+      * dbWriteTable
+      * motusSearchTags
+      * updateMetadataForTags
+      * motusListSpecies
+      * motusListSensorDeps
+      * dbDisconnect
+      * plotTagTimeline
+    * safeSQL
+      * safeSQLiteConnect
+* loadJobs
+  * ensureServerDB
+    * safeSQl
+    * lockSymbol
+  * Copse
+    * safeSQL
+      * safeSQLiteConnect
+  * queueJob
+    * jobHasFolder
+    * jobPath
+* getFeeder
+  * dirSortedBy
+* claimJob
+  * moveJob
+* queueUnfinishedSubjobs
+  * queueJob
+* jobLog
+  * Copse
+    * safeSQL
+      * safeSQLiteConnect
