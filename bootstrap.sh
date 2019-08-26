@@ -12,10 +12,10 @@ echo 'deb http://cran.utstat.utoronto.ca/bin/linux/debian jessie-cran35/' >>/etc
 apt-get update
 apt-get upgrade -y
 
+export DEBIAN_FRONTEND=noninteractive
 apt-get install -y --force-yes r-base
 apt-get install -y libgit2-dev
 apt-get install -y libcurl4-openssl-dev
-apt-get install -y mariadb-server
 apt-get install -y libmariadb-client-lgpl-dev
 apt-get install -y libxml2-dev
 apt-get install -y sqlite3
@@ -24,6 +24,7 @@ apt-get install -y graphviz
 apt-get install -y apache2
 apt-get install -y gdebi
 apt-get install -y libcanberra-gtk-module
+apt-get install -y mariadb-server
 
 # Add R packages
 R --vanilla <<EOF
