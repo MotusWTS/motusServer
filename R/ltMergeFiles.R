@@ -123,6 +123,12 @@ ltMergeFiles = function(files, j, dbdir=MOTUS_PATH$RECV) {
             if (skip)
                 next
 
+            ## Check x$tags$ts to see if it falls in the time of the GPS rollover
+	    if ((x$tags$ts > 933465600) && (x$tags$ts < (as.numeric(Sys.time()) - 315576000))) {
+	        x$tags$ts = x$tags$ts + 619315200
+            }
+
+
             ## compute file hash, then check whether it already is in database
             fhash = digest(blob, algo="sha512", serialize=FALSE)
 
