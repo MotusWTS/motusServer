@@ -57,8 +57,8 @@ handleNewFiles = function(j) {
         jobLog(j, paste0("Deleted ", length(junk), " junk files with names like\n   ", eg))
     }
 
-    ## move ctt data files
-    cttdata = grep(MOTUS_CTT_DATAFILE_REGEX, all, perl=TRUE)
+    ## move ctt SensorGnome and SensorStation data files
+    cttdata = grep(paste0("(", MOTUS_CTT_SG_DATAFILE_REGEX, ")|(", MOTUS_CTT_SS_DATAFILE_REGEX, ")"), all, perl=TRUE)
     if (length(cttdata)) {
         moveFilesUniquely(all[cttdata], MOTUS_PATH$CTT_OUTGOING))
         eg = all[cttdata[1]]
