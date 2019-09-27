@@ -57,6 +57,15 @@ handleNewFiles = function(j) {
         jobLog(j, paste0("Deleted ", length(junk), " junk files with names like\n   ", eg))
     }
 
+    ## move ctt data files
+    cttdata = grep(MOTUS_CTT_DATAFILE_REGEX, all, perl=TRUE)
+    if (length(cttdata)) {
+        moveFilesUniquely(all[cttdata], MOTUS_PATH$CTT_OUTGOING))
+        eg = all[cttdata[1]]
+        all = all[ - cttdata]
+        jobLog(j, paste0("Moved ", length(ctt), " CTT files for separate processing with names like\n   ", eg))
+    }
+
     ## look for .DTAs
 
     dta = grep("(?i)\\.DTA$", all, perl=TRUE)

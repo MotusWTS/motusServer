@@ -88,6 +88,7 @@ MOTUS_PATH = list(
     ROOT_LOCAL       = "/sgm_local",                 ## folder hierarchy on local HD
     BIN              = "/sgm_local/bin/",            ## executable scripts and programs (store on HD)
     CACHE            = "/sgm_local/",                ## recent results of large queries from motus.org (store on HD)
+    CTT_OUTGOING     = "/sgm/ctt_outgoing/",         ## folder on NAS for pushing CTT files to Amazon S3
     CRYPTO           = "/sgm/crypto/",               ## public/private keypairs for ssh etc. by receivers
     DB_BACKUPS       = "/sgm/db_backups/",           ## folder on NAS for daily backups of sqlite databases on local HD
     DONE             = "/sgm/done/",                 ## folders for completed jobs
@@ -205,6 +206,10 @@ MOTUS_SYMBOLIC_LOCK_TABLE = "symLocks"
 ## flash drives, and we often get these files in a transfer.
 
 MOTUS_JUNKFILE_REGEX = "(__MACOSX/|System Volume Information/|.DS_Store|._.DS_Store|.Trashes|._.Trashes)"
+
+## regex for CTT files we want to move to the CTT_OUTGOING folder.
+
+MOTUS_CTT_DATAFILE_REGEX = "CTTDATA-([^-]+)-([0-9A-Z]{4}(?:RPi[123z]|BBBK|BB[0-9][0-9A-Z])[0-9A-Z]{4}(?:_[0-9])?|CTT-[0-9]{12,16})-(.+)(\\.[a-z]+)(\\.(gz|lz|bz2))?$"
 
 ## the earliest valid date from a sensorgnome (= as.numeric(ymd("2010-01-01")))
 MOTUS_SG_EPOCH = 1262304000
