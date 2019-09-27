@@ -207,9 +207,14 @@ MOTUS_SYMBOLIC_LOCK_TABLE = "symLocks"
 
 MOTUS_JUNKFILE_REGEX = "(__MACOSX/|System Volume Information/|.DS_Store|._.DS_Store|.Trashes|._.Trashes)"
 
-## regex for CTT files we want to move to the CTT_OUTGOING folder.
+## regex for CTT files created by SensorGnome that we want to move to the CTT_OUTGOING folder.
 
-MOTUS_CTT_DATAFILE_REGEX = "CTTDATA-([^-]+)-([0-9A-Z]{4}(?:RPi[123z]|BBBK|BB[0-9][0-9A-Z])[0-9A-Z]{4}(?:_[0-9])?|CTT-[0-9]{12,16})-(.+)(\\.[a-z]+)(\\.(gz|lz|bz2))?$"
+MOTUS_CTT_SG_DATAFILE_REGEX = "CTTDATA-([^-]+)-([0-9A-Z]{4}(?:RP[iI][123z]|BBBK|BB[0-9][0-9A-Z])[0-9A-Z]{4}(?:_[0-9])?|CTT-[0-9]{12,16})-(.+)(\\.[a-z]+)(\\.(gz|lz|bz2))?$"
+
+## regex for CTT files created by SensorStation that we want to move to the CTT_OUTGOING folder.
+
+MOTUS_CTT_SS_DATAFILE_REGEX = "CTT-([0-9]{15})-(data|gps|node-data)\\.([0-9]{4})-([0-9]{2})-([0-9]{2})_([0-9]{6}).csv.gz$"
+
 
 ## the earliest valid date from a sensorgnome (= as.numeric(ymd("2010-01-01")))
 MOTUS_SG_EPOCH = 1262304000
