@@ -161,6 +161,8 @@ Best guidance so far is at https://github.com/MotusDev/Motus-TO-DO/issues/465
 
  > When a job that previously stopped due to an error is rerun after the cause of the error is fixed, sometimes it generates the message "There were no new files in the dataset, so I didn't do anything.", even though the files weren't processed due to the error. What should be done in this case?
 
+If the receiver database has records of files which are not, in fact, in the receiver file repository, then do a full rerun of the receiver to clear the unprocessed file names from the receiver database. `/sgm/bin/rerunReceiver.R -F -U <user ID> -P <projectID> <receiver serial number>` (Note: surely there's a more efficient way to do this?) Then rerun the upload job(s). `/sgm/bin/rerunUploadJob.R <job ID>`
+
  > When should a file be re-uploaded by a user?
 
  > If a file is uploaded to the wrong project, how should that be corrected?
