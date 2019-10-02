@@ -209,7 +209,7 @@ MOTUS_JUNKFILE_REGEX = "(__MACOSX/|System Volume Information/|.DS_Store|._.DS_St
 
 ## regex for CTT files created by SensorGnome that we want to move to the CTT_OUTGOING folder.
 
-MOTUS_CTT_SG_DATAFILE_REGEX = "([^-]+)-([0-9A-Z]{4}(RP[iI][123z]|BBBK|BB[0-9][0-9A-Z])[0-9A-Z]{4}(_[0-9])?)-.*-ctt(\\.[a-z]+)(\\.(gz|lz|bz2))?$"
+MOTUS_CTT_SG_DATAFILE_REGEX = "([^-]+)-([0-9A-Z]{4}(RP[iI][123z]|BBBK|BB[0-9][0-9A-Z])[0-9A-Z]{4}(_[0-9])?|CTT-([0-9]{15}))-.*-ctt(\\.[a-z]+)(\\.(gz|lz|bz2))?$"
 
 ## regex for CTT files created by SensorStation that we want to move to the CTT_OUTGOING folder.
 
