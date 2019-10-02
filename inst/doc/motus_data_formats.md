@@ -4,7 +4,7 @@
 
 ### 1a. SensorGnome format ###
 
-This format is the default for units running the SensorGnome software (including for the SensorGnome component of the SensorStation). Each file contains individual pulses, gps readings, etc.
+This format is the default for units running the SensorGnome software (including for the SensorGnome component of the SensorStation). Each file contains individual pulses, gps readings, etc. The data can also be separated for each antenna, as well as for LifeTag detections only (type = ctt).
 
 	Filename format: <site_label>-<receiver_number>-<boot_num>-<datetime>-<type>-<ext>.gz
 
@@ -16,8 +16,7 @@ This format is the default for units running the SensorGnome software (including
 			 for SensorStation, receiver serial number (with the CTT prefix, e.g. CTT-123456789012345)
 	boot_num: boot number
 	datetime: yyyy-mm-ddTHH:MM:ss.ssssT
-	type: 	Lotek Nanotag data: all (for all antennae), or antenna number. Those files will also contain CTT detections in the old sensorgnome software
-		CTT data: ctt data only
+	type: 	all (for all antennae), specific antenna number or ctt (ctt and gps data only)
 	ext: extension (typically txt)			
 	gz: indicates compressed files (other types of compressions are also supported: bz2, etc.)
 
