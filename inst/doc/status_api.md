@@ -571,7 +571,28 @@ projects.
 
       - version: string scalar; current version of program
 
+### rerun_receiver ###
+
+   rerun_receiver(projectID, serno, minBN, maxBN, authToken) - administrative users only
+
+      - projectID: integer scalar; Motus project ID, only detections during deployments belonging to this project will be plotted
+      - serno: string scalar; receiver serial number
+      - minBN: integer scalar; the least boot number to reprocess
+      - maxBN: integer scalar; the greatest boot number to reprocess
+
+      e.g.   curl --data-urlencode json='{"projectID":1,"serno":"SG-2616BBBK1111_1","minBN":1,maxBN:"2","authToken":"XXX"}' https://sgdata.motus.org/status2/rerun_receiver
+
+   - return:
+      - if a job has been submitted, then an object with these items:
+         - jobID: the integer ID for the new job
+      - otherwise an error message in item `error`
+
+   If successful, all boot numbers from minBN to maxBN will be reprocessed.
+
 ## Changelog ##
+
+2019-10-10
+   - add new entry `rerun_receiver` which lets administrators submit a job to reprocess receiver data
 
 2019-01-21
    - clarify return value of delete_param_overrides
