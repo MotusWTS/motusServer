@@ -90,6 +90,6 @@ handleSGfindtags = function(j) {
     if (is.null(rv))
         return(FALSE)
 
-    jobLog(j, paste0("Got ", rv$numHits, " (unfiltered) detections."))
+    jobLog(j, paste0("Got ", rv$numHits, " (unfiltered) detections between ", rv$tsStart, " and ", rv$tsEnd, "."))
     return(TRUE)
 }

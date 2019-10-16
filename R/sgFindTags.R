@@ -65,7 +65,7 @@ sgFindTags = function(src, tagDB, resume=TRUE, par = NULL, mbn) {
     }
 
     ## get ID and stats for new batch of tag detections
-    rv = sql("select batchID, numHits from batches order by batchID desc limit 1")
+    rv = sql("select batchID, numHits, strftime('%Y-%m-%d %H:%M:%f', tsStart, 'unixepoch') as tsStart, strftime('%Y-%m-%d %H:%M:%f', tsEnd, 'unixepoch') as tsEnd from batches order by batchID desc limit 1")
 
     return (c(rv))
 }
