@@ -171,14 +171,15 @@ MOTUS_ARCHIVE_REGEX = paste0("(?i)\\.(?<suffix>",
 ## silly dir() can't handle perl-style regex, so make another for that
 MOTUS_ARCHIVE_DIR_REGEX = paste0("\\.(", paste(MOTUS_ARCHIVE_SUFFIXES, collapse="|"), ")$")
 
-## regex to match receiver serial numbers (adapted from sgFilenameRegex, which differs
-## in not using the 'SG-' prefix).
+## regexes to match receiver serial numbers
 
-MOTUS_SG_SERNO_REGEX = "SG-[0-9A-Z]{4}(?:RPi[123z]|BBBK|BB[0-9][0-9A-Z])[0-9A-Z]{4}(?:_[0-9])?"
+MOTUS_SG_SERNO_WITHOUT_PREFIX_REGEX = "[0-9A-Z]{4}(?:RPi[123z]|BBBK|BB[0-9][0-9A-Z])[0-9A-Z]{4}(?:_[0-9])?"
+
+MOTUS_SG_SERNO_REGEX = paste0("SG-", MOTUS_SG_SERNO_WITHOUT_PREFIX_REGEX)
 
 MOTUS_LOTEK_SERNO_REGEX = "Lotek-D?[0-9]+(?:_[0-9])?"
 
-MOTUS_CTT_SERNO_REGEX = "CTT-[0-9]{12,16}"
+MOTUS_CTT_SERNO_REGEX = "CTT-[0-9]{15}"
 
 ## regex to exactly match any receiver serial number
 MOTUS_RECV_SERNO_REGEX = paste0("(?i)^(?:(?:", MOTUS_SG_SERNO_REGEX, ")|(?:", MOTUS_LOTEK_SERNO_REGEX, ")|(?:", MOTUS_CTT_SERNO_REGEX, "))$")
@@ -187,7 +188,7 @@ MOTUS_RECV_SERNO_REGEX = paste0("(?i)^(?:(?:", MOTUS_SG_SERNO_REGEX, ")|(?:", MO
 ## been shortened to 8.3 form)
 ## see https://en.wikipedia.org/wiki/8.3_filename#VFAT_and_Computer-generated_8.3_filenames
 
-MOTUS_DOS_FILENAME_REGEX = "^[a-zA-Z0-9]+~[0-9].(GZ|TXT)"
+MOTUS_DOS_FILENAME_REGEX = "^[a-zA-Z0-9]+~[0-9].(?:GZ|TXT)"
 
 ## Make the following symbols available outside the package
 
@@ -205,15 +206,15 @@ MOTUS_SYMBOLIC_LOCK_TABLE = "symLocks"
 ## Just about every OS these days writes indexing info to
 ## flash drives, and we often get these files in a transfer.
 
-MOTUS_JUNKFILE_REGEX = "(__MACOSX/|System Volume Information/|.DS_Store|._.DS_Store|.Trashes|._.Trashes)"
+MOTUS_JUNKFILE_REGEX = "(?:__MACOSX/|System Volume Information/|.DS_Store|._.DS_Store|.Trashes|._.Trashes)"
 
 ## regex for CTT files created by SensorGnome that we want to move to the CTT_OUTGOING folder.
 
-MOTUS_CTT_SG_DATAFILE_REGEX = "([^-]+)-([0-9A-Z]{4}(RP[iI][123z]|BBBK|BB[0-9][0-9A-Z])[0-9A-Z]{4}(_[0-9])?|CTT-([0-9]{15}))-.*-ctt(\\.[a-z]+)(\\.(gz|lz|bz2))?$"
+MOTUS_CTT_SG_DATAFILE_REGEX = paste0("(?:[^-]+)-(?:(?:", MOTUS_SG_SERNO_WITHOUT_PREFIX_REGEX, ")|(?:", MOTUS_CTT_SERNO_REGEX, "))-.*-ctt(?:\\.[a-z]+)(?:\\.(?:gz|lz|bz2))?$")
 
 ## regex for CTT files created by SensorStation that we want to move to the CTT_OUTGOING folder.
 
-MOTUS_CTT_SS_DATAFILE_REGEX = "CTT-([0-9]{15})-(data|gps|node-data).*\\.csv\\.gz$"
+MOTUS_CTT_SS_DATAFILE_REGEX = paste0(MOTUS_CTT_SERNO_REGEX, "-(?:data|gps|node-data).*\\.csv\\.gz$")
 
 ## the earliest valid date from a sensorgnome (= as.numeric(ymd("2010-01-01")))
 MOTUS_SG_EPOCH = 1262304000
