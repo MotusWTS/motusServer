@@ -1,7 +1,7 @@
 #' serve http requests for tag detection data
 #'
 #' The API is described here:
-#' https://github.com/jbrzusto/motusClient/blob/master/inst/doc/upstream_api.md
+#' https://github.com/MotusWTS/motus/blob/master/inst/api_docs/upstream_api.md
 #'
 #' @param port integer; local port on which to listen for requests
 #' Default: 0xda7a
