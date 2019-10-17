@@ -65,7 +65,8 @@ allStatusApps = c("status_api_info",
                   "get_param_overrides",
                   "delete_param_overrides",
                   "add_param_override",
-                  "describe_program"
+                  "describe_program",
+                  "rerun_receiver"
                   )
 
 sortColumns = c("ctime", "mtime", "id", "type", "motusProjectID", "motusUserID")
