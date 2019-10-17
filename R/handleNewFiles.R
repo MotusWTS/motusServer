@@ -105,6 +105,11 @@ handleNewFiles = function(j) {
 
     unknown = grep("(\\.txt(\\.gz)?$)|~", all, perl=TRUE, invert=TRUE)
     if (length(unknown)) {
+        wavs = grep("(?i)\\.wav$", all[unknown], perl=TRUE)
+        if (length(wavs)) {
+            jobLog(tj, "I found .wav files, which are presumably tag recordings, but did not find a tag registration manifest file. It should have been in the same directory and named 'tagreg.txt'.")
+        }
+
         sj = newSubJob(j, "unknownFiles", .makeFolder=TRUE)
         moveFiles(all[unknown], jobPath(sj))
         all = all[ - unknown ]
