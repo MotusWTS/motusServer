@@ -3,7 +3,7 @@
 # kill the motus status server (API version) if it is running
 #
 # specify '-g' to do so gracefully; i.e. send the server
-# a shutdown request via http, and give it up to 5 minutes
+# a shutdown request via http, and give it up to 1 minute
 # to respond.  This prevents any requests from being
 # interrupted.
 
@@ -52,7 +52,7 @@ KILLFILE=/sgm_local/kill.statusServer2.$PORT
 touch $KILLFILE
 
 if [[ "$GRACEFUL" != "" ]]; then
-    ## send the kill request, waiting up to 5 minutes for a reply,
+    ## send the kill request, waiting up to 1 minute for a reply,
     ## at which point the server has shut itself down, or is so
     ## busy a graceful shutdown is impossible.
     echo 'sending shutdown request to statusServer (API version) and waiting up to 1 minute'
