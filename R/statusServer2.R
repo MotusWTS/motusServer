@@ -1174,7 +1174,7 @@ describe_program = function(env) {
     error_from_app("Unknown program")
 }
 
-# Reprocess a receiver's files
+#' Reprocess a receiver's files
 
 rerun_receiver = function(env) {
     json = fromJSON(parent.frame()$postBody["json"], simplifyVector=FALSE)
