@@ -263,7 +263,7 @@ min(t1.ts) as ts,
 1 as n,
 0 as freq,
 0 as sig
-from gps as t1 join batches as t2 on t1.batchID=t2.batchID where t2.monoBN between %d and %d and ts between %.14g and %.14g group by round(t1.ts/3600-1800)",
+from gps as t1 join batches as t2 on t1.batchID=t2.batchID where t2.monoBN between %d and %d and t1.ts between %.14g and %.14g group by round(t1.ts/3600-1800)",
 monoBNlo, monoBNhi, ts[1], ts[2]))
     }
     gps$fullID = as.factor(gps$fullID)
