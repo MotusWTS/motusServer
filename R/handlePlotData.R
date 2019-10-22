@@ -26,8 +26,8 @@ handlePlotData = function(j) {
     motusProjectID = tj$motusProjectID
     motusUserID = tj$motusUserID
 
-    if(tj$type == 'syncReceiver') {
-        jobLog(j, 'Temporarily skipping syncReceiver plot generation for all receivers due to issue #507')
+    if(TRUE) {
+        jobLog(j, 'Skipping plot generation for all receivers until it can be done faster.')
         return(TRUE);
     }
 
