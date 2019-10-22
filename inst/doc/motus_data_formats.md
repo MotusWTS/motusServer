@@ -55,10 +55,11 @@ Filename: the file name is entirely determined by the user and doesn't contain u
 
 The following prefix can be found in sensorgnome files. Files of type *ctt* will only contain T and G prefix.
 
-C : ?
+C : (perhaps battery charge?)
 
 	Format : C,<ts>,<?>,<?>
 	Example : C,1528750333.246,1,0.399892479
+	Example : C,1561257097.681,6,8.6e-7
 
 G : GPS data entry 
 
@@ -72,7 +73,7 @@ p : individual pulse on FunCube Dongles
 
 S : frequency setting record
 
-	Format : S,<ts>,<port_num>,<name>,<value>,<?>,<?>
+	Format : S,<ts>,<port_num>,<name>,<value>,<rc>,<err>
 	Example : S,1366227448.192,5,-m,166.376,0,
 	Example : S,946684811.244,3,frequency,151.496,0,
 	Example : S,946684811.249,3,gain_mode,1,0,
@@ -89,12 +90,14 @@ Fields:
 
 	alt : altitude (m)
 	dfreq : frequency offset (KHz)
+	err : blank on success, else error message (frequency setting)
 	freq : nominal frequency
 	lat : latitude (degrees)
 	lon : longitude (degrees)
 	name : arbitrary parameter name
 	noise : noise level (dB?)
 	port_num : port number (antenna)
+	rc : response code (?). E.g. zero if frequency setting succeeded, else non-zero error code
 	sig : signal strength (dB)
 	tag_code : 32-bit tag code (e.g. LifeTag)
 	ts : Unix timestamp (seconds)
