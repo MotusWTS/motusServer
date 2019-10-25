@@ -95,8 +95,11 @@ handleSGfiles = function(j) {
         group_by(serno) %>%
         do (ignore=queueExport(.))
 
-    if (! any(info$use > 0))
+    if (! any(info$use > 0)) {
         jobLog(j, "There were no new files in the dataset, so I didn't do anything.", summary=TRUE)
+    } else {
+        jobLog(j, "\nThere may be a delay between the time this job finishes and the time when new information appears on the website and is available through the R package, which varies depending on how much data has been submitted recently. Typical delays are ~20 minutes, and only rarely more than an hour. Also, please note that detections on the website are filtered, so you may not be able to see every detection there. Unfiltered data is available through the Motus R package. (See https://motus.org/MotusRBook/)", summary=TRUE)
+    }
 
     return(TRUE)
 }
