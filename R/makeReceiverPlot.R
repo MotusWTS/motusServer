@@ -143,18 +143,17 @@ makeReceiverPlot = function(recv, meta=NULL, title="", condense=3600, ts = NULL,
     ## do usual filtering on freqsd, run length
     tags = tags %>% filter_(~(is.na(freqSD) | freqSD < 0.1) & len >= 3)
 
-    ## filter by monoBN or ts
+    ## filter by ts and monoBN
 
-    if (isLotek) {
-        if (! is.null(ts)) {
-            ts = unname(ts)
-            if (is.na(ts[2])) {
-                ts[2] = as.numeric(Sys.time())
-            }
-            myts = ts
-            tags = tags %>% filter_ (~ts >= myts[1] & ts <= myts[2])
+    if (! is.null(ts)) {
+        ts = unname(ts)
+        if (is.na(ts[2])) {
+            ts[2] = as.numeric(Sys.time())
         }
-    } else {
+        myts = ts
+        tags = tags %>% filter_ (~ts >= myts[1] & ts <= myts[2])
+    }
+    if (!isLotek) {
         if (! is.null(monoBN)) {
             if (isTRUE(all(is.finite(monoBN)))) {
                 monoBNlo = min(monoBN)

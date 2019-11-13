@@ -63,22 +63,27 @@ C : ?
 G : GPS data entry 
 
 	Format : G,<ts>,<lat>,<lon>,<alt>
+	Example : G,1526683597,-23.002083333,118.931118333,736.4
 	
 p : individual pulse on FunCube Dongles 
 
 	Format : p<port_num>,<ts>,<dfreq>,<sig>,<noise>
-	Example : 
+	Example : p3,1526683680.8316,0.4,-35.4,-42.56
 
 S : frequency setting record
 
-	Format : S,<ts>,<port_num>,<?>,<freq>,<?>,<?>
+	Format : S,<ts>,<port_num>,<name>,<value>,<?>,<?>
 	Example : S,1366227448.192,5,-m,166.376,0,
+	Example : S,946684811.244,3,frequency,151.496,0,
+	Example : S,946684811.249,3,gain_mode,1,0,
+	Example : S,946684811.25,3,tuner_gain,40.2,0,
+	Example : S,946684811.25,3,test_mode,0,0,
+	Example : S,946684811.251,3,agc_mode,0,0,
 
 T : LifeTag hit on CTT/CVRX dongle or SensorStation
 	
 	Format : T<port_num>,<ts>,<tag_code>
 	Example : T4,1557450282.889,04452182
-	
 	
 Fields:
 
@@ -87,11 +92,13 @@ Fields:
 	freq : nominal frequency
 	lat : latitude (degrees)
 	lon : longitude (degrees)
+	name : arbitrary parameter name
 	noise : noise level (dB?)
 	port_num : port number (antenna)
 	sig : signal strength (dB)
 	tag_code : 32-bit tag code (e.g. LifeTag)
 	ts : Unix timestamp (seconds)
+	value : arbitrary parameter value
 	
 ### 2b. SensorStation (LifeTag) format ###
 

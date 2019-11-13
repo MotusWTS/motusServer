@@ -1172,3 +1172,44 @@ describe_program = function(env) {
     }
     error_from_app("Unknown program")
 }
+
+# Reprocess a receiver's files
+
+rerun_receiver = function(env) {
+    json = fromJSON(parent.frame()$postBody["json"], simplifyVector=FALSE)
+
+    if (tracing)
+        browser()
+
+    auth = validate_request(json, needProjectID=TRUE, needAdmin=TRUE)
+    if (inherits(auth, "error")) return(auth)
+
+    userID = auth$userID
+    projectID = auth$projectID
+    serno = safe_arg(json, serno, char, scalar=FALSE)
+    minBN = safe_arg(json, minBN, int)
+    maxBN = safe_arg(json, maxBN, int)
+
+    if (is.null(serno))
+        return(error_from_app("must specify receiver serial number (`serno`)"))
+    path = getRecvDBPath(serno)
+    if (is.null(path))
+        return(error_from_app("invalid receiver serial number (`serno`)"))
+    if (!file.exists(path))
+        return(error_from_app("receiver not known to motus"))
+    if (is.null(minBN))
+        return(error_from_app("must specify minimum boot number (`minBN`)"))
+    if (is.null(maxBN))
+        return(error_from_app("must specify maximum boot number (`maxBN`)"))
+    if (minBN > maxBN)
+        return(error_from_app("minBN must be less than or equal to maxBN"))
+
+    j = newJob("rerunReceiver", .parentPath=MOTUS_PATH$INCOMING, serno=serno, monoBN=c(minBN, maxBN), exportOnly=FALSE, cleanup=TRUE, motusUserID = userID, motusProjectID = projectID, .enqueue=FALSE)
+    jobID = unclass(j)
+    jobLog(j, paste0("Rerunning receiver ", serno, ", boot numbers ", minBN, " to ", maxBN), summary=TRUE)
+    j$queue = "0"
+    safeSys("sudo", "chown", "sg:sg", j$path)
+    moveJob(j, MOTUS_PATH$QUEUE0)
+    cat("Job", jobID, "has been entered into queue 0\n")
+    return_from_app(list(jobID = jobID))
+}
