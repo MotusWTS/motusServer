@@ -323,12 +323,12 @@ handleRegisterTags = function(j) {
     ## generate on-board tag database and mark it as an attachment to this job's completion email
     tj = topJob(j)
     isTesting = isTRUE(tj$isTesting)
-    dbFile = createRecvTagDB(projectID, dateBin, isTesting)
-    tj$attachment = structure(list(dbFile), names=basename(dbFile))
-    url = getDownloadURL(projectID, isTesting)
-    jobLog(j, sprintf("\nThe on-board database for your recent tags is available here:\n    %s\n\nInstructions for installing it on a sensorgnome are here:\n   https://archived.sensorgnome.org/VHF_Tag_Registration/Uploading_the_tags_database_file_to_your_SensorGnome\n", url), summary=TRUE)
-    jobProduced(j, file.path(url, basename(dbFile)), projectID)
     if (length(newTagIDs) > 0) {
+        dbFile = createRecvTagDB(projectID, dateBin, isTesting)
+        tj$attachment = structure(list(dbFile), names=basename(dbFile))
+        url = getDownloadURL(projectID, isTesting)
+        jobLog(j, sprintf("\nThe on-board database for your recent tags is available here:\n    %s\n\nInstructions for installing it on a sensorgnome are here:\n   https://archived.sensorgnome.org/VHF_Tag_Registration/Uploading_the_tags_database_file_to_your_SensorGnome\n", url), summary=TRUE)
+        jobProduced(j, file.path(url, basename(dbFile)), projectID)
         ## directly update the tags, tagDeps, and events tables in the metadata cache
         ## and in the motus DB.  See:  https://github.com/jbrzusto/motusServer/issues/412
         newTags = subset(motusSearchTags(projectID=projectID), tagID %in% newTagIDs)
