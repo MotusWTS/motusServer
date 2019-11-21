@@ -177,7 +177,7 @@ so motus treats receiver reboots in a special way:
 
 ### Incremental Distribution of Data ###
 
-The [motusClient R package](https://github.com/jbrzusto/motusClient)
+The [Motus R package](https://github.com/MotusWTS/motus/)
 allows users to build a local copy of the database of all their tags'
 (or receivers') hits incrementally.  A user can regularly call the
 `tagme()` function to obtain any new hits of their tags.  Because

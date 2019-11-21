@@ -65,7 +65,8 @@ allStatusApps = c("status_api_info",
                   "get_param_overrides",
                   "delete_param_overrides",
                   "add_param_override",
-                  "describe_program"
+                  "describe_program",
+                  "rerun_receiver"
                   )
 
 sortColumns = c("ctime", "mtime", "id", "type", "motusProjectID", "motusUserID")
@@ -1173,7 +1174,7 @@ describe_program = function(env) {
     error_from_app("Unknown program")
 }
 
-# Reprocess a receiver's files
+## Reprocess a receiver's files
 
 rerun_receiver = function(env) {
     json = fromJSON(parent.frame()$postBody["json"], simplifyVector=FALSE)

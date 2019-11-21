@@ -263,8 +263,8 @@ min(t1.ts) as ts,
 1 as n,
 0 as freq,
 0 as sig
-from gps as t1 join batches as t2 on t1.batchID=t2.batchID where t2.monoBN between %d and %d group by round(t1.ts/3600-1800)",
-monoBNlo, monoBNhi))
+from gps as t1 join batches as t2 on t1.batchID=t2.batchID where t2.monoBN between %d and %d and t1.ts between %.14g and %.14g group by round(t1.ts/3600-1800)",
+monoBNlo, monoBNhi, ts[1], ts[2]))
     }
     gps$fullID = as.factor(gps$fullID)
 
@@ -272,11 +272,9 @@ monoBNlo, monoBNhi))
     ## FIXME: if anyone cares, they can recode this in dplyr form
     ## Note that the fullID column must match that used in grepl() in the panel.xyplot function below.
 
-    if (isLotek) {
-        ## get pulse counts from the period in question; grab any from batches that overlap
-        ## the specified time interval; further filtering happens below
+    ## get pulse counts from the period in question; further filtering happens below
 
-        pulses = dbGetQuery(recv$con, sprintf("
+    pulses = dbGetQuery(recv$con, sprintf("
 select ant,
 ' Antenna ' || case when ant = -1 then 'A1+A2+A3+A4' else ant end || ' Activity' as fullID,
 hourBin as bin,
@@ -286,19 +284,6 @@ hourBin * 3600 + 1800 as ts,
 0 as sig
 from pulseCounts where hourBin between %.14g and %.14g",
 floor(ts[1] / 3600), floor(ts[2] / 3600)))
-    } else {
-        pulses = dbGetQuery(recv$con, sprintf("
-select t1.ant,
-' Antenna ' || t1.ant || ' Activity' as fullID,
-t1.hourBin as bin,
-t1.hourBin * 3600 + 1800 as ts,
-1 as n,
-0 as freq,
-0 as sig
-from pulseCounts as t1 join batches as t2 on t1.batchID=t2.batchID where t2.monoBN between %d and %d and t1.hourBin >= t2.tsStart/3600 and t1.hourBin <= t2.tsEnd / 3600 group by t1.ant, t1.hourBin",
-monoBNlo, monoBNhi))
-
-    }
     pulses$fullID = as.factor(pulses$fullID)
 
     ## get the time of each reboot, again as bogus tags records
@@ -313,8 +298,8 @@ min(tsStart) as ts,
 1 as n,
 0 as freq,
 0 as sig
-from batches where monoBN between %d and %d and tsStart >= 1262304000 group by monoBN",
-monoBNlo, monoBNhi))
+from batches where monoBN between %d and %d and tsStart between %f and %f group by monoBN",
+monoBNlo, monoBNhi, ts[1], ts[2]))
         reboots$fullID = as.factor(reboots$fullID)
     } else {
         reboots = dbGetQuery(recv$con, sprintf("
