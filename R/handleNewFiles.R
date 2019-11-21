@@ -61,7 +61,7 @@ handleNewFiles = function(j) {
     cttdata = grep(paste0("(?i)(?:", MOTUS_CTT_SG_DATAFILE_REGEX, ")|(?:", MOTUS_CTT_SS_DATAFILE_REGEX, ")"), all, perl=TRUE)
     if (length(cttdata)) {
         sj = newSubJob(j, "CttFiles", .makeFolder=TRUE)
-        moveFilesUniquely(all[cttdata], MOTUS_PATH$CTT_OUTGOING))
+        moveFilesUniquely(all[cttdata], MOTUS_PATH$CTT_OUTGOING)
         eg = all[cttdata[1]]
         all = all[ - cttdata]
         jobLog(j, paste0("Moved ", length(cttdata), " CTT files for separate processing with names like\n   ", eg))
