@@ -87,7 +87,7 @@ moveFilesUniquely = function(src, dst, copyLinkTargets=FALSE) {
     }
     success = file.rename(src, file.path(dst, fname))
     if(any(!success)) {
-        stop("In moveFilesUniquely, failed to successfully move at least one file.")
+        stop(paste("In moveFilesUniquely, failed to successfully move:", src[!success]))
     }
     return(ifelse(initial.conflict, fname, NA))
 }
