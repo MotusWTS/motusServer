@@ -30,7 +30,7 @@ handlePlotData = function(j) {
         motusReceiverID = MetaDB(paste0("select id from recvDeps where serno = '", serno, "' and projectID = ", motusProjectID, " limit 1"))
         motusReceiverID = motusReceiverID[!is.na(motusReceiverID)]
         if(length(motusReceiverID) == 0) {
-            jobLog(j, paste0("\n", serno, ": no deployments are known in this project for this receiver. Please enter a deployment for this receiver on the website. The receivers of project ", motusProjectID, " can be viewed at https://motus.org/data/projectReceivers?id=", motusProjectID), summary=TRUE)
+            jobLog(j, paste0("\n", serno, ": no deployments are known in this project for this receiver. Please enter a deployment for this receiver at https://motus.org/data/project/recvs?projectID=", motusProjectID, "."), summary=TRUE)
         } else {
             motusDeployIDs = MetaDB(paste0("select deployID from recvDeps where serno = '", serno, "' and projectID = ", motusProjectID, " order by deployID desc"))
             motusDeployIDs = motusDeployIDs[!is.na(motusDeployIDs)]
@@ -40,6 +40,7 @@ handlePlotData = function(j) {
                 jobLog(j, paste0("\n", serno, "\n  A plot of activity for this receiver can be viewed at https://motus.org/data/receiver/timeline?id=", motusReceiverID), summary=TRUE)
                 for (deployID in motusDeployIDs) {
                     jobLog(j, paste0("\n  A table of the most recently detected tags for deployment #", deployID, " can be viewed at https://motus.org/data/receiverDeploymentDetections?o=0d&id=", deployID), summary=TRUE)
+                    jobLog(j, paste0("\n  A plot of the most recently detected tags for deployment #", deployID, " can be viewed at https://motus.org/data/receiver/deployment/plot?id=". deployID), summary=TRUE)
                 }
             }
         }
