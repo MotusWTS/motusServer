@@ -40,7 +40,7 @@ handlePlotData = function(j) {
                 jobLog(j, paste0("\n", serno, "\n  A plot of activity for this receiver can be viewed at https://motus.org/data/receiver/timeline?id=", motusReceiverID), summary=TRUE)
                 for (deployID in motusDeployIDs) {
                     jobLog(j, paste0("\n  A table of the most recently detected tags for deployment #", deployID, " can be viewed at https://motus.org/data/receiverDeploymentDetections?o=0d&id=", deployID), summary=TRUE)
-                    jobLog(j, paste0("\n  A plot of the most recently detected tags for deployment #", deployID, " can be viewed at https://motus.org/data/receiver/deployment/plot?id=". deployID), summary=TRUE)
+                    jobLog(j, paste0("\n  A plot of the most recently detected tags for deployment #", deployID, " can be viewed at https://motus.org/data/receiver/deployment/plot?id=", deployID), summary=TRUE)
                 }
             }
         }
