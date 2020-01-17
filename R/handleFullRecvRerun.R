@@ -45,7 +45,7 @@ handleFullRecvRerun = function(j) {
     ## create and enqueue the subjob which will handle this recv's
     ## repo files as if they were entirely new
 
-    sj = newSubJob(j, if (grepl("^SG-", serno, perl=TRUE)) "SGfiles" else "LtFiles", .makeFolder = FALSE)
+    sj = newSubJob(j, if (grepl("^LOTEK-", serno, perl=TRUE, ignore.case=TRUE)) "LtFiles" else "SGfiles", .makeFolder = FALSE)
     sj$filePath = file.path(MOTUS_PATH$FILE_REPO, serno)
 
     return(TRUE)
