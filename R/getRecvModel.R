@@ -40,7 +40,7 @@ getRecvModel = function(serno) {
         if (substring(model, 1, 3) == "BBW")
             return("BBW")
         return("UNKNOWN")
-    } else {
+    } else if (substring(serno, 1, 7) == "LOTEK-") {
         ## get bare serial number by dropping "Lotek-" (first 6 chars)
         bareno = substring(serno, 7)
         ## drop any disambiguation suffix (e.g. "_1") as this is not
@@ -79,5 +79,7 @@ getRecvModel = function(serno) {
             model = "SRX800"
         }
         return(model)
+    } else {
+        return("UNKNOWN")
     }
 }
