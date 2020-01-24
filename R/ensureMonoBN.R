@@ -124,13 +124,16 @@ ensureMonoBN = function(src, testOnly = FALSE) {
             if (length(recs) > 0) {
                 ## examine p, S, and C records, as these issue a system timestamp
                 ## (skip G records as these might be flaky due to a stuck GPS)
-                recs = read.csv(textConnection(grep("^[pSC]", recs, value=TRUE)), header=FALSE)
-                if (isTRUE(nrow(recs) > 0)) {
-                    tsfix = max(recs[,2], na.rm=TRUE)
-                    if (tsfix > MOTUS_SG_EPOCH) {
-                        ## monoBN is smallest bootnum for which there are files with
-                        ## larger real timestamps
-                        bad$monoBN[i] = min(newG$monoBN[newG$ts > tsfix])
+                recs = grep("^[pSC]", recs, value=TRUE)
+                if(length(recs) > 0) {
+                    recs = read.csv(textConnection(recs), header=FALSE)
+                    if (isTRUE(nrow(recs) > 0)) {
+                        tsfix = max(recs[,2], na.rm=TRUE)
+                        if (tsfix > MOTUS_SG_EPOCH) {
+                            ## monoBN is smallest bootnum for which there are files with
+                            ## larger real timestamps
+                            bad$monoBN[i] = min(newG$monoBN[newG$ts > tsfix])
+                        }
                     }
                 }
             }
