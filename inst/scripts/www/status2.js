@@ -301,7 +301,7 @@ function show_job_list() {
         pars.select = {log: "*" + state.selector.log + "*"};
     } else if (state.selector.serno) {
         var serno = state.selector.serno;
-        if (! serno.match(/^(Lotek-|SG-)/i)) {
+        if (! serno.match(/^(Lotek-|SG-|CTT-)/i)) {
             serno = "SG-" + serno;
         }
         pars.select = {serno: serno};
