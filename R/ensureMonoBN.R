@@ -89,7 +89,8 @@ ensureMonoBN = function(src, testOnly = FALSE) {
         tsNext = min(subset(G, bootnum != bn)$ts)
         ## even if the above subset was empty, this works,
         ## because tsNext will be Inf.
-        peel = with(G, bootnum == bn & ts < tsNext)
+        ## ts <= tsNext, instead of < tsNext, is due to SGs occasionally producing duplicate files with exactly the same timestamp, but different boot numbers.
+        peel = with(G, bootnum == bn & ts <= tsNext)
         g = subset(G, peel)
         G = subset(G, ! peel)
         g$monoBN = monoBN
