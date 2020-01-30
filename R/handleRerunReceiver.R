@@ -71,6 +71,7 @@ handleRerunReceiver = function(j) {
     if (cleanup) {
         src = getRecvSrc(serno)
         cleanup(src, TRUE)
+        ensureMonoBN(src)
         closeRecvSrc(src)
     }
 
