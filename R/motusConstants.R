@@ -179,7 +179,7 @@ MOTUS_SG_SERNO_REGEX = paste0("SG-", MOTUS_SG_SERNO_WITHOUT_PREFIX_REGEX)
 
 MOTUS_LOTEK_SERNO_REGEX = "Lotek-D?[0-9]+(?:_[0-9])?"
 
-MOTUS_CTT_SERNO_REGEX = "CTT-[0-9]{15}"
+MOTUS_CTT_SERNO_REGEX = "CTT-[0-9A-F]{12,15}"
 
 ## regex to exactly match any receiver serial number
 MOTUS_RECV_SERNO_REGEX = paste0("(?i)^(?:(?:", MOTUS_SG_SERNO_REGEX, ")|(?:", MOTUS_LOTEK_SERNO_REGEX, ")|(?:", MOTUS_CTT_SERNO_REGEX, "))$")
@@ -214,7 +214,7 @@ MOTUS_CTT_SG_DATAFILE_REGEX = paste0("(?:[^-]+)-(?:(?:", MOTUS_SG_SERNO_WITHOUT_
 
 ## regex for CTT files created by SensorStation that we want to move to the CTT_OUTGOING folder.
 
-MOTUS_CTT_SS_DATAFILE_REGEX = paste0(MOTUS_CTT_SERNO_REGEX, "-(?:data|gps|node-data).*\\.csv\\.gz$")
+MOTUS_CTT_SS_DATAFILE_REGEX = paste0(MOTUS_CTT_SERNO_REGEX, "-(?:data|raw-data|gps|node-data).*\\.csv\\.gz$")
 
 ## the earliest valid date from a sensorgnome (= as.numeric(ymd("2010-01-01")))
 MOTUS_SG_EPOCH = 1262304000

@@ -30,8 +30,8 @@ This format is the default for units running the SensorStation software. Data co
 			CTT-867459049219777-node-data.2019-07-18_191832.csv.gz
 			CTT-867459049219777-gps.2019-07-18_191832.csv.gz
 
-	serial : 15 digit numeric value
-	data_type : one of data, data-node or gps
+	serial : 15 digit numeric (old) or 12  digit alphanumeric value (new)
+	data_type : one of data, raw-data (same as data), data-node or gps
 	datetime : <yyyy-MM-dd_HHmmss>
 	ext : csv only so far
 	gz : indicates compressed files
@@ -107,7 +107,7 @@ Fields:
 
 SensorStation (LifeTag) files will contain headers specifying their content. No assumptions should be made about the order or the list of  fields included within those files. The formats below are those currently in use at the time of this document.
 
-data files:
+data (or raw-data) files:
 
 	Format : <Time>,<RadioId>,<TagId>,<TagRSSI>,<NodeId>
 	
