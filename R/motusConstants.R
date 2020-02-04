@@ -179,7 +179,7 @@ MOTUS_SG_SERNO_REGEX = paste0("SG-", MOTUS_SG_SERNO_WITHOUT_PREFIX_REGEX)
 
 MOTUS_LOTEK_SERNO_REGEX = "Lotek-D?[0-9]+(?:_[0-9])?"
 
-MOTUS_CTT_SERNO_REGEX = "CTT-[0-9A-F]{12,15}"
+MOTUS_CTT_SERNO_REGEX = "CTT-(?:[0-9]{15}|[0-9A-F]{12})"
 
 ## regex to exactly match any receiver serial number
 MOTUS_RECV_SERNO_REGEX = paste0("(?i)^(?:(?:", MOTUS_SG_SERNO_REGEX, ")|(?:", MOTUS_LOTEK_SERNO_REGEX, ")|(?:", MOTUS_CTT_SERNO_REGEX, "))$")
