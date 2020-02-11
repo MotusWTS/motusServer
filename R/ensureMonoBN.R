@@ -129,7 +129,7 @@ ensureMonoBN = function(src, testOnly = FALSE) {
                 if(length(recs) > 0) {
                     recs = read.csv(textConnection(recs), header=FALSE)
                     if (isTRUE(nrow(recs) > 0)) {
-                        tsfix = max(recs[,2], na.rm=TRUE)
+                        tsfix = max(as.numeric(as.character(recs[,2])), na.rm=TRUE)
                         if (tsfix > MOTUS_SG_EPOCH) {
                             ## monoBN is smallest bootnum for which there are files with
                             ## larger real timestamps
