@@ -56,7 +56,7 @@ ensureMonoBN = function(src, testOnly = FALSE) {
     sql = safeSQL(src)
     sql("drop table if exists _bn_times")
     sql("create temporary table _bn_times as select monoBN, min(ts) as min, max(ts) as max from files where ts > 1000000000 group by monoBN")
-    inv = sql("select t1.*, t2.* from _bn_times as t1 join _bn_times as t2 on t1.monoBN < t2.monoBN where not (t1.max <= t2.min or t2.max <= t1.min)")
+    inv = sql("select t1.*, t2.* from _bn_times as t1 join _bn_times as t2 on t1.monoBN < t2.monoBN where t1.max > t2.min")
     haveInv = isTRUE(nrow(inv) > 0)
     if (testOnly)
         return (haveInv) ## inform caller
