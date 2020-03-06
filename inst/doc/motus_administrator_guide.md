@@ -137,7 +137,7 @@ Lotek codesets have to be loaded into memory (they're encrypted); an email is se
 
  > What is the procedure to add a new tag model?
 
-?
+inst/doc/modelLotekTagLifeSpan.Rmd contains a map from tag models to battery types. Add a mapping there, then rebuild motusServer on sgdata.motus.org as described above. To add a new type of battery edit inst/doc/lotekTagLifespanByBatteryAndBI.csv too.
 
  > What's the procedure to change the default parameters for a receiver? For a project?
 
