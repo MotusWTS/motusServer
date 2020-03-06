@@ -247,8 +247,8 @@ What John B. did to diagnose one bug: https://github.com/MotusDev/Motus-TO-DO/is
 
 The database which contains the list of past and active jobs is at /sgm_local/server.sqlite
 
-Uploaded files are saved in /sgm/uploads/<user ID>/
+Uploaded files are saved in /sgm/uploads/&lt;user ID&gt;/
  
-Receiver data files are saved in /sgm/file_repo/<receiver serial number>/<date>/
+Receiver data files are saved in /sgm/file_repo/&lt;receiver serial number&gt;/&lt;date&gt;/
  
-Each receiver has its own SQLite database at /sgm/recv/<receiver serial number>.motus
+Each receiver has its own SQLite database at /sgm/recv/&lt;receiver serial number&gt;.motus
