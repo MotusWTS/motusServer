@@ -244,3 +244,8 @@ There are three timelines: explicit timestamps, monoBN, and the time of upload. 
 Master tag lifetime chart, useful for diagnosing certain types of bugs: https://sgdata.motus.org/public/motus_tag_timeline.html (Unfortunately, this chart only shows one deployment per tag, so you have to go diving in the database to figure out tags with multiple deployments.)
 
 What John B. did to diagnose one bug: https://github.com/MotusDev/Motus-TO-DO/issues/236#issuecomment-398172576
+
+The database which contains the list of past and active jobs is at /sgm_local/server.sqlite
+Uploaded files are saved in /sgm/uploads/<user ID>/
+Receiver data files are saved in /sgm/file_repo/<receiver serial number>/<date>/
+Each receiver has its own SQLite database at /sgm/recv/<receiver serial number>.motus
