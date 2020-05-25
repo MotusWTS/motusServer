@@ -127,6 +127,8 @@ For now, updating anything may break the server. Fixing this is currently our fi
 
 Lotek codesets have to be loaded into memory (they're encrypted); an email is sent to the admin, telling them to run a certain script. The email is sent to addresses listed in `/home/sg/.forward`.
 
+If processes were interrupted, there may be left-over locks, so you may have to do `sqlite3 /sgm_local/server.sqlite`, `delete from symLocks;`, `.exit`.
+
  > If we were to migrate to a new physical server or set up a test/development server, what would we have to set up on the new server? Which files should or shouldn't be copied to new servers?
 
 ## Parameters ##
