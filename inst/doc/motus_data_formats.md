@@ -6,7 +6,7 @@
 
 This format is the default for units running the SensorGnome software (including for the SensorGnome component of the SensorStation). Each file contains individual pulses, gps readings, etc. The data can also be separated for each antenna, as well as for LifeTag detections only (type = ctt).
 
-	Filename format: <site_label>-<receiver_number>-<boot_num>-<datetime>-<type>-<ext>.gz
+	Filename format: <site_label>-<receiver_number>-<boot_num>-<datetime><prec>-<type>-<ext>.gz
 
 	Example:	changeMe-3114BBBK2178-000074-2018-01-22T00-29-13.3300T-all.txt.gz
 			changeMe-3114BBBK2178-000074-2018-01-22T00-29-13.3300T-ctt.txt.gz
@@ -15,7 +15,16 @@ This format is the default for units running the SensorGnome software (including
 	receiver_number: for SensorGnomes, receiver serial number (without the SG prefix, e.g. 3114BBBK2178)
 			 for SensorStation, receiver serial number (with the CTT prefix, e.g. CTT-123456789012345)
 	boot_num: boot number
-	datetime: yyyy-mm-ddTHH:MM:ss.ssssT
+	datetime: yyyy-mm-ddTHH:MM:ss.ssss
+	prec: single digit representing the clock precision:
+		P: clock not set by GPS
+		Z: 1 second
+		Y: 0.1 second
+		X: 0.01 second
+		W: 0.001 second
+		V: 0.0001 second
+		U: 0.00001 second
+		T: 0.000001 second
 	type: 	all (for all antennae), specific antenna number or ctt (ctt and gps data only)
 	ext: extension (typically txt)			
 	gz: indicates compressed files (other types of compressions are also supported: bz2, etc.)
@@ -55,9 +64,9 @@ Filename: the file name is entirely determined by the user and doesn't contain u
 
 The following prefix can be found in sensorgnome files. Files of type *ctt* will only contain T and G prefix.
 
-C : (perhaps battery charge?)
+C : (GPS clock setting precision record: outlines the time the GPS was set (ts), the precision it was set to (prec), and the time elapsed in running the time (elapsed))
 
-	Format : C,<ts>,<?>,<?>
+	Format : C,<ts>,<prec>,<elapsed>
 	Example : C,1528750333.246,1,0.399892479
 	Example : C,1561257097.681,6,8.6e-7
 
