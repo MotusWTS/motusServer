@@ -71,7 +71,7 @@ p : individual pulse on FunCube Dongles
 	Format : p<port_num>,<ts>,<dfreq>,<sig>,<noise>
 	Example : p3,1526683680.8316,0.4,-35.4,-42.56
 
-S : frequency setting record
+S : frequency setting record (see fields below for possible name values)
 
 	Format : S,<ts>,<port_num>,<name>,<value>,<rc>,<err>
 	Example : S,1366227448.192,5,-m,166.376,0,
@@ -110,27 +110,39 @@ SensorStation (LifeTag) files will contain headers specifying their content. No 
 data (or raw-data) files:
 
 	Format : <Time>,<RadioId>,<TagId>,<TagRSSI>,<NodeId>
+	Format : <Time>,<RadioId>,<TagId>,<TagRSSI>,<NodeId>,<Validated>
 	
 	Example : 2019-07-16 20:18:39.845,3,6161527F,-96,
 	
 	Time : datetime (UTC) yyyy-MM-dd HH:mm:ss.sss
 	RadioId : Port number (numeric). Those ports are saved with a L prefix in the metadata and the data tables
+	TagId : tag number (e.g. AF7709D3)
 	TagRSSI : Received Signal Strenght Indication
-	NodeId : 3-digit hex ID of the node that originally captured the signal
+	NodeId : hex ID of the node that originally captured the signal (3-digit for old models. Should be unique in more recent models)
+	Validated : 0 or 1 to indicate whether the tag was considered valid by CTT algorithms (details unknown).
 	
 node-data files: meta information about the nodes
 
 	Format : <Time>,<RadioId>,<NodeId>,<NodeRSSI>,<Battery>,<Celcius>
+	Format : <Time>,<RadioId>,<NodeId>,<NodeRSSI>,<Battery>,<Celcius>,<RecordedAt>,<Firmware>,<SolarVolts>,<SolarCurrent>,<CumulativeSolarCurrent>,<Latitude>,<Longitude>
 	
-	Time : datetime (UTC) yyyy-MM-dd HH:mm:ss.sss
+	Time : datetime (UTC) yyyy-MM-dd HH:mm:ss.sss when the data was received at the base station
 	RadioId : Port number (numeric). Those ports are saved with a L prefix in the metadata and the data tables
 	NodeRSSI : Received Signal Strenght Indication (node signal on the base station)
 	Battery : battery power level
 	Celcius : node temperature
+	RecordedAt : datetime (UTC) when the data was recorded on the node
+	Firmware : node firmware
+	SolarVolts : solar voltage
+	SolarCurrent : solar current
+	CumulativeSolarCurrent :  cumulative solar current
+	Latitude : node latitude
+	Longitude : node longitude
 
 gps files: gps readings of the base station
 
 	Format : <recorded at>,<gps at>,<latitude>,<longitude>,<altitude>,<quality>
+	Format : <recorded at>,<gps at>,<latitude>,<longitude>,<altitude>,<quality>,<mean lat>,<mean lon>,<n fixes>
 
 	Example : 2019-08-17T03:09:27.458Z,2019-08-17T03:09:26.000Z,38.240977833,-75.1360325,2.7,3
 
@@ -140,6 +152,9 @@ gps files: gps readings of the base station
 	longitude : longitude (degrees)
 	altitude : altitude (m)
 	quality : signal quality (units?)
+	mean lat : mean latitude
+	mean lon : mean longitude
+	n fixes : number of fixes used to calculate mean 
 	
 	
 ### 2c. Lotek format ###
