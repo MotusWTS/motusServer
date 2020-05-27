@@ -97,6 +97,7 @@ T : LifeTag hit on CTT/CVRX dongle or SensorStation
 	
 Fields:
 
+	-m : antenna listing frequency?
 	alt : altitude (m)
 	dfreq : frequency offset (KHz)
 	err : blank on success, else error message (frequency setting)
