@@ -56,6 +56,8 @@ handleSanityCheck = function(j) {
 
     if (any(chk == 0)) {
         jobLog(j, paste("Processing will continue with the remaining", sum(chk==0), "files."))
+    } else {
+        jobFail(j, "No usable data files found.")
     }
 
     ## write names of bad files to a temporary location so we can tar them;
