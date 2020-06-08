@@ -47,7 +47,7 @@ if [[ $GRACEFUL ]]; then
         if [[ `ls -1 /sgm/*.pid 2>/dev/null` == "" ]]; then
             break
         fi
-        printf "sleeping 10s while waiting for:\n`cd /sgm; ls -1 *.pid | sed -e 's/.pid//'`\nto finish current job(s)."
+        printf "Sleeping 10s while waiting for:\n`cd /sgm; ls -1 *.pid | sed -e 's/.pid//'`\nto finish current job(s).\n"
         sleep 10
     done
 fi

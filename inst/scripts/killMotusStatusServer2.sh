@@ -55,7 +55,7 @@ if [[ "$GRACEFUL" != "" ]]; then
     ## send the kill request, waiting up to 1 minute for a reply,
     ## at which point the server has shut itself down, or is so
     ## busy a graceful shutdown is impossible.
-    echo 'sending shutdown request to statusServer (API version) and waiting up to 1 minute'
+    echo 'Sending shutdown request to statusServer (API version) and waiting up to 1 minute.'
     GET -t1m -d $STATUS_SERVER_KILL_URL
 fi
 
