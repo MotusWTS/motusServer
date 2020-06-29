@@ -301,6 +301,9 @@ cleanTagRegistrations = function(m, s, cleanBI = FALSE) {
     s("insert into tags select * from tmptags")
     s("drop table tmptags")
 
+    ## remove tags with period NA or 0, which trigger an infinite loop bug in the tag finder (remove this once the bug is confirmed fixed):
+    s("delete from tags where period is null or period = 0")
+
     ## re-record tags table summary in the history repo
     s("select tagID, manufacturer, model, codeSet, nomFreq, mfgID, period from tags order by tagID") %>%
     write.csv(file.path(MOTUS_PATH$METADATA_HISTORY, "tags.csv"), row.names=FALSE)
