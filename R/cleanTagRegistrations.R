@@ -296,6 +296,10 @@ cleanTagRegistrations = function(m, s, cleanBI = FALSE) {
     nodups$nomFreq = round(nodups$nomFreq, 3)          ## upstream problems with conversion from lower-precision float
     nodups$nomFreq[nodups$nomFreq==166.376] == 166.38  ## from my own registration mistakes
 
+    ## clean up the period, which if left unset triggers an infinite loop bug in the tag finder:
+    nodups$period[is.na(nodups$period)] = 2;
+    nodups$period[nodups$period == 0] = 2;
+
     dbWriteTable(s$con, "tmptags", nodups %>% as.data.frame, row.names=FALSE, overwrite=TRUE)
     s("delete from tags where tagID in (select distinct tagID from tmptags)")
     s("insert into tags select * from tmptags")

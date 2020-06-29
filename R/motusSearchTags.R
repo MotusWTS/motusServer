@@ -144,7 +144,7 @@ motusSearchTags = function(projectID = NULL, tsStart = NULL, tsEnd = NULL, searc
         return(NULL)
 
     ## remove "TEST" records, which aren't real tags
-    mot = subset(mot, ! grepl("^TEST|^999", mfgID, perl=TRUE))
+    mot = subset(mot, ! grepl("^TEST", mfgID, perl=TRUE))
 
     ## grab columns we want, fillling in NA for any which are missing
     rv = data.frame('.ignore'=seq.int(length=nrow(mot)))
