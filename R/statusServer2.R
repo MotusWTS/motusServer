@@ -1198,12 +1198,6 @@ rerun_receiver = function(env) {
         return(error_from_app("invalid receiver serial number (`serno`)"))
     if (!file.exists(path))
         return(error_from_app("receiver not known to motus"))
-    if (is.null(minBN))
-        return(error_from_app("must specify minimum boot number (`minBN`)"))
-    if (is.null(maxBN))
-        return(error_from_app("must specify maximum boot number (`maxBN`)"))
-    if (minBN > maxBN)
-        return(error_from_app("minBN must be less than or equal to maxBN"))
 
     j = newJob("rerunReceiver", .parentPath=MOTUS_PATH$INCOMING, serno=serno, monoBN=c(minBN, maxBN), exportOnly=FALSE, cleanup=TRUE, motusUserID = userID, motusProjectID = projectID, .enqueue=FALSE)
     jobID = unclass(j)
