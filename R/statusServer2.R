@@ -1199,7 +1199,13 @@ rerun_receiver = function(env) {
     if (!file.exists(path))
         return(error_from_app("receiver not known to motus"))
 
-    j = newJob("rerunReceiver", .parentPath=MOTUS_PATH$INCOMING, serno=serno, monoBN=c(minBN, maxBN), exportOnly=FALSE, cleanup=TRUE, motusUserID = userID, motusProjectID = projectID, .enqueue=FALSE)
+    if (is.null(minBN)) {
+        j = newJob("rerunReceiver", .parentPath=MOTUS_PATH$INCOMING, serno=serno, exportOnly=FALSE, cleanup=TRUE, motusUserID = userID, motusProjectID = projectID, .enqueue=FALSE)
+    } else if (is.null(maxBN)) {
+        j = newJob("rerunReceiver", .parentPath=MOTUS_PATH$INCOMING, serno=serno, monoBN=c(minBN, minBN), exportOnly=FALSE, cleanup=TRUE, motusUserID = userID, motusProjectID = projectID, .enqueue=FALSE)
+    } else {
+        j = newJob("rerunReceiver", .parentPath=MOTUS_PATH$INCOMING, serno=serno, monoBN=c(minBN, maxBN), exportOnly=FALSE, cleanup=TRUE, motusUserID = userID, motusProjectID = projectID, .enqueue=FALSE)
+    }
     jobID = unclass(j)
     jobLog(j, paste0("Rerunning receiver ", serno, ", boot numbers ", minBN, " to ", maxBN), summary=TRUE)
     j$queue = "0"
