@@ -98,6 +98,7 @@ T : LifeTag hit on CTT/CVRX dongle or SensorStation
 Fields:
 
 	-m : antenna listening frequency?
+	-w : FunCube and FunCubePro parameter settings (see https://github.com/sensorgnome-org/sensorgnome-control/blob/77d8ba9b2cf1ba6d3eef895fe7e2155c3f6ccd73/master/usbaudio.js#L32)
 	alt : altitude (m)
 	dfreq : frequency offset (KHz)
 	err : blank on success, else error message (frequency setting)
