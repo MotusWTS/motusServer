@@ -1403,14 +1403,13 @@ from
 where
    t2.batchID = %d
    %s
-   and t1.ant > %d
-   and t1.hourBin > %f
+   and (t1.ant > %d or (t1.ant = %d  and t1.hourBin > %f))
 order by
    t1.ant,
    t1.hourBin
 limit %d
 ",
-batchID, ownership, ant, hourBin, MAX_ROWS_PER_REQUEST)
+batchID, ownership, ant, ant, hourBin, MAX_ROWS_PER_REQUEST)
     return_from_app(MotusDB(query))
 }
 
