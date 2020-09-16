@@ -781,7 +781,7 @@ batchID, ownership, ts, MAX_ROWS_PER_REQUEST)
 #'       \item projectID; integer project ID (who registered the tag)
 #'       \item mfgID; character manufacturer tag ID
 #'       \item type; character "ID" or "BEEPER"
-#'       \item codeSet; character e.g. "Lotek3", "Lotek4"
+#'       \item codeSet; character e.g. "Lotek3", "Lotek4", "Lotek6M"
 #'       \item manufacturer; character e.g. "Lotek"
 #'       \item model; character e.g. "NTQB-3-1"
 #'       \item lifeSpan; integer estimated tag lifeSpan, in days

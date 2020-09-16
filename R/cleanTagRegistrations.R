@@ -130,7 +130,7 @@ cleanTagRegistrations = function(m, s, cleanBI = FALSE) {
 
     ## cleanup gap values from codesets
 
-    codeSets = c("Lotek3", "Lotek4")
+    codeSets = c("Lotek3", "Lotek4","Lotek6M")
 
     ## tags not in a known codeset are left alone (these might be beepers, e.g.)
     other = m %>% filter_ (~!codeSet %in% codeSets)

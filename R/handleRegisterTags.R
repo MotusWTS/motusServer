@@ -13,7 +13,7 @@
 #' \item  nomFreq: 166.38 (nominal tag frequency, in MHz)
 #' \item  species: XXXXX (optional 4-letter code or motus numeric species ID)
 #' \item  deployDate: YYYY-MM-DD (earliest likely deployment date for any tags)
-#' \item  codeSet: X (optional codeset ; default: 4 for "Lotek4"; can also be 3 for "Lotek3")
+#' \item  codeSet: X (optional codeset ; default: 6M for "Lotek6M"; can also be 4 for "Lotek4" or 3 for "Lotek3")
 #' }
 #'
 #' as well as one or more recording files with names like \code{tagXXX.wav}
@@ -131,7 +131,8 @@ handleRegisterTags = function(j) {
     dateBinTS = if (is.na(deployDate)) regTS else deployDate
     dateBin = sprintf("%4d-%1d", year(dateBinTS), ceiling(month(dateBinTS)/3))
 
-    codeSet = "Lotek4"
+	## Codeset Lotek6M was introduced in 2020. It completely overlaps with Lotek4, and add about 200 new values
+    codeSet = "Lotek6M"
     if (! is.null(meta$codeSet)) {
         codeSet = switch( meta$codeSet,
                          "2003" = "Lotek4",
@@ -143,9 +144,18 @@ handleRegisterTags = function(j) {
                          "Lotek3" = "Lotek3",
                          "Lotek-4" = "Lotek4",
                          "Lotek-3" = "Lotek3",
+						 "Lotek6" = "Lotek6M",
+						 "Lotek6M" = "Lotek6M",
+                         "Lotek-6" = "Lotek6M",
+                         "Lotek-6M" = "Lotek6M",
+                         "6" = "Lotek6M",
+						 "6M" = "Lotek6M",
+						 "2020" = "Lotek6M",
+						 "Lotek 2020" = "Lotek6M",
+						 "Lotek-2020" = "Lotek6M",
                          NULL)
         if (is.null(codeSet))
-            errs = c(errs, paste0("Unknown codeset: ", meta$codeSet, "\nShould be '4' or '3'"))
+            errs = c(errs, paste0("Unknown codeset: ", meta$codeSet, "\nShould be '6M', '4' or '3'"))
     }
 
     if (length(errs) > 0)
@@ -173,15 +183,15 @@ handleRegisterTags = function(j) {
     ## set fcdfreq to default 4 kHz below nominal where not supplied
     fcdfreqs[is.na(fcdfreqs)] = nomFreq - 0.004
 
-    ## try both codesets
-    otherCodeSet = if(codeSet=="Lotek4") "Lotek3" else "Lotek4"
-    tryingOtherCodeSet = FALSE
+    ## try all codesets
+    otherCodeSets = if(codeSet=="Lotek4") c("Lotek6","Lotek3") else if(codeSet=="Lotek3") c("Lotek6","Lotek4") else c("Lotek4","Lotek3")
+    tryingOtherCodeSet = 0
     iNoTag = c()
     numReg = 0
     numFail = 0
     numNoBISD = 0
 
-    for (tryCodeSet in c(codeSet, otherCodeSet)) {
+    for (tryCodeSet in c(codeSet, otherCodeSets)) {
         ## get appropriate codeset DB and codeset DB file
         codeSetFile = ltGetCodeset(tryCodeSet, pathOnly=TRUE)
         codeSetDB = ltGetCodeset(tryCodeSet,  pathOnly=FALSE)
@@ -196,10 +206,10 @@ handleRegisterTags = function(j) {
 
             f = basename(wavFiles[i])
             if (nrow(tags) == 0) {
-                if (tryingOtherCodeSet) {
-                    jobLog(j, paste0("No tags detected in file ", f, " in either codest ", codeSet, " or ", otherCodeSet))
+                if (tryingOtherCodeSet > 0) {
+                    jobLog(j, paste0("No tags detected in file ", f, " in alternative codest ", otherCodeSets[tryingOtherCodeSet]))
                 } else {
-                    jobLog(j, paste0("No tags detected in file ", f, ".  I'll retry below using the other codeset (", otherCodeSet, ")"))
+                    jobLog(j, paste0("No tags detected in file ", f, ".  I'll retry below using the other codesets (",  paste0(otherCodeSets, collapse=","), ")"))
                     iNoTag = c(iNoTag, i)
                 }
                 next
@@ -311,7 +321,7 @@ handleRegisterTags = function(j) {
         }
         if (length(iNoTag) == 0)
             break
-        tryingOtherCodeSet = TRUE
+        tryingOtherCodeSet = tryingOtherCodeSet + 1
         wavFiles = wavFiles[iNoTag]
         ids = ids[iNoTag]
     }

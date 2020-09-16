@@ -30,7 +30,7 @@
 #' \item    dtaline  line in the original .DTA file for this detection, beginning at 1
 #' \item    antfreq  antenna listening frequency, in MHz
 #' \item    gain     gain setting in place during this detection (0..99)
-#' \item    codeset  factor - Lotek codeset name "Lotek3" or "Lotek4" so far
+#' \item    codeset  factor - Lotek codeset name "Lotek3", "Lotek4" or "Lotek6M" so far
 #'
 #' }
 #' \item pieces chunks of text of various types

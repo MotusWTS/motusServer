@@ -126,7 +126,7 @@ lat      double,                                   -- latitude of detection, in 
 lon      double,                                   -- longitude of detection, in decimal degrees E (so -ve means W)
 antFreq  double,                                   -- antenna frequency, in MHz
 gain     int,                                      -- antenna gain in Lotek units
-codeSet  text,                                     -- codeset of tag ('Lotek3' or 'Lotek4')
+codeSet  text,                                     -- codeset of tag ('Lotek3', 'Lotek4' or 'Lotek6M')
 primary key(ts, ant, id)                          -- no more than one detection of each ID at given time, ant
 )
 ");
