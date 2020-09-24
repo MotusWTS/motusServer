@@ -131,11 +131,12 @@ If processes were interrupted, there may be left-over locks, so you may have to 
 
 > If I change the Apache configuration, what do I need to do to restart it?
 
+```
 sudo su - sg
 /sgm/bin/killAllMotusServers.sh -g
 sudo service apache2 restart
 /sgm/bin/runAllMotusServers.sh
-
+```
 
  > If we were to migrate to a new physical server or set up a test/development server, what would we have to set up on the new server? Which files should or shouldn't be copied to new servers?
 
