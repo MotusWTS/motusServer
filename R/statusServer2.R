@@ -824,10 +824,10 @@ retry_job = function(env) {
 
         j$queue = 0L
 
-        if (moveJob(j, MOTUS_PATH$PRIORITY)) {
-            reply = "Job(s) moved to priority queue for retrying"
+        if (moveJob(j, MOTUS_PATH$QUEUE0)) {
+            reply = "Job(s) moved to queue for retrying"
         } else {
-            error = paste0("Failed to move job ", j, " to priority queue")
+            error = paste0("Failed to move job ", j, " to queue")
         }
     }
     if (is.null(error)) {
