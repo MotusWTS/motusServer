@@ -40,11 +40,11 @@ if [[ "$1" == "-g" ]]; then
     GRACEFUL="-g"
 fi
 
-/sgm/bin/killMotusStatusServer.sh $GRACEFUL
-/sgm/bin/killMotusStatusServer2.sh $GRACEFUL
-/sgm/bin/killMotusDataServer.sh $GRACEFUL
 /sgm/bin/killMotusSyncServer.sh
 /sgm/bin/killMotusProcessServers.sh -a $GRACEFUL
+/sgm/bin/killMotusDataServer.sh $GRACEFUL
+/sgm/bin/killMotusStatusServer.sh $GRACEFUL
+/sgm/bin/killMotusStatusServer2.sh $GRACEFUL
 
 
 echo Killed status, status2, data and all process servers.
