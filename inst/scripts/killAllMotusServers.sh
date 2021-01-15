@@ -42,6 +42,21 @@ fi
 
 /sgm/bin/killMotusSyncServer.sh
 /sgm/bin/killMotusProcessServers.sh -a $GRACEFUL
+
+## if a graceful shutdown, wait until all .pid files
+## have been deleted, indicating the corresponding
+## process has ended.
+
+if [[ $GRACEFUL ]]; then
+    while (( 1 )); do
+        if [[ `ls -1 /sgm/*.pid 2>/dev/null` == "" ]]; then
+            break
+        fi
+        printf "Sleeping 10s while waiting for:\n`cd /sgm; ls -1 *.pid | sed -e 's/.pid//'`\nto finish current job(s).\n"
+        sleep 10
+    done
+fi
+
 /sgm/bin/killMotusDataServer.sh $GRACEFUL
 /sgm/bin/killMotusStatusServer.sh $GRACEFUL
 /sgm/bin/killMotusStatusServer2.sh $GRACEFUL
