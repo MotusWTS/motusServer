@@ -212,7 +212,7 @@ ltMergeFiles = function(files, j, dbdir=MOTUS_PATH$RECV) {
             }
         }
         ## unlock the receiver and drop the source
-        lockSymbol(x$recv, lock=FALSE)
+        lockSymbol(serno, lock=FALSE)
         rm(sql)
         rm(src)
         gc()

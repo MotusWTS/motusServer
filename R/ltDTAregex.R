@@ -69,7 +69,7 @@ CHANNEL[[:blank:]]++FREQUENCY[[:blank:]]++STATUS[[:blank:]]++TYPE\\n
 |
 (?:Receiver[[:blank:]]++S\\/N:[[:blank:]]++
 (?<serial_no>[a-zA-Z0-9]++)
-\\n)
+[[:blank:]]*+\\n)
 
 # Or a manually triggered coded record section
 |

@@ -72,6 +72,7 @@ authorize that person to ssh in as user `sg` by doing `sudo cat
 sudo su sg # if not already logged in as user `sg`
 cd ~/src/motusServer
 git pull
+
 # runs the script /sgm/bin/rpack which
 # - regenerates the roxygen-based documentation for the package
 # - rebuilds the package
@@ -82,8 +83,7 @@ rpack -g .
 
 ## running servers continue to user the previous version until
 ## restarted, so after the above completes successfully, do:
-/sgm/bin/killAllMotusServers.sh
-/sgm/bin/runAllMotusServers.sh
+/sgm/bin/rerunMotusServers.sh -g
 ```
 
  > What is the procedure to rebuild find_tags and install it on
@@ -121,13 +121,22 @@ For now, updating anything may break the server. Fixing this is currently our fi
 
  As user `sg` run `/sgm/bin/rerunMotusServers.sh -g`. Flags documented in https://github.com/MotusWTS/motusServer/blob/master/inst/scripts/rerunMotusServers.sh
 
- Alternately, run `killMotusDataServer.sh` followed by `runAllMotusServers.sh`.
+ Alternately, run `killMotusDataServer.sh -g` followed by `runAllMotusServers.sh`.
 
  > When the sgdata server is restarted, what (if anything) needs to be done to get everything running again?
 
 Lotek codesets have to be loaded into memory (they're encrypted); an email is sent to the admin, telling them to run a certain script. The email is sent to addresses listed in `/home/sg/.forward`.
 
 If processes were interrupted, there may be left-over locks, so you may have to do `sqlite3 /sgm_local/server.sqlite`, `delete from symLocks;`, `.exit`.
+
+> If I change the Apache configuration, what do I need to do to restart it?
+
+```
+sudo su - sg
+/sgm/bin/killAllMotusServers.sh -g
+sudo service apache2 restart
+/sgm/bin/runAllMotusServers.sh
+```
 
  > If we were to migrate to a new physical server or set up a test/development server, what would we have to set up on the new server? Which files should or shouldn't be copied to new servers?
 
