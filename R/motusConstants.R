@@ -122,6 +122,7 @@ MOTUS_PATH = list(
     RECV             = "/sgm/recv/",                 ## receiver databases
     RECVLOG          = "/sgm/recvlog/",              ## logfiles from receivers
     SERVER_DB        = "/sgm_local/server.sqlite",   ## the database used to record processing server activity
+    JOB_ARCHIVE_DB   = "/sgm_local/archive_server.sqlite", ## database to archive old jobs from SERVER_DB
 
     SYNC             = "/sgm_local/sync/",           ## the sync server watches this directory for new empty files named
                                                      ## N:SERNO, where N is a tunnel port and SERNO is a serial number.  When
