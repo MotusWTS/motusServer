@@ -1,0 +1,4 @@
+# Delete old data in the transfer tables.
+# Run daily at 2:15 PM GMT
+#m h  dom mon dow user cmd
+15 14  *   *   *  sg   /sgm/bin/cleanTransferTables.R

@@ -1,4 +1,4 @@
-# permanently delete all trash folders older than 31 days
-# run at 4:01 on the 1st day of each month
+# Permanently delete all trash folders older than 31 days.
+# Run at 4:01 AM GMT on the 1st day of each month.
 #m h    dom mon dow    user   cmd
 1  4     1   *   *     sg    [ -x /sgm_local/bin/monthly_trash_dump.sh ] && /sgm_local/bin/monthly_trash_dump.sh

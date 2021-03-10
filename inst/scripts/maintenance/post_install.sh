@@ -8,7 +8,7 @@
 
 Rscript -e 'library(motusServer);ensureServerDirs()'
 
-## make sure cron jobs (re-occuring tasks) are set up correctly
+## make sure cron jobs (re-occurring tasks) are set up correctly
 
 echo setting up crontab for daily sqlite backups
 
