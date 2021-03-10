@@ -40,7 +40,7 @@ deleteOldRecords <- function(tableName, batchIdFieldName = "batchID") {
  }
  # Running this after deleting rows frees unused space in both the table and the indices.
  # This improves performance on all operations if the tables are large enough.
- MotusDB(sprintf("optimize table %s", tableName))
+ invisible(MotusDB(sprintf("optimize table %s", tableName)))
 }
 
 deleteOldRecords("hits")
