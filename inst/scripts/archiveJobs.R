@@ -17,10 +17,10 @@ ArchiveDB <<- safeSQL(MOTUS_PATH$JOB_ARCHIVE_DB)
 # Each job has ctime (creation time) and mtime (modification time).
 
 # Archive all jobs which are more than one year old.
-oldJobStumps <- ServerDB("select stump from jobs group by stump having strftime('%s', 'now') - max(mtime) > 60*60*24*366")
+oldJobStumps <- ServerDB("select stump from jobs group by stump having max(mtime) < strftime('%s', 'now') - 60*60*24*366")
 oldJobStumps <- paste0(oldJobStumps[,1], collapse=',')
 oldJobs <- ServerDB(paste0("select * from jobs where stump in (", oldJobStumps, ")"))
-# Occasionally jobs will be copied back to the main database, so do this to ensure the next step doesn't fail
+# Occasionally jobs will be copied back to the main database, so do this to ensure the write doesn't fail
 ArchiveDB(paste0("delete from jobs where stump in (", oldJobStumps, ")"))
 dbWriteTable(ArchiveDB$con, "jobs", oldJobs, append=TRUE)
 ServerDB(paste0("delete from jobs where stump in (", oldJobStumps, ")"))
@@ -28,13 +28,13 @@ ServerDB(paste0("delete from jobs where stump in (", oldJobStumps, ")"))
 # Archive automated upload jobs which are more than one month old.
 # syncReceiver jobs are hourly uploads from internet-connected SensorGnome receivers.
 # uploadFile jobs from user 347 for project 0 are daily uploads from CTT receivers.
-oldJobStumps <- ServerDB("select stump from jobs group by stump having strftime('%s', 'now') - max(mtime) > 60*60*24*31")
+oldJobStumps <- ServerDB("select stump from jobs group by stump having max(mtime) < strftime('%s', 'now') - 60*60*24*31")
 oldJobStumps <- paste0(oldJobStumps[,1], collapse=',')
 # Only the root jobs have the types we're searching for.
 oldJobStumps <- ServerDB(paste0("select id from jobs where id in (", oldJobStumps, ") and (type = 'syncReceiver' or motusUserID = 347 and motusProjectID = 0 and type = 'uploadFile')"))
 oldJobStumps <- paste0(oldJobStumps[,1], collapse=',')
 oldJobs <- ServerDB(paste0("select * from jobs where stump in (", oldJobStumps, ")"))
-# Occasionally jobs will be copied back to the main database, so do this to ensure the next step doesn't fail
+# Occasionally jobs will be copied back to the main database, so do this to ensure the write doesn't fail
 ArchiveDB(paste0("delete from jobs where stump in (", oldJobStumps, ")"))
 dbWriteTable(ArchiveDB$con, "jobs", oldJobs, append=TRUE)
 ServerDB(paste0("delete from jobs where stump in (", oldJobStumps, ")"))

@@ -20,17 +20,27 @@ suppressMessages(suppressWarnings(library(motusServer)))
 MotusDB <- openMotusDB()
 
 # Largest batchID from one month ago.
-maxBatchId = MotusDB("select max(batchID) from batches where unix_timestamp() - ts > 60*60*24*31")
+maxBatchId <- MotusDB("select max(batchID) from batches where unix_timestamp() - ts > 60*60*24*31")[,1]
+
+# Verify that batchIDs actually are monotonically increasing over time.
+shouldBeEmpty <- MotusDB(sprintf("select batchID from batches where batchID < %d and ts > (select ts from batches where batchID = %1$d) limit 1", maxBatchId))
+if(nrow(shouldBeEmpty) > 0)
+ stop(sprintf("Error: found batch with smaller batchID but larger ts than batch %d\n", maxBatchId))
+
+# Deleting 10,000 rows from the largest table (hits) seems to take between 5 and 15 seconds when nothing else is happening, but can take 10 times longer when other processes are actively using the database.
+delLimit <- 10000
 
 deleteOldRecords <- function(tableName, batchIdFieldName = "batchID") {
- delCount = 1
- while(delCount > 0) {
-  delCount = MotusDB(paste0("delete from ", tableName, " where ", batchIdFieldName, " <= ", maxBatchId, " limit 10000"))
-  # Sleep for 10 seconds every 10,000 deletions. Allows other processes to continue using the database.
-  # Deleting 10,000 rows from the largest table (hits) seems to take between 1 and 10 seconds.
-  # Too short? Too long?
-  Sys.sleep(10)
+ # Deleting all the rows at once can tie up the database for hours if there are a large number of rows to be deleted.
+ # Deleting delLimit rows at a time lets other processes insert rows in between deletions.
+ repeat {
+  delCount <- MotusDB(sprintf("delete from %s where %s <= %d limit %d", tableName, batchIdFieldName, maxBatchId, delLimit))
+  if(delCount < delLimit)
+   break
  }
+ # Running this after deleting rows frees unused space in both the table and the indices.
+ # This improves performance on all operations if the tables are large enough.
+ MotusDB(sprintf("optimize table %s", tableName))
 }
 
 deleteOldRecords("hits")
