@@ -198,7 +198,7 @@ MOTUS_RECV_SERNO_REGEX = paste0("(?i)^(?:(?:", paste0(MOTUS_RECEIVER_SERNO_REGEX
 ## been shortened to 8.3 form)
 ## see https://en.wikipedia.org/wiki/8.3_filename#VFAT_and_Computer-generated_8.3_filenames
 
-MOTUS_DOS_FILENAME_REGEX = "^[a-zA-Z0-9]+~[0-9].(?:GZ|TXT)"
+MOTUS_DOS_FILENAME_REGEX = "^[a-zA-Z0-9]+~[0-9][.](?:GZ|TXT)"
 
 ## Make the following symbols available outside the package
 
