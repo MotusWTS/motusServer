@@ -15,7 +15,7 @@
 # This script relies on batchIDs monotonically increasing over time.
 # If that ever changes, some indexes will have to be added to these tables to make a correct algorithm performant.
 
-suppressMessages(suppressWarnings(library(motusServer)))
+invisible(library(motusServer)) # cron sends an email every time if this isn't made invisible
 
 MotusDB <- openMotusDB()
 
