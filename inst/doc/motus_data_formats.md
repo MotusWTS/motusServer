@@ -10,6 +10,7 @@ This format is the default for units running the SensorGnome software (including
 
 	Example:	changeMe-3114BBBK2178-000074-2018-01-22T00-29-13.3300T-all.txt.gz
 			changeMe-3114BBBK2178-000074-2018-01-22T00-29-13.3300T-ctt.txt.gz
+			changeMe-5113BBBK2799-003017-2021-04-12T11-04-42.1680T-lifetag.csv.gz (2018 BeagleBone version)
 
 	site_label: user-entered site label (default: changeMe)
 	receiver_number: for SensorGnomes, receiver serial number (without the SG prefix, e.g. 3114BBBK2178)
@@ -62,7 +63,7 @@ Filename: the file name is entirely determined by the user and doesn't contain u
 
 ### 2a. SensorGnome format ###
 
-The following prefix can be found in sensorgnome files. Files of type *ctt* will only contain T and G prefix.
+The following prefix can be found in sensorgnome files. Files of type *ctt* (or *lifetag*) will only contain T and G prefix.
 
 C : (GPS clock setting precision record: outlines the time the GPS was set (ts), the precision it was set to (prec), and the time elapsed in running the time (elapsed))
 
