@@ -6,9 +6,8 @@
 
 # The intent is for this script to be run on a regular schedule, e.g. daily or weekly.
 
+suppressMessages(suppressWarnings(library(motusServer))) # cron sends an email every time if this isn't made invisible
 invisible({
- library(motusServer)
-
  ServerDB <<- safeSQL(MOTUS_PATH$SERVER_DB) # The main jobs database
  ArchiveDB <<- safeSQL(MOTUS_PATH$JOB_ARCHIVE_DB)
 
