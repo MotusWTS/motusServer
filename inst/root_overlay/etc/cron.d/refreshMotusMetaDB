@@ -1,3 +1,9 @@
-# Run daily at 8:30 AM GMT.
-#m h    dom mon dow    user   cmd
-30 *     *   *   *     sg     /sgm/bin/refreshMotusMetaDB.R
+# Run every 4 hours.
+# As of 2021-05-20 this is taking about 7 to 8 minutes to run.
+#m  h   dom mon dow    user   cmd
+30  0    *   *   *     sg     /sgm/bin/refreshMotusMetaDB.R
+30  4    *   *   *     sg     /sgm/bin/refreshMotusMetaDB.R
+30  8    *   *   *     sg     /sgm/bin/refreshMotusMetaDB.R
+30 12    *   *   *     sg     /sgm/bin/refreshMotusMetaDB.R
+30 16    *   *   *     sg     /sgm/bin/refreshMotusMetaDB.R
+30 20    *   *   *     sg     /sgm/bin/refreshMotusMetaDB.R
