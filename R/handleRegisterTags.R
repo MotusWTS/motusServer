@@ -186,7 +186,6 @@ handleRegisterTags = function(j) {
     ## try all codesets
     otherCodeSets = if(codeSet=="Lotek4") c("Lotek6M","Lotek3") else if(codeSet=="Lotek3") c("Lotek6M","Lotek4") else c("Lotek4","Lotek3")
     tryingOtherCodeSet = 0
-    iNoTag = c()
     numReg = 0
     numFail = 0
     numNoBISD = 0
@@ -199,6 +198,7 @@ handleRegisterTags = function(j) {
         ## 2017-Jan-30 FIXME: remove provWarn cruft once upstream re-enables provisional deployment
         provWarn = FALSE
 
+        iNoTag = c()
         ## process each wave file to look for tag detections, using the current codeset
         for (i in seq(along=wavFiles)) {
             ## return a data.frame of (ts, id, dfreq, sig, noise)
@@ -210,8 +210,8 @@ handleRegisterTags = function(j) {
                     jobLog(j, paste0("No tags detected in file ", f, " in alternative codest ", otherCodeSets[tryingOtherCodeSet]))
                 } else {
                     jobLog(j, paste0("No tags detected in file ", f, ".  I'll retry below using the other codesets (",  paste0(otherCodeSets, collapse=","), ")"))
-                    iNoTag = c(iNoTag, i)
                 }
+                iNoTag = c(iNoTag, i)
                 next
             }
             ## number of detections of the 'correct' tag
