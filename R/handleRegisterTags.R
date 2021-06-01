@@ -184,7 +184,7 @@ handleRegisterTags = function(j) {
     fcdfreqs[is.na(fcdfreqs)] = nomFreq - 0.004
 
     ## try all codesets
-    otherCodeSets = if(codeSet=="Lotek4") c("Lotek6","Lotek3") else if(codeSet=="Lotek3") c("Lotek6","Lotek4") else c("Lotek4","Lotek3")
+    otherCodeSets = if(codeSet=="Lotek4") c("Lotek6M","Lotek3") else if(codeSet=="Lotek3") c("Lotek6M","Lotek4") else c("Lotek4","Lotek3")
     tryingOtherCodeSet = 0
     iNoTag = c()
     numReg = 0
