@@ -85,6 +85,10 @@ handleRegisterTags = function(j) {
     if (grepl("^ANTC", tagModel, perl=TRUE) && ! grepl("M", tagModel, perl=TRUE))
         tagModel = sub("([0-9])", "M\\1", tagModel, perl=TRUE) ## insert "M" before first digit
 
+    ## Correct a common mistake (possibly another situation similar to the above?):
+    if(grepl("^NTQB2-4-2s$", tagModel, perl=TRUE))
+        tagModel = "NTQB2-4-2S"
+
     ## ignore hyphens when matching model
     tmi = match(gsub("-", "", tagModel, perl=TRUE), gsub("-", "", rownames(tagLifespanPars), perl=TRUE))
     if (is.na(tmi)) {
