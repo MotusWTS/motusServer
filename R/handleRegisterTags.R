@@ -131,7 +131,7 @@ handleRegisterTags = function(j) {
     dateBinTS = if (is.na(deployDate)) regTS else deployDate
     dateBin = sprintf("%4d-%1d", year(dateBinTS), ceiling(month(dateBinTS)/3))
 
-	## Codeset Lotek6M was introduced in 2020. It completely overlaps with Lotek4, and add about 200 new values
+    ## Codeset Lotek6M was introduced in 2020. It completely overlaps with Lotek4, and add about 200 new values
     codeSet = "Lotek6M"
     if (! is.null(meta$codeSet)) {
         codeSet = switch( meta$codeSet,
@@ -144,15 +144,15 @@ handleRegisterTags = function(j) {
                          "Lotek3" = "Lotek3",
                          "Lotek-4" = "Lotek4",
                          "Lotek-3" = "Lotek3",
-						 "Lotek6" = "Lotek6M",
-						 "Lotek6M" = "Lotek6M",
+                         "Lotek6" = "Lotek6M",
+                         "Lotek6M" = "Lotek6M",
                          "Lotek-6" = "Lotek6M",
                          "Lotek-6M" = "Lotek6M",
                          "6" = "Lotek6M",
-						 "6M" = "Lotek6M",
-						 "2020" = "Lotek6M",
-						 "Lotek 2020" = "Lotek6M",
-						 "Lotek-2020" = "Lotek6M",
+                         "6M" = "Lotek6M",
+                         "2020" = "Lotek6M",
+                         "Lotek 2020" = "Lotek6M",
+                         "Lotek-2020" = "Lotek6M",
                          NULL)
         if (is.null(codeSet))
             errs = c(errs, paste0("Unknown codeset: ", meta$codeSet, "\nShould be '6M', '4' or '3'"))
