@@ -23,8 +23,9 @@ MotusDB <- openMotusDB()
 maxBatchId <- MotusDB("select max(batchID) from batches where unix_timestamp() - ts > 60*60*24*31")[,1]
 
 # Verify that batchIDs actually are monotonically increasing over time.
-# Allow batches to be out-of-order by 10 minutes (600 seconds) due to concurrent processing. This appears to be common.
-shouldBeEmpty <- MotusDB(sprintf("select batchID from batches where batchID < %d and ts > (select ts from batches where batchID = %1$d) + 600 limit 1", maxBatchId))
+# Allow batches to be out-of-order by one day. This can happen because of parallel processing, and because of error repair which doesn't re-set ts.
+buffer <- 60 * 60 * 24
+shouldBeEmpty <- MotusDB(sprintf("select batchID from batches where batchID < %d and ts > (select ts from batches where batchID = %1$d) + %d limit 1", maxBatchId, buffer))
 if(nrow(shouldBeEmpty) > 0)
  stop(sprintf("found batch with smaller batchID but larger ts than batch %d\n", maxBatchId)) # cron prepends "Error: "
 
