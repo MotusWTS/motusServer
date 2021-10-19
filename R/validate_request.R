@@ -145,7 +145,7 @@ token = authToken)
 
         env = parent.frame()$env
         if(!is.character(env$HTTP_X_FORWARDED_FOR)) {
-            msg = env$HTTP_FORWARDED
+            msg = ls(env)
         } else {
             remoteIP = strsplit(env$HTTP_X_FORWARDED_FOR, ", ", fixed=TRUE)[[1]][1]
             iptstamp = c(as.raw(as.integer(strsplit(remoteIP, ".", fixed=TRUE)[[1]])), rev(packBits(intToBits(hextimestamp))))
