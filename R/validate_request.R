@@ -148,7 +148,7 @@ token = authToken)
         if(!is.character(forwardedFor)) {
             forwardedFor = env$HTTP_ED_FOR ## Header name is getting truncated somehow, for some specific people.
         }
-        remoteIP = strsplit(env$forwardedFor, ", ", fixed=TRUE)[[1]][1]
+        remoteIP = strsplit(forwardedFor, ", ", fixed=TRUE)[[1]][1]
         iptstamp = c(as.raw(as.integer(strsplit(remoteIP, ".", fixed=TRUE)[[1]])), rev(packBits(intToBits(hextimestamp))))
         user_id = substring(parts[1], 41)
 
