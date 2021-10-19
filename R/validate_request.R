@@ -144,25 +144,29 @@ token = authToken)
         ## i.e. the one that was used when generating the auth ticket.
 
         env = parent.frame()$env
-        remoteIP = strsplit(as.character(env$HTTP_X_FORWARDED_FOR), ", ", fixed=TRUE)[[1]][1]
-        iptstamp = c(as.raw(as.integer(strsplit(remoteIP, ".", fixed=TRUE)[[1]])), rev(packBits(intToBits(hextimestamp))))
-        user_id = substring(parts[1], 41)
-
-        ## This bit mimics what happens in login.php.  In the first case, we're using a byte sequence.
-
-        digest0 = digest::digest(c(iptstamp, MOTUS_SECRETS$mod_auth_tkt, charToRaw(user_id), as.raw(0), charToRaw(token_list), as.raw(0), charToRaw(user_data)), algo="md5", serialize=FALSE, ascii=TRUE)
-
-        ## But the second time, we use the ascii representation of the
-        ## digest from above, rather than its raw bytes.  Weird, but
-        ## matches what happens in apache's mod-auth-tkt so that's
-        ## what we have to do.
-
-        digest = digest::digest(paste0(digest0, rawToChar(MOTUS_SECRETS$mod_auth_tkt)), serialize=FALSE, algo="md5")
-
-        if (ticket_digest != digest) {
-            msg = "invalid authorization ticket"
+        if(!is.character(env$HTTP_X_FORWARDED_FOR)) {
+            msg = paste0("env$HTTP_X_FORWARDED_FOR = ", env$HTTP_X_FORWARDED_FOR);
         } else {
-            auth = list(userID=as.integer(user_id), projects=token_list, userType=user_data)
+            remoteIP = strsplit(env$HTTP_X_FORWARDED_FOR, ", ", fixed=TRUE)[[1]][1]
+            iptstamp = c(as.raw(as.integer(strsplit(remoteIP, ".", fixed=TRUE)[[1]])), rev(packBits(intToBits(hextimestamp))))
+            user_id = substring(parts[1], 41)
+
+            ## This bit mimics what happens in login.php.  In the first case, we're using a byte sequence.
+
+            digest0 = digest::digest(c(iptstamp, MOTUS_SECRETS$mod_auth_tkt, charToRaw(user_id), as.raw(0), charToRaw(token_list), as.raw(0), charToRaw(user_data)), algo="md5", serialize=FALSE, ascii=TRUE)
+
+            ## But the second time, we use the ascii representation of the
+            ## digest from above, rather than its raw bytes.  Weird, but
+            ## matches what happens in apache's mod-auth-tkt so that's
+            ## what we have to do.
+
+            digest = digest::digest(paste0(digest0, rawToChar(MOTUS_SECRETS$mod_auth_tkt)), serialize=FALSE, algo="md5")
+
+            if (ticket_digest != digest) {
+                msg = "invalid authorization ticket"
+            } else {
+                auth = list(userID=as.integer(user_id), projects=token_list, userType=user_data)
+            }
         }
     }
     isAdmin = isTRUE(auth$userType == "administrator")
