@@ -20,6 +20,7 @@
 #'   \item BBBK
 #'   \item RPI2
 #'   \item RPI3
+#'   \item RPI4
 #'   \item RPIZ
 #'   \item UNKNOWN
 #' }
@@ -35,7 +36,7 @@ getRecvModel = function(serno) {
         ## of the 12-character portion after "SG-", but treat BBW
         ## specially, as it might be followed by different characters
         model = toupper(substring(serno, 8, 11))
-        if (model %in% c("BBBK", "RPI2", "RPI3", "RPIZ"))
+        if (model %in% c("BBBK", "RPI2", "RPI3", "RPI4", "RPIZ"))
             return(model)
         if (substring(model, 1, 3) == "BBW")
             return("BBW")
