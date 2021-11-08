@@ -122,6 +122,7 @@ MOTUS_PATH = list(
     RECV             = "/sgm/recv/",                 ## receiver databases
     RECVLOG          = "/sgm/recvlog/",              ## logfiles from receivers
     SERVER_DB        = "/sgm_local/server.sqlite",   ## the database used to record processing server activity
+    JOB_ARCHIVE_DB   = "/sgm_local/archive_server.sqlite", ## database to archive old jobs from SERVER_DB
 
     SYNC             = "/sgm_local/sync/",           ## the sync server watches this directory for new empty files named
                                                      ## N:SERNO, where N is a tunnel port and SERNO is a serial number.  When
@@ -181,16 +182,23 @@ MOTUS_LOTEK_SERNO_REGEX = "Lotek-D?[0-9]+(?:_[0-9])?"
 
 MOTUS_CTT_SERNO_REGEX = "CTT-(?:[0-9]{15}|[0-9A-F]{12})"
 
-MOTUS_SEI_SERNO_REGEX = "SEI_[AO]_[0-9]{2}(0[0-9]|1[0-2])([0-2][0-9]|3[0-1])[0-9]{3}"
+MOTUS_SEI_SERNO_REGEX = "SEI_[A-Z]_[A-Z0-9]{9}"
+
+MOTUS_RECEIVER_SERNO_REGEXES = c(
+ MOTUS_SG_SERNO_REGEX,
+ MOTUS_LOTEK_SERNO_REGEX,
+ MOTUS_CTT_SERNO_REGEX,
+ MOTUS_SEI_SERNO_REGEX
+)
 
 ## regex to exactly match any receiver serial number
-MOTUS_RECV_SERNO_REGEX = paste0("(?i)^(?:(?:", MOTUS_SG_SERNO_REGEX, ")|(?:", MOTUS_LOTEK_SERNO_REGEX, ")|(?:", MOTUS_CTT_SERNO_REGEX, ")|(?:", MOTUS_SEI_SERNO_REGEX, "))$")
+MOTUS_RECV_SERNO_REGEX = paste0("(?i)^(?:(?:", paste0(MOTUS_RECEIVER_SERNO_REGEXES, collapse=")|(?:"), "))$")
 
 ## regex for matching DOS filenames (names of SG data files which have
 ## been shortened to 8.3 form)
 ## see https://en.wikipedia.org/wiki/8.3_filename#VFAT_and_Computer-generated_8.3_filenames
 
-MOTUS_DOS_FILENAME_REGEX = "^[a-zA-Z0-9]+~[0-9].(?:GZ|TXT)"
+MOTUS_DOS_FILENAME_REGEX = "^[a-zA-Z0-9]+~[0-9][.](?:GZ|TXT)"
 
 ## Make the following symbols available outside the package
 
@@ -212,7 +220,7 @@ MOTUS_JUNKFILE_REGEX = "(?:__MACOSX/|System Volume Information/|.DS_Store|._.DS_
 
 ## regex for CTT files created by SensorGnome that we want to move to the CTT_OUTGOING folder.
 
-MOTUS_CTT_SG_DATAFILE_REGEX = paste0("(?:[^-]+)-(?:(?:", MOTUS_SG_SERNO_WITHOUT_PREFIX_REGEX, ")|(?:", MOTUS_CTT_SERNO_REGEX, "))-.*-ctt(?:\\.[a-z]+)(?:\\.(?:gz|lz|bz2))?$")
+MOTUS_CTT_SG_DATAFILE_REGEX = paste0("(?:[^-]+)-(?:(?:", MOTUS_SG_SERNO_WITHOUT_PREFIX_REGEX, ")|(?:", MOTUS_CTT_SERNO_REGEX, "))-.*-(?:ctt|lifetag)(?:\\.[a-z]+)(?:\\.(?:gz|lz|bz2))?$")
 
 ## regex for CTT files created by SensorStation that we want to move to the CTT_OUTGOING folder.
 

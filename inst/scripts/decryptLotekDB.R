@@ -17,7 +17,7 @@
 
 options(warn = -1)
 sources = c("/home/sg/lotekdb/Lotek6M.sqlite.gpg", "/home/sg/lotekdb/Lotek4.sqlite.gpg", "/home/sg/lotekdb/Lotek3.sqlite.gpg")
-targets = c("/home/sg/ramfs/Lotek6.sqlite",  "/home/sg/ramfs/Lotek4.sqlite",   "/home/sg/ramfs/Lotek3.sqlite")
+targets = c("/home/sg/ramfs/Lotek6M.sqlite",  "/home/sg/ramfs/Lotek4.sqlite",   "/home/sg/ramfs/Lotek3.sqlite")
 
 if (! isTRUE(Sys.getenv("USER") == "sg")) {
     cat("This script must be run as user 'sg'; try:\n\n   sudo su -c /sgm/bin/decryptLotekDB.R sg\n\n")

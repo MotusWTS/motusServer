@@ -144,7 +144,11 @@ token = authToken)
         ## i.e. the one that was used when generating the auth ticket.
 
         env = parent.frame()$env
-        remoteIP = strsplit(env$HTTP_X_FORWARDED_FOR, ", ", fixed=TRUE)[[1]][1]
+        forwardedFor = env$HTTP_X_FORWARDED_FOR
+        if(!is.character(forwardedFor)) {
+            forwardedFor = env$HTTP_ED_FOR ## Header name is getting truncated somehow, for some specific people.
+        }
+        remoteIP = strsplit(forwardedFor, ", ", fixed=TRUE)[[1]][1]
         iptstamp = c(as.raw(as.integer(strsplit(remoteIP, ".", fixed=TRUE)[[1]])), rev(packBits(intToBits(hextimestamp))))
         user_id = substring(parts[1], 41)
 

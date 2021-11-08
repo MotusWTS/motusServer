@@ -1,10 +1,10 @@
-# do full daily backups for sqlite3 databases
-# this is for databases used in managing processing jobs,
+# Do full daily backups for sqlite3 databases.
+# This is for databases used in managing processing jobs,
 # not for individual receiver databases, which are stored
-# on NAS and assumed to be backed up from there.  Those
+# on NAS and assumed to be backed up from there. Those
 # databases can in any case be rebuilt from the raw files,
 # by running the tagfinder.
 
-# do a daily backup at 2:13 AM GMT
+# Run daily at 2:13 AM GMT.
 #m h    dom mon dow    user   cmd
 13 2     *   *   *     sg    [ -x /sgm_local/bin/sqlite_daily_backup.sh ] && /sgm_local/bin/sqlite_daily_backup.sh
