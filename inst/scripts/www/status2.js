@@ -218,7 +218,7 @@ function motus_query_failed(jqXHR, textStatus, errorThrown) {
 // @return s with any serial numbers linkified
 // @note: the _JSON variants use escaped quotes
 
-var serno_re=/(?:(?:SG-[0-9A-Z]{4}(?:RPi[123z]|BBBK|BB[0-9][0-9A-Z])[0-9A-Z]{4}(?:_[0-9])?)|(?:Lotek-D?[0-9]+(?:_[0-9])?)|(?:CTT-(?:[0-9]{15}|[0-9A-F]{12}))|(?:SEI_[A-Z]_[0-9A-Z]{9}))|(?:-[0-9A-Z]{4}(?:RPi[123z]|BBBK|(?:BB[0-9][0-9A-Z]))[0-9A-Z]{4}-)/ig;
+var serno_re=/(?:(?:SG-[0-9A-Z]{4}(?:RPi[1234z]|BBBK|BB[0-9][0-9A-Z])[0-9A-Z]{4}(?:_[0-9])?)|(?:Lotek-D?[0-9]+(?:_[0-9])?)|(?:CTT-(?:[0-9]{15}|[0-9A-F]{12}))|(?:SEI_[A-Z]_[0-9A-Z]{9}))|(?:-[0-9A-Z]{4}(?:RPi[1234z]|BBBK|(?:BB[0-9][0-9A-Z]))[0-9A-Z]{4}-)/ig;
 
 function linkify_one_serno(match) {
     return '<span class="receiver_serno" serno="' + match + '">' + match + '</span>';
