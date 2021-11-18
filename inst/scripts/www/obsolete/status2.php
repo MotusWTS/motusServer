@@ -89,8 +89,8 @@ function post ($url, $par) {
         <script language="javascript" type="text/javascript"
                 src="/download/mustache.min.js"></script>
         <script language="javascript"  type="text/javascript"
-                src="/download/jquery-ui-1.12.1.custom/jquery-ui.min.js">script</script>
-        <link rel="stylesheet" href="/download/jquery-ui-1.12.1.custom/jquery-ui.min.css">
+                src="/download/jquery-ui-1.13.0.custom/jquery-ui.min.js">script</script>
+        <link rel="stylesheet" href="/download/jquery-ui-1.13.0.custom/jquery-ui.min.css">
         <link rel="stylesheet" href="/download/status2.css">
         <script language="javascript" type="text/javascript">
          // handle user click on job row by calling `show_job_details` for the appropriate job
