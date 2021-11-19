@@ -28,7 +28,7 @@ MOTUS_API_LIST_SPECIES          = "https://motus.org/api/species"
 ##       IdentityFile ~/.ssh/id_dsa_github_motus_metadata_history
 ##       IdentitiesOnly yes
 
-MOTUS_METADATA_HISTORY_REPO     = "git@github-motus-metadata-history:jbrzusto/motus-metadata-history"
+MOTUS_METADATA_HISTORY_REPO     = "git@github-motus-metadata-history:MotusWTS/motus-metadata-history"
 
 # a list of field names which must be formatted as floats so that
 # the motus API recognizes them correctly.  This means that if they
