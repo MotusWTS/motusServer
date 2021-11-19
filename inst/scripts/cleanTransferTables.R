@@ -22,12 +22,16 @@ MotusDB <- openMotusDB()
 # Largest batchID from one month ago.
 maxBatchId <- MotusDB("select max(batchID) from batches where unix_timestamp() - ts > 60*60*24*31")[,1]
 
-# Verify that batchIDs actually are monotonically increasing over time.
-# Allow batches to be out-of-order by one day. This can happen because of parallel processing, and because of error repair which doesn't re-set ts.
-buffer <- 60 * 60 * 24
+# ...but batches can be out-of-order. This can happen because of parallel processing, and because of error repair which doesn't re-set ts.
+# Ensure that we skip out-of-order batches.
+buffer <- 60 * 60 * 24 # Ignore batches which are out-of-order by less than 1 day
 shouldBeEmpty <- MotusDB(sprintf("select batchID from batches where batchID < %d and ts > (select ts from batches where batchID = %1$d) + %d limit 1", maxBatchId, buffer))
-if(nrow(shouldBeEmpty) > 0)
- stop(sprintf("found batch with smaller batchID but larger ts than batch %d\n", maxBatchId)) # cron prepends "Error: "
+skipList <- c()
+while(nrow(shouldBeEmpty) > 0) {
+ skipList <- c(skipList, maxBatchId)
+ maxBatchId <- MotusDB(sprintf("select max(batchID) from batches where unix_timestamp() - ts > 60*60*24*31 and batchID not in (%s)", paste0(skipList, collapse=",")))[,1]
+ shouldBeEmpty <- MotusDB(sprintf("select batchID from batches where batchID < %d and ts > (select ts from batches where batchID = %1$d) + %d limit 1", maxBatchId, buffer))
+}
 
 # Deleting 10,000 rows from the largest table (hits) seems to take between 5 and 15 seconds when nothing else is happening, but can take 10 times longer when other processes are actively using the database.
 delLimit <- 10000
