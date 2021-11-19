@@ -224,7 +224,7 @@ MOTUS_CTT_SG_DATAFILE_REGEX = paste0("(?:[^-]+)-(?:(?:", MOTUS_SG_SERNO_WITHOUT_
 
 ## regex for CTT files created by SensorStation that we want to move to the CTT_OUTGOING folder.
 
-MOTUS_CTT_SS_DATAFILE_REGEX = paste0(MOTUS_CTT_SERNO_REGEX, "-(?:data|raw-data|gps|node-data).*\\.csv\\.gz$")
+MOTUS_CTT_SS_DATAFILE_REGEX = paste0(MOTUS_CTT_SERNO_REGEX, "-(?:data|raw-data|gps|node-data|log).*\\.csv\\.gz$")
 
 ## the earliest valid date from a sensorgnome (= as.numeric(ymd("2010-01-01")))
 MOTUS_SG_EPOCH = 1262304000
