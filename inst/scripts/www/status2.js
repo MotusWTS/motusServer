@@ -191,7 +191,8 @@ function motus_query_failed(jqXHR, textStatus, errorThrown) {
                                  error:textStatus + "\n" + jqXHR.responseText,
                                  api: jqXHR._extra.api,
                                  state: JSON.stringify(state, omit_authToken, 3),
-                                 json: JSON.stringify(jqXHR._extra.pars, omit_authToken, 3)
+                                 json: JSON.stringify(jqXHR._extra.pars, omit_authToken, 3),
+                                 errorThrown: errorThrown
                              },
                              {
                                  method:"html"
