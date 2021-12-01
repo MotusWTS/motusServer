@@ -174,7 +174,7 @@ MOTUS_ARCHIVE_DIR_REGEX = paste0("\\.(", paste(MOTUS_ARCHIVE_SUFFIXES, collapse=
 
 ## regexes to match receiver serial numbers
 
-MOTUS_SG_SERNO_WITHOUT_PREFIX_REGEX = "[0-9A-Z]{4}(?:RPi[1234z]|BBBK|BB[0-9][0-9A-Z])[0-9A-Z]{4}(?:_[0-9])?"
+MOTUS_SG_SERNO_WITHOUT_PREFIX_REGEX = "[0-9A-Z]{4}(?:RP[a-zA-Z0-9]{2}|BBBK|BB[0-9][0-9A-Z])[0-9A-Z]{4}(?:_[0-9])?"
 
 MOTUS_SG_SERNO_REGEX = paste0("SG-", MOTUS_SG_SERNO_WITHOUT_PREFIX_REGEX)
 
