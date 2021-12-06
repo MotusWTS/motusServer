@@ -202,6 +202,7 @@ ltMergeFiles = function(files, j, dbdir=MOTUS_PATH$RECV) {
         ## save any files used in the receiver's folder in the file repo, if not already there.
         iMove = iRecv[rv$use[iRecv] & !rv$fromRepo[iRecv]]
         if (length(iMove) > 0) {
+            dir.create(file.path(MOTUS_PATH$FILE_REPO, serno), showWarnings=FALSE, recursive=TRUE)
             newNames = moveFilesUniquely(rv$fullname[iMove], file.path(MOTUS_PATH$FILE_REPO, serno), copyLinkTargets=TRUE)
             ## some names had to change, so update them in the DB
             for (jj in seq(along = iMove)) {
