@@ -85,7 +85,7 @@ moveFilesUniquely = function(src, dst, copyLinkTargets=FALSE) {
 
         fname[conflict] = sapply(parts, bumpSuffix)
     }
-    success = file.rename(src, file.path(dst, fname))
+    success = safeFileRename(src, file.path(dst, fname))
     if(any(!success)) {
         stop(paste("In moveFilesUniquely, failed to successfully move:", src[!success]))
     }
