@@ -82,7 +82,7 @@ moveFilesUniquely = function(src, dst, copyLinkTargets=FALSE) {
             ## otherwise copy
             success[iTarg] = file.copy(src[iTarg], file.path(dst[iTarg], fname[iTarg]))
             ## only delete the original file where the copy succeeded
-            file.remove(src[iTarg][success[iTarg])
+            file.remove(src[iTarg][success[iTarg]])
         } else {
             success = file.rename(src, file.path(dst, fname))
         }
