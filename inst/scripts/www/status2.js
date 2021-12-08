@@ -384,7 +384,7 @@ function show_job_details(jobID) {
                              includeSubjobs:true
                          },
                          order:{
-                             sortBy:"id"
+                             sortBy:"mtime"
                          }
                      }, show_job_details2);
 };
