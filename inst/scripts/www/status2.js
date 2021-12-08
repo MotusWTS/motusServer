@@ -503,6 +503,9 @@ function show_job_details2(x) {
                                    fmt_ctime:function(i) {
                                        return fmt_time(this.ctime[i])
                                    },
+                                   fmt_mtime:function(i) {
+                                       return fmt_time(this.mtime[i])
+                                   },
                                    params:function(i) {
                                        return fmt_params(this.data[i], true)
                                    },
