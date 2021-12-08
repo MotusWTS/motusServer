@@ -490,6 +490,10 @@ function show_job_details2(x) {
     // Note that this doesn't apply to columns returned by the API, which are
     // always arrays.
 
+    var topJobIndex = json.findIndex(subjob => subjob.id_ === subjob.stump_);
+    if(topJobIndex < 0)
+        topJobIndex = 0;
+
     $(".job_details").mustache("tpl_job_details",
                                {
                                    details:x,
@@ -499,7 +503,7 @@ function show_job_details2(x) {
                                        msg: json.map(val=>(val && val.log_) ? linkify_sernos(val.log_) : null),
                                        jobID: x.id
                                    },
-                                   summary:linkify_sernos(json[0].summary_),
+                                   summary:linkify_sernos(json[topJobIndex].summary_),
                                    fmt_ctime:function(i) {
                                        return fmt_time(this.ctime[i])
                                    },
@@ -512,10 +516,10 @@ function show_job_details2(x) {
                                    fmt_done:function(i) {
                                        return fmt_done(this.done[i], this.queue[i], this.id[i])
                                    },
-                                   products: json[0].products_ && json[0] ? {
+                                   products: json[topJobIndex].products_ && json[topJobIndex] ? {
                                        __transpose__: true,
-                                       link: toArray(json[0].products_).map(i=>fixSGdataURL(i)),
-                                       name: toArray(json[0].products_).map(i=>i.replace(/^.*\//, ""))
+                                       link: toArray(json[topJobIndex].products_).map(i=>fixSGdataURL(i)),
+                                       name: toArray(json[topJobIndex].products_).map(i=>i.replace(/^.*\//, ""))
                                    } : null
                                },
                                {
