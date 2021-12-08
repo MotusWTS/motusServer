@@ -43,19 +43,6 @@ moveFilesUniquely = function(src, dst, copyLinkTargets=FALSE) {
     fname = basename(src)
     existing = dir(dst)
 
-    ## possibly replace any files which are symlinks with copies of their targets
-    ## before moving to dst
-
-    if (copyLinkTargets) {
-        targ = Sys.readlink(src)
-        iTarg = which(isTRUE(nchar(targ) > 0)) ## only files which are valid symlinks pass this test
-        if (length(iTarg)) {
-            ## Note: remove the symlink itself first; otherwise, file.copy, which follows symlinks
-            ## on both src and dst args, would otherwise be a NOP.
-            file.remove(src[iTarg])
-            file.copy(targ[iTarg], src[iTarg], copy.date=TRUE)
-        }
-    }
     ## regex to find possible "-NNN" suffixes on files
     nameRegex = "(?sx)^(?:(?:(?<base>.*)-(?<number>[0-9]+))$)|(?<base2>.*)$"
 
@@ -85,7 +72,23 @@ moveFilesUniquely = function(src, dst, copyLinkTargets=FALSE) {
 
         fname[conflict] = sapply(parts, bumpSuffix)
     }
-    success = safeFileRename(src, file.path(dst, fname))
+    success = logical(length(src)) ## booleans indicating success per file
+    if(copyLinkTargets) {
+        targ = Sys.readlink(src)
+        iTarg = which(isTRUE(nchar(targ) > 0)) ## only files which are valid symlinks pass this test
+        if(length(iTarg)) {
+            ## use rename where possible
+            success[!iTarg] = file.rename(src[!iTarg], file.path(dst[!iTarg], fname[!iTarg]))
+            ## otherwise copy
+            success[iTarg] = file.copy(src[iTarg], file.path(dst[iTarg], fname[iTarg]))
+            ## only delete the original file where the copy succeeded
+            file.remove(src[iTarg][success[iTarg])
+        } else {
+            success = file.rename(src, file.path(dst, fname))
+        }
+    } else {
+        success = file.rename(src, file.path(dst, fname))
+    }
     if(any(!success)) {
         stop(paste("In moveFilesUniquely, failed to successfully move:", src[!success]))
     }
