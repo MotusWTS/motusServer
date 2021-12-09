@@ -75,7 +75,7 @@ moveFilesUniquely = function(src, dst, copyLinkTargets=FALSE) {
     success = logical(length(src)) ## booleans indicating success per file
     if(copyLinkTargets) {
         targ = Sys.readlink(src)
-        iTarg = which(isTRUE(nchar(targ) > 0)) ## only files which are valid symlinks pass this test
+        iTarg = which(nchar(targ) > 0) ## only files which are valid symlinks pass this test
         if(length(iTarg)) {
             ## use rename where possible
             success[!iTarg] = file.rename(src[!iTarg], file.path(dst[!iTarg], fname[!iTarg]))
