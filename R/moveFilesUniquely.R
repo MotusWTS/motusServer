@@ -78,9 +78,9 @@ moveFilesUniquely = function(src, dst, copyLinkTargets=FALSE) {
         iTarg = which(nchar(targ) > 0) ## only files which are valid symlinks pass this test
         if(length(iTarg)) {
             ## use rename where possible
-            success[!iTarg] = file.rename(src[!iTarg], file.path(dst[!iTarg], fname[!iTarg]))
+            success[!iTarg] = file.rename(src[!iTarg], file.path(dst, fname[!iTarg]))
             ## otherwise copy
-            success[iTarg] = file.copy(src[iTarg], file.path(dst[iTarg], fname[iTarg]))
+            success[iTarg] = file.copy(src[iTarg], file.path(dst, fname[iTarg]))
             ## only delete the original file where the copy succeeded
             file.remove(src[iTarg][success[iTarg]])
         } else {
@@ -90,7 +90,7 @@ moveFilesUniquely = function(src, dst, copyLinkTargets=FALSE) {
         success = file.rename(src, file.path(dst, fname))
     }
     if(any(!success)) {
-        stop(paste("In moveFilesUniquely, failed to successfully move:", src[!success]))
+        stop(paste0("In moveFilesUniquely, failed to successfully move: ", src[!success], "\n"))
     }
     return(ifelse(initial.conflict, fname, NA))
 }
