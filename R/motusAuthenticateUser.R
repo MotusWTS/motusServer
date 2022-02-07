@@ -42,10 +42,10 @@ motusAuthenticateUser = function(username, password) {
 
     realProjIDs = as.integer(names(resp$projects))
     if(length(realProjIDs) > 0) {
-     realProjIDString = paste(realProjIDs, collapse=",")
-     ## ensure that the motus DB connection is valid; see issue #281
-     openMotusDB()
-     ambigProjIDs = MotusDB("
+        realProjIDString = paste(realProjIDs, collapse=",")
+        ## ensure that the motus DB connection is valid; see issue #281
+        openMotusDB()
+        ambigProjIDs = MotusDB("
 select
    distinct ambigProjectID
 from
@@ -59,8 +59,10 @@ where
    or projectID6 in (%s)
 ", realProjIDString, realProjIDString, realProjIDString, realProjIDString, realProjIDString, realProjIDString, .QUOTE=FALSE
 )[[1]]
+        projectIDs = c(realProjIDs, ambigProjIDs)
+    } else {
+        projectIDs = c(realProjIDs);
     }
-    projectIDs = c(realProjIDs, ambigProjIDs)
     rv = list(
         authToken = unclass(jsonlite::base64_enc(readBin("/dev/urandom", raw(), n=ceiling(MOTUS_TOKEN_BITS / 8)))),
         expiry = as.numeric(Sys.time()) + MOTUS_AUTH_LIFE,
