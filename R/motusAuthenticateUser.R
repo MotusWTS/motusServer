@@ -41,10 +41,11 @@ motusAuthenticateUser = function(username, password) {
     ## gets access to by virtue of having access to real projects involved in them.
 
     realProjIDs = as.integer(names(resp$projects))
-    realProjIDString = paste(realProjIDs, collapse=",")
-    ## ensure that the motus DB connection is valid; see issue #281
-    openMotusDB()
-    ambigProjIDs = MotusDB("
+    if(length(realProjIDs) > 0) {
+     realProjIDString = paste(realProjIDs, collapse=",")
+     ## ensure that the motus DB connection is valid; see issue #281
+     openMotusDB()
+     ambigProjIDs = MotusDB("
 select
    distinct ambigProjectID
 from
@@ -58,6 +59,7 @@ where
    or projectID6 in (%s)
 ", realProjIDString, realProjIDString, realProjIDString, realProjIDString, realProjIDString, realProjIDString, .QUOTE=FALSE
 )[[1]]
+    }
     projectIDs = c(realProjIDs, ambigProjIDs)
     rv = list(
         authToken = unclass(jsonlite::base64_enc(readBin("/dev/urandom", raw(), n=ceiling(MOTUS_TOKEN_BITS / 8)))),
