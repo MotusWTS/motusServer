@@ -41,7 +41,7 @@ motusAuthenticateUser = function(username, password) {
     ## gets access to by virtue of having access to real projects involved in them.
 
     realProjIDs = as.integer(names(resp$projects))
-    projectIDs = c(realProjIDs);
+    projectIDs = c(realProjIDs)
     if(length(realProjIDs) > 0) {
         realProjIDString = paste(realProjIDs, collapse=",")
         ## ensure that the motus DB connection is valid; see issue #281
