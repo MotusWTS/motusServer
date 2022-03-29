@@ -147,7 +147,7 @@ token = authToken)
         forwardedFor = env$HTTP_X_FORWARDED_FOR
         if(!is.character(forwardedFor)) {
             msg = "X_FORWARDED_FOR HTTP header missing. This bug is difficult to reproduce, so a bunch of diagnostics just got emailed to the administrator. If you're reading this: thank you for triggering the bug, we might be able to figure out what's going on and fix it soon thanks to the diagnostics. Sorry for interruption of service."
-            email(MOTUS_ADMIN_EMAIL, "Issue #1019 diagnostics", paste0(ls(env), collapse="\n"))
+            email(MOTUS_ADMIN_EMAIL, "Issue #1019 diagnostics", paste0(sapply(ls(env), function(x) get(x, envir=env)), collapse="\n"))
         } else {
             remoteIP = strsplit(forwardedFor, ", ", fixed=TRUE)[[1]][1]
             iptstamp = c(as.raw(as.integer(strsplit(remoteIP, ".", fixed=TRUE)[[1]])), rev(packBits(intToBits(hextimestamp))))
