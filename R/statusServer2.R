@@ -169,14 +169,14 @@ list_jobs = function(env) {
 
     ## validate access
 
-    if (is.null(projectID))
+    if (is.null(projectID) && !auth$isAdmin)
         projectID = auth$projects
     if (! is.null(selProjectID)) {
-        if (! selProjectID %in% projectID)
+        if (!auth$isAdmin && !selProjectID %in% projectID)
             return(error_from_app("not authorized for that project"))
         projectID = selProjectID
     }
-    if (! (is.null(userID) || userID == auth$userID || auth$userType == "administrator")) {
+    if (! (is.null(userID) || userID == auth$userID || auth$isAdmin)) {
         return(error_from_app("not authorized for that userID"))
     }
 
