@@ -120,7 +120,7 @@ if (isset($_GET['login_form_user'])) {
     /** validate directly against motus.org **/
 
     $ch = curl_init($MOTUS_VALIDATE_USER_API);
-    $params = '{"date":"' . gmdate('YmdHis', time()) . '","pword":"' . stripslashes($login_form_pass) . '","login":"' . $login_form_user . '"}';
+    $params = '{"date":"' . gmdate('YmdHis', time()) . '","pword":"' . stripslashes($login_form_pass) . '","login":"' . $login_form_user . '","adminReturnsAll":"false"}';
     $json = 'json=' . urlencode($params);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_HEADER, 0);
