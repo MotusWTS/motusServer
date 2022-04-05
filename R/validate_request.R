@@ -174,8 +174,8 @@ token = authToken)
     isAdmin = isTRUE(auth$userType == "administrator")
     if (is.null(msg)) {
         rv = list(userID=auth$userID, projects = scan(text=auth$projects, sep=",", quiet=TRUE), projectID=projectID, userType=auth$userType, isAdmin=isAdmin)
-        if (isAdmin)
-            rv$projects = c(-1, rv$projects)  ## add the "unknown" sentinel for admin users
+##        if (isAdmin)
+##            rv$projects = c(-1, rv$projects)  ## add the "unknown" sentinel for admin users
         if (! (isAdmin || all(projectID %in% rv$projects))) {
             ## user not authorized for project
             msg = "not authorized for project"
