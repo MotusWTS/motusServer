@@ -193,7 +193,7 @@ list_jobs = function(env) {
     } else {
         projwhere = sprintf("t1.motusProjectID in (%s)", paste(projectID, collapse=","))
     }
-    if (isTRUE(includeUnknownProjects))
+    if (isTRUE(includeUnknownProjects) && !is.null(projwhere))
         projwhere = makeWhere(c(projwhere, "t1.motusProjectID is null"), conj="or")
     where = c(where, projwhere)
     if (!is.null(userID)) {
