@@ -437,8 +437,10 @@ function fixSGdataURL(u) {
 // return user type from authToken, or "" if none available
 
 function user_type() {
-    if (state.authToken !== undefined)
-        return state.authToken.split(/!/)[2];
+    if (state.authToken !== undefined) {
+        var parts = state.authToken.split(/!/);
+        return parts[parts.length - 1];
+    }
     return "";
 };
 
