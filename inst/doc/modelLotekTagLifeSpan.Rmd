@@ -136,6 +136,8 @@ modelBattery = list(
 "ANTCW-M4-2S"  = "4-2",
 "ANTCW-M6-1"   = "6-1",
 "ANTCW-M6-2"   = "6-2",
+"HybridTag"    = "SOLAR",
+"LifeTag"      = "SOLAR",
 "NTP-1"        = "NanoPin",
 "NTP-1-M"      = "NanoPin",
 "NTQB-1"       = "1",
@@ -166,7 +168,9 @@ modelBattery = list(
 "NTQBW-3-2"    = "3-2",
 "NTQBW-4-2"    = "4-2",
 "NTQBW-6-2"    = "6-2",
-"NTS-1"        = "SOLAR"
+"NTS-1"        = "SOLAR",
+"NTS-1-M"      = "SOLAR",
+"PowerTag"     = "SOLAR"
 )
 
 modPar = NULL
