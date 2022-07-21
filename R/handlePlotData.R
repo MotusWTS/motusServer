@@ -30,7 +30,7 @@ handlePlotData = function(j) {
         motusReceiverID = MetaDB(paste0("select id from recvDeps where serno = '", serno, "' and projectID = ", motusProjectID, " limit 1"))
         motusReceiverID = motusReceiverID[!is.na(motusReceiverID)]
         if(length(motusReceiverID) == 0) {
-            jobLog(j, paste0("\n", serno, ": no deployments are known in this project for this receiver. Please enter a deployment for this receiver at https://motus.org/data/project/recvs?projectID=", motusProjectID, "."), summary=TRUE)
+            jobLog(j, paste0("\n", serno, ": no deployments are known in this project for this receiver. Please enter a deployment for this receiver at https://motus.org/data/project/receivers?projectID=", motusProjectID, "."), summary=TRUE)
         } else {
             motusDeployIDs = MetaDB(paste0("select deployID from recvDeps where serno = '", serno, "' and projectID = ", motusProjectID, " order by deployID desc"))
             motusDeployIDs = motusDeployIDs[!is.na(motusDeployIDs)]
