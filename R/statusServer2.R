@@ -219,8 +219,9 @@ list_jobs = function(env) {
     if (!is.null(type))
         where = c(where, sprintf("t1.type in (%s)", paste0("'", type, "'", collapse=",")))
     if (excludeSync)
-        where = c(where, "t1.type <> 'syncReceiver'", "(t1.motusUserID <> 347 or t1.motusProjectID <> 0 or t1.type <> 'uploadFile')")
-        ## connected CTT receiver files are uploaded daily by a process which pretends to be user 347
+        where = c(where, "t1.type <> 'syncReceiver'", "(t1.motusUserID <> 347 or t1.motusProjectID <> 0 or t1.type <> 'uploadFile')", "t1.motusUserID <> 30751")
+        ## connected CTT receiver files are uploaded daily by a process which pretends to be user 347, which is a real user who occasionally does other things
+        ## newer connected SG receiver files are uploaded by a process which pretends to be user 30751, which is a fake user and thus never does anything else
     if (!is.null(done))
         where = c(where, switch(as.character(done), `1` = "t1.done > 0", `0` = "t1.done = 0", `-1` = "t1.done < 0"))
     if (!is.null(log))
