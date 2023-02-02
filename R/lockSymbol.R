@@ -50,7 +50,6 @@ lockSymbol = function(symbol, owner=getPGID(), lock=TRUE, block=TRUE) {
         ## really does own the symbol; that's what "success" means here.
 
         repeat {
-            ServerDB("BEGIN EXCLUSIVE TRANSACTION")
             try(
                 ServerDB(sprintf("INSERT INTO %s VALUES(:symbol, :owner)", MOTUS_SYMBOLIC_LOCK_TABLE),
                          symbol = symbol,
@@ -61,7 +60,6 @@ lockSymbol = function(symbol, owner=getPGID(), lock=TRUE, block=TRUE) {
 
             haveLock = isTRUE(owner == ServerDB(sprintf("SELECT owner from %s where symbol=:symbol", MOTUS_SYMBOLIC_LOCK_TABLE),
                                                             symbol = symbol)[[1]])
-            ServerDB("COMMIT")
             if (haveLock || ! block)
                 return(haveLock)
 

@@ -48,14 +48,14 @@ motusReserveKeys = function(table, n, maxKeyTable="maxKeys") {
     ## for the given table.  Otherwise, the select query has an empty result and
     ## no new record is inserted into maxKeyTable.
 
-    MotusDB("begin exclusive transaction; replace into %s (tableName, maxKey) select '%s', @maxKey := ifnull(max(maxKey), 0) + %d from %s where tableName='%s'",
+    MotusDB("replace into %s (tableName, maxKey) select '%s', @maxKey := ifnull(max(maxKey), 0) + %d from %s where tableName='%s'",
             maxKeyTable, table, abs(n), maxKeyTable, table, .QUOTE=FALSE)
 
     ## Now fetch the value of maxKey which we stored in a connection
     ## variable so that its value is indifferent to changes by other
     ## processes between the query above and the one below.
 
-    maxKey = MotusDB("select @maxKey; commit")[[1]]
+    maxKey = MotusDB("select @maxKey")[[1]]
     if (n >= 0)
         return (maxKey - n + 1)
     else
