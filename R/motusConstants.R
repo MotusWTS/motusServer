@@ -154,6 +154,7 @@ MOTUS_PATH = list(
 
 ## main logfile name
 MOTUS_MAINLOG_NAME = "mainlog.txt"
+MOTUS_MAINLOG_NAME_PREFIX = "mainlog_"
 
 ## default file mode for new files, folders:
 MOTUS_DEFAULT_FILEMODE = "0750"

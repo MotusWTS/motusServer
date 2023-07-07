@@ -29,6 +29,7 @@
     }
 
     tryCatch( {
+		MOTUS_MAINLOG_NAME <- paste(MOTUS_MAINLOG_NAME_PREFIX, format(Sys.Date(), "%Y%m"), ".txt", sep="")
         MOTUS_MAINLOG <<- file(file.path(MOTUS_PATH$LOGS, MOTUS_MAINLOG_NAME), "a")
     }, error = function(e) {
         MOTUS_MAINLOG <<- stdout()

@@ -24,6 +24,8 @@ authenticate_user = function(env) {
     if (tracing)
         browser()
 
+	motusLog("starting authenticate_user")
+	
     rv = NULL
 
     tryCatch({

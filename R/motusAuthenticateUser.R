@@ -19,6 +19,8 @@
 
 motusAuthenticateUser = function(username, password) {
 
+	motusLog("attempting to authenticate user with motus.org")
+
     motusReq = toJSON(list(
         date = format(Sys.time(), "%Y%m%d%H%M%S"),
         login = username,
