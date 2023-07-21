@@ -28,7 +28,7 @@ motusLog = function(fmt, ...) {
 		MOTUS_MAINLOG_NAME <- paste(MOTUS_MAINLOG_NAME_PREFIX, format(Sys.Date(), "%Y%m"), ".txt", sep="")
 		if (MOTUS_MAINLOG_NAME !=  summary(MOTUS_MAINLOG)$description) {
 			close(MOTUS_MAINLOG)
-			MOTUS_MAINLOG <<- file(newfile, "a")
+			MOTUS_MAINLOG <<- file(MOTUS_MAINLOG_NAME, "a")
 		}
     }, error = function(e) {
         MOTUS_MAINLOG <<- stdout()
