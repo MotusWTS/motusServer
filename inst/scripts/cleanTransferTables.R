@@ -17,6 +17,7 @@
 
 suppressMessages(suppressWarnings(library(motusServer))) # cron sends an email every time if this isn't made invisible
 
+on.exit(lockSymbol("masterDB", lock=FALSE))
 MotusDB <- openMotusDB()
 
 # Largest batchID from one month ago.
@@ -40,9 +41,13 @@ deleteOldRecords <- function(tableName, batchIdFieldName = "batchID") {
  # Deleting all the rows at once can tie up the database for hours if there are a large number of rows to be deleted.
  # Deleting delLimit rows at a time lets other processes insert rows in between deletions.
  repeat {
+  lockSymbol("masterDB")
   delCount <- MotusDB(sprintf("delete from %s where %s <= %d limit %d", tableName, batchIdFieldName, maxBatchId, delLimit))
+  lockSymbol("masterDB", lock=FALSE)
   if(delCount < delLimit)
    break
+  # pause for a random number of seconds between 1 and 60 to give other processes a chance to get the lock
+  Sys.sleep(60 * runif(1))
  }
  # Running this after deleting rows frees unused space in both the table and the indices.
  # This improves performance on all operations if the tables are large enough.

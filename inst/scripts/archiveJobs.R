@@ -8,6 +8,7 @@
 
 suppressMessages(suppressWarnings(library(motusServer))) # cron sends an email every time if this isn't made invisible
 invisible({
+ on.exit(lockSymbol("jobsDB", lock=FALSE))
  ServerDB <<- safeSQL(MOTUS_PATH$SERVER_DB) # The main jobs database
  ArchiveDB <<- safeSQL(MOTUS_PATH$JOB_ARCHIVE_DB)
 
@@ -23,19 +24,23 @@ invisible({
  # Occasionally jobs will be copied back to the main database, so do this to ensure the write doesn't fail
  ArchiveDB(paste0("delete from jobs where stump in (", oldJobStumps, ")"))
  dbWriteTable(ArchiveDB$con, "jobs", oldJobs, append=TRUE)
+ lockSymbol("jobsDB")
  ServerDB(paste0("delete from jobs where stump in (", oldJobStumps, ")"))
+ lockSymbol("jobsDB", lock=FALSE)
 
  # Archive automated upload jobs which are more than one month old.
- # syncReceiver jobs are hourly uploads from internet-connected SensorGnome receivers.
+ # syncReceiver jobs are hourly uploads from older internet-connected SensorGnome receivers.
  # uploadFile jobs from user 347 for project 0 are daily uploads from CTT receivers.
+ # uploadFile jobs from users 30751, 27319, 547, or 2512 with filenames with a hexidecimal suffix are hourly uploads from newer SensorGnome receivers.
  oldJobStumps <- ServerDB("select stump from jobs group by stump having max(mtime) < strftime('%s', 'now') - 60*60*24*31")
  oldJobStumps <- paste0(oldJobStumps[,1], collapse=',')
  # Only the root jobs have the types we're searching for.
- oldJobStumps <- ServerDB(paste0("select id from jobs where id in (", oldJobStumps, ") and (type = 'syncReceiver' or motusUserID = 347 and motusProjectID = 0 and type = 'uploadFile')"))
+ oldJobStumps <- ServerDB(paste0("select id from jobs where id in (", oldJobStumps, ") and (type = 'syncReceiver' or motusUserID = 347 and motusProjectID = 0 and type = 'uploadFile' or motusUserID in (547, 2512, 27319, 30751) and json_extract(data, '$.filename') glob '*-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9].zip'"))
  oldJobStumps <- paste0(oldJobStumps[,1], collapse=',')
  oldJobs <- ServerDB(paste0("select * from jobs where stump in (", oldJobStumps, ")"))
  # Occasionally jobs will be copied back to the main database, so do this to ensure the write doesn't fail
  ArchiveDB(paste0("delete from jobs where stump in (", oldJobStumps, ")"))
  dbWriteTable(ArchiveDB$con, "jobs", oldJobs, append=TRUE)
+ lockSymbol("jobsDB")
  ServerDB(paste0("delete from jobs where stump in (", oldJobStumps, ")"))
 })
