@@ -17,6 +17,7 @@
 
 suppressMessages(suppressWarnings(library(motusServer))) # cron sends an email every time if this isn't made invisible
 
+ensureServerDB()
 on.exit(lockSymbol("masterDB", lock=FALSE))
 MotusDB <- openMotusDB()
 
