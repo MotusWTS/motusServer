@@ -6,6 +6,16 @@
 
 # The intent is for this script to be run on a regular schedule, e.g. daily or weekly.
 
+deleteOldJobs(ServerDB, oldJobStumps) {
+ # Deleting all the jobs at once can lock the database for long enough that other processes reading and writing jobs time out.
+ # So, delete one job at a time:
+ for(stump in strsplit(oldJobStumps, ",")[[1]]) {
+  lockSymbol("jobsDB")
+  ServerDB(paste0("delete from jobs where stump = ", stump))
+  lockSymbol("jobsDB", lock=FALSE)
+ }
+}
+
 suppressMessages(suppressWarnings(library(motusServer))) # cron sends an email every time if this isn't made invisible
 invisible({
  on.exit(lockSymbol("jobsDB", lock=FALSE))
@@ -41,19 +51,3 @@ invisible({
  dbWriteTable(ArchiveDB$con, "jobs", oldJobs, append=TRUE)
  deleteOldJobs(ServerDB, oldJobStumps)
 })
-
-delLimit = 1000
-
-# Deleting all the old jobs at once often locks the database for long enough that requests time out.
-# Deleting delLimit rows at a time lets other processes read and write jobs in between deletions.
-deleteOldJobs <- function(ServerDB, oldJobStumps) {
- repeat {
-  lockSymbol("jobsDB")
-  delCount <- ServerDB(paste0("delete from jobs where stump in (", oldJobStumps, ") limit ", delLimit))
-  lockSymbol("jobsDB", lock=FALSE)
-  if(delCount < delLimit)
-   break
-  # Pause for a random number of seconds between 1 and 60 to give other processes a chance to get the lock.
-  Sys.sleep(60 * runif(1))
- }
-}
