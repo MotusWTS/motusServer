@@ -21,12 +21,10 @@ invisible({
  oldJobStumps <- ServerDB("select stump from jobs group by stump having max(mtime) < strftime('%s', 'now') - 60*60*24*366")
  oldJobStumps <- paste0(oldJobStumps[,1], collapse=',')
  oldJobs <- ServerDB(paste0("select * from jobs where stump in (", oldJobStumps, ")"))
- # Occasionally jobs will be copied back to the main database, so do this to ensure the write doesn't fail
+ # Occasionally jobs will be copied back to the main database, so do this to ensure the write doesn't fail.
  ArchiveDB(paste0("delete from jobs where stump in (", oldJobStumps, ")"))
  dbWriteTable(ArchiveDB$con, "jobs", oldJobs, append=TRUE)
- lockSymbol("jobsDB")
- ServerDB(paste0("delete from jobs where stump in (", oldJobStumps, ")"))
- lockSymbol("jobsDB", lock=FALSE)
+ deleteOldJobs(ServerDB, oldJobStumps)
 
  # Archive automated upload jobs which are more than one month old.
  # syncReceiver jobs are hourly uploads from older internet-connected SensorGnome receivers.
@@ -38,9 +36,24 @@ invisible({
  oldJobStumps <- ServerDB(paste0("select id from jobs where id in (", oldJobStumps, ") and (type = 'syncReceiver' or motusUserID = 347 and motusProjectID = 0 and type = 'uploadFile' or motusUserID in (547, 2512, 27319, 30751) and json_extract(data, '$.filename') glob '*-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9].zip')"))
  oldJobStumps <- paste0(oldJobStumps[,1], collapse=',')
  oldJobs <- ServerDB(paste0("select * from jobs where stump in (", oldJobStumps, ")"))
- # Occasionally jobs will be copied back to the main database, so do this to ensure the write doesn't fail
+ # Occasionally jobs will be copied back to the main database, so do this to ensure the write doesn't fail.
  ArchiveDB(paste0("delete from jobs where stump in (", oldJobStumps, ")"))
  dbWriteTable(ArchiveDB$con, "jobs", oldJobs, append=TRUE)
- lockSymbol("jobsDB")
- ServerDB(paste0("delete from jobs where stump in (", oldJobStumps, ")"))
+ deleteOldJobs(ServerDB, oldJobStumps)
 })
+
+delLimit = 1000
+
+# Deleting all the old jobs at once often locks the database for long enough that requests time out.
+# Deleting delLimit rows at a time lets other processes read and write jobs in between deletions.
+deleteOldJobs <- function(ServerDB, oldJobStumps) {
+ repeat {
+  lockSymbol("jobsDB")
+  delCount <- ServerDB(paste0("delete from jobs where stump in (", oldJobStumps, ") limit ", delLimit))
+  lockSymbol("jobsDB", lock=FALSE)
+  if(delCount < delLimit)
+   break
+  # Pause for a random number of seconds between 1 and 60 to give other processes a chance to get the lock.
+  Sys.sleep(60 * runif(1))
+ }
+}
