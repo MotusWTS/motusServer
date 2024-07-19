@@ -6,7 +6,7 @@
 
 # The intent is for this script to be run on a regular schedule, e.g. daily or weekly.
 
-deleteOldJobs(ServerDB, oldJobStumps) {
+deleteOldJobs <- function(ServerDB, oldJobStumps) {
  # Deleting all the jobs at once can lock the database for long enough that other processes reading and writing jobs time out.
  # So, delete one job at a time:
  for(stump in strsplit(oldJobStumps, ",")[[1]]) {
