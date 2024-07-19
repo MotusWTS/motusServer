@@ -35,7 +35,7 @@ invisible({
  oldJobStumps <- ServerDB("select stump from jobs group by stump having max(mtime) < strftime('%s', 'now') - 60*60*24*31")
  oldJobStumps <- paste0(oldJobStumps[,1], collapse=',')
  # Only the root jobs have the types we're searching for.
- oldJobStumps <- ServerDB(paste0("select id from jobs where id in (", oldJobStumps, ") and (type = 'syncReceiver' or motusUserID = 347 and motusProjectID = 0 and type = 'uploadFile' or motusUserID in (547, 2512, 27319, 30751) and json_extract(data, '$.filename') glob '*-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9].zip'"))
+ oldJobStumps <- ServerDB(paste0("select id from jobs where id in (", oldJobStumps, ") and (type = 'syncReceiver' or motusUserID = 347 and motusProjectID = 0 and type = 'uploadFile' or motusUserID in (547, 2512, 27319, 30751) and json_extract(data, '$.filename') glob '*-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9].zip')"))
  oldJobStumps <- paste0(oldJobStumps[,1], collapse=',')
  oldJobs <- ServerDB(paste0("select * from jobs where stump in (", oldJobStumps, ")"))
  # Occasionally jobs will be copied back to the main database, so do this to ensure the write doesn't fail
