@@ -63,7 +63,7 @@ updateMetadataForTags = function(t, meta=MetaDB, p = meta("select * from projs")
     openMotusDB()
     dbWriteTable(MotusDB$con, "tmpTagDeps", dbGetQuery(meta$con, "select projectID, tagID as motusTagID, tsStart, tsEnd from tmpTagDeps"),
                  row.names=FALSE, overwrite=TRUE)
-    MotusDB("delete from tagDeps where motusTagID in (select distinct motusTagID from tmpTagDeps)")
+    MotusDB("delete from tagDeps where motusTagID in (select motusTagID from tmpTagDeps)")
     MotusDB("insert into tagDeps select * from tmpTagDeps")
     MotusDB("drop table tmpTagDeps")
 
