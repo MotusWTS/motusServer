@@ -136,6 +136,7 @@ modelBattery = list(
 "ANTCW-M4-2S"  = "4-2",
 "ANTCW-M6-1"   = "6-1",
 "ANTCW-M6-2"   = "6-2",
+"MCFT3-L-M"    = "SOLAR",
 "NTP-1"        = "NanoPin",
 "NTP-1-M"      = "NanoPin",
 "NTQB-1"       = "1",
