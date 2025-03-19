@@ -1199,7 +1199,7 @@ rerun_receiver = function(env) {
     if (is.null(path))
         return(error_from_app("invalid receiver serial number (`serno`)"))
     if (!file.exists(path))
-        return(error_from_app("receiver not known to motus"))
+        return(error_from_app("receiver has not uploaded any data to Motus"))
 
     if (is.null(minBN)) {
         j = newJob("rerunReceiver", .parentPath=MOTUS_PATH$INCOMING, serno=serno, exportOnly=FALSE, cleanup=TRUE, motusUserID = userID, motusProjectID = projectID, .enqueue=FALSE)
