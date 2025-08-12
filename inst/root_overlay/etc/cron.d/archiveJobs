@@ -1,4 +1,4 @@
 # Archive old jobs.
-# Run daily at 1:15 PM GMT
+# Run Saturday at 1:15 PM GMT
 #m h  dom mon dow user cmd
-15 13  *   *   *  sg   /sgm/bin/archiveJobs.R
+15 13  *   *   6  sg   /sgm/bin/archiveJobs.R
