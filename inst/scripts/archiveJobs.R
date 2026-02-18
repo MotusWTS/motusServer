@@ -13,8 +13,8 @@ deleteOldJobs <- function(ServerDB, oldJobStumps) {
   lockSymbol("jobsDB")
   ServerDB(paste0("delete from jobs where stump = ", stump))
   lockSymbol("jobsDB", lock=FALSE)
-  # Pause between 0 and 20 seconds to give other processes a chance to get the lock.
-  Sys.sleep(20 * runif(1))
+  # Give other processes a chance to get the lock.
+  Sys.sleep(1)
  }
 }
 
