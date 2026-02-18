@@ -36,7 +36,7 @@ while(nrow(shouldBeEmpty) > 0) {
 }
 
 # Deleting 10,000 rows from the largest table (hits) seems to take between 5 and 15 seconds when nothing else is happening, but can take 10 times longer when other processes are actively using the database.
-delLimit <- 10000
+delLimit <- 1000
 
 deleteOldRecords <- function(tableName, batchIdFieldName = "batchID") {
  # Deleting all the rows at once can tie up the database for hours if there are a large number of rows to be deleted.
@@ -47,12 +47,19 @@ deleteOldRecords <- function(tableName, batchIdFieldName = "batchID") {
   lockSymbol("masterDB", lock=FALSE)
   if(delCount < delLimit)
    break
-  # Pause between 0 and 20 seconds to give other processes a chance to get the lock.
-  Sys.sleep(20 * runif(1))
+  # Give other processes a chance to get the lock.
+  Sys.sleep(1)
  }
  # Running this after deleting rows frees unused space in both the table and the indices.
  # This improves performance on all operations if the tables are large enough.
  invisible(MotusDB(sprintf("optimize table %s", tableName)))
+}
+
+# Alternate function only to be used when it's certain that all data has already been copied to the main Motus database:
+deleteOldRecords2 <- function(tableName, batchIdFieldName = "batchID") {
+ lockSymbol("masterDB")
+ MotusDB(sprintf("truncate table %s", tableName))
+ lockSymbol("masterDB", lock=FALSE)
 }
 
 deleteOldRecords("hits")
@@ -60,3 +67,4 @@ deleteOldRecords("pulseCounts")
 deleteOldRecords("batchRuns")
 deleteOldRecords("runs", batchIdFieldName="batchIDbegin")
 deleteOldRecords("gps")
+deleteOldRecords("projBatch")
