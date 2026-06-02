@@ -48,7 +48,7 @@ deleteOldRecords <- function(tableName, batchIdFieldName = "batchID") {
   if(delCount < delLimit)
    break
   # Give other processes a chance to get the lock.
-  Sys.sleep(1)
+  # Sys.sleep(1)
  }
  # Running this after deleting rows frees unused space in both the table and the indices.
  # This improves performance on all operations if the tables are large enough.
